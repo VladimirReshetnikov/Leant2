@@ -1,0 +1,213 @@
+\section{Experiments and what they establish}\label{sec:experiments}
+
+The archive contains two deliberately small experiments. They test specific
+mechanisms that the architecture depends on. Neither runs the existing Leant
+or Djex binaries, and neither establishes a production success rate, a
+performance comparison, or an implementation of all the proposed modules.
+
+\subsection{Lean-native continuation-aware synthesis}
+
+\code{prototype/MicroSynth.lean} implements bounded search directly in Lean's
+metaprogramming environment. It tries exact local terms, function introduction,
+constructors obtained from the environment, named providers, and local
+application heads. Every choice includes the full continuation for the
+remaining goals. The search uses iterative fuel bounds 1 through 24 and a
+file-level limit of 2,000,000 heartbeats.
+
+The source was submitted through the user's supplied AXLE-checking route,
+invoked using Wolfram Language because no local Lean installation was available.
+The successful expanded run reports Lean 4.34.0, HTTP 200, \code{okay = true},
+no failed declarations, and no Lean errors. The exact submitted source is in
+\code{receipts/MicroSynth.submitted.lean}; the annotated source differs only by
+comments and blank lines. The response's echoed source matched after trimming
+surrounding whitespace.
+
+\begin{longtable}{@{}L{0.34\linewidth}L{0.57\linewidth}@{}}
+\caption{The successful expanded microprototype run.}\label{tab:microtests}\\
+\toprule
+Test or group & What was actually exercised \\
+\midrule
+\endfirsthead
+\toprule Test or group & What was actually exercised \\\midrule
+\endhead
+\bottomrule\endfoot
+Identity and composition & Local term reuse and application across sort-polymorphic parameters. \\
+Dependent application & A local dependent family $B:A\to\Sort v$; the result is $B(x)$ for the exact input. \\
+Dependent pair & A \code{Sigma B} constructor whose second field depends on its first. \\
+Higher-rank callback & Construction of a polymorphic identity function as an argument to another function. \\
+Two universe parameters & Two callback arguments quantified at independent $u$ and $v$, consumed in the same term. \\
+Indexed vector constructor & A user-defined constructor whose result has index $n+1$. \\
+\code{Fin n} & Dependent data construction using a local bound proof. \\
+Two finite projection contracts & Choice of first versus second projection under different exact equations. \\
+Conjunction & Ordinary proof construction from local hypotheses. \\
+Strict implicit binder & Introduction preserving a strict-implicit type binder. \\
+Class projection & Application of \code{Payload.value} with local class evidence. \\
+Universal second projection & A proof of $\forall x\,y, f(x,y)=y$, not merely a sample test. \\
+Explicit dictionary selection & A universal contract choosing the second of two same-typed \code{Payload Nat} values. \\
+Equality transport skeleton & Handwritten \code{cases h}; the resulting branch term is synthesized. \\
+Indexed head skeleton & Handwritten dependent \code{cases}; its surviving branch term is synthesized. \\
+\end{longtable}
+
+There are \textbf{fifteen complete synthesis declarations} in the first thirteen
+groups of Table~\ref{tab:microtests} (identity/composition and the two finite
+contracts each contribute two). There are \textbf{two additional supplied
+elimination skeletons}. The synthesizer did not invent those two case splits.
+All fifteen complete synthesis declarations and the equality-transport skeleton
+have empty reported axiom inventories. The indexed-head skeleton reports
+\code{propext}. No checked declaration in this run reports \code{sorryAx} or
+\code{Classical.choice}.
+
+Three expected-failure controls run the tactic under \code{fail_if_success}:
+a goal of \code{False}; construction of an arbitrary $A$ from only
+\code{Nonempty A}; and a Boolean required to equal both true and false. These
+are successful \emph{bounded-failure tests}, not formal non-inhabitation
+certificates. The compiler also reports harmless unused-tactic/unused-variable
+linter warnings for this test harness.
+
+The produced higher-rank term is the expected callback composition:
+\begin{Code}
+fun R consume => consume (fun A a => a)
+\end{Code}
+The independent-universe example produces two independently quantified identity
+callbacks. The finite second-projection contract produces a subtype whose
+value is \code{fun a b => b}; evaluation at 11 and 29 returns 29. Crucially,
+its proof field is solved in the continuation of the program choice. This is
+not a post hoc filter that permanently committed to the first projection.
+
+The microprototype does not implement general dependent case discovery,
+recursor planning, advanced instance enumeration, certified abstraction,
+parallel scheduling, or final-worker isolation. Its first remote compilation
+failed because an optional syntax-array value was handled as an ordinary
+array; the parser adapter was repaired, and the expanded final run passed.
+The failure and success request identifiers are retained in the check summary.
+
+\subsection{A finite grammar of fold steps}
+
+\code{experiments/cegis.py} enumerates the following grammar:
+\[
+ s::=\mathsf{nil}\mid\mathsf{single}\mid\mathsf{tail}
+       \mid\mathsf{append}(s,s).
+\]
+For a current element $x$ and recursive result $r$, the leaves mean $[]$, $[x]$,
+and $r$. An append node concatenates its two interpretations. The induced
+program is
+\[
+ F_s([])=[],\qquad F_s(x::xs)=\llbracket s\rrbracket(x,F_s(xs)).
+\]
+The inventory contains these constructors and append only. Python's reverse
+operation appears in the verifier oracle, not in the synthesis inventory.
+
+The grammar is bounded at nine AST nodes, counting every leaf and append node.
+The numbers of exact-size terms are
+\[
+ N_1=3,\quad N_3=9,\quad N_5=54,\quad N_7=405,\quad N_9=3402,
+\]
+for a total of 3,873. More generally, a full binary tree with $k$ append nodes
+has $k+1$ independently chosen leaves, giving
+$N_{2k+1}=C_k3^{k+1}$, where $C_k$ is the $k$th Catalan number. This explains the
+rapid growth even in a tiny grammar.
+
+\subsection{An exact length abstraction}
+
+Assign a pair $(a_s,b_s)$ recursively:
+\[
+ A(\mathsf{nil})=(0,0),\quad
+ A(\mathsf{single})=(0,1),\quad
+ A(\mathsf{tail})=(1,0),\quad
+ A(\mathsf{append}(s,t))=A(s)+A(t).
+\]
+Then
+\begin{equation}\label{eq:length-summary}
+ \bigl|\llbracket s\rrbracket(x,r)\bigr|=a_s|r|+b_s.
+\end{equation}
+Structural induction proves this equality: it is immediate for each leaf, and
+append adds lengths, so the coefficient pairs add. The accompanying
+\code{Step.summary_sound} theorem checks this argument in Lean.
+
+If $(a_s,b_s)=(1,1)$, induction on the input gives
+$|F_s(xs)|=|xs|$. Conversely, for this particular grammar, if $F_s$ preserves
+length for every list of naturals, a singleton input forces $b_s=1$, and a
+two-element input then forces $a_s=1$. Thus the condition is both sufficient
+and necessary for universal length preservation in this grammar. These two
+directions are separately checked as \code{Step.length_preserved} and
+\code{Step.summary_necessary}.
+
+This necessity is what licenses pruning for a reverse specification. Reverse
+must preserve length, so all terms whose summary differs from $(1,1)$ are
+excluded. Exactly 354 terms remain; 3,519 are eliminated. The script also checks
+Equation~\eqref{eq:length-summary} on five concrete recursive-result lengths
+for every enumerated term, giving 19,365 concrete checks. Those checks are a
+regression test; the Lean theorem supplies the universal argument.
+
+\subsection{Counterexample-search results}
+
+The initial example bank is $[]$ and $[0]$. The verifier enumerates every list
+of length at most four over $\{0,1,2\}$, totaling
+$1+3+9+27+81=121$ inputs. Terms are ordered by increasing size and deterministic
+constructor order. Identity is deliberately ordered before reverse.
+
+\begin{table}[ht]
+\centering
+\begin{tabularx}{\linewidth}{@{}L{0.19\linewidth}L{0.14\linewidth}L{0.20\linewidth}Y@{}}
+\toprule
+Search / round & Consistent terms & Selected step & Counterexample or outcome \\
+\midrule
+Plain / 1 & 1,309 & \code{single} & $[0,0]$ \\
+Plain / 2 & 354 & \code{append single tail} & $[0,1]$ \\
+Plain / 3 & 177 & \code{append tail single} & Passes all 121 inputs \\
+\midrule
+Length-guided / 1 & 354 & \code{append single tail} & $[0,1]$ \\
+Length-guided / 2 & 177 & \code{append tail single} & Passes all 121 inputs \\
+\bottomrule
+\end{tabularx}
+\caption{Measured candidate counts from the included deterministic script.
+``Consistent'' refers to the current finite example bank, not universal truth.}
+\end{table}
+
+The length summary removes a spurious candidate family before the first
+counterexample round. It does not distinguish identity from reverse: that
+requires order-sensitive information. The selected AST is exactly
+\begin{Code}
+Step.append Step.tail Step.single
+\end{Code}
+Its fold appends each current element after the recursively reversed tail.
+
+A deliberately incorrect ablation permanently retains only the first
+representative of each initial observation class. All 354 length-viable terms
+initially agree on the bank, so only identity survives. The counterexample
+$[0,1]$ rejects it, and the ablation reports finite-grammar exhaustion. The
+correct reverse term was discarded, not absent. The working algorithm retains
+all class members and refines the partition when a new input arrives.
+
+This is an illustrative controlled comparison, not a claim that the same
+pruning ratio or round reduction will occur on large Lean programs. It measures
+no speedup between Haskell and Lean.
+
+\subsection{A universal Lean certificate for the selected term}
+
+\code{prototype/Certificates.lean} defines the same \code{Step} datatype,
+interpreter, summary, and recursive fold. Its selected AST is the one emitted
+by Python. The theorem
+\begin{Code}
+theorem selected_correct {A : Type u} (xs : List A) :
+    selectedStep.run xs = xs.reverse
+\end{Code}
+proves correctness for every list at every declared universe level. The proof
+is structural induction: the empty case is reflexivity; the cons case rewrites
+with the induction hypothesis and the standard reverse-of-cons equation.
+Thus the universal claim rests on a Lean proof about the exact selected AST,
+not on the finite verifier corpus.
+
+The certificate file passed a separate Lean 4.34.0 remote check with no errors
+or failed declarations. The three summary/length theorems report
+\code{propext} and \code{Quot.sound}; the reverse correctness theorem reports
+\code{propext}. These are reported, not concealed under an ``axiom-free'' label.
+The certificate code and proofs are handwritten verification infrastructure,
+not output synthesized by \code{micro_synth}.
+
+The initial certificate check was a fresh execution. A subsequent identical
+request was served from the remote cache and confirmed the echoed source after
+whitespace trimming. Both request identifiers and the cached-response status
+are recorded. The checker advised using its default Mathlib import header;
+we kept \code{import Lean} with \code{ignore_imports = false}. There was no
+local compiler run or independent kernel implementation in this experiment.

@@ -1,0 +1,33 @@
+{
+  "scope": "Finite total DSL, node size <= 7; NOT a Lean coverage benchmark",
+  "max_ast_nodes": 7,
+  "enumerated_terms": 1875,
+  "concrete_input_pairs": 49,
+  "affine_length_validation_checks": 91875,
+  "length_compatible_terms": 382,
+  "excluded_by_necessary_length_condition": 1493,
+  "terms_passing_finite_append_tests": 89,
+  "first_finite_test_success": "append(xs, ys)",
+  "bucket_counts_on_growing_examples": [
+    1,
+    2,
+    8
+  ],
+  "all_members_retained": 382,
+  "cegis_trace": [
+    {
+      "candidate": "append(xs, ys)",
+      "counterexample": null
+    }
+  ],
+  "limitations": [
+    "No general-purpose SMT solver is used.",
+    "The Python interpreter and length analysis are not Lean-certified.",
+    "Passing the 49 test pairs is not recorded as a universal proof.",
+    "This finite grammar includes append as a supplied primitive.",
+    "Timing is omitted; these are deterministic mechanism checks, not speed claims."
+  ],
+  "unit_tests_run": 5,
+  "unit_test_failures": 0,
+  "unit_test_errors": 0
+}

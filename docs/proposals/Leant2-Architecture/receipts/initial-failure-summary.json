@@ -1,0 +1,20 @@
+{
+  "receipt_kind": "transcribed summary of failed development run",
+  "request_id": "49b3c27b-f881-4a4d-9728-193304f23d40",
+  "environment": "lean-4.34.0",
+  "okay": false,
+  "http_status": 200,
+  "failed_declarations": [
+    "sumElim",
+    "coupledWitness",
+    "compose",
+    "vectorHead",
+    "higherRank",
+    "dictionary",
+    "vectorTail"
+  ],
+  "diagnostic": "fail to show termination; search admitted provisional self-reference from implementation-detail local declarations",
+  "repair": "Filter local declarations using isImplementationDetail; production must additionally enforce explicit recursion capabilities and closure audit.",
+  "error_recovery": "Failed declarations carried sorryAx; dependent rfl/eval checks failed or refused. These are not accepted synthesis results.",
+  "notes": "The higherRank test was also strengthened in the successful run to require construction of a polymorphic argument. This is not a same-source before/after performance comparison."
+}

@@ -1,0 +1,228 @@
+\section{The native search state and transactional kernel}
+\label{sec:state}
+
+\subsection{A goal forest, not independent subproblems}
+
+Represent a live branch by
+\[
+ S=(O,\Met,\Ctx_{\bullet},G,D,P,C,H),
+\]
+where $O$ is the immutable origin, $\Met$ the branch's metavariable state, $\Ctx_{\bullet}$ the contexts associated with its goals, $G$ the residual goal forest, $D$ the dependency graph, $P$ the construction plan, $C$ the constraint store, and $H$ the branch history. The branch also has a scheduling priority, but the global work ledger belongs outside this rollbackable record.
+
+A goal node is an owned \code{MVarId} with a role: implementation, behavioral proof, type argument, instance, equality transport, termination proof, or auxiliary lemma. A role guides scheduling; it does not change the goal's native type. Edges in $D$ record dependencies through metavariables and local declarations, including dependencies exposed by postponed elaboration. Every state also maintains a set of external metavariables that may not be assigned.
+
+The first implementation can use persistent Lean snapshots rather than a custom substitution engine. The important operation is an \emph{atomic attempt}: restore a checkpoint, try a native action, and commit only if the whole relevant continuation succeeds. No result from a failed continuation may remain in the parent metacontext.
+
+\begin{algorithm}[ht]
+\caption{Dependency-preserving depth-bounded reference search}
+\label{alg:forest}
+\begin{algorithmic}[1]
+\Function{SolveForest}{$G,b$}
+  \State Remove already assigned goals from the front of $G$
+  \If{$G=\varnothing$} \State \Return success \EndIf
+  \If{$b=0$} \State \Return bounded failure \EndIf
+  \State Let $g$ be the first goal and $R$ the remaining goals
+  \For{each applicable action proposal $a$ for $g$}
+    \State $s\gets$ snapshot of the branch-local semantic state
+    \State Charge the global work ledger for attempting $a$
+    \State Run $a$ in $g$'s context, obtaining children $G_a$
+    \If{the action succeeded and \Call{SolveForest}{$G_a\mathbin{+\!+}R,b-1$} succeeds}
+      \State \Return success
+    \EndIf
+    \State Restore $s$; retain only tagged diagnostics and work charges
+  \EndFor
+  \State \Return bounded failure
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+Algorithm~\ref{alg:forest} is intentionally a reference algorithm, not the production scheduler. Its merit is its continuation discipline. Solving the first child and irrevocably committing its first answer is wrong whenever a later child constrains that answer. The reference prototype implements this pattern with native \code{Meta.saveState}, \code{MVarId.apply}, \code{intro1P}, and \code{cases}, all checked against Lean 4.34.0 in the supplied experiment.
+
+\subsection{A concrete backtracking failure}
+
+Suppose the root asks for
+\[
+ \{f:(A:\operatorname{Type})\to A\to A\to A\mid f\ \mathbb N\ 11\ 29=29\}.
+\]
+Constructing the subtype opens a value goal $?f$ and a proof goal depending on it. The first plausible value, $\lambda A\,a\,b.a$, solves the value goal but changes the proof goal into $11=29$. That continuation fails. A correct search restores the value assignment and tries $\lambda A\,a\,b.b$, after which reflexivity closes the proof goal.
+
+A solver that reports ``the value subproblem is solved'' and later treats the equality as an unrelated impossible subproblem misses the solution. The same problem occurs with dependent witnesses, type arguments inferred from later arguments, recursive accumulator types, and competing class dictionaries. The forest is not merely an optimization; it is the unit of semantic backtracking.
+
+\subsection{Snapshots and owned mutations}
+
+In the miniature experiment, actions operate in \code{MetaM}, and a \code{Meta.SavedState} is the relevant rollback mechanism. Production actions may invoke term elaboration, tactic elaboration, declaration elaboration, messages, caches, and environment extensions. A version-specific transaction adapter must capture and restore the corresponding states and reader contexts as well. Its contract should be tested through deliberate assignment, fresh-name, local-instance, message, and environment-mutation failures.
+
+Do not swallow cancellation, out-of-memory failures, or global budget exceptions as ordinary ``rule not applicable.'' The prototype catches exceptions broadly for brevity; the production adapter needs typed outcomes such as \code{notApplicable}, \code{blocked}, \code{rejected}, \code{yielded}, and \code{aborted}. Local failure can trigger rollback. A hard cancellation must unwind to the controller and retire or reset the worker.
+
+Avoid storing closures that accidentally capture mutable metavariable state in a supposedly persistent queue. A resumable task should contain an origin, a saved branch state or replayable plan, an action cursor, and enough information to reinstall its local context. Fresh metavariable identifiers created in different branches must never be merged merely because their numeric components match.
+
+\subsection{Parallelism requires an independence test}
+
+Two proof goals may be solved concurrently only when the worker can establish that their assignment footprints are disjoint, including transitive type and instance dependencies. A useful conservative policy initially parallelizes entire isolated lanes or completed candidate verifications, not arbitrary siblings. This loses some parallelism but keeps correctness and reproducibility tractable.
+
+Later, use connected components of $D$ as scheduling units. An independence certificate can record disjoint owned metavariable sets, disjoint synthetic obligations, and an unchanged shared rigid context. When either task introduces a new dependency, merge the components or serialize the conflicting step. Never make separate successful snapshots compete to overwrite the same metavariable state.
+
+\section{Bidirectional construction and focused search}
+\label{sec:rules}
+
+\subsection{The core judgment}
+
+Write
+\[
+ \Ctx\vdash ?m\Leftarrow T\;[\Spec]
+\]
+for construction of a term at an expected native type, together with residual contract obligations. The implementation does not parse this judgment into a separate calculus; it uses the corresponding native goal. It is a useful notation for describing search rules.
+
+The important distinction is between \emph{introducing} the outer structure of an expected type and \emph{using} a value already available in the context or component inventory. Introductory forms drastically reduce search when the expected type is known; elimination forms discover which existing function, projection, or case split can produce the desired result. They should meet in application-spine search rather than in an untyped enumeration followed by type checking.
+
+\subsection{Introduction rules}
+
+For a dependent function type, introduce a fresh rigid local and continue:
+\[
+ \frac{\Ctx,x:A\vdash b\Leftarrow B(x)}
+      {\Ctx\vdash\lambda x.b\Leftarrow (x:A)\to B(x)}.
+\]
+The original binder information must be preserved for export. Introducing an implicit argument is not permission to make it an explicit user-visible parameter, and a strict implicit binder should not be reconstructed from an ordinary implicit one by guesswork.
+
+For a constructor $c$ of a target inductive, instantiate its universe parameters freshly, open its telescope, and unify its result with the expected target. Keep the resulting argument holes and index constraints in one transaction. A constructor that cannot match is rejected; a constructor blocked on an unresolved parameter is suspended rather than certified impossible. Ordinary pairs and subtypes are special cases of this rule.
+
+For a behavioral goal, construction should also produce a decomposition opportunity. If the requested relation has a constructor aligned with the output constructor, introduce both together. For example, proving a pointwise list relation exposes the output head and a proof relating it to the input head. This can be far more selective than first generating an arbitrary list and only then checking it.
+
+\subsection{Elimination and context saturation}
+
+Use local assumptions in four basic ways: exact matching, partial or full application, projection, and case analysis. Exact matching should precede gratuitous eta-expansion when the user's quality profile rewards direct reuse. Projections are cheap for structures but must remain typed at the original record value. Forward application can add useful derived terms, but it needs a cost bound and a relevance filter to avoid saturating the context with every possible application.
+
+For a sum-like input, a case split creates a branch for each reachable constructor. Branch obligations share their outer parameters, and all must succeed. Dependent targets require an appropriate motive; delegate motive construction and index refinement to native case-analysis machinery. An indexed vector at length $n+1$, for example, does not have an admissible empty branch merely because an approximate unindexed vector has an empty constructor.
+
+Repeatedly splitting recursive inputs is a bounded exploration strategy, not a replacement for recursion synthesis. A depth-limited expansion of a list cannot implement an arbitrary-length traversal unless the result contains a genuine recursion scheme. Prefer a recursion lane once a recursive data input is structurally relevant and ordinary component use has stalled.
+
+\subsection{What is actually safe to focus}
+
+Logical proof search often applies provability-preserving rules eagerly. Aesop's safe/unsafe distinction and AND--OR search organization are useful precedents, but its documented automation is a proof tactic, not a complete algorithm for inventing recursive programs~\cite{aesop,aesop-paper}.
+
+Leant2 needs a stronger classification. A transformation may preserve the existence of an inhabitant while changing the available implementations, their cost, or their satisfaction of a behavioral constraint. Replacing a direct function value by its eta-expansion is harmless for many extensional contracts but can change the search cost. Splitting a product goal is logically natural, but an existing provider might return the whole product more cheaply. Dropping an unused-looking input is not generally behavior-preserving.
+
+Use three rule labels: \emph{checked transformation}, \emph{grammar-preserving normalization}, and \emph{heuristic proposal}. The first means Lean can validate its effect; the second additionally carries a theorem or explicitly delimited argument about the covered grammar; the third promises only a useful candidate. Fast lanes may focus aggressively, but a fairness lane must retain alternatives lost by such focusing whenever a relative completeness guarantee is advertised.
+
+\section{Application spines, type invention, and component retrieval}
+\label{sec:spines}
+
+\subsection{Spine search in detail}
+
+Suppose a candidate head has native type
+\[
+ h:(a_1:A_1)\to(a_2:A_2(a_1))\to\cdots\to
+ (a_k:A_k(a_1,\ldots,a_{k-1}))\to R(a_1,\ldots,a_k).
+\]
+At each prefix, attempt to match the remaining type against the expected goal. This admits returning a partially applied function; it is not restricted to providers whose fully saturated codomain matches the target. Keep a head occurrence's complete argument vector, including implicit and instance arguments, because later choices may refer to any earlier entry.
+
+\begin{algorithm}[ht]
+\caption{Demand-directed native application-spine search}
+\label{alg:spine}
+\begin{algorithmic}[1]
+\Function{Spines}{$h,T,\Ctx,b$}
+ \State Freshen the global universe parameters of this occurrence of $h$
+ \State Set $e\gets h$ and infer its native type $U$
+ \For{$j=0,1,\ldots,b$}
+   \State In a fresh transaction, try native unification of $U$ with $T$
+   \State If successful, emit the partial plan $e$ and all residual obligations
+   \State Reduce $U$ only enough to expose its next binder
+   \If{$U$ is not a dependent function type} \State \Return \EndIf
+   \State Create an owned argument hole $a_j$ at the binder's exact domain
+   \State Classify the hole as term, type, instance, or postponed elaboration
+   \State Set $e\gets e\ a_j$; substitute $a_j$ into the remaining type $U$
+   \State Propagate resulting constraints without committing a final choice
+ \EndFor
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+In practice the native \code{apply} family already performs much of the initial matching. The production adapter adds resumable alternative instantiations, explicit argument provenance, and failure classification rather than replacing Lean's unifier~\cite{lean-tactics}. The exact prototype's \code{apply} calls exercise only a bounded subset of this proposed functionality.
+
+An unsuccessful higher-order unification attempt is not a proof of disequality. Some constraints are syntactic conflicts; others require a currently unknown term or a non-pattern instantiation. Classify a blocked constraint by the metavariables that could unblock it and place a watcher on them. Retry after those variables change. A budget or depth exception belongs to the scheduler, not in a permanent negative cache.
+
+\subsection{A practical type-invention ladder}
+
+When native inference cannot determine a type-valued argument, enumerate increasingly expressive candidate types. Start with exact types already present in the query telescope, output type, and contract. Then use types of local values and relevant component domains. Next construct small products, sums, indexed applications, and function spaces from those seeds. Admit quantified types and accumulator carriers at later levels. Keep a separate size cost for these invented type expressions.
+
+For example, a list fold used for indexed lookup may need an accumulator of type $\mathbb N\to\operatorname{Option}(A)$ rather than $\operatorname{Option}(A)$. Looking only at the final output type misses the useful carrier. A demand-directed rule should propose function carriers over arguments that are consumed \emph{after} the structural traversal. Such rules are hypotheses about useful search spaces; each resulting type must still satisfy the exact native universe constraints.
+
+Do not hard-code unrelated monotypes such as \code{Nat} as universal stand-ins for polymorphic variables. They can be admitted as literal component types when relevant, but a solution synthesized for one concrete type is not a solution to a universally quantified request. Type-variable names, lexical scopes, and universe levels remain part of the semantic problem.
+
+\subsection{Library indexing without semantic erasure}
+
+Maintain an index of admitted declarations, local providers, constructors, projections, and registered recursive combinators. A \code{DiscrTree}-style structure can organize normalized result heads, significant rigid arguments, and arities. The index key deliberately omits detail; every hit is freshly instantiated and checked by native matching before becoming a search action. Goals with unknown result heads need a fallback inventory walk or a widening tier, otherwise an index optimization silently becomes a coverage restriction.
+
+The proposed query plan has four tiers: local values and constructors; explicitly named providers; relevant namespaces and registered component sets; and an optional wider environment search. Every request records which tiers were enabled. A limit of fifty retrieved providers is a useful heuristic bound, but an exhausted fifty-provider search cannot be reported as exhaustive over the imported environment.
+
+A component record should expose both its native type and optional proved summaries: input/output relations, preservation laws, size relations, and executable status. Summaries reduce search only through checked implications. Documentation embeddings or learned relevance scores can rank hits but cannot establish that a component has a property it has not proved.
+
+\subsection{Typed abstract graphs as an accelerator}
+
+Type-guided abstraction refinement, as exemplified by TYGAR, motivates a scalable component-composition lane: search a graph over coarse type shapes, elaborate the proposed path natively, and refine the abstraction when a spurious composition fails~\cite{tygar}. In Leant2 this graph is advisory. It cannot assign away a dependent index or choose an inconsistent universe merely to connect two nodes.
+
+A useful abstract key is a rigid type head plus a bounded pattern of its arguments. A failed path can teach the graph to distinguish, for example, \code{Vec A 0} from \code{Vec A (n+1)}, or two different local dictionaries. Refine with an explainable native mismatch. Avoid a rule that globally bans a provider after one specialization fails: the same provider may work under another argument vector.
+
+\section{Scheduling a practical search portfolio}
+\label{sec:scheduler}
+
+\subsection{Lanes and work quanta}
+
+Use several lanes over the same origin: local focused synthesis, component composition, recursive sketches, proof automation, and specialized finite or symbolic synthesis. Each exposes a bounded-step interface returning a new continuation, zero or more candidate proposals, and a work delta. A proposal is not a success until it crosses the shared candidate gate.
+
+A practical scheduler gives the fast native lane a larger initial share, but reserves a nonzero share for widening and recursive search. Rotate lanes after a finite work quantum, not only after each lane produces a candidate. An engine that spends indefinitely computing its next result otherwise starves the rest. Costly native primitives that cannot be suspended internally should have a per-attempt limit and be restarted at larger allowances in a later tier.
+
+Global counters are monotone: attempted rule applications, generated candidates, solver calls, normalization steps where available, and verification work remain charged after rollback. Otherwise a branch can repeatedly fail and restore its budget. Memory limits count retained snapshots and continuation graphs, not just completed terms.
+
+\subsection{Fairness without pretending heuristics are optimal}
+
+Let a task have a lane number $i$, expression-cost bound $s$, recursive-scheme bound $r$, and verification allowance level $v$. A diagonal schedule visits finite tuples in increasing $i+s+r+v$, with deterministic tie breaking. Within a tuple, a heuristic queue may prioritize promising states. To preserve the fairness claim, reserve a FIFO stream that eventually visits every admissible state in that finite tier, or bound the number of heuristic overtakes.
+
+Do not advertise a global shortest-program theorem for a best-first queue with arbitrary learned scores, retrieval caps, or unbounded proof costs. A precise optimality claim is possible only relative to a fixed grammar, a defined cost, complete enumeration below the returned cost, and sufficiently complete verification. Ordinary interactive output should instead say ``best verified candidate found under this profile.''
+
+A practical score can combine syntax size, case splits, invented type complexity, library distance, estimated proof effort, and deviation from supplied examples. Input usage is a soft preference. Lean is not a linear language; a valid implementation may ignore or duplicate arguments. Hard usage restrictions must be user-specified grammar constraints, not hidden assumptions inherited from a resource-sensitive search engine.
+
+\subsection{Verification needs its own queue}
+
+A candidate with a hard proof obligation should not block candidate generation. Assign each candidate a small verification quantum, retain inconclusive candidates, and enlarge their budgets fairly. A new counterexample can cheaply eliminate many waiting candidates. A new lemma can make several previously blocked proof obligations tractable. Both events should wake suspended work instead of restarting the whole search.
+
+The user may request the first verified answer or several diverse alternatives. Diversity should distinguish actual native terms or proved equivalence classes, not just whitespace or pretty-printer choices. Two spellings of the same candidate do not earn independent successes, and two different typed owners do not exchange evidence merely because they print alike.
+
+\section{Memoization, equivalence, and safe pruning}
+\label{sec:pruning}
+
+\subsection{What belongs in a cache key}
+
+A target type alone is not a synthesis subproblem. A cache key needs the relevant local telescope, instance evidence, native target, residual contract, origin identity, permitted components, and search restrictions. It also needs the assignment state of any shared metavariables, or a canonical abstraction that records their dependency relationships. Reusing a result proved under a stronger path condition in a weaker context is unsound.
+
+A reusable success is best stored as a term abstracted over a canonical telescope, together with its type and proof. Instantiate this template in the destination context and validate it. A failed search result is reusable only with its exact bounded grammar and budgets, and only as evidence that that particular search was exhausted. Resource failure is not a logical conflict clause.
+
+\subsection{Definitional and propositional equality}
+
+Use native checks to identify definitional equality where inexpensive, with explicit transparency and rollback. For more aggressive rewriting, retain a checked equality and transport the contract along it. Homogeneous equality requires compatible types; a dependent expression graph cannot indiscriminately merge nodes at different fibers. Restrict an initial equality-saturation plug-in to closed monomorphic regions or to regions whose typed transport infrastructure is explicitly supplied.
+
+Do not use a syntactic e-graph's congruence closure as a replacement for Lean's conversion checker. Even well-motivated normalization can change operational cost or cross an opacity boundary. Keep the original candidate available for execution-policy comparison, and recheck the final optimized candidate's property rather than borrowing an untransported proof.
+
+\subsection{Observational equivalence is provisional}
+
+For examples $E=\{x_1,\ldots,x_m\}$ define an observation signature
+\[
+ \operatorname{obs}_E(t)=(t(x_1),\ldots,t(x_m)).
+\]
+Equal signatures are useful for ranking and batching, but are not proof of functional equality. As $E$ grows, one bucket can split. Retain all representatives, a compressed version space, or enough derivations to regenerate the bucket when a new example arrives.
+
+A minimal counterexample is a grammar containing only the two Boolean expressions $x$ and $y$. On input $(0,0)$ they have the same value. Keeping only $x$ permanently destroys the solution to the specification ``return $y$'' when the next input is $(1,0)$. The supplied finite prototype includes checked lemmas witnessing an analogous collision and later separation.
+
+For a \emph{known finite complete domain}, an exact truth table can support permanent quotienting, provided the semantics is compositional for the allowed contexts and the equivalence is checked. That is a special finite backend theorem, not a general justification for discarding higher-order or dependent Lean programs after a few tests.
+
+\subsection{Abstract interpretation with proof obligations}
+
+A plug-in can associate a partial program $P$ with an overapproximation $A(P)$ of all behaviors of its admissible completions. The sound pruning rule is
+\[
+ \operatorname{Behaviors}(\operatorname{Completions}(P))\subseteq A(P),
+ \qquad A(P)\cap\operatorname{Allowed}=\varnothing
+ \quad\Longrightarrow\quad\text{prune }P.
+\]
+For example, a length domain can track intervals or affine relations for lists; a constructor-tag domain can track which output alternatives remain possible. The inclusion must be justified for every admitted component and path condition. An unknown component summary yields top, not an empty set.
+
+A first implementation should use proof-carrying transfer summaries for a small library and replay rejection certificates in Lean. A more ambitious implementation can formalize the abstract domain and its soundness once. Neither permits declaring a source contract false merely because an approximate model has no solution under an accidental translation restriction.

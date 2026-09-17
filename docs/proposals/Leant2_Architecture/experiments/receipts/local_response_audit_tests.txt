@@ -1,0 +1,19 @@
+test_approved_axiom (test_response_audit.ResponseAuditTests.test_approved_axiom) ... ok
+test_changed_source (test_response_audit.ResponseAuditTests.test_changed_source) ... ok
+test_clean (test_response_audit.ResponseAuditTests.test_clean) ... ok
+test_compiler_error (test_response_audit.ResponseAuditTests.test_compiler_error) ... ok
+test_custom_axiom (test_response_audit.ResponseAuditTests.test_custom_axiom) ... ok
+test_duplicate_audit (test_response_audit.ResponseAuditTests.test_duplicate_audit) ... ok
+test_environment (test_response_audit.ResponseAuditTests.test_environment) ... ok
+test_failed_declaration (test_response_audit.ResponseAuditTests.test_failed_declaration) ... ok
+test_incomplete_warning (test_response_audit.ResponseAuditTests.test_incomplete_warning) ... ok
+test_missing_audit (test_response_audit.ResponseAuditTests.test_missing_audit) ... ok
+test_no_manifest (test_response_audit.ResponseAuditTests.test_no_manifest) ... ok
+test_okay_false (test_response_audit.ResponseAuditTests.test_okay_false) ... ok
+test_service_error (test_response_audit.ResponseAuditTests.test_service_error) ... ok
+test_sorry (test_response_audit.ResponseAuditTests.test_sorry) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.000s
+
+OK

@@ -1,0 +1,79 @@
+{
+  "observational_buckets": {
+    "initial_tests": [
+      true
+    ],
+    "initial_bucket_sizes": [
+      2,
+      2
+    ],
+    "new_counterexample": false,
+    "destructive_merging_solutions": [],
+    "retained_derivation_solutions": [
+      "identity"
+    ],
+    "claim": "Exact on Bool, not a universal equivalence test for arbitrary Lean functions."
+  },
+  "affine_fold": {
+    "grammar_size": 81,
+    "finite_verifier_inputs": 121,
+    "trace": [
+      {
+        "candidate": {
+          "base": 0,
+          "element": 0,
+          "accumulator": 0,
+          "bias": 0
+        },
+        "survivors": 81,
+        "counterexample": [
+          1
+        ]
+      },
+      {
+        "candidate": {
+          "base": 0,
+          "element": 0,
+          "accumulator": 0,
+          "bias": 1
+        },
+        "survivors": 11,
+        "counterexample": [
+          0
+        ]
+      },
+      {
+        "candidate": {
+          "base": 0,
+          "element": 1,
+          "accumulator": 0,
+          "bias": 0
+        },
+        "survivors": 5,
+        "counterexample": [
+          0,
+          1
+        ]
+      },
+      {
+        "candidate": {
+          "base": 0,
+          "element": 1,
+          "accumulator": 1,
+          "bias": 0
+        },
+        "survivors": 1,
+        "counterexample": null
+      }
+    ],
+    "selected": {
+      "base": 0,
+      "element": 1,
+      "accumulator": 1,
+      "bias": 0
+    },
+    "full_finite_survivors": 1,
+    "universal_proof": "RecursionCertificates.sumCorrect (separately Lean-checked)",
+    "claim": "A finite sketch experiment, not automatic recursion-scheme invention."
+  }
+}

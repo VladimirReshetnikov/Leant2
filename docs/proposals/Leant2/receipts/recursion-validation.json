@@ -1,0 +1,66 @@
+{
+  "receipt_kind": "Compact transcription of observed Wolfram-to-AXLE response; content omitted; not a locally executed Lean build.",
+  "source_path": "lean/RecursionCertificates.lean",
+  "source_sha256": "7511910763201b9673120da6397f0129152634788f3d67280e5b8ec166e76ea4",
+  "source_bytes": 1733,
+  "echo_is_source_plus_newline": true,
+  "request": {
+    "environment": "lean-4.34.0",
+    "ignore_imports": false,
+    "theorems_only": false,
+    "timeout_seconds": 45
+  },
+  "response": {
+    "okay": true,
+    "failed_declarations": [],
+    "lean_messages": {
+      "errors": [],
+      "warnings": [],
+      "infos": [
+        "-:35:0-35:5: info: 16\n",
+        "-:36:0-36:5: info: [3, 6, 10]\n",
+        "-:39:0-39:7: info: AXIOMS RecursionCertificates.certifiedMap: []\n",
+        "-:39:0-39:7: info: AXIOMS RecursionCertificates.affineFold: []\n",
+        "-:39:0-39:7: info: AXIOMS RecursionCertificates.sumCorrect: [propext]\n",
+        "-:39:0-39:7: info: AXIOMS RecursionCertificates.notPolyChoice: []\n",
+        "-:39:0-39:7: info: LEANT2_RECURSION_AUDIT: 4 declarations; standard-axiom audit passed\n"
+      ]
+    },
+    "timings": {
+      "parse_ms": 1286,
+      "total_ms": 1287
+    },
+    "tool_messages": {
+      "errors": [],
+      "infos": [],
+      "warnings": [
+        "Mathlib.Tactic is a required import but is missing from the header imports. You may experience inconsistent and incorrect behavior. We highly recommend adding `import Mathlib.Tactic` to the header imports.",
+        "Note: you are not using the default header. Expected 'import Mathlib\\n', got 'import Lean\\n\\n'. You may experience significant slowdowns. We encourage you to use the cached default header if possible, which will significantly speed up execution. Please enable `ignoreImports` to automatically override imports with the default header."
+      ]
+    },
+    "info": {
+      "environment": "lean-4.34.0",
+      "cached_response": false,
+      "_executor_commit_sha": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+      "_executor_docker_image_id": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+      "_executor_artifact_sha256": "127b8dcb3bbc7cfa7861743f512fbe955bd8a35e940d6f2959d02327a7aa8520",
+      "environment_pool_size": 64,
+      "_predicted_warmness": "warm",
+      "_actual_env_warm_state": "warm",
+      "request_id": "7593e833-ccb3-40da-ae93-689c27d941a3",
+      "total_request_time_ms": 1413,
+      "queue_time_ms": 4,
+      "execution_time_ms": 1409,
+      "environment_wait_time_us": 9,
+      "environment_total_time_us": 1406180
+    }
+  },
+  "axiom_inventories": {
+    "RecursionCertificates.certifiedMap": [],
+    "RecursionCertificates.affineFold": [],
+    "RecursionCertificates.sumCorrect": [
+      "propext"
+    ],
+    "RecursionCertificates.notPolyChoice": []
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "record_kind": "Selected fields transcribed from the AXLE response returned by the Wolfram connector; not a byte-for-byte HTTP archive",
+  "checked_on": "2026-09-17",
+  "submitted_file": "prototype/Behavior.lean",
+  "source_sha256": "671b737e138efa949fb8334f94ae38827a3c3189362bb10e4b58ff42315e8535",
+  "transport": "Wolfram URLRead; ExportByteArray RawJSON; ImportByteArray RawJSON",
+  "request": {
+    "endpoint": "https://axle.axiommath.ai/api/v1/check",
+    "environment": "lean-4.34.0",
+    "ignore_imports": false,
+    "theorems_only": false,
+    "timeout_seconds": 40
+  },
+  "response": {
+    "okay": true,
+    "failed_declarations": [],
+    "lean_errors": [],
+    "tool_errors": [],
+    "echo_trim_equal": true,
+    "reported_lean_version": "4.34.0",
+    "axiom_audits": {
+      "Leant2Behavior.canonical_spec": [
+        "propext"
+      ],
+      "Leant2Behavior.affine_spec_iff": [
+        "propext",
+        "Quot.sound"
+      ],
+      "Leant2Behavior.replay_sound": [
+        "propext"
+      ],
+      "Leant2Behavior.run_counts": [
+        "propext",
+        "Quot.sound"
+      ],
+      "Leant2Behavior.run_result": [
+        "propext",
+        "Quot.sound"
+      ]
+    },
+    "lean_warnings": [],
+    "tool_advisories": [
+      "Mathlib.Tactic is a required import but is missing from the header imports. You may experience inconsistent and incorrect behavior. We highly recommend adding `import Mathlib.Tactic` to the header imports.",
+      "Note: you are not using the default header. Expected 'import Mathlib\\n', got 'import Lean\\n\\n'. You may experience significant slowdowns. We encourage you to use the cached default header if possible, which will significantly speed up execution. Please enable `ignoreImports` to automatically override imports with the default header."
+    ],
+    "timings_ms": {
+      "parse": 1382,
+      "total": 1387,
+      "request": 1516,
+      "execution": 1510,
+      "queue": 5
+    },
+    "info": {
+      "environment": "lean-4.34.0",
+      "executor_commit_sha": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+      "executor_docker_image_id": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+      "executor_artifact_sha256": "127b8dcb3bbc7cfa7861743f512fbe955bd8a35e940d6f2959d02327a7aa8520",
+      "cached_response": false,
+      "request_id": "1caada9d-c739-46cb-a8e6-25a70b2b7335"
+    },
+    "evaluation": {
+      "winner": [
+        2,
+        1
+      ],
+      "considered": 12,
+      "proofAttempts": 3,
+      "pruned": 9,
+      "inconclusive": 0,
+      "bank": [
+        "base",
+        {
+          "step": 0
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Remote check, not a local Lean installation or independent second kernel.",
+    "Only import Lean in submitted file; service emitted its Mathlib-header advisories.",
+    "Reported timings include remote elaboration/checking and are not synthesis-only performance measurements."
+  ]
+}

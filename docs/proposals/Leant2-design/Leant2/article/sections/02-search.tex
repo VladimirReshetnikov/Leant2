@@ -1,0 +1,366 @@
+\section{The search state is a dependency graph}\label{sec:state}
+
+\subsection{A branch contains more than a goal}
+
+A minimal production branch should contain the following conceptual fields:
+\begin{Code}
+Branch := {
+  requestId, environmentGeneration, branchId,
+  rootProgram, rootContractProof,
+  metaSnapshot, elaboratorSnapshot, declarationDelta,
+  pendingObligations, dependencyGraph, blockedConstraints,
+  recursionCapabilities, exampleBankVersion,
+  domainFacts, decisionTrail, ruleCursors,
+  accumulatedCost, resourceCharges
+}
+\end{Code}
+This is a schema, not an assertion that these are stable Lean API record names.
+The snapshots must include all state that the chosen rule can mutate. A purely
+\MetaM{} rule can use a metaprogramming snapshot; a command-level rule creating
+auxiliary declarations needs an environment/elaborator transaction as well.
+Restoring only the current list of goals is insufficient. Lean's metavariable
+operations and unification can assign information that later operations
+observe~\cite{meta-book,lean-apply}.
+
+Each obligation has a kind, a target expression, its owning local context, a
+read/write set of reachable metavariables, dependencies, and an origin. Kinds
+include computational value, type or universe choice, instance evidence,
+index equality, contract proof, termination proof, and reconstruction check.
+The distinction guides scheduling; it does not create different logical
+notions of truth.
+
+Connect two obligations when either can assign a metavariable reachable from
+the other, including metavariables in local declaration types, local values,
+instance arguments, or universe expressions. Transitive connected components
+are \emph{coupled clusters}. Assignment can create or remove dependencies, so
+the graph must be incrementally refreshed. A static syntactic list of initial
+free metavariables is not enough.
+
+\subsection{The fundamental continuation invariant}
+
+Suppose a constructor creates holes $h_1:A$ and $h_2:P(h_1)$. It is incorrect to
+run a solver for $h_1$, retain its first inhabitant, and only then begin an
+independent solver for $h_2$. Failure of $P(h_1)$ must be able to revisit the
+choice of $h_1$. The same applies to a provider's type parameter, a class
+instance, an inductive index, or a recursive helper's invariant.
+
+\begin{invariant}[Continuation ownership]\label{inv:continuation}
+An alternative is successful only if its entire coupled continuation is
+successful. Every decision that can affect a remaining obligation retains a
+backtracking point until the cluster is accepted or deliberately suspended.
+\end{invariant}
+
+For example, the subtype
+\[
+ \{f:\mathbb N\to\mathbb N\to\mathbb N\mid f(11,29)=29\}
+\]
+first asks for a function and then for a proof. Returning the first argument is
+type correct. Its proof obligation fails. Returning the second argument is then
+tried and its equality reduces to reflexivity. The included Lean experiment
+implements precisely this continuation discipline. It does not use a special
+rule recognizing the words ``choose second.''
+
+\subsection{Transactional rule execution}
+
+A robust rule application follows this protocol:
+\begin{Code}
+tryRule(branch, rule):
+  checkpoint := snapshotAllStateWritableBy(rule)
+  result := rule.nextAlternative(branch)
+  if result is an ordinary inapplicability:
+      restore checkpoint; return NotApplicable
+  if result is interruption or exhausted global resources:
+      restore checkpoint; propagate status
+  if result is a new typed branch:
+      compute new dependencies and branch-local obligations
+      retain checkpoint/decision for its coupled continuation
+      return SuspendedBranch(result)
+\end{Code}
+
+Unexpected plugin exceptions should become diagnostics, not silently be treated
+as a logical dead end. The microprototype intentionally has a much smaller
+exception policy; production code should distinguish unification mismatch,
+unsupported term form, local proof timeout, cancellation, internal error, and
+resource exhaustion. In particular, repeated catching of heartbeat exhaustion
+must not create a loop that appears to make search progress.
+
+Parallel branches own independent snapshots and solver frames. Sharing
+immutable expressions and environment data is useful; sharing a writable
+metavariable context is not. Exporting a result from one branch to another
+requires an abstracted template with explicit parameters and a fresh replay,
+not copying a live expression containing foreign metavariable identifiers.
+
+\section{Bidirectional construction over Lean expressions}\label{sec:bidirectional}
+
+\subsection{Two judgments and a suspended constraint store}
+
+The engine alternates between checking a proposed shape against an expected
+type and inferring the type of a neutral expression:
+\[
+ \G\judges e\Leftarrow T
+ \qquad\text{and}\qquad
+ \G\judges n\Rightarrow T.
+\]
+A neutral expression is typically a local variable or permitted constant
+applied to an argument spine, possibly followed by projections. These are
+search judgments; the actual resulting term is still checked by Lean.
+
+The expected type drives introductions. The head of an available term drives
+eliminations. A suspended constraint store records equations that cannot yet be
+resolved without a missing argument or instance. It is important not to
+interpret ``blocked'' as ``false.'' A rule that only increases the number of
+unconstrained metavariables should be charged a cost and postponed behind rules
+that expose structure.
+
+\subsection{Introduction rules}
+
+For a dependent function, introduce a rigid local parameter:
+\[
+ \frac{\G,x:A\judges e\Leftarrow B(x)}
+      {\G\judges (\lambda x.e)\Leftarrow \prod_{x:A}B(x)}.
+\]
+The binder retains its type, visibility, and instance status. A universe or
+type parameter belonging to the original theorem is a rigid parameter; the
+synthesizer is not allowed to specialize it to \code{Nat} merely because that
+makes the current example executable.
+
+For a dependent pair, create the witness hole before its dependent field:
+\[
+ \frac{\G\judges a\Leftarrow A\quad
+       \G\judges b\Leftarrow B(a)}
+      {\G\judges (a,b)\Leftarrow \sum_{x:A}B(x)}.
+\]
+Both holes remain coupled. A record constructor generalizes this rule: its
+fields are processed in the actual constructor telescope, including inherited
+fields and proof fields. Record synthesis must not assume that the displayed
+field order is a list of independent goals.
+
+For an inductive target $I\,\bar p\,\bar i$, inspect the environment's constructor
+information. Freshen the constructor's universe levels, instantiate its
+parameters, and unify its result with the target. The remaining fields become
+obligations in that same transaction. A constructor whose index equation is
+inconsistent can be rejected. A constructor whose equation is merely blocked
+must remain available, or be recorded as a bounded search omission rather than
+a proof of impossibility.
+
+Functions and records should not always be expanded immediately. An existing
+local function may solve the whole goal more cheaply than an eta expansion.
+Keep a cheap exact-term lane before decomposing. Conversely, a cheap inhabitant
+must not suppress later contract-sensitive alternatives. Introductory focusing
+is an ordering discipline; a claim that a rule is irrevocably safe needs to
+account for the whole contract and the chosen equivalence/cost notion.
+
+\subsection{Application-spine search}\label{sec:spines}
+
+For a candidate head $h$, do not enumerate complete argument tuples blindly.
+Use a demand-directed spine algorithm:
+\begin{Code}
+applyHead(h, expectedType, branch):
+  freshen all universe parameters of this occurrence of h
+  inspect the exact dependent telescope of typeOf(h)
+  enumerate admissible partial-application lengths lazily
+  create fresh argument holes in telescope order
+  constrain the instantiated result against expectedType
+  propagate assignments through argument types and local instances
+  discharge determined instance and proof arguments cheaply
+  suspend blocked constraints; prioritize informative arguments
+  yield the application and its entire coupled continuation
+\end{Code}
+
+Lean's \code{MVarId.apply} already provides much of the basic mechanism,
+including result matching, argument metavariables, and instance processing.
+The prototype uses its exact-unification configuration and requests
+\code{newGoals := .all}, rather than relying on a UI-oriented goal order that
+may hide dependent goals~\cite{lean-apply}. The production wrapper must also
+account for delayed metavariables, universe constraints, and obligations
+created by any later elaboration step. ``The tactic returned no goals'' is not
+the final acceptance test.
+
+A head may have a type such as
+\[
+ \prod_{A:\Type u}(x:A)\,
+ \prod_{B:A\to\Type v}(k:\prod_{a:A}B(a)),\ B(x).
+\]
+There is no meaningful global split into ``all type arguments first, then all
+value arguments.'' Instantiation follows the actual telescope. Solving $x$
+may constrain $A$; the expected result may constrain $B$; a class obligation
+may later determine an output parameter. All those assignments belong to one
+branch.
+
+Index providers by a conservative approximation to their result heads, arity,
+and binder shape, but include fallback buckets for variable-headed and
+reducible results. An index is allowed to return extra candidates. Omitting a
+candidate for speed is a heuristic restriction that must not contaminate a
+completeness claim. A small local context should be searched before the global
+inventory, without becoming an absolute restriction on the latter.
+
+\subsection{Higher-rank arguments and universes}
+
+A polymorphic callback is simply an argument whose type is itself a dependent
+function type. When the expected argument is
+\code{(A : Type u) -> A -> A}, introduction creates a rigid $A$ and then a rigid
+$x:A$; using $x$ completes that callback. A provider that accepts such a callback
+can therefore be applied without translating it to a monotype or inventing a
+new representation for rank two, three, or four.
+
+Each occurrence of a polymorphic global receives fresh level metavariables.
+The original query's universe parameters remain fixed. Two uses need not share
+a fresh level assignment merely because they share a declaration name, while
+correlations explicitly present in one application telescope must be preserved.
+The prototype's independent-$u$ and independent-$v$ callbacks test one instance
+of this distinction.
+
+Lean's universe discipline must remain in force. Treating a polymorphic type
+as an argument is not permission to identify \code{Type u} with an arbitrarily
+large universe or to make \code{Type} impredicative. \code{Prop} has a distinct
+impredicative role; nested quantification at \code{Type} still has its actual
+sort~\cite{lean-types}. Lean is also noncumulative: a type at one universe does not automatically
+inhabit every larger universe. An explicit lift is a typed construction, not
+a numeric relaxation of a level constraint. No fixed list of universe levels
+should appear in the semantic kernel of Leant2. A bounded list may be used in an explicitly
+heuristic instantiation proposal lane.
+
+Some type-valued holes remain genuinely underconstrained. Search them using
+expected-type information, subexpressions of the local/provider types,
+instantiation templates, and bounded enumeration of well-sorted type
+expressions. Avoid committing every such hole to the first visible type.
+Return an explicit request for a sketch annotation only as an interactive aid;
+ordinary bounded search can still return an honest unknown.
+
+\subsection{Unification is a service, not a completeness oracle}
+
+Direct use of Lean removes the need to reimplement its definitional equality,
+but does not make higher-order inference complete. The engine should classify
+constraints into deterministic progress, blocked progress, speculative
+assignment, and mismatch. A failed unification attempt is usually an
+inapplicable rule alternative, not a theorem that no inhabitant exists.
+
+In the first implementation, use Lean's standard unifier transactionally and
+revisit alternative heads, argument orders where permitted, and explicit
+instantiation hints. Later, add a bounded higher-order proposal layer:
+pattern-like metavariable applications are solved first; remaining flexible
+heads may be instantiated with small lambda/projection/application templates.
+Every proposal returns to Lean for checking. This is preferable to building a
+second, subtly incompatible conversion procedure.
+
+Opaque constants, casts, and reducibility settings require particular care.
+Use weak-head reduction to expose the structure needed by the current rule;
+do not repeatedly normalize every expression in the environment. A reduction
+cache key includes its transparency mode and relevant metavariable assignments.
+Forcing an opaque provider to unfold is a policy decision, not a harmless
+normalization step.
+
+\subsection{Type classes and exact dictionary identity}
+
+Class synthesis should use Lean's existing local-instance and registered-instance
+semantics. Delayed obligations, output parameters, and instance priorities are
+not replaced with Haskell-style class matching. Lean's instance search is a
+specialized procedure with its own handling of such information~\cite{lean-instances}.
+A wrapper should expose blocked obligations to the scheduler and retry them
+when the required parameters become determined.
+
+Two values of type \code{Payload Nat} need not contain the same payload. A
+contract asking for the second dictionary's field cannot be satisfied by
+silently resolving a different dictionary of the same class type. Once a
+provider occurrence contains explicit evidence, keep that exact term attached
+to the occurrence. This applies especially to operation dictionaries and their
+law records: associativity of one multiplication does not certify another
+multiplication merely because both have type $A\to A\to A$.
+
+Instances are also a search-space policy. The normal mode should respect the
+instances Lean would synthesize at that program point. An explicitly requested
+evidence-enumeration mode may consider other legal dictionaries, but the emitted
+term must name them and the contract must mention the same selections. Changes
+to local instance scope invalidate relevant cached applications and proofs.
+
+\section{Search scheduling, focusing, and cost}\label{sec:scheduling}
+
+\subsection{A portfolio with a fair reference lane}
+
+Use a weighted portfolio rather than one global best-first queue. Suitable
+lanes are exact/local reuse, focused introductions and spines, indexed library
+composition, recursor schemas, contract-guided sketches, and a restricted
+exhaustive reference enumerator. Proof workers are a shared service with their
+own bounded tasks; they are not an unlimited final filter.
+
+Each lane exposes a resumable cursor. A scheduler grants a bounded work quantum,
+not ``run until the next candidate appears.'' Otherwise a lane that produces
+nothing can monopolize the request while its sibling appears fair only on
+paper. Charge successful steps, failed matches, solver calls, duplicate
+candidates, and cancellations that have consumed work. Do not refund computation
+because its result was unhelpful.
+
+Within a branch, choose an unblocked obligation with high constraint information
+and few plausible alternatives. A known finite constructor choice, a nearly
+resolved index equality, or a proof about a completed small expression can be
+more informative than an unconstrained large function. Apply an aging rule so
+that informative-first does not become starvation of a necessary hard goal.
+
+The reference lane uses increasing cost bounds over an explicitly defined
+finite branching grammar. It must retain all alternatives except those removed
+by a valid equivalence or refutation argument. Beam truncation and aggressive
+provider retrieval can be used in fast lanes, but cannot be described as fair
+or complete. The report should say which lane found a result and which
+restrictions were active.
+
+\subsection{What completeness can reasonably mean}
+
+\begin{proposition}[Relative bounded-search coverage]
+Fix an environment, a finite branching rule grammar, a finite cost bound, strictly positive cost for every generative step, and a
+terminating applicability/checking procedure for each bounded alternative.
+Administrative zero-cost steps are required to terminate.
+If the scheduler eventually visits every alternative within that bound and
+only removes branches with sound no-completion certificates, every successful
+leaf in that bounded search graph is eventually visited.
+\end{proposition}
+\begin{proof}
+There are finitely many alternatives under the hypotheses. A successful leaf
+has a finite path from the root. A sound no-completion certificate cannot remove
+any prefix of that path. Fair visitation therefore reaches every edge of the
+path and then the leaf.
+\end{proof}
+
+The theorem is intentionally about the declared search graph. It does not claim
+that Lean's unifier enumerates every possible higher-order solution, that the
+chosen recursion schemas express every total function, or that an SMT solver
+terminates on every query. Increasing bounds yields a useful reference
+semi-search only for alternatives that remain effectively enumerable and are
+actually included. General proof search can be added as a further lane without
+promoting its timeouts to negative evidence.
+
+\subsection{Cost is multi-objective}
+
+Use a structured cost, for example
+\[
+ (\text{policy violations},\ \text{semantic runtime cost},\
+   \text{source complexity},\ \text{proof effort},\ \text{search cost}).
+\]
+The first component is an admission constraint, not a large numeric penalty
+that can be outweighed by other terms. Runtime estimates may be unknown and
+must identify their cost model. Source complexity counts constructor, branch,
+application, and recursive-schema structure rather than line breaks. Proof
+size can matter operationally but should not force the engine to choose an
+asymptotically poor program simply because its first proof is shorter.
+
+Different default policies are useful: first verified result for interactive
+work; a small Pareto frontier for exploration; and bounded optimization for
+code generation. A result is ``best within the explored set,'' unless an
+optimality certificate says otherwise. Preserving alternatives matters both
+for behavior and for optimization: the smallest fold encoding of reverse is
+not necessarily the fastest implementation.
+
+\subsection{Why not just call Aesop?}
+
+Aesop supplies a mature extensible proof-search model with normalization,
+indexed rules, and safe versus backtracking choices~\cite{aesop}. Leant2 should
+reuse it for suitable proof obligations and borrow its engineering ideas.
+However, a rule safe for proving that a type has \emph{some} inhabitant need not
+be safe for enumerating computationally distinct inhabitants constrained by a
+later obligation. The distinction in Invariant~\ref{inv:continuation} is the
+reason to retain a synthesis-specific controller.
+
+Similarly, \code{grind}, arithmetic tactics, and rewriting are valuable proof
+services. None independently supplies the entire program grammar, recursive
+invariants, example propagation, or end-to-end resource policy. Integration
+means converting a completed tactic result into an exact proof term, not
+trusting a solver's success flag~\cite{lean-grind}.

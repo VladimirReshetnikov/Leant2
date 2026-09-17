@@ -1,0 +1,123 @@
+\section{Recursive synthesis as construction of typed algebras}
+\label{sec:recursion}
+\subsection{The order of attack}
+Recursive synthesis should have three progressively broader routes: reuse an existing iterator or combinator; construct a structural recursor application; then synthesize a well-founded recursion plan. This order is motivated by search size and certificate reuse, not by a restriction that all interesting programs must be folds.
+
+Lean already translates structural recursion into recursor-based definitions and supports well-founded recursion justified by decreasing relations. Structural definitions generally offer stronger definitional computation, while well-founded definitions can require propositional unfolding equations. Leant2 should exploit those existing construction and checking paths rather than invent an unchecked recursive term constructor.\cite{recursion}
+
+The untrusted search implementation itself may use \code{partial def}, as the prototype does. That is different from allowing a generated implementation to bypass the user's totality and behavioral requirements. A partial search routine proposes ordinary checked terms; it is not inserted into the computational result.
+
+\subsection{Discover the recursion carrier from the remaining telescope}
+Suppose the desired function has the shape
+\[
+ \mathrm{List}\,\alpha\to\mathrm{Nat}\to\mathrm{Option}\,\alpha.
+\]
+A list fold with carrier $\mathrm{Option}\,\alpha$ is too restrictive for general indexing. A fold with carrier
+\[
+ C=\mathrm{Nat}\to\mathrm{Option}\,\alpha
+\]
+is appropriate. Its step receives an element and a function describing lookup in the tail:
+\begin{lstlisting}[caption={A reference fold template for zero-based lookup; proposed search can discover the carrier from the target telescope.}]
+fun xs =>
+  List.foldr
+    (fun a smaller i =>
+      match i with
+      | 0 => some a
+      | n + 1 => smaller n)
+    (fun _ => none)
+    xs
+\end{lstlisting}
+This displayed template is an explanatory construction, not a claim that the attached prototype discovers it. It illustrates a specific algorithmic improvement over searching only first-order fold results: group the residual argument telescope into the carrier before instantiating the fold provider. Result-type unification then propagates that carrier into the base and step obligations.
+
+Maintain binder provenance even after eager introductions. When considering recursion on \code{xs}, the engine must be able to reabstract \code{i}; otherwise it has only an induction hypothesis about the original fixed index, which cannot be used at \code{n} in the successor branch. Generalization therefore includes more than the transitive \emph{type} dependency closure. It must also consider arguments whose values change across recursive calls.
+
+A concrete carrier-discovery policy is: first reabstract all remaining non-fixed arguments in their original order; then try a small family of subsets suggested by the specification and by candidate recursive calls. Include mandatory type dependencies whenever a selected binder requires them. Bound the number of subsets and retain the general plan as a fallback. Do not guess carriers by enumerating unrelated global types.
+
+\subsection{Generate structural plans from inductive metadata}
+For each eligible input, obtain its actual recursor type and inspect the constructor methods. The general algorithm is:
+\begin{lstlisting}[language={},caption={Structural-plan generation. All method holes retain their native dependent types.}]
+for major in eligible_inductive_inputs:
+  for generalization in telescope_plans(major, target, specification):
+    motive := abstract_target_and_contract(major, generalization)
+    recursor := select_native_recursor(major, motive.sort)
+    plan := instantiate_recursor(recursor, motive, parameters, major)
+    expose method holes and native induction hypotheses
+    schedule search over all methods and shared constraints
+    if a complete candidate survives:
+      submit the reconstructed recursor term to publication checking
+\end{lstlisting}
+In a constructor branch, recursive hypotheses are introduced by the recursor, with the precise types dictated by the constructor's recursive fields. For a branching tree there can be several; for a function-valued recursive field there can be a dependent family of hypotheses. Do not flatten all of these into an untyped ``smaller result'' array.
+
+The motive can depend on indices and the major value itself. A function producing \code{Vec A n}, for example, has a result family indexed by the natural-number argument. The reference experiment's \code{vectorReplicate} uses a hand-selected induction on \code{n}; the synthesizer fills the base and successor cases under their native types. A full recursion planner should automate exactly that template choice and branch formation.
+
+Repeated case analysis is not a substitute for recursion. Bounded unfolding can satisfy examples up to a certain input size without yielding a generally correct recursive implementation. The grammar must mark whether a plan contains a genuine recursor, a bounded unrolling, or a nonrecursive term, and the verifier must check the corresponding actual definition.
+
+\subsection{Construct the output and invariant together}
+Let $D$ be an inductive input type, $B(x)$ the output family, and $R(x,y)$ the required behavior. Rather than first guessing
+\[
+ f:\Pi x:D,B(x)
+\]
+and later attempting an unrelated global proof, construct an algebra for
+\begin{equation}\label{eq:certcarrier}
+ C(x)=\{y:B(x)\mid R(x,y)\}.
+\end{equation}
+Each induction hypothesis then carries a smaller output and its correct local specification. The step can use both. For an additional argument telescope, place that telescope inside $C$ in the appropriate dependent order.
+
+Here is the exact recursive construction checked in \code{Certificates.lean}:
+\begin{lstlisting}[caption={Checked reference construction, authored manually. The implementation and proof follow the same recursion.}]
+def certifiedAppend {α : Type u} (ys : List α) :
+    (xs : List α) → {zs : List α // zs = xs ++ ys}
+  | [] => ⟨ys, rfl⟩
+  | x :: xs =>
+    let tail := certifiedAppend ys xs
+    ⟨x :: tail.val, congrArg (List.cons x) tail.property⟩
+\end{lstlisting}
+The significant search object is the branch algebra, not the final text. In the cons branch, the target equation suggests the outer constructor, and the induction hypothesis supplies the needed equation for the tail. The computational hole and the proof hole constrain one another immediately.
+
+\begin{proposition}[Certificate-algebra composition]
+Suppose a native recursor has motive $C$ from \eqref{eq:certcarrier}, and all of its method arguments are checked terms of the method types. The resulting recursor application supplies an output satisfying $R$ for every input in its domain.
+\end{proposition}
+\begin{proof}
+The recursor application is a term of $\Pi x:D,C(x)$ by its type. At each $x$, the first projection has type $B(x)$ and the second projection proves $R$ of that first projection. No separate induction on the generated source text is required. The claim is conditional on using the actual checked recursor and method terms, not on trusting the plan generator.
+\end{proof}
+
+There are important limits. A specification relating several recursive calls, prescribing an accumulator invariant, or comparing several outputs may not fit a useful motive without strengthening it. Treat invariant strengthening as another bounded synthesis problem: propose a generalized relation from library lemmas and symbolic execution, then require the base and step obligations to be proved. Do not add an invented invariant as an axiom.
+
+\subsection{Well-founded plans and termination evidence}
+For a well-founded relation $r$ on the input domain, a recursion step has access to a hypothesis of the form
+\[
+ \mathit{rec}:\forall y,\ r(y,x)\to C(y).
+\]
+This is a precise interface for synthesizing recursive calls: a proposed call at $y$ creates a proof obligation $r(y,x)$. The function under construction is not simply offered as an unrestricted provider of type $\forall y,C(y)$.
+
+The first measure grammar should include natural-number arguments, lengths, sizes, bounded differences, lexicographic combinations, and registered domain-specific measures. Each candidate relation needs a well-foundedness theorem. An arbitrary integer order is not a well-founded measure just because a sampled execution decreases. Under a branch guard, arithmetic tactics may prove that an index-distance measure decreases; absent the guard, the same proposed recursive call may be invalid.
+
+Synthesize in two phases within one revisitable plan: propose a computational call structure and measure, then discharge each local decrease obligation and the behavior step. Failure to prove a decrease should return to the measure or call choice, not be converted into a declaration of divergence. The final native definition or explicit \code{WellFounded.fix} application remains subject to normal checking.
+
+A useful implementation boundary is to retain a \code{TerminationPlan} containing the chosen relation expression, its well-foundedness proof, and each recursive occurrence's argument and decrease evidence. The expression lowerer constructs the native recursion term from this object. Source rendering may use \code{termination_by}, but the accepted term and evidence are the authority.
+
+\subsection{Mutual, nested, and effectful recursion}
+The same plan structure can later support mutual recursion by working over a tagged dependent sum of the input domains or by delegating a mutually recursive declaration plan to Lean's elaborator. Nested datatypes and course-of-values recursion should use their actual generated recursion principles. These extensions require more elaborate plan generation, not a new acceptance boundary.
+
+For effectful code, a type such as \code{IO A} says almost nothing about the external behavior. Use a registered operational or Hoare-style specification, identify the modeled effects, and require the appropriate verification conditions. Merely synthesizing a term of the monadic type is type-only synthesis. Similarly, partial-fixpoint and coinductive constructions need their own semantic profiles; they must not be admitted into a total-function benchmark without changing the stated contract. Lean's modern recursion facilities include these distinct mechanisms, but support for them is a later extension of this design.\cite{recursion}
+
+\section{Proof search as a cooperating subsystem}
+\label{sec:proofs}
+\subsection{A proof portfolio, not one monolithic tactic}
+Use several proof-producing operations behind a small adapter: reflexivity and local assumptions; simplification with an explicit lemma set; arithmetic procedures such as \code{omega}; congruence and instantiation through \code{grind}; and a configurable general proof-search lane such as Aesop. Bit-vector goals can be routed to a verified decision procedure available in the pinned toolchain. These tools are components, not the definition of the Leant2 search strategy. Lean's documented \code{grind} interface supplies an existing extensible automation path.\cite{grind,aesop}
+
+Each invocation has an obligation, a branch checkpoint, an allowed lemma environment, a budget, and a result classification. A tactic that solves a proof goal may instantiate computational metavariables appearing in it. Such assignments must return as part of the branch's construction choice. A ``proof-only'' lane that secretly fixes a data witness can otherwise reintroduce the same greedy commitment bug that continuation search was designed to avoid.
+
+An inexpensive first policy is to delay heavyweight tactics until computational metavariables in the goal are either assigned or explicitly exposed as permitted witness choices. Use symbolic simplification earlier when it can reveal constraints such as $n=b$ without choosing a large search proof. Preserve equations that guide construction, rather than normalizing away all provenance needed for explanation.
+
+\subsection{Specification decomposition and premise selection}
+For a conjunction, create linked obligations but keep common computational parameters shared. For a universal property, introduce symbolic inputs and retain their relation to example generators. For a conditional property, place the precondition in the proof context and in the concrete test-input admissibility check. For an existential property of an already fixed result, witness synthesis becomes an ordinary dependent construction problem.
+
+A library theorem can serve as a sufficient contract for a provider. Applying it first may convert a global behavioral problem into local argument obligations. This backward proof search and forward program construction should meet at the same provider occurrence. The proof must refer to the selected type arguments, dictionary values, and executable function, not to a theorem about a superficially similar overload.
+
+For example, synthesizing a sorting routine from a comparison interface requires whatever order laws the chosen theorem assumes. The mere presence of a comparator does not establish transitivity or totality. Expose those laws as actual premises or choose a weaker specification. This rule prevents a common synthesis error: treating a familiar class name as a mathematical guarantee not present in its Lean type.
+
+\subsection{Proof cost, sharing, and output quality}
+Track program cost and certificate cost separately. A short program whose proof expands to an enormous decision trace may be less desirable than a slightly longer implementation with a small reusable lemma. Conversely, penalizing all proof terms by raw size can reject good proof-erased implementations for the wrong reason.
+
+After finding a solution, perform checked simplification: eliminate unnecessary lets, replace redundant casts with proved equalities, and reuse lemmas. Recheck the simplified term and specification against the original query. Proof sharing through named auxiliaries is valid only when those auxiliaries are included in the same dependency audit. A small printed term referring to an enormous helper is not a genuinely small artifact unless the cost model explicitly counts library reuse that way.

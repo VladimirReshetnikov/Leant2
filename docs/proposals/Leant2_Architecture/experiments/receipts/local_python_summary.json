@@ -1,0 +1,24 @@
+{
+  "execution": "local Python standard library",
+  "date": "2026-09-17",
+  "summary": {
+    "schema": "f [] = c; f (x::xs) = a*x + b*f xs + d",
+    "parameter_values": [
+      0,
+      1,
+      2
+    ],
+    "grammar_size": 81,
+    "tasks": 27,
+    "solved": 27,
+    "certificate_attempts": 105,
+    "baseline_certificate_attempts": 1104,
+    "counterexamples_replayed": 78,
+    "maximum_counterexamples_per_task": 4,
+    "exhaustive_candidate_spec_pairs": 2187,
+    "valid_pairs": 31,
+    "invalid_pairs_with_witnesses": 2156,
+    "holdout_inputs_per_solution": 1093,
+    "holdout_evaluations": 29511
+  }
+}

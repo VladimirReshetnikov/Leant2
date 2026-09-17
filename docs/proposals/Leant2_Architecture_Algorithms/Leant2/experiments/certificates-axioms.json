@@ -1,0 +1,8 @@
+{
+  "Leant2Certificates.noPolymorphicMap": [],
+  "Leant2Certificates.safePruneAt": [],
+  "Leant2Certificates.finiteValidation": [],
+  "Leant2Certificates.loweringCorrect": [
+    "propext"
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "receipt_format": "normalized transcription of observed AXLE tool response; not raw HTTP archive",
+  "date": "2026-09-17",
+  "transport": "Wolfram URLRead -> AXLE /api/v1/check",
+  "environment": "lean-4.34.0",
+  "ignore_imports": false,
+  "theorems_only": false,
+  "executor_commit": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+  "executor_docker_image": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+  "mathlib_commit": "not reported by service; not independently identified",
+  "local_lean_compiler": false,
+  "source": "prototype/Combined.lean",
+  "request_id": "ca4a866a-9382-4e0d-aa57-bae130d2f51c",
+  "same_content_modulo_final_whitespace": true,
+  "okay": true,
+  "failed_declarations": [],
+  "errors": [],
+  "axioms": {
+    "Leant2Prototype.identity": [],
+    "Leant2Prototype.compose": [],
+    "Leant2Prototype.sComb": [],
+    "Leant2Prototype.swap": [],
+    "Leant2Prototype.dependentApply": [],
+    "Leant2Prototype.sigmaPack": [],
+    "Leant2Prototype.rankTwo": [],
+    "Leant2Prototype.successorSpec": [],
+    "Leant2Prototype.chooseOne": [],
+    "Leant2Prototype.identity_behavior": [],
+    "Leant2Prototype.successor_behavior": [],
+    "Leant2Prototype.vcons": [],
+    "Leant2Prototype.vecMap": [],
+    "Leant2Prototype.vecMap_behavior": [
+      "propext"
+    ],
+    "Leant2Prototype.transport": [],
+    "Leant2Prototype.inheritedDefault": [],
+    "Leant2Prototype.chooseRight": [],
+    "Leant2Prototype.rankTwoSpec": [],
+    "Leant2Prototype.higherRank": [],
+    "Leant2Prototype.noPolyCast": []
+  },
+  "evaluation_outputs": [
+    13,
+    1,
+    "4.34.0",
+    9,
+    [
+      3,
+      4
+    ]
+  ],
+  "lean_warnings": [
+    "Unused tactic linter for the fail_if_success negative harness",
+    "Unused-variable linter for left, a deliberately available alternative payload"
+  ],
+  "service_warnings": [
+    "Advisory: Mathlib.Tactic missing from import Lean header",
+    "Advisory: nondefault header may be slower; imports were deliberately not overridden"
+  ],
+  "server_timings_ms": {
+    "parse": 1992,
+    "total": 1997,
+    "total_request": 2142
+  },
+  "status": "accepted under stated axiom policy; not independent external-checker validation"
+}

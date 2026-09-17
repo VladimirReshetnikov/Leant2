@@ -1,0 +1,128 @@
+{
+  "prepared_on": "2026-09-17",
+  "scope": "Selected source/documentation review, not an exhaustive audit of either repository.",
+  "repositories": [
+    {
+      "name": "Leant",
+      "commit": "6bf05ad78c467989e68290f2d08bbed40802d485",
+      "url": "https://github.com/VladimirReshetnikov/Leant",
+      "vendored_djex_short_revision_as_documented": "e237e866"
+    },
+    {
+      "name": "Djex",
+      "commit": "e8778f4ebd63e1f9b9b410fa4de8d14a8a04c9e5",
+      "url": "https://github.com/VladimirReshetnikov/Djex"
+    }
+  ],
+  "lean_experiments": {
+    "service_environment": "lean-4.34.0",
+    "reported_version": "4.34.0",
+    "transport": "AXLE via Wolfram URLRead",
+    "independent_local_replay": false
+  },
+  "references": [
+    {
+      "key": "leant-fragment",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant/blob/6bf05ad78c467989e68290f2d08bbed40802d485/src/Leant/Synth/Fragment.hs"
+      ]
+    },
+    {
+      "key": "leant-internals",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant/blob/6bf05ad78c467989e68290f2d08bbed40802d485/docs/synth-internals.md"
+      ]
+    },
+    {
+      "key": "leant-behavior",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant/blob/6bf05ad78c467989e68290f2d08bbed40802d485/docs/behavioral-synthesis.md"
+      ]
+    },
+    {
+      "key": "djex-architecture",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Djex/blob/e8778f4ebd63e1f9b9b410fa4de8d14a8a04c9e5/docs/architecture.md"
+      ]
+    },
+    {
+      "key": "rewrite-analysis",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant/blob/6bf05ad78c467989e68290f2d08bbed40802d485/docs/Leant_Djex_Lean4_Rewrite_Analysis/Leant_Djex_Lean4_Rewrite_Analysis.tex"
+      ]
+    },
+    {
+      "key": "indexing-report",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant/blob/6bf05ad78c467989e68290f2d08bbed40802d485/docs/reports/2026-09-14-indexing-composition-diagnostics.md"
+      ]
+    },
+    {
+      "key": "lean-universes",
+      "urls": [
+        "https://lean-lang.org/doc/reference/latest/The-Type-System/Universes/"
+      ]
+    },
+    {
+      "key": "lean-inductives",
+      "urls": [
+        "https://lean-lang.org/doc/reference/latest/The-Type-System/Inductive-Types/"
+      ]
+    },
+    {
+      "key": "lean-recursion",
+      "urls": [
+        "https://lean-lang.org/doc/reference/latest/Definitions/Recursive-Definitions/"
+      ]
+    },
+    {
+      "key": "lean-validation",
+      "urls": [
+        "https://lean-lang.org/doc/reference/latest/ValidatingProofs/"
+      ]
+    },
+    {
+      "key": "lean-runtime",
+      "urls": [
+        "https://lean-lang.org/doc/reference/latest/Run-Time-Code/"
+      ]
+    },
+    {
+      "key": "synquid",
+      "urls": [
+        "https://arxiv.org/abs/1510.08419"
+      ]
+    },
+    {
+      "key": "osera",
+      "urls": [
+        "https://arxiv.org/abs/1907.03105"
+      ]
+    },
+    {
+      "key": "frankle",
+      "urls": [
+        "https://arxiv.org/abs/1510.08121"
+      ]
+    },
+    {
+      "key": "lubin",
+      "urls": [
+        "https://arxiv.org/abs/1911.00583"
+      ]
+    },
+    {
+      "key": "scrybe",
+      "urls": [
+        "https://arxiv.org/abs/2210.13873"
+      ]
+    },
+    {
+      "key": "aesop",
+      "urls": [
+        "https://doi.org/10.1145/3573105.3575671"
+      ]
+    }
+  ],
+  "note": "Latest-reference documentation URLs are access-dated, not immutable source snapshots. See article citations and experimental receipts for distinct revision boundaries."
+}

@@ -1,0 +1,249 @@
+\section{Focused native construction}
+\label{sec:focused}
+\subsection{Rules, priorities, and side conditions}
+The core search engine is bidirectional. It constructs introduction forms when the target determines useful structure, and synthesizes elimination forms from local or retrieved providers. Every rule returns a collection of new obligations together with a continuation that rebuilds the parent expression. The following are the main rules; the word ``try'' always means a branch-local, bounded transaction.
+
+\begin{longtable}{@{}L{0.18\textwidth}L{0.39\textwidth}L{0.36\textwidth}@{}}
+\toprule
+Rule & Construction & Required discipline\\\midrule\endhead
+Pi introduction & For target $\Pi x:A.B$, introduce $x:A$ and solve $B$. & Preserve binder information, dependencies, and universe parameters.\\
+Exact local & Use a local term whose inferred type is definitionally equal to the target. & Equality checks can assign only branch-owned unknowns.\\
+Provider application & Open a full dependent application spine and constrain its result by the target. & Retain every argument and all shared constraints.\\
+Constructor & Read constructors from the target's inductive metadata and try compatible result indices. & Constructor and field choices remain backtrackable.\\
+Projection & Apply a field projection to a known structure value. & Dependent field types are instantiated with that exact value.\\
+Reflexivity & Close an equality whose sides are definitionally equal. & Freeze candidate ownership before issuing proof evidence.\\
+Transport & Use a known equality to move a term or goal between propositionally equal types. & Build a checked transport; do not identify non-definitional types.\\
+Case split & Eliminate a selected local inductive value using an appropriate motive. & Respect dependent locals, index equalities, and elimination restrictions.\\
+Recursion sketch & Instantiate a registered structural or well-founded template. & Every recursive call has a justified smaller argument or decrease proof.\\
+Proof backend & Run a bounded proof-producing tactic on a proof obligation. & A closed result is required; partial progress is not certification.\\
+\bottomrule
+\end{longtable}
+
+Lambda introduction is the default for a determined function target, because it exposes the arguments needed to construct a body. This is a focusing policy, not a license to mark all introduction rules irreversible. Dependent-pair witnesses, disjunction alternatives, and data constructors make semantic choices. Even constructor fields that look independent may later occur in the contract.
+
+A completeness-oriented lane can use an explicitly defined long-form grammar in which function introductions are mandatory. A production lane may additionally try direct provider reuse before eta expansion to obtain smaller source terms. The guarantee belongs to the declared grammar and normalization assumptions, not to the heuristic label ``safe.''
+
+\subsection{Normalization is controlled work}
+Weak-head normalization usually reveals whether a target is a function, a reducible alias, or an inductive family. It should be memoized within the relevant environment and assignment version. Deeper simplification is demand-driven: unfold the head needed for a rule; simplify an index equation; reduce a closed sample; or expose a contract's outer connective.
+
+Unfolding every definition at every node destroys abstraction and can make large proof terms or recursive reductions dominate search. Conversely, never unfolding loses straightforward adapters between definitionally equal types. Use a small ordered transparency ladder and a per-operation budget. A failure at one transparency level can schedule an escalation; it is not a permanent incompatibility certificate.
+
+The implementation must charge normalization, unification, and elaboration work to the request even if the branch is later rolled back. Restoring a metavariable context is not a refund of computational work. This is particularly important when a malicious or simply unfortunate goal repeatedly triggers expensive reduction before failing.
+
+\subsection{Application search without premature argument choices}
+For a candidate provider, result-directed matching often determines some type arguments and indices before any value search is necessary. Build the full spine, constrain the result, and classify the resulting holes. Resolve arguments whose values are uniquely determined by unification; attempt local instance resolution when its parameters are ready; then schedule remaining computational arguments and proof obligations according to dependencies.
+
+For example, a provider
+\[
+  \mathsf{get}:\Pi(n:\mathbb N).\mathsf{Vec}\ A\ n\to\mathsf{Fin}\ n\to A
+\]
+should share the same $n$ between the vector and bounded index. Selecting a vector at length $m$ must constrain the index to $\mathsf{Fin}\ m$. A backend that separately synthesizes ``some vector'' and ``some bounded natural'' and then asks the renderer to repair the mismatch has discarded the principal benefit of native search.
+
+If application creates a proof precondition, it becomes an ordinary proof hole linked to the arguments that determine it. Arguments whose proof obligations are difficult can be deprioritized; they cannot be accepted just because their erased runtime behavior looks plausible.
+
+\subsection{When proof automation helps and when it does not}
+Use existing proof-producing automation for proof obligations instead of rebuilding every arithmetic or logical decision procedure inside Leant2. A first portfolio can include core simplification, reflexivity, constructor reasoning, \code{decide}, arithmetic normalization, and project-enabled tactics such as \code{aesop}, \code{omega}, and \code{grind}. Aesop's documented rule-based search is a natural component, while Lean's current \code{grind} interface provides another proof-search route~\cite{aesop,grind}.
+
+These backends do not replace the outer program search. A theorem prover may solve a contract after the candidate is fixed, but it usually does not expose the precise program alternatives the user wants ranked. Its successful proof is a returned artifact; its failure merely means that backend did not close the goal under its budget. In particular, logical proof irrelevance does not justify erasing the computational choices that determine the proposition being proved.
+
+A backend adapter has the contract
+\[
+ (\G,P,b)\longmapsto
+ \mathsf{Proved}(p)\;|\;\mathsf{Refuted}(q)\;|\;\mathsf{Unknown}(r),
+\]
+where $p:P$ and $q:P\to\mathsf{False}$ are checked in the same frozen context. Most tactics implement only the first and third outcomes. Progress states can be retained for subsequent search, but they do not satisfy \code{Proved}.
+
+\section{Dependent elimination and indexed data}
+\label{sec:dependent}
+\subsection{Construct the motive from the whole telescope}
+Suppose a local value $x:I\ \vec p\ \vec i$ occurs in the target and in the types of later locals. A case-split rule cannot merely replace $x$ by each constructor in the printed goal. It must preserve the dependent telescope and derive a legal elimination motive.
+
+The proposed algorithm first computes the transitive dependency closure of $x$: later local declarations whose types or values depend on $x$, on its indices, or on already selected dependent locals. It generalizes the needed declarations into the motive, retaining their order. It then invokes Lean's dependent elimination machinery in a sandboxed state, rather than inventing constructor equations by textual substitution. The generated branch contexts are read back as exact local contexts. Constructor index constraints are solved by definitional equality or by explicit equality reasoning, and branch programs are synthesized under those refined contexts.
+
+Finally, the parent term is rebuilt through the checked eliminator or an elaborated pattern-match plan. If generalization produces an excessively complex motive, the rule may decline or enumerate a bounded alternative. Incorrectly generalizing less is not an admissible shortcut.
+
+\subsection{Impossible branches require evidence}
+An indexed constructor can be inapplicable because its result indices cannot equal the scrutinee's indices. For a vector known to have successor length, the nil branch is impossible. The elimination machinery may discharge it using equality or no-confusion principles. A failed unification attempt by a heuristic is not, by itself, a proof that the branch is impossible.
+
+This distinction matters especially when indices are symbolic expressions. Two index expressions may be propositionally equal even when reduction alone does not identify them. Conversely, a solver's unsatisfiable answer about an approximation of the indices is not sufficient unless its encoding and reconstruction are justified. Leant2 should record whether each eliminated branch was removed by a kernel-checked contradiction, by a trusted exact fragment theorem, or merely omitted by a heuristic lane. Only the first two can support an exact coverage claim.
+
+\subsection{Equality transport is an explicit search action}
+If $h:a=b$ and $x:\beta(a)$ are available, a term of $\beta(b)$ is constructed by equality elimination. The target is not necessarily definitionally equal to $\beta(a)$. A transport rule can try relevant equalities in either orientation, with a small cost that discourages unnecessary casts.
+
+A production implementation should maintain a proof-producing equality graph for relevant indices and dependent arguments. Paths carry equality proofs, not just union--find representatives. When a path is used to change a type, the corresponding proof is inserted into a checked transport. Congruence closure may help discover a path, but dependent congruence sometimes requires a heterogeneous equality or an additional transport. Restrict the first implementation to cases it can reconstruct explicitly, and return an unknown result outside them.
+
+Rewriting a term for presentation is also different from proving it equal to another term. Only definitional equality, or an explicit equality proof with a correct transport of the contract, justifies reusing evidence across the rewrite.
+
+\subsection{Elimination restrictions are part of the language}
+A native synthesizer must distinguish propositions from computational data. An existential proof in \code{Prop} is not generally a permission to extract its witness into arbitrary data. Likewise, \code{Nonempty alpha} is not interchangeable with a supplied value of \code{alpha} in an executable constructive search. Any use of classical choice must be explicit in the policy and reflected in the dependency report.
+
+Quotients present a different boundary. A quotient-lift construction requires proof that the proposed function respects the quotient relation. It is not ordinary pattern matching on a hidden representative. The appropriate Leant2 plugin therefore creates both the function-body holes and the compatibility-proof hole, retaining their dependency. Indexed inductives, proposition elimination, quotient lifting, and universe-polymorphic elimination should have distinct acceptance tests rather than being grouped under a vague ``dependent types supported'' label~\cite{typesystem}.
+
+\subsection{Worked indexed-constructor trace}
+For
+\[
+  A\to\mathsf{Vec}\ A\ n\to\mathsf{Vec}\ A\ (n+1),
+\]
+Pi introduction exposes $a:A$ and $xs:\mathsf{Vec}\ A\ n$. The result-head index retrieves the vector constructors. Trying nil fails to produce a compatible result. Trying cons creates a head hole of type $A$ and a tail hole of type $\mathsf{Vec}\ A\ n$, with the constructor's implicit index tied to the target. Local reuse solves them with $a$ and $xs$.
+
+For the more interesting result $\mathsf{Vec}\ B\ n$ from a function $A\to B$ and an input vector, constructors alone are insufficient when $n$ is abstract. A case or recursive template exposes the index. In the nil branch, $n$ refines to zero and nil is available. In the cons branch, $n$ refines to a successor and the smaller recursive result supplies the tail. This is the intended integration between dependent elimination and structural synthesis.
+
+\section{Recursive program synthesis}
+\label{sec:recursion}
+\subsection{A ladder of recursion methods}
+The safest and most efficient first attempt is library reuse: map, fold, traversals, recursors, and specialized verified combinators. If no suitable composition is found, synthesize a registered structural template. Only later try generalized or well-founded recursion. The search should avoid admitting the desired function as an unrestricted provider of its own type; that produces circular terms rather than terminating programs.
+
+A recursion descriptor records the function telescope, selected decreasing arguments, admitted recursive-call forms, result motive, generalized parameters, and the termination evidence needed by each call. Each occurrence of a recursive call is a restricted capability: it can be applied only with arguments whose decrease or structural-subterm relation is justified in that branch.
+
+For the initial list descriptor, the calls admitted under a cons branch are calls on the tail, with unchanged fixed parameters and explicitly generalized accumulator parameters. For trees, calls are on immediate recursive fields. For vectors, the recursive field carries both a smaller structure and its refined length index. Mutual inductives require a descriptor covering the entire mutually recursive family, not independent invented calls between arbitrary result types.
+
+\subsection{Generate programs and induction obligations together}
+For a template with clauses $e_1,\ldots,e_k$, the system creates computational holes for the clause bodies and proof obligations for their contracts. The induction hypothesis is available only for the recursively defined smaller computations licensed by the template. It is not an axiom asserting the full contract for every input.
+
+A useful implementation is a two-pass checked template. First construct a structurally recursive function with explicit body holes. After those holes are completed and the function passes Lean's termination and compilation checks, generate a theorem with the matching induction principle. Clause-specific summary constraints can guide the first pass, but the completed second pass proves the original contract. An alternative interleaved implementation is possible, provided the logical induction hypotheses and computational recursive calls remain correctly scoped and the final declarations are closed and checked.
+
+The prototype uses a deliberately narrower form of this method: the vector pattern-match skeleton and smaller recursive call are supplied by hand, while the branch bodies are synthesized. Its behavior theorem is also supplied and checked. It is evidence for the native branch interface, not evidence that automatic recursion-scheme discovery has been implemented.
+
+\subsection{Infer a useful carrier before enumerating a large body}
+Many apparent recursion problems are failures to choose a rich enough result carrier. A fold computing a left-associated accumulation can use a function-valued carrier:
+\[
+ \mathsf{foldr}\;(\lambda x\ k\ a.\ k(\mathsf{step}\ a\ x))\;
+                 (\lambda a.a)\;xs\;a_0.
+\]
+Here the recursive fold result has type $S\to S$, not merely $S$. This carries the continuation needed to process the remaining accumulator.
+
+Leant2 should infer candidate carriers from the result telescope and recursive demand. Start with the direct result type $R$. If a changing argument $a:S$ appears in the desired recursive equation, try $S\to R$. If two mutually needed summaries occur in the postcondition, try a product carrier. If later fields depend on earlier summary values, try a dependent pair. Every constructed carrier is subject to the normal universe and type checks, and its complexity is charged to the grammar budget.
+
+This carrier grammar is intentionally finite at each budget. It does not enumerate arbitrary inductive definitions. A failed simple carrier can trigger a bounded generalization rather than merely increasing the number of candidate terms in the same inadequate grammar.
+
+\subsection{Accumulator generalization and strengthened contracts}
+Consider synthesizing a tail-recursive reverse. The desired public contract may be
+\[
+  f(xs)=\mathsf{reverse}(xs).
+\]
+A candidate auxiliary function takes an accumulator. Its useful strengthened contract is
+\[
+  g(xs,acc)=\mathsf{reverse}(xs)\mathbin{++}acc.
+\]
+The recursive call uses $g(xs,x::acc)$, so the induction hypothesis must quantify over the accumulator rather than fixing its original value. A tactic that inducts before generalizing $acc$ often obtains an unusable hypothesis.
+
+The proposed strengthening algorithm inspects the template's recursive-call substitution. Parameters changed by that substitution are candidates for generalization. A finite grammar of relational summaries is built from the public contract, constructor equations, and tagged library lemmas. Candidate strengthened contracts must imply the public one at the initial state, and their base and step preservation obligations are checked. The system never assumes a strengthened invariant merely because it fits observed examples.
+
+This can be expressed as a small constraint system over summary holes. For a recursive strongly connected component, the summaries are checked simultaneously with a well-founded induction argument. Proving each function using an unchecked summary of the other is circular and prohibited.
+
+\subsection{Well-founded recursion as an explicit later capability}
+Some useful algorithms recur on values that are not syntactic subterms: Euclidean-style reductions, divide-and-conquer partitions, or work-list processes. A well-founded descriptor includes a relation $\prec$, a proof of well-foundedness, and obligations showing that each recursive argument decreases. The first search space can use user-supplied measures, natural-valued measures extracted from lengths or sizes, and lexicographic tuples of such measures.
+
+The measure grammar and arithmetic solver are bounded. A decrease proof that times out suspends or rejects that sketch at the current budget; it does not imply the program is mathematically nonterminating. Conversely, adding \code{partial} is not a repair for a failed termination proof when the request asks for a total implementation. General unrestricted recursion and effects are outside the default total synthesis grammar.
+
+\subsection{Compile the form that will actually be exported}
+Direct recursor applications are excellent semantic building blocks but are not universally interchangeable with the compiler's preferred recursive source forms. The experiment's first vector implementation produced an axiom-free recursor term but was rejected by the code generator. Re-expressing the implementation as a structural pattern match with the same intended smaller call succeeded.
+
+Accordingly, a recursive plan has both a semantic construction and an export/compilation strategy. The latter must be tested, not assumed from the former. A proof-only request may legitimately stop after logical validation; an executable request must pass the actual code-generation stage without silently switching to noncomputable mode.
+
+\section{Contract-directed search and semantic domains}
+\label{sec:contracts}
+\subsection{Search with the specification, not only after it}
+A generate-and-test architecture discards valuable information. If the contract says that a result has length $n+1$, it should influence constructor selection before a complete program has been enumerated. If the contract specifies a sum, it should constrain fold coefficients or recursive summaries before searching millions of arithmetic expressions.
+
+The native design supports both a generic route and specialized domains. The generic route constructs $e:\Ty$ and seeks a proof of $\Spec(e)$ in the shared hole graph. A domain plugin recognizes a fragment of the exact contract, produces a simpler constraint problem, and returns candidate terms together with proof obligations or certificates. Failure to recognize a domain leaves the original query intact.
+
+Refinement-type synthesis demonstrates the value of decomposing a specification during construction~\cite{synquid}. Leant2 should borrow that operational idea without replacing arbitrary Lean predicates by a globally assumed decidable refinement language. Decidability and completeness belong to each admitted domain.
+
+\subsection{A domain adapter has four proof-relevant boundaries}
+A semantic domain needs a typed interpretation of candidate syntax, a meaning for abstract states or summaries, justified transfer rules, and a reconstruction path back to the requested Lean proposition. These are distinct responsibilities.
+
+For example, a length domain can attach a summary $\ell_{out}=\ell_1+\ell_2$ to append. It may use that summary to select a provider composition. The final acceptance still needs a Lean proof about the generated function's actual list length. If a summary describes only an upper bound, it cannot be used as an exact equality. If an abstract interpreter omits an unsupported operation, the omission must be modeled as unknown, not as zero cost or zero length.
+
+The essential direction for impossibility pruning is overapproximation: every concrete behavior under consideration must be represented abstractly. Then a genuinely impossible abstract constraint can exclude the corresponding concrete candidates. An underapproximation can find useful witnesses, but failure inside it says nothing about unrepresented solutions. Each plugin declares which direction it supports and which conclusions it is allowed to produce.
+
+\subsection{Backward contract decomposition}
+For pure constructor terms, a goal predicate can often be reduced after substituting the constructor. A desired record invariant becomes constraints on its fields. For applications, tagged provider theorems act as compositional contracts. Suppose a provider has a checked theorem
+\[
+ \forall x.\ P(x)\to Q(c(x)).
+\]
+To establish $Q(c(h))$, a plugin may generate the subobligation $P(h)$ and instantiate that theorem when the argument is complete. This is a sufficient backward rule. It need not characterize every way of proving $Q(c(h))$; an audit lane must retain a route that does not rely solely on an incomplete contract library.
+
+For conditionals, split the proof under the branch assumption and its negation. For a recursive call, use only the appropriate induction hypothesis or verified recursive summary. For dependent constructor fields, later field contracts are instantiated with the actual earlier fields, not with independently abstracted placeholders that forget correlations.
+
+\subsection{Counterexample-guided refinement with three-valued verification}
+The main loop is:
+\begin{lstlisting}
+CEGIS(query Q, candidate stream S):
+  bank := typed examples from Q
+  deferred := empty fair queue
+  while budget remains:
+    choose a new candidate from S or resume a deferred candidate
+    freeze candidate e
+    if a bank observation is proved false for e:
+      reject e and retain the witnessed mismatch
+      continue
+    outcome := boundedVerify(Q.contract e)
+    if outcome is Proved p:
+      submit (e, p) to independent acceptance
+    else if outcome supplies a replayed counterexample x:
+      add x with its type, assumptions, and replay evidence to bank
+      update affected candidate signatures
+    else:
+      defer (e, remaining proof strategies)
+  report verified results and explicit unfinished work
+\end{lstlisting}
+The word ``replayed'' is crucial. A model returned by an external solver can be spurious because of an approximation, a sort mismatch, or different arithmetic semantics. It enters a proof-authorized rejection bank only after its meaning in Lean is established. A proof failure is not a counterexample, and lack of a counterexample is not a proof.
+
+A domain can sometimes prove that a finite test family is complete for a declared grammar. Section~\ref{sec:affine} gives such an example. That is a theorem about the grammar, not a general conversion from testing into universal correctness.
+
+\subsection{External solvers are optional and untrusted}
+The initial Leant2 system can operate entirely within Lean for synthesis and proof reconstruction. An SMT solver can be added as a candidate generator, a parameter solver, or a counterexample finder. Its responses are data, not new axioms. A reconstruction layer translates a successful result into checked Lean evidence, or the result remains advisory.
+
+The bridge must distinguish natural arithmetic from integer arithmetic, truncated subtraction from subtraction in a ring, fixed-width bitvectors from arbitrary naturals, partial operations from totalized Lean definitions, and solver equality from dependent equality. Quantifiers and uninterpreted functions require equally explicit interpretation. Unsupported constructs cause a domain refusal or a conservative unknown result.
+
+The policy for native evaluation is also explicit. A fast evaluator can rank or test candidates, but a strict proof profile should not silently widen its trusted computing base to turn a runtime Boolean into a theorem. Use proof-producing reduction or an approved reflective checker for acceptance; report any stronger trust assumptions separately.
+
+\subsection{Observational equivalence is not semantic equivalence}
+For a test bank $X$, define the observational signature
+\[
+ \sigma_X(e)=(e(x))_{x\in X}
+\]
+when those observations are meaningful and evaluable. Signatures are useful for diversity-aware ranking and caching repeated evaluations. They are not generally sufficient to merge candidates permanently. Two programs can agree on every current test and disagree on the next one. For higher-order programs, the set of arguments used by a surrounding context can also change after a substitution.
+
+Therefore, finite signatures partition a priority queue, not the semantic candidate universe. Within a bin the system can keep a preferred representative for a bounded heuristic lane while retaining alternatives for later refinement or an audit lane. Permanent equality-based merging requires checked equality, definitional identity in the correct context, or an exact domain theorem that is strong enough for the intended continuation.
+
+\section{Fair search, abstraction refinement, and caching}
+\label{sec:scheduling}
+\subsection{Portfolio lanes with an explicit audit route}
+Useful synthesis methods have different strengths. A local focused lane finds short adapters quickly. A provider-composition lane searches libraries. A dependent-elimination lane explores cases and motives. A recursion lane instantiates structural templates. A semantic lane solves restricted contract constraints. A proof lane verifies frozen candidates. An optional logical-fragment lane can run a terminating propositional calculus on a precisely reified fragment.
+
+The scheduler allocates bounded work slices among nonempty lanes and retains their continuations. No lane can consume the entire request indefinitely inside a supposedly single step: normalization, elaboration, proof tactics, and external calls have nested limits. A production request can stop early after a good certified result. A completeness-oriented audit request instead uses a fair cost-bounded enumeration and records every deliberate restriction.
+
+Fairness does not mean equal wall-clock time per queue. A weighted round-robin schedule can give the likely productive lanes more work while ensuring that every enabled unfinished lane is revisited. Timeouts inside a branch produce resumable unknown work when appropriate. Cancellation stops the whole request and retires worker-owned resources; it is not interpreted as search exhaustion.
+
+\subsection{A finite grammar at every cost bound}
+Let each admitted construction have a positive cost, with explicit charges for applications, binders, constructor fields, recursive-template choices, type expressions, and literal encodings. Universe expressions and explicit instantiation choices also need bounded representations. A bound on the number of term nodes alone does not make the space finite if arbitrary numeric literals or arbitrary type expressions are available at unit cost.
+
+One suitable audit grammar limits syntax size and literal bit length, uses a finite provider inventory, and bounds the depth and size of demand-generated types, motives, invariants, and measures. Proof terms can have a separate cost bound. Search increases these bounds by a fair diagonal schedule so that expensive proofs for small programs are not postponed forever behind larger programs with trivial proof obligations.
+
+The production score may be
+\[
+ s(e)=w_1\,\mathsf{size}(e)+w_2\,\mathsf{casts}(e)
+      +w_3\,\mathsf{recursionComplexity}(e)+w_4\,\mathsf{unusualProviders}(e),
+\]
+with additional tie-breakers for proof size and source readability. This is a ranking heuristic, not automatically an admissible lower bound for optimal search. The interface should expose the policy name and permit deterministic replay of the same ordering.
+
+\subsection{Type-guided abstraction refinement as retrieval, not replacement}
+A provider-composition accelerator can construct a coarse graph of input and output type shapes. It searches that graph for a composition skeleton, attempts exact Lean instantiation, and refines the abstraction when the skeleton cannot be typed. Type-guided abstraction refinement has been developed for polymorphic component synthesis in TYGAR~\cite{tygar}.
+
+For Leant2, the abstraction must retain enough labels to diagnose why a proposed skeleton failed: nominal type heads, index dependencies, universe constraints, and dictionary identities. A conflict can introduce a new abstract distinction, for example separating vectors of zero and successor length or separating two nominal constructors previously merged. The exact branch state remains authoritative throughout.
+
+This accelerator is particularly valuable for large provider inventories, but it should initially be a proposal mechanism only. Claiming that failure of its abstract graph excludes every Lean inhabitant would require a separate soundness and coverage theorem for the abstraction, grammar, and reconstruction route. Such a theorem is not supplied by the mere use of graph reachability.
+
+\subsection{Cache keys include semantic context}
+A reusable cache key includes the environment and inventory versions, transparency policy, canonical local telescope, local let values, selected instance evidence, target, relevant assignments, contract, and grammar policy. Canonicalization can rename bound variables, but it must preserve dependency order. Alpha-equivalence of displayed text is not enough to establish equivalence of contextual goals.
+
+Positive cached terms are re-instantiated and checked in the destination context through an explicit context embedding. Negative entries carry their exact scope: a finite grammar and budget, a proved contradiction, or a heuristic failure. A timeout is never cached as permanent uninhabitability. New counterexamples invalidate observational bins or append to their signatures; a different contract gets a different verification identity.
+
+Within one request, dependencies can support compact learned conflicts. If a branch fails because a specific constructor choice and a specific index assignment imply a checked contradiction, record that small assignment set. A proof tactic's failure has no such logical status. It may justify deprioritization under the same tactic budget, but not a learned universal no-good clause.
+
+\subsection{Parallelism and determinism}
+Parallel workers share only immutable environment snapshots and validated cache entries. They do not share mutable metavariable contexts. A returned plan is replayed or a closed candidate is rechecked by the receiving owner. Final result ordering can be deterministic by cost and a stable candidate key even when completion order varies, or explicitly latency-first when immediate feedback matters more.
+
+The benchmark harness should distinguish these modes. Comparing a latency-first parallel run with a deterministic serial run without recording their resource budgets makes performance and candidate-quality results difficult to interpret. The initial implementation should establish correct serial continuation semantics before adding parallelism; concurrency is an optimization of the search schedule, not a replacement for dependency tracking.

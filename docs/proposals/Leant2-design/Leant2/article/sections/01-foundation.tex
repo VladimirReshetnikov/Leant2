@@ -1,0 +1,302 @@
+\section{The architectural decision}
+
+\begin{designbox}{Recommendation}
+Build Leant2 as a Lean-native, specification-directed synthesizer over exact
+Lean expressions. Keep an explicit, resumable search-control representation,
+but do not introduce another authoritative type language. Search jointly for
+computational terms and their contract proofs; accept only their kernel-checked
+closure in the original environment. Make recursion schemas, typed library
+specifications, and behavioral guidance first-class parts of the engine.
+\end{designbox}
+
+A language change by itself does not create a stronger synthesizer. Translating
+Djinn and Exference into Lean while retaining their effective search language
+would simplify deployment but preserve many of the limitations motivating this
+project. Conversely, replacing every search node with an unconstrained call to
+an existing proof tactic would give away control over computational alternatives,
+termination, ranking, and specification-driven decomposition. Leant2 needs a
+native semantic substrate \emph{and} a synthesis-specific search architecture.
+
+The useful unit of work is a \emph{typed partial program together with all
+obligations that constrain its completion}. Some obligations concern values,
+some concern types or indices, and others concern behavior. A branch cannot
+commit to a value merely because its type has been inhabited: a later proof
+obligation can distinguish several values of that same type. This observation
+will determine the state model, scheduler, cache design, and plugin protocol.
+
+\subsection{What should survive from Leant and Djex}
+
+The current repositories already do substantially more than erase Lean types
+into Haskell arrows. Djex has distinct logical and heuristic search engines,
+shared checked representations, and explicit evidence boundaries. Leant
+preserves exact source associations for supported polymorphic applications and
+checks generated candidates against Lean types. Its behavioral interface proves
+a supplied proposition or its negation about the exact candidate, and reports
+inconclusive outcomes separately. Those are strengths to retain, not defects to
+``repair'' by renaming the implementation language~\cite{djex-architecture,leant-internals,leant-behavior}.
+
+What should disappear is the obligation to make Lean's semantics fit a common
+Haskell-facing type and expression vocabulary. The new search engine can inspect
+an inductive declaration directly, carry a dependent family as an expression,
+and let later arguments determine earlier implicit parameters. A first-class
+value that is itself polymorphic needs no translation into an occurrence plan
+whose meaning must subsequently be reconstructed in Lean.
+
+The repository's earlier rewrite analysis already recommends Lean-native
+preparation and a project-local worker, but retains a neutral synthesis
+representation and confines metaprogramming state to boundaries~\cite{earlier-rewrite}.
+This design makes a different, more specific choice: \emph{control state is
+explicit and serializable; type meaning remains Lean-native}. Persistent branch
+snapshots and replayable rule applications recover deterministic control without
+requiring a second approximate type theory. This is not a proposal to replace an
+explicit search tree with one opaque mutable tactic invocation.
+
+The current indexing diagnostics also show that some missing results are
+composition and ordering failures even when the needed components are
+representable~\cite{indexing-diagnostic}. Leant2 therefore must improve search,
+not merely increase the set of admissible types. The higher-rank examples in
+our prototype are new mechanism tests, not reruns or resolutions of the
+repositories' original indexing or two-universe acceptance queries.
+
+\subsection{Scope of the intended coverage}
+
+The first broad target is pure total programming and ordinary proof obligations:
+polymorphic adapters; records and law-carrying structures; options, sums and
+lists; user-defined inductives; indexed families; bounded indices; common
+structural traversals; and programs assembled from specified library operations.
+The second target is more demanding dependence: arithmetic casts, generalized
+recursive motives, well-founded recursion, and relational contracts. Effects
+require a semantics-specific contract layer rather than merely a term of type
+\code{IO A}.
+
+``A large fraction of practical types'' should be treated as an evaluation goal,
+not a theorem or an unmeasured percentage. Two queries with identical outer
+function types can differ radically in difficulty because their contracts,
+providers, or local instances differ. Section~\ref{sec:evaluation} therefore
+measures \emph{requests}, not just type strings.
+
+\section{Requests, results, and semantic profiles}\label{sec:requests}
+
+\subsection{A precise synthesis request}
+
+Let a request be
+\[
+ \Q=(\E,U,\G,T,C,\R,\Pi,\Budget),
+\]
+where $\E$ is a frozen Lean environment, $U$ is the declared universe telescope,
+$\G$ is the ordered local context including local definitions and instances,
+$T$ is the exact requested type, $C$ is an optional contract, $\R$ is the
+permitted construction inventory, $\Pi$ is a semantic and acceptance policy,
+and $\Budget$ contains resource limits. We require
+\[
+ \E;U;\G\judges T:\Sort\,u,
+ \qquad
+ \E;U;\G,f:T\judges C(f):\Prop.
+\]
+Omitting the contract means $C(f)=\mathsf{True}$, not permission to guess what
+the user intended from the name of the definition.
+
+A successful result consists of a program $e$, a proof $p$, and any generated
+auxiliary declarations $\Delta$ such that
+\begin{equation}\label{eq:acceptance}
+ \E,\Delta;U;\G\judges e:T,
+ \qquad
+ \E,\Delta;U;\G\judges p:C(e),
+\end{equation}
+and $\Delta$ is itself accepted in dependency order under policy $\Pi$. The
+request fixes both the program type and the meaning of its predicate. Neither
+may change when an instance is selected, a candidate is simplified, or a
+counterexample is replayed.
+
+For ordinary $T:\Type\,u$, the internal proof problem can often be expressed as
+\code{{ f : T // C f }}. This is a useful implementation technique, not the
+entire public representation. For arbitrary sort-polymorphic goals, generated
+mutual declarations, or separate proof profiles, it is simpler to keep the term
+and proof obligations explicitly paired and export two declarations. There is
+no need to force every request into a particular dependent-pair encoding.
+
+\subsection{Proposed Lean-only interfaces}
+
+The following is a proposed interface, not syntax implemented by the included
+microprototype:
+\begin{Code}
+synthdef chooseSecond : Nat -> Nat -> Nat
+  satisfying fun f => forall x y, f x y = y
+  using [Nat]
+
+#synth (forall A : Type, A -> A)
+
+def adapter : Input -> Output := by
+  leant2 [allowedOperation1, allowedOperation2]
+
+example : SomeProposition := by
+  leant2?
+\end{Code}
+
+A term elaborator, a command elaborator, an interactive session, and an editor
+code action should all prepare the same request object. The \code{?} form should
+produce stable source or an explicit term that can be replayed without search.
+A lower-level API should accept already elaborated expressions, avoiding a
+string round trip for clients inside Lean.
+
+Contracts are elaborated under a fresh local binder with the exact requested
+type. Unknown contract names are errors, not inferred extra parameters. The
+construction inventory and proof inventory are separate: a reference
+implementation may legitimately appear in a specification without becoming a
+permitted implementation provider. Attributes such as \code{@[leant2_provider]}
+and \code{@[leant2_spec]} should expand into checked registry entries; they do
+not make their contents trusted.
+
+\subsection{Type-only, pointwise, and relational contracts}
+
+Consider three distinct requests:
+\begin{align*}
+ &f:\operatorname{List}(A)\to\operatorname{List}(A),\\
+ &f:\operatorname{List}(A)\to\operatorname{List}(A),
+ &&\forall xs,\ |f(xs)|=|xs|,\\
+ &f:\operatorname{List}(A)\to\operatorname{List}(A),
+ &&\forall xs,\ f(xs)=\operatorname{reverse}(xs).
+\end{align*}
+Returning the empty list solves the first. Identity solves the second. Neither
+solves the third. Penalizing ignored arguments or preferring a familiar
+operation name is not a substitute for the missing contract.
+
+When $C(f)$ is exactly $\forall x,Q(x,f(x))$, it can be useful to synthesize
+\[
+ g:\prod_{x:A}\{y:B(x)\mid Q(x,y)\},
+ \qquad f(x)=g(x).\mathsf{val}.
+\]
+The projection proves the original contract. Conversely a known $f$ and its
+pointwise proof provide such a $g$, so this transformation loses no solutions
+up to the intended extensional behavior in this setting. The implementation
+should register the transformation theorem rather than pattern-match its way
+past a proof obligation.
+
+Not every contract has this form. Monotonicity, injectivity, homomorphism laws,
+noninterference, and algebraic laws can relate multiple executions. They remain
+constraints on the shared global function. A pointwise output predicate cannot
+silently replace them. A later relational-induction engine may decompose them,
+but must reconstruct a proof of the original $C$.
+
+\subsection{Computability and assumption policy}
+
+The default profile should request a \emph{computable total definition}. A
+separate mathematical profile may permit noncomputable existence-based
+construction. In particular, a hypothesis \code{Nonempty A} is not an executable
+value of type \code{A}. Allowing \code{Classical.choice} changes what can be
+constructed; this must be visible in the request and receipt, not an automatic
+fallback hidden behind a successful-looking answer. Lean's restrictions on
+elimination from propositions are part of the semantics~\cite{lean-types}.
+
+Likewise, proving a proposition about the logical meaning of a definition does
+not verify arbitrary native replacements, foreign code, or unsafe runtime
+implementations. The acceptance policy should distinguish logical dependencies,
+computability, and runtime implementation dependencies. Lean's documentation
+explicitly distinguishes these concerns for partial and unsafe definitions and
+implementation replacements~\cite{lean-recursion}.
+
+Useful profiles are \emph{constructive computation}, \emph{computation with an
+explicit proof-axiom allowlist}, \emph{mathematical/noncomputable}, and
+\emph{effectful with a chosen operational semantics}. There is no need to conflate
+``uses \code{propext} in an erased correctness proof'' with ``uses classical
+choice to produce the executable answer.'' Record both dependency closures.
+
+\subsection{Result taxonomy}
+
+\begin{tabularx}{\linewidth}{@{}L{0.24\linewidth}Y@{}}
+\toprule
+Result & Meaning \\
+\midrule
+Verified & A program and its exact original contract have passed the acceptance path. \\
+Typed / residual & An explicitly requested sketch result: a term or partial program with named remaining obligations; not an implementation satisfying the contract. \\
+Examples verified & The displayed finite conjunction is proved. No unproved universal property is implied. \\
+Candidate refuted & A particular candidate has a checked counterexample or a proof of the negated contract. \\
+Bounded exhaustion & No accepted candidate in the explored finite grammar and resource allowance; scope is reported. \\
+Unknown / interrupted & Solver uncertainty, unsupported mechanism, timeout, cancellation, or worker failure. \\
+Globally uninhabited & A kernel-checked proof of $T\to\mathsf{False}$, or an equivalent appropriate emptiness assertion, in the stated context. \\
+\bottomrule
+\end{tabularx}
+
+For a data type $T$, writing $\neg T$ is not the right Lean proposition: $T$ is
+not itself a proposition. More subtly, a Kripke countermodel showing that a
+propositional formula is not derivable in intuitionistic logic is not generally
+a Lean proof of its negation. Leant2 may report a certified \emph{fragment
+non-derivability} result with its explicit scope; it must not promote it to a
+semantic emptiness theorem in the full ambient environment.
+
+\section{Subsystems and the one semantic authority}\label{sec:architecture}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[node distance=8mm and 9mm,>=Latex,
+ b/.style={draw=accent,rounded corners=2pt,fill=soft,align=center,
+ text width=43mm,minimum height=12mm,font=\small},
+ s/.style={draw=rule,align=center,text width=43mm,minimum height=12mm,font=\small}]
+\node[b] (front) {Lean frontend\\tactic, command, editor, REPL};
+\node[b,right=of front] (request) {Frozen request\\exact expressions\\and policy};
+\node[b,right=of request] (search) {Resumable search\\coupled program\\and proof branches};
+\node[s,below=of front] (lib) {Provider indexes\\theorems and\\recursion schemas};
+\node[s,below=of request] (guide) {Contracts and guidance\\examples, domains, solvers};
+\node[b,below=of search] (check) {Acceptance worker\\kernel check\\dependency audit};
+\node[b,below=of check] (output) {Exact accepted declarations\\source view and receipt};
+\draw[->] (front)--(request); \draw[->] (request)--(search);
+\draw[->] (lib.north east)--(request.south west);
+\draw[<->] (guide.east)--(check.west);
+\draw[<->] (guide.north east)--(search.south west);
+\draw[->] (search)--(check); \draw[->] (check)--(output);
+\end{tikzpicture}
+\caption{The semantic core stays in Lean. External tools propose information;
+only the acceptance path publishes verified results. The diagram is a logical
+component view, not a requirement for one process per box.}
+\end{figure}
+
+\subsection{Core packages}
+
+\code{Leant2.Core} should own request identities, policies, typed obligations,
+and result envelopes. \code{Leant2.LeanBridge} should wrap version-sensitive
+metaprogramming operations: telescope opening, application, cases, recursor
+inspection, local abstraction, and checked declaration admission.
+\code{Leant2.Search} should own explicit branch state, rule cursors, budgets,
+and scheduling. \code{Leant2.Providers} should manage term and theorem indexes.
+\code{Leant2.Contracts} should implement decomposition and proof orchestration.
+\code{Leant2.Recursion} should derive typed recursive schemas.
+\code{Leant2.Domains} should host optional abstractions, testing codecs, and
+certified theory translations. \code{Leant2.Accept} should own final closure,
+replay, audits, and export.
+
+The dependency direction matters: search may call the acceptance facade, but a
+checker must not rely on a search node's claim that it has been solved. A domain
+plugin may inspect an exact expression or its own certified reification. It
+must not replace the request type with the domain's abstraction. Presentation
+should consume accepted records rather than construct them.
+
+\subsection{Two representations, but only one type theory}
+
+Lean expressions are the semantic representation. A second representation is
+still useful for \emph{search actions}: introduce this binder; apply this exact
+provider with these choices; split this scrutinee; instantiate this recursive
+schema; request this proof method. Such a plan is a small replayable recipe
+whose successful execution produces an expression and obligations.
+
+This control language is not a second typing authority. Its annotations contain
+exact Lean expressions, references to immutable request-local objects, or
+closed templates checked when instantiated. A domain-specific reified AST is
+also legitimate, as in our list-fold experiment, provided its interpretation
+into Lean and its analysis theorems are explicit. The prohibition is against
+making an approximation silently authoritative for all Lean types.
+
+\subsection{Worker and controller}
+
+A project-local worker is built with the project's Lean toolchain and imports.
+It owns expressions, environments, elaboration, and search. A long-lived
+controller, also implementable in Lean, owns sessions, progress, cancellation,
+and durable requests. The tactic frontend can run directly in the current
+worker; the standalone frontend should not load arbitrary project artifacts
+into a globally built executable. This preserves the earlier rewrite analysis's
+useful toolchain-isolation boundary~\cite{earlier-rewrite}.
+
+Cross-process messages contain source requests, checked exported declarations,
+or a versioned serialized plan with an exact environment identity. Raw
+\code{MVarId} and \code{FVarId} values never become durable identifiers. A worker
+restart invalidates its ephemeral handles. An undo produces a new environment
+generation even if pretty-printed declarations look unchanged.

@@ -1,0 +1,27 @@
+[
+  {
+    "request_id": "a3a0e86c-98a5-4ffc-a9cc-2d6257dc3c7d",
+    "stage": "initial native core",
+    "okay": true,
+    "audited_declarations": 11,
+    "axioms": "all empty",
+    "note": "Superseded by final combined run; not additional benchmark cases."
+  },
+  {
+    "request_id": "6a458512-55c6-4f19-9b08-09f9db8e66a5",
+    "stage": "initial affine certificate",
+    "okay": false,
+    "accepted": false,
+    "reason": "simp rewrote coefficient a before induction hypothesis matched; omega failed; recovery introduced sorryAx",
+    "repair": "subst a before induction; remove ha from simp arguments"
+  },
+  {
+    "request_id": "6d097f2d-2e2c-4d6e-bd33-9b139b0033a6",
+    "stage": "initial combined native run",
+    "okay": false,
+    "accepted": false,
+    "reason": "code generator rejected Vec.rec-based implementation; downstream behavior proof and evaluation failed",
+    "repair": "structural match with manually supplied recursive call, synthesized branch bodies",
+    "important": "Axiom-free typing did not establish code-generator acceptance."
+  }
+]

@@ -1,0 +1,89 @@
+\clearpage
+\begin{thebibliography}{99}
+\raggedright
+\addcontentsline{toc}{section}{References}
+\bibitem{leant} Vladimir Reshetnikov and contributors.
+\emph{Leant}. Source snapshot \code{6bf05ad78c467989e68290f2d08bbed40802d485}, inspected September 17, 2026.
+\url{https://github.com/VladimirReshetnikov/Leant/tree/6bf05ad78c467989e68290f2d08bbed40802d485}.
+
+\bibitem{fragment} Leant contributors.
+\emph{Native-to-fragment translation}, \code{src/Leant/Synth/Fragment.hs}, especially the module documentation and fragment constructors, at the Leant snapshot above.
+\url{https://github.com/VladimirReshetnikov/Leant/blob/6bf05ad78c467989e68290f2d08bbed40802d485/src/Leant/Synth/Fragment.hs}.
+
+\bibitem{internals} Leant contributors.
+\emph{Synthesis internals}, \code{docs/synth-internals.md}, at the same snapshot. Exact-origin, candidate-ownership, and behavioral evidence boundaries.
+\url{https://github.com/VladimirReshetnikov/Leant/blob/6bf05ad78c467989e68290f2d08bbed40802d485/docs/synth-internals.md}.
+
+\bibitem{djex} Vladimir Reshetnikov and contributors.
+\emph{Djex README}. Default-branch documentation inspected September 17, 2026.
+\url{https://github.com/VladimirReshetnikov/Djex/blob/main/README.md}.
+Leant's inspected submodule separately pins Djex commit \code{e237e8667190aff38faaa590ce5b12afbffac452}; the documentation inspection is not a rerun of the historical tests it reports.
+
+\bibitem{djexarchitecture} Djex contributors.
+\emph{Djex architecture}, \code{docs/architecture.md}. Default-branch documentation inspected September 17, 2026.
+\url{https://github.com/VladimirReshetnikov/Djex/blob/main/docs/architecture.md}.
+
+\bibitem{rewrite} \emph{Rewriting Leant and Djex in Lean 4}.
+Prior analysis retained in Leant, \code{docs/Leant_Djex_Lean4_Rewrite_Analysis/}, source inspected at the Leant snapshot above. Its proposed migration architecture is distinguished from the successor design in this article.
+\url{https://github.com/VladimirReshetnikov/Leant/tree/6bf05ad78c467989e68290f2d08bbed40802d485/docs/Leant_Djex_Lean4_Rewrite_Analysis}.
+
+\bibitem{metabook} Lean community.
+\emph{The Lean 4 Metaprogramming Book}, chapter on \code{MetaM}. Documentation accessed September 17, 2026; individual APIs used by the prototype were also checked against the actual Lean 4.34.0 environment.
+\url{https://leanprover-community.github.io/lean4-metaprogramming-book/main/04_metam.html}.
+
+\bibitem{typesystem} Lean language reference.
+\emph{The Type System}, including functions, propositions, and universes. Accessed September 17, 2026.
+\url{https://lean-lang.org/doc/reference/latest/The-Type-System/}.
+
+\bibitem{inductives} Lean language reference.
+\emph{Inductive Types}. Accessed September 17, 2026.
+\url{https://lean-lang.org/doc/reference/latest/The-Type-System/Inductive-Types/}.
+
+\bibitem{recursion} Lean language reference.
+\emph{Recursive Definitions}. Accessed September 17, 2026. The rolling documentation may describe facilities newer than the experiment's pinned toolchain; the experiment makes no claim to test all such facilities.
+\url{https://lean-lang.org/doc/reference/latest/Definitions/Recursive-Definitions/}.
+
+\bibitem{grind} Lean language reference.
+\emph{The grind tactic}. Accessed September 17, 2026.
+\url{https://lean-lang.org/doc/reference/latest/The--grind--tactic/}.
+
+\bibitem{axioms} Lean language reference.
+\emph{Axioms}. Accessed September 17, 2026. Includes transitive dependency reports, native-evaluation assumptions, and the limits of unrestricted parametricity.
+\url{https://lean-lang.org/doc/reference/latest/Axioms/}.
+
+\bibitem{validation} Lean language reference.
+\emph{Validating a Lean Proof}. Accessed September 17, 2026.
+\url{https://lean-lang.org/doc/reference/latest/ValidatingProofs/}.
+
+\bibitem{aesop} Jannis Limperg and contributors.
+\emph{Aesop}, project README, inspected September 17, 2026. Best-first rule-driven proof search for Lean.
+\url{https://github.com/leanprover-community/aesop}.
+
+\bibitem{dyckhoff} Roy Dyckhoff.
+Contraction-free sequent calculi for intuitionistic logic.
+\emph{Journal of Symbolic Logic}, 57(3):795--807, 1992.
+
+\bibitem{synquid} Nadia Polikarpova, Ivan Kuraj, and Armando Solar-Lezama.
+\emph{Program Synthesis from Polymorphic Refinement Types}.
+arXiv:1510.08419, 2015.
+\url{https://arxiv.org/abs/1510.08419}.
+
+\bibitem{tygar} Zheng Guo, Michael James, David Justo, Jiaxiao Zhou, Ziteng Wang, Ranjit Jhala, and Nadia Polikarpova.
+\emph{Program Synthesis by Type-Guided Abstraction Refinement}.
+arXiv:1911.04091, 2019.
+\url{https://arxiv.org/abs/1911.04091}.
+
+\bibitem{syngar} Xinyu Wang, Isil Dillig, and Rishabh Singh.
+\emph{Program Synthesis using Abstraction Refinement}.
+arXiv:1710.07740, 2017.
+\url{https://arxiv.org/abs/1710.07740}.
+
+\bibitem{resyn} Tristan Knoth, Di Wang, Nadia Polikarpova, and Jan Hoffmann.
+\emph{Resource-Guided Program Synthesis}.
+arXiv:1904.07415, 2019.
+\url{https://arxiv.org/abs/1904.07415}.
+
+\bibitem{axle} Axiom Math.
+\emph{AXLE: check tool documentation}. API documentation accessed September 17, 2026. Actual experiment requests and returned environment identities are recorded in the accompanying receipts.
+\url{https://axle.axiommath.ai/v1/docs/tools/check/}.
+\end{thebibliography}

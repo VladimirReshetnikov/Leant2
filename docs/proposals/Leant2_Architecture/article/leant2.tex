@@ -1,0 +1,110 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,microtype}
+\usepackage[margin=0.88in,headheight=15pt]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs,longtable,tabularx,array}
+\usepackage{graphicx,xcolor,listings,enumitem}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds}
+\usepackage{fancyhdr,titlesec,needspace,etoolbox}
+\usepackage{xurl,hyperref,bookmark}
+\definecolor{ink}{HTML}{172D40}
+\definecolor{accent}{HTML}{196979}
+\definecolor{light}{HTML}{F0F5F7}
+\definecolor{rulegray}{HTML}{C7D3DA}
+\hypersetup{colorlinks=true,linkcolor=ink,citecolor=accent,urlcolor=accent,
+ pdftitle={Leant2: Native Dependent Program Synthesis in Lean},
+ pdfauthor={Technical design study},pdfsubject={Architecture, algorithms, experiments and implementation plan}}
+\urlstyle{tt}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small\color{ink} Leant2: native dependent synthesis}
+\fancyhead[R]{\small Architecture and evidence}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.35pt}
+\setlength{\parskip}{4.5pt plus 1pt}
+\setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{3em}
+\raggedbottom
+\titleformat{\section}{\Large\bfseries\color{ink}}{\thesection}{0.65em}{}
+\titleformat{\subsection}{\large\bfseries\color{accent}}{\thesubsection}{0.65em}{}
+\setcounter{tocdepth}{2}
+\pretocmd{\section}{\Needspace{6\baselineskip}}{}{}
+\pretocmd{\subsection}{\Needspace{4\baselineskip}}{}{}
+\setlist{nosep,leftmargin=1.6em,topsep=4pt}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\pathcode}[1]{\nolinkurl{#1}}
+\newcommand{\Lean}{Lean}
+\newcommand{\Leant}{Leant2}
+\newcommand{\Expr}{\code{Expr}}
+\newcommand{\G}{\Gamma}
+\newcommand{\Ty}{\mathsf{T}}
+\newcommand{\Spec}{\mathcal{C}}
+\newcommand{\Env}{\mathcal{E}}
+\newcommand{\Budget}{\mathcal{B}}
+\newcommand{\Grammar}{\mathcal{G}}
+\newcommand{\judge}[3]{#1\vdash #2:#3}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{definition}\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}\newtheorem{remark}[theorem]{Remark}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\lstdefinelanguage{LeanPseudo}{morekeywords={def,theorem,example,inductive,structure,where,by,exact,apply,intro,match,with,fun,let,in,if,then,else,do,return,for,while,namespace,end,forall,Prop,Type,Sort},sensitive=true,morecomment=[l]{--},morestring=[b]"}
+\lstset{language=LeanPseudo,basicstyle=\ttfamily\small,keywordstyle=\bfseries\color{ink},commentstyle=\itshape\color{accent},backgroundcolor=\color{light},frame=single,rulecolor=\color{rulegray},breaklines=true,columns=fullflexible,keepspaces=true,showstringspaces=false,aboveskip=8pt,belowskip=8pt,xleftmargin=0.2em,xrightmargin=0.2em}
+\newenvironment{designbox}{\begin{quote}\small\color{ink}\hrule\vspace{5pt}}{\vspace{5pt}\hrule\end{quote}}
+\begin{document}
+\begin{titlepage}
+\vspace*{0.5in}
+{\color{accent}\large SYSTEM DESIGN / SEPTEMBER 2026\par}
+\vspace{0.45in}
+{\Huge\bfseries\color{ink} Leant2\par}
+\vspace{0.18in}
+{\LARGE\bfseries\color{ink} Native Dependent Program\par Synthesis in Lean\par}
+\vspace{0.3in}
+{\Large Architecture, main algorithms,\par trust boundaries, and executable experiments\par}
+\vspace{0.65in}
+\begin{designbox}
+\textbf{Central proposal.} Make exact Lean expressions, local contexts, and universes the semantic foundation. Search jointly for a program and the evidence that it satisfies its contract. Use domain-specific abstractions to guide search, never to replace the final Lean statement or its verification.
+\end{designbox}
+\vspace{0.35in}
+\begin{tabularx}{\textwidth}{@{}L{0.25\textwidth}Y@{}}
+Design target & Lean implementation; Lean-only frontend; no Haskell type approximation as the authoritative representation.\\[8pt]
+Repository baseline & Leant \code{6bf05ad78c46}; its Djex dependency \code{e237e8667190}.\\[8pt]
+Experimental target & Lean 4.34.0, checked remotely through AXLE using Wolfram HTTP transport.\\[8pt]
+Evidence included & Native search prototype; 27 synthesized affine-fold contracts with universal Lean proofs; negative controls; reproducible sources and normalized receipts.\\[8pt]
+Status & Architecture proposal with bounded prototypes, not a completed Leant2 implementation or a measured practical-coverage claim.\\
+\end{tabularx}
+\vfill
+{\large September 17, 2026\par}
+{\small Technical design study prepared for the Leant/Djex successor project.\par}
+\end{titlepage}
+\pagenumbering{roman}
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
+Leant and Djex already combine type-directed search, behavioral checks, candidate provenance, and host-language replay. Their Lean-facing synthesis nevertheless passes through a separate synthesis type language. This article designs a successor whose authoritative goals, candidates, universe constraints, and local assumptions remain native Lean objects. The objective is not to decide arbitrary dependent-type inhabitation. It is to combine several bounded but complementary construction methods without introducing an approximation boundary between the language being searched and the language ultimately checked.
+
+The proposed system has a Lean frontend and project-local workers; a frozen query boundary; an exact, context-indexed graph of program and proof holes; focused introduction and elimination; demand-driven polymorphic provider application; dependent case analysis; termination-aware recursion sketches; contract decomposition; counterexample-guided domain search; and fair, resource-bounded orchestration. Final acceptance checks the original statement in a controlled environment, audits assumptions, and separately checks executable-code requirements. Abstract types, observational signatures, and solver results are advisory unless accompanied by an explicitly justified pruning or reconstruction rule.
+
+We give concrete search rules, scheduling and cache invariants, dependency-aware backtracking algorithms, contract and recursion interfaces, conditional soundness and relative-completeness statements, worked dependent examples, and an implementation sequence with acceptance gates. A small Lean-native prototype is compiled against Lean 4.34.0. Its final combined file audits twenty declarations: nineteen have no axioms and one uses only propositional extensionality. A separate reproducible experiment solves twenty-seven affine-fold specifications; a generic inductive certificate and all twenty-seven instantiated universal contracts are checked in Lean. Four negative controls distinguish ordinary compilation from proof acceptance. These experiments establish specific mechanisms, not production scalability or superiority over the existing tools.
+
+\section*{How to read the evidence}
+\addcontentsline{toc}{section}{How to read the evidence}
+Throughout, \emph{proposed} describes Leant2 functionality; \emph{implemented} describes only files in the accompanying prototype or experiment directories; and \emph{checked} describes an actual reported Lean run. The mathematical guarantees in Section~\ref{sec:guarantees} are proved under stated architectural assumptions; they are not claims that the prototype implements every assumption. The affine-fold sufficiency theorem is formalized, while the general five-point necessity argument is proved in the article but not formalized in the supplied Lean file.
+
+The remote check service returned the requested Lean version and executor identity, but not an exact Mathlib commit. No local Lean installation or independent external kernel checker was available in this session. The supplied receipts are explicitly labeled normalized transcriptions of observed responses, not raw HTTP captures. Sources and commands are supplied for independent reruns.
+\clearpage
+\begingroup
+\fontsize{9.5pt}{10.8pt}\selectfont
+\setlength{\parskip}{0pt}
+\tableofcontents
+\endgroup
+\clearpage\pagenumbering{arabic}
+\input{01-foundations.tex}
+\input{02-algorithms.tex}
+\input{03-guarantees-evidence.tex}
+\input{04-implementation.tex}
+\input{references.tex}
+\end{document}

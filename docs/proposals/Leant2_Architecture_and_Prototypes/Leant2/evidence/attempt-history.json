@@ -1,0 +1,51 @@
+{
+  "record_kind": "Attempt summaries; final successful files are Core.lean and Behavior.lean",
+  "attempts": [
+    {
+      "request_id": "73799636-11f0-4a65-bbb9-0da4ede10507",
+      "kind": "API probe",
+      "okay": false,
+      "finding": "Lean.Meta.MVarId.intro1 and Lean.Environment.addDecl were not valid names."
+    },
+    {
+      "request_id": "0dba0152-ed58-46fa-8bfa-9e354496a0f5",
+      "kind": "corrected API probe",
+      "okay": true,
+      "finding": "MVarId.intro1/cases, Meta saved-state, Kernel.check and Kernel.Environment.addDecl names checked."
+    },
+    {
+      "request_id": "509a3442-341d-43e6-b666-8d54de180927",
+      "kind": "initial core subset",
+      "okay": true,
+      "finding": "Initial synthesis and indexed-vector sketch passed; final expanded file separately checked."
+    },
+    {
+      "request_id": "545f8ef3-9ef0-4fff-a77e-8042a16732cb",
+      "kind": "first affine prototype",
+      "okay": false,
+      "finding": "Redundant omega after simp had already closed the goal. Errors introduced sorryAx into incomplete declarations; evaluation correctly rejected. Removed redundant tactic."
+    },
+    {
+      "kind": "compressed transport attempt",
+      "submitted_to_axle": false,
+      "finding": "Malformed base64 failed local hash guard in Wolfram; no Lean result."
+    },
+    {
+      "request_id": "bb4bf5ca-3017-4bd6-8f11-67cb71c55764",
+      "kind": "expanded core",
+      "okay": false,
+      "source": "evidence/Core-failed-index-binder.lean",
+      "finding": "Vec.toList's ambient n was fixed in recursive calls; generalized to an explicit {n : Nat} argument. Not a search algorithm change."
+    },
+    {
+      "request_id": "1caada9d-c739-46cb-a8e6-25a70b2b7335",
+      "kind": "final Behavior.lean",
+      "okay": true
+    },
+    {
+      "request_id": "527aff4b-47fd-4d50-b992-4d3d3d712b00",
+      "kind": "final Core.lean",
+      "okay": true
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "receipt_kind": "Structured transcription of the actual Wolfram/AXLE response, not a raw HTTP capture",
+  "checked_on": "2026-09-17",
+  "check_endpoint": "https://axle.axiommath.ai/api/v1/check",
+  "environment": "lean-4.34.0",
+  "lean_version_string": "4.34.0",
+  "request_options": {
+    "ignore_imports": false,
+    "theorems_only": false
+  },
+  "okay": true,
+  "failed_declarations": [],
+  "lean_errors": [],
+  "tool_errors": [],
+  "source_echo": "exact_except_one_appended_LF",
+  "imports_preserved": true,
+  "cached_response": false,
+  "executor_commit_sha": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+  "executor_docker_image_id": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+  "executor_artifact_sha256": "127b8dcb3bbc7cfa7861743f512fbe955bd8a35e940d6f2959d02327a7aa8520",
+  "mathlib_commit_reported": false,
+  "tool_advisories": [
+    "The service recommends import Mathlib.Tactic for its default validation workflow.",
+    "The service recommends its cached default import Mathlib header; import Lean was retained."
+  ],
+  "limitations": [
+    "Compilation ran remotely through AXLE via the Wolfram connector, not in the local container.",
+    "Reported times are for the entire remote request/file, not isolated search latency.",
+    "This is evidence for these exact files, not for the full proposed architecture."
+  ],
+  "source_file": "prototype/NativeCore.lean",
+  "submitted_characters": 6287,
+  "request_id": "217a1c39-4a72-4447-adf2-69426f4439b8",
+  "timings": {
+    "parse_ms": 1405,
+    "total_ms": 1408,
+    "total_request_time_ms": 1527,
+    "queue_time_ms": 3,
+    "execution_time_ms": 1524
+  },
+  "axiom_inventory": {
+    "Leant2Experiments.identitySort": [],
+    "Leant2Experiments.composeDependent": [],
+    "Leant2Experiments.applicationDependent": [],
+    "Leant2Experiments.usePolymorphic": [],
+    "Leant2Experiments.useTwoUniverses": [],
+    "Leant2Experiments.swapSum": [],
+    "Leant2Experiments.swapProd": [],
+    "Leant2Experiments.dependentWitness": [],
+    "Leant2Experiments.dependentWitness_value": [],
+    "Leant2Experiments.transport": [],
+    "Leant2Experiments.vectorHead": [
+      "propext"
+    ],
+    "Leant2Experiments.vectorReplicate": [],
+    "Leant2Experiments.chooseDictionary": [],
+    "Leant2Experiments.chooseDictionary_value": []
+  },
+  "lean_warnings": [
+    "unused binder a in dependentWitness",
+    "unused binder first in chooseDictionary",
+    "unused tactic linter on each of two expected-failure controls"
+  ],
+  "whole_goal_synthesized_definitions": 11,
+  "hand_chosen_recursion_templates_with_synthesized_branches": 1,
+  "equality_checks": 2,
+  "expected_search_failure_controls": 2
+}

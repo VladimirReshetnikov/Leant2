@@ -1,0 +1,275 @@
+\section{Recursive programs as synthesized elimination schemas}
+\label{sec:recursion}
+
+\subsection{The right search object is a schema, not unrestricted self-reference}
+
+A native engine can construct Lean recursors directly or elaborate ordinary recursive definitions through a tightly controlled adapter. It should support both representations internally: a recursor is a reliable semantic core, while equation-style source is usually more readable. Lean's structural and well-founded recursive elaboration supplies the final legality check \cite{lean-recursion}.
+
+The search order should try existing library combinators, small eliminations, structural recursion, generalized structural helpers, and finally well-founded recursion. This is an ordering policy rather than a restriction that all useful algorithms are folds.
+
+For a family $I(\vec p,\vec i)$ and an input $x:I(\vec p,\vec i)$, a recursive schema consists of a motive $M(\vec i,x)$, constructor branches, recursive hypotheses or permitted calls, and any termination obligations. Motives are synthesized from the target and specification. Their indices and varying arguments must be generalized sufficiently for recursive calls to type-check.
+
+A crucial prohibition is adding a freely callable local
+\[
+ f:\forall x, T(x)
+\]
+as though the desired recursive function had already been proved total. That produces circular justifications and makes synthesis deceptively easy. A recursive call must be mediated by a capability recording why that particular call is allowed.
+
+\subsection{Recursive-call capabilities}
+
+A capability is an engine object, not an extra logical axiom. It records the recursive function being constructed, its parameter telescope, the current major premise, admissible smaller arguments, and the evidence or structural path authorizing each call. For a list branch $a::xs$, a structural capability authorizes recursion on $xs$, not on $a::xs$ again.
+
+Applying a capability creates the appropriate native recursor argument or a recursive call inside a checked skeleton. It also instantiates the recursive specification at that smaller input. If a helper has an accumulator, the capability specifies which parameters may vary and which remain fixed. A call with a new accumulator can be structurally valid; a call with an unchanged list is not made valid by changing that accumulator.
+
+For indexed families, the smaller argument carries its own index. The capability's type is not guessed by subtracting one from the outer index. It is obtained from the actual constructor field and the corresponding recursor information. This is particularly important for nested and mutually recursive inductives, where a hand-written ``one smaller field'' heuristic is insufficient.
+
+\subsection{Algorithm for structural schema discovery}
+
+The following algorithm is intended for the first substantial recursion implementation.
+
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language={}]
+proposeStructuralSchemas(problem):
+  for major in ranked recursive inputs:
+    inspect the native inductive and recursor metadata
+    choose parameters that remain fixed
+    generalize indices and varying arguments needed by recursive calls
+    construct candidate motives from target and local specification
+    for each constructor branch:
+      expose constructor fields with their actual dependent types
+      register recursive hypotheses / structural-call capabilities
+      restrict observations to this branch; simplify its specification
+      create program holes and proof holes in one branch state
+    search all branches with shared outer constraints
+    elaborate/check the complete recursion skeleton
+    export only after its type and required specification are checked
+\end{lstlisting}
+\end{minipage}\par
+
+Candidate motives should begin with a small grammar: the target family, functions over unsolved trailing arguments, dependent pairs or subtypes carrying the postcondition, and tuples of these. Motive enumeration becomes expensive quickly, so the engine should retain a visible motive frontier and allow a user to supply an invariant or helper signature. A user-provided motive is valuable guidance, not evidence that the resulting branch proofs are automatic.
+
+\subsection{Indexed-vector map: a complete worked construction}
+
+Let \code{Vec A n} have nil and cons constructors, and suppose the desired program has type
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}
+(f : A -> B) -> {n : Nat} -> Vec A n -> Vec B n
+\end{lstlisting}
+\end{minipage}\par
+The motive is $M(n,xs)=\operatorname{Vec}(B,n)$. The nil branch requires $\operatorname{Vec}(B,0)$ and admits nil. The cons branch exposes $x:A$, $xs:\operatorname{Vec}(A,n)$, and a recursive result $tail:\operatorname{Vec}(B,n)$. The target is $\operatorname{Vec}(B,n+1)$. Constructor application reduces it to a $B$ and the required tail; application of $f$ to $x$ supplies the head.
+
+The artifact tests this exact division of labor:
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}
+def vecMap (f : A -> B) : {n : Nat} -> Vec A n -> Vec B n
+  | _, .nil => by leant2_core
+  | _, .cons x xs =>
+      let tail := vecMap f xs
+      by leant2_core
+\end{lstlisting}
+\end{minipage}\par
+The recursive skeleton and recursive call were supplied by the author. The tactic synthesized the branch contents. A separate, author-written proof establishes
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}
+(vecMap f xs).toList = xs.toList.map f
+\end{lstlisting}
+\end{minipage}\par
+for every indexed vector. This demonstrates that native synthesis can operate within dependent recursive branches; it does not demonstrate automatic discovery of the motive or the recursion skeleton.
+
+An instructive implementation correction arose in the experiment. A first expanded version of \code{Vec.toList} accidentally fixed an ambient index $n$ across recursive calls. Changing its signature to an explicit \code{{n : Nat} -> Vec A n -> List A} generalized that index correctly. This is precisely the kind of distinction the production motive generator must track.
+
+\subsection{Simultaneous program and proof synthesis}
+
+Instead of constructing an output and only later proving its property, strengthen a recursive motive to
+\[
+ M(x)=\{y:T(x)\mid R(x,y)\}.
+\]
+A recursive hypothesis now contains both a recursive result and its certificate. The branch can use the certificate to discharge local proof obligations while selecting the result. The resulting program can project the data component; the proof component is available for a final theorem.
+
+For a filtering task, for example, a length-indexed output alone says too little. A useful specification includes that the output contains exactly the input elements satisfying the predicate, in their original order. The nil branch and the two cons branches then receive meaningful obligations. One branch prepends the current element; the other reuses the recursive result. Element-order reasoning, predicate evidence, and the new output length remain correlated.
+
+This construction may be easier to discover than an unstructured final correctness proof because the recursive hypothesis already matches the branch's needed fact. It does not remove the need for theorem search: permutation, ordering, or arithmetic lemmas may still be required.
+
+\begin{proposition}[Certified structural-schema soundness]
+Suppose a proposed recursive implementation is elaborated to a Lean recursor application, every branch has the corresponding motive instance, and the resulting declaration and claimed specification pass kernel checking in the frozen environment. Then the exported declaration has the requested type and specification, regardless of how the motive or branches were proposed.
+\end{proposition}
+\begin{proof}
+The native recursor type supplies the induction/elimination principle. Its checked application combines the checked branch terms at that motive. The final declaration check and specification check establish the requested judgments. No soundness assumption about the search procedure is needed beyond faithful validation and export.
+\end{proof}
+
+\subsection{Accumulator introduction and invariant discovery}
+
+Naive structural recursion can be extensionally correct yet operationally poor. Tail-recursive reverse suggests a generalized helper
+\[
+ go(xs,acc),\qquad
+ go(xs,acc)=\operatorname{reverse}(xs)\mathbin{++}acc.
+\]
+The outer function is $go(xs,[])$. The additional accumulator parameter belongs to a synthesized helper, not to a changed public type.
+
+A concrete invariant-discovery lane can proceed in four stages. Extract recurring subexpressions in residual branch specifications; propose a helper with those quantities as parameters; form candidate invariants from the original postcondition, constructor equations, and a small vocabulary of library relations; then ask the proof service to validate branch preservation and the initial-state implication. Counterexamples eliminate invalid invariant templates. Failure to prove preservation leaves the template unresolved rather than establishing it false.
+
+For sorting, a helper invariant might relate an accumulator to a processed prefix by permutation and ordering. For an indexed traversal, it may relate an accumulator length to an arithmetic expression in the input index. These are family-specific search templates. A useful implementation should expose them as plugins with documented schema grammars instead of promising an unrestricted invariant synthesizer.
+
+\subsection{Well-founded, mutual, and nested recursion}
+
+When structural descent is inadequate, propose a relation and a well-founded recursion schema. The first relations should come from an explicit grammar: a natural-valued measure, lexicographic products of such measures, and selected library well-founded relations. Each recursive call generates a decrease proof. The relation itself needs a well-foundedness proof.
+
+The distinction between integer and natural arithmetic matters here. An unrestricted decreasing integer argument does not establish well-foundedness. Natural subtraction also requires care: $0-1=0$ is not smaller than zero. A candidate measure must be checked against the actual guarded branches, not justified by a visual impression of a decreasing expression.
+
+Mutual recursion needs a joint call graph and a common termination argument, often over a tagged sum of the mutually recursive input spaces. Nested datatypes require the actual nested recursor or a verified derived schema. These are sensible later milestones, not details to be hidden behind a generic ``case split'' operation.
+
+\section{Behavioral synthesis as construction, not only filtering}
+\label{sec:behavior}
+
+\subsection{The behavioral loop}
+
+The predecessor's behavioral interface already distinguishes proved, falsified, and inconclusive assertions \cite{leant-behavior}. Leant2 should retain that distinction while feeding specifications into construction earlier.
+
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language={}]
+certifyingSearch(problem):
+  pending := native/schema/domain proposal streams
+  unknownProofs := resumable candidate-certificate tasks
+  bank := typed observations for the exact specification
+  while a scheduled task can run:
+    if task is a partial program:
+      propagate types, specifications and observations into its holes
+      enqueue refinements, never promoting a heuristic to a proof
+    if task produces a complete candidate c:
+      check its exact type and construction policy
+      replay applicable observations; reject only on justified failure
+      schedule proof of Spec(c), plus counterexample search
+    if a proof of Spec(c) completes:
+      freeze, kernel-check, audit and emit c with that proof
+    if a checked counterexample for c completes:
+      reject c; add the typed observation to the bank
+    if neither completes within the current quantum:
+      retain the task as unknown and increase effort fairly
+\end{lstlisting}
+\end{minipage}\par
+
+The proof and counterexample tasks are complementary. Failure of one is not success of the other. An SMT solver's \code{unknown}, a stuck evaluator, or a proof-service timeout must not be converted into a Boolean verdict about the candidate.
+
+\subsection{Logical decomposition and library contracts}
+
+Specifications can guide construction through checked decomposition. A conjunction creates two proof obligations about the same program. Universal quantification introduces symbolic inputs. A precondition supplies local hypotheses in that symbolic branch. Equalities with constructor-headed right-hand sides suggest output shape, while equations for an applied function constrain its body.
+
+Library providers should optionally carry verified contracts. Suppose a provider $g$ has a theorem
+\[
+ \forall x,\ P(x)\to Q(x,g(x)).
+\]
+Using $g$ can reduce a desired postcondition to $P(x)$ and an implication from $Q(x,g(x))$ to the requested property. This is a weakest-precondition-style decomposition only when the corresponding implications are proved or supplied as obligations. An informal annotation in a provider index is a search hint, not a theorem.
+
+A contract that is too weak must not cause rejection of a correct provider. For instance, knowing only that list length is preserved is insufficient to prove reversal, but it does not imply the provider fails reversal. The branch may need a stronger lemma or direct unfolding.
+
+\subsection{Live examples and incomplete terms}
+
+Partial evaluation of a sketch can propagate examples to its holes. A constructor-shaped output observation constrains its fields. A lambda observation supplies an input/output pair for the body. A known branch condition routes an observation to one branch. Applications of known pure operations may transform observations through verified or explicitly heuristic inverse rules. Live bidirectional evaluation provides a useful research model for this approach \cite{lubin,scrybe}.
+
+Several safeguards are essential. Evaluation blocked on a hole returns a suspended constraint, not a fabricated default value. An unknown conditional may require both possibilities or a symbolic path condition. Two holes can be correlated by one example; solving their induced examples independently may lose valid solutions or invent incompatible ones. Recursive observations may only unfold calls justified by the active schema and its recursion permissions.
+
+For a higher-order input, a sample must include an actual admissible Lean function or a justified finite representation. A solver's arbitrary function table is not a closed counterexample to a theorem about all natural-number functions unless it is reconstructed as a total function with the needed behavior. Likewise, testing a polymorphic program at \code{Nat} and \code{Bool} does not automatically prove a parametricity theorem for every Lean type.
+
+\subsection{Counterexample identity and replay}
+
+A counterexample record contains the exact specification identity, an admissible input or observation, any precondition/path evidence, the candidate identity against which it was validated, and the resulting refutation certificate or trusted-checker derivation. The reusable bank stores the \emph{observation}, not the fact that an earlier candidate failed it. Each new candidate is evaluated against that observation afresh.
+
+Dependent inputs complicate reuse. If an input contains a proof of a bound involving the candidate, a value valid for one candidate may not be a legal test for another. The replay layer must reconstruct the input in the new dependent context or mark the observation inapplicable. Counterexample shrinking must preserve typing and preconditions; an out-of-range index is not a smaller valid counterexample to a bounds-respecting program.
+
+\begin{proposition}[Sound counterexample pruning]
+Suppose $\Phi(c)$ implies an observation $O(c,a)$ for an admissible $a$, and Lean checks a proof of $\neg O(c,a)$. Then $c$ cannot satisfy $\Phi$ in the frozen context.
+\end{proposition}
+\begin{proof}
+Assuming $\Phi(c)$ gives $O(c,a)$ by the checked implication, contradicting the checked negation. The resulting proof has type $\neg\Phi(c)$.
+\end{proof}
+
+A raw compiled evaluation can be an efficient scheduling signal. To justify logical pruning in a certified-completeness lane, its result must be reconstructed as a Lean proof, checked by a proved evaluator, or covered by an explicitly admitted trust policy. Performance shortcuts belong in the receipt, not hidden in the meaning of ``checked.''
+
+\subsection{Proof services must not silently choose the program}
+
+A proof service receives an obligation, a budget, a permitted assignment set, and the frozen policy. In a read-only mode it may solve proof holes but not computational metavariables. In a synthesis-aware mode it may propose assignments to data holes, but those assignments must be returned as a whole branch refinement with backtracking information.
+
+Without this boundary, a tactic might solve an existential by choosing an arbitrary witness and thereby commit the program search to an unintended implementation. Conversely, forbidding every data assignment would lose useful constructive proofs. Both modes are needed; their effects must be explicit.
+
+The default service can combine bounded simplification, arithmetic reasoning, constructor and elimination rules, and optional Aesop or other project tactics. Stronger tools, including Forge or external proof search, can implement the same interface. The service reports solved, refuted, or unknown with proof terms where applicable. It does not bypass the common acceptance path.
+
+\section{Certified domain lanes and solver integration}
+\label{sec:domains}
+
+\subsection{A domain interface with a semantics}
+
+A domain plugin should define a finite or effectively enumerable syntax $D$, a denotation into the relevant Lean type, a well-formedness predicate, a proposal procedure, and certificate checkers. A positive result includes enough information to construct a Lean proof about the denoted program and then transport that proof to the exact original candidate.
+
+The conceptual interface is:
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language={}]
+DomainPlugin:
+  recognize : FrozenProblem -> Option DomainProblem
+  syntax, typing, denote
+  enumerateOrSolve : DomainProblem -> Resumable ProposalStream
+  checkPositive : proposal + certificate -> Lean proof or refusal
+  replayNegative : model -> typed observation + refutation or refusal
+  coverage : optional theorem relating domain and original problem
+\end{lstlisting}
+\end{minipage}\par
+
+Recognition may be incomplete. A failed recognizer means that this lane does not apply. It is not a refusal by the whole native engine. A successful recognizer must retain the original expressions and a precise relation to the domain problem; an approximate translation can still guide search, but its approximation direction determines which conclusions are valid.
+
+\subsection{Suitable first domains}
+
+Good initial lanes are finite Boolean and bitvector functions, small affine arithmetic programs, constructor-bounded data transformations, and library-composition grammars with verified contracts. Each has a clear finite search space or a manageable certificate language. Natural-number arithmetic side conditions can be delegated to Lean proof-producing tactics rather than introducing a second trusted arithmetic solver.
+
+Lists admit useful abstract domains such as length and element-membership summaries. These abstractions are best used to prioritize or refute candidates when the abstract conclusion is justified by a proved relation to concrete evaluation. Length equality cannot prove element order or a map's pointwise action. An overapproximation with no abstract solution can rule out concrete solutions only if the abstraction is proved to include every admitted concrete completion. A satisfiable abstract constraint may have no realizable concrete program.
+
+\subsection{External SMT and synthesis engines}
+
+An external solver may propose a candidate, a model, an invariant, or a proof certificate. A satisfying assignment can be reconstructed into a Lean term and checked. An unsatisfiable result is not by itself a Lean theorem: it needs proof reconstruction, a verified certificate checker, or a separately stated trust extension. The default should be reconstruction rather than enlarging the trusted computing base.
+
+Semantics mismatches must be addressed at the adapter boundary. Lean natural subtraction is truncated; integer arithmetic is unbounded; bitvector arithmetic wraps; division and remainder have totalized corner cases; dependent indices carry typing obligations. A solver encoding that quietly changes these conventions can reject correct programs or certify an unrelated problem. Higher-order or quantified formulas outside the adapter's proved fragment remain uninterpreted constraints or are refused by that lane.
+
+The simplest initial external interface need not use a solver at all. The affine experiment in Section~\ref{sec:experiments} is entirely Lean: a finite grammar, an executable observation checker, and a proved characterization of the universal specification. This demonstrates the domain architecture without assuming a general Lean-to-SMT translation.
+
+\subsection{Typed equality saturation and optimization}
+
+A future optimizer may maintain equivalence classes of candidate expressions, but equality evidence must be typed. A rewrite is an equality theorem instantiated at the actual arguments and universe levels; replacing a subterm uses a checked congruence or transport. Dependent consumers can require a changed type or explicit cast. Heterogeneous equality is not a license to replace any term with a similar-looking one.
+
+Use normalization and proved rewrites to remove redundant constructor/projection pairs, beta-redexes, or unnecessary transports. Keep the specification proof associated with the transformed term, either by direct rechecking or by a proved equality transfer. Runtime improvement is a separate objective: a proof-preserving rewrite can still change allocation or asymptotic behavior in an unfavorable direction.
+
+\section{Worked scenarios and boundaries}
+\label{sec:scenarios}
+
+\subsection{Dependent construction with a delayed witness}
+
+For $\{n:\mathbb N\mid n=1\}$, apply the subtype constructor and retain both the witness and equality proof goals. The witness alternatives $0$, $1$, and larger numerals share the equality continuation. The first is rejected when its proof fails; the second succeeds by reflexivity. In the prototype this is actual search, not a supplied witness.
+
+For a dependent pair $(x:A)\times B(x)$, the same mechanism handles a field whose type is not known until the first field is chosen. The production engine should also try proof-driven witness determination: an equation may solve the witness metavariable before explicit enumeration. Both paths must retain the full continuation.
+
+\subsection{Higher-rank plumbing without an approximate rank calculus}
+
+To synthesize
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}
+((((X : Type u) -> X -> X) -> A) -> A)
+\end{lstlisting}
+\end{minipage}\par
+introduce the outer function, apply it, and construct its polymorphic argument by introducing $X$ and then a value $x:X$. The body returns $x$. The included \code{higherRank} test exercises this native route.
+
+Across independent universes, the engine keeps $u$ and $v$ rigid and lets each provider occurrence instantiate its own levels. This is a representational advantage over carrying special-case universe metadata through another type language. It does not make invalid impredicative encodings valid or guarantee that search will select a particular desired use of both polymorphic inputs.
+
+\subsection{Certified sorting}
+
+A type such as \code{List A -> List A} admits many implementations. Add a relation specifying sortedness and permutation, with the required order and decidability assumptions already present in the query. A library lane can try an admitted sorting function and its theorem. A construction lane can propose insertion sort: recurse on the tail, synthesize an insertion helper, and use the recursive sortedness and permutation facts in its branch obligations.
+
+If no order assumptions are supplied, the system must not invent them. It can report that a proposed schema requires a comparison provider. The user may explicitly change the query, but a result for that changed query is not an implementation of the original frozen one.
+
+\subsection{Quotients, extensional values, and effects}
+
+Quotient-valued constructions require representatives and respectfulness proofs where the eliminator demands them. Structures with function fields may require extensional equality theorems rather than finite testing. Arrays require both their data and bounds semantics; a conversion through lists can be a correct candidate, but its cost must not be confused with a native array algorithm.
+
+Effectful goals need a distinct behavioral model. A type \code{IO A} describes an action, not an automatically safe experiment to execute during search. Pure \code{State} or \code{Except} programs can be evaluated against an explicit interpreter and state specification. Real I/O requires a sandbox, a capability policy, and a semantic specification of permitted effects. The first release should synthesize such actions only from approved combinators and avoid running arbitrary proposed I/O as a test.
+
+\subsection{Constructive, classical, and executable modes}
+
+A proof-search mode may admit standard classical principles under an explicit axiom policy. An executable-program mode should not use noncomputable choice as an unnoticed implementation strategy. The logical inhabitance of a type and the availability of intended executable code are different deliverables.
+
+An executable policy must examine transitive dependencies, not just the outer declaration keyword. A total-looking wrapper can call a partial implementation or an external primitive. Conversely, the search engine itself may use partial metaprograms without contaminating the generated total term. The prototype's \code{partial def solve} is an engine implementation choice; its synthesized object-language definitions are separately checked ordinary Lean definitions.

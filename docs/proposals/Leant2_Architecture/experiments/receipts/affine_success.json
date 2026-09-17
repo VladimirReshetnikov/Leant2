@@ -1,0 +1,140 @@
+{
+  "receipt_format": "normalized transcription of observed AXLE tool response; not raw HTTP archive",
+  "date": "2026-09-17",
+  "transport": "Wolfram URLRead -> AXLE /api/v1/check",
+  "environment": "lean-4.34.0",
+  "ignore_imports": false,
+  "theorems_only": false,
+  "executor_commit": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+  "executor_docker_image": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+  "mathlib_commit": "not reported by service; not independently identified",
+  "local_lean_compiler": false,
+  "source": "experiments/Certificates.lean",
+  "request_id": "4e277309-c66b-4cc3-bd76-74a1f2153b02",
+  "same_content_modulo_final_whitespace": true,
+  "okay": true,
+  "failed_declarations": [],
+  "errors": [],
+  "lean_warnings": [],
+  "service_warnings": [],
+  "axioms": {
+    "Leant2Affine.certify": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_000": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_001": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_002": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_003": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_004": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_005": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_006": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_007": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_008": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_009": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_010": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_011": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_012": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_013": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_014": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_015": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_016": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_017": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_018": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_019": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_020": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_021": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_022": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_023": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_024": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_025": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_026": [
+      "propext",
+      "Quot.sound"
+    ]
+  },
+  "server_timings_ms": {
+    "parse": 238,
+    "total": 251,
+    "total_request": 316
+  },
+  "status": "all 27 generated universal contracts accepted, plus generic sufficiency theorem"
+}

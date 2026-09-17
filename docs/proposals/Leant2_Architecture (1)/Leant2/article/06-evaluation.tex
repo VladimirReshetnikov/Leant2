@@ -1,0 +1,146 @@
+\section{Coverage targets and an implementation sequence}
+\label{sec:roadmap}
+\subsection{Operationalize ``a large fraction of practical Lean types''}
+The target is broad practical usefulness, not an unsupported percentage. Measure it on a pinned, held-out corpus with explicit grammars and specifications. Separate ordinary inhabitation tasks from behavioral tasks, library reuse from implementation discovery, and executable code from noncomputable mathematical witnesses.
+
+\begin{longtable}{@{}L{0.24\textwidth}L{0.39\textwidth}L{0.29\textwidth}@{}}
+\toprule
+Family & Principal route & Important remaining difficulty \\
+\midrule
+\endhead
+Function and record plumbing & Focused Pi introduction, locals, spines, projections & Search ranking and dictionary identity \\
+Higher-rank callbacks & Native dependent Pi structure and demanded instantiation & Higher-order/universe search remains bounded \\
+Subtypes and dependent pairs & Shared witness/proof constraints and continuation search & Invariant or arithmetic discovery \\
+Indexed datatypes and finite indices & Native motives, cases, index equations & Generalization and nondefinitional index equalities \\
+List/tree transformations & Library combinators and structural certificate algebras & Carrier and invariant selection \\
+Arithmetic and bit-level functions & Typed sketches plus checked domain procedures & Exact casts, overflow, and proof reconstruction \\
+Well-founded algorithms & Call skeleton plus decrease and behavior obligations & Measure selection and helper invariants \\
+Quotient-based mathematics & Existing lifts, eliminators, and respectfulness lemmas & Computational representatives cannot be invented freely \\
+Effectful, partial, and coinductive code & Registered semantic profiles and specialized plans & Requires an explicit effect or fixpoint specification \\
+\bottomrule
+\end{longtable}
+
+Build the corpus from three sources: a snapshot of existing Leant/Djex regression signatures; new dependency-sensitive microcases that the old fragment cannot exploit; and real project tasks with behavior stated independently of a hidden implementation. Keep task families together when splitting development and held-out sets, so syntactic variants do not masquerade as generalization.
+
+For a from-scratch task, inspect the allowed inventory for answer leakage, including aliases, wrapper functions, and imported theorems that simply expose a ready-made implementation. For a reuse task, such providers are a feature, not cheating. Report those two regimes separately. Neither historical Church-signature counts nor this article's tiny examples support a claim about a production success rate.
+
+\subsection{Metrics and adversarial controls}
+Report time to first certified implementation, fraction certified under fixed budgets, typed-only and tested-only outcomes, proof-search unknowns, memory high-water mark, native reconstruction failures, proof size, and declared dependencies. Count solver calls, replayed counterexamples, certified partial-program rejections, and reactivated parked candidates. Keep wall-clock latency separate from deterministic work counters.
+
+Ablate native dependency information, whole-continuation backtracking, projection ordering, recursion-carrier discovery, proof-directed contracts, summary pruning, reversible parking, and retrieval widening. An apparent performance gain is not acceptable if it silently weakens the specification or changes a certified result into a tested-only result.
+
+The acceptance suite must contain deliberate failures: an unsatisfiable target, a satisfiable target outside a restricted grammar, conflicting local dictionaries, independent universes, dependent sibling holes, a stale cache after a context change, forbidden axioms hidden in helpers, solver \code{unknown}, a malformed model, a worker timeout, and a source renderer that changes an implicit argument. These tests protect the claims made by the interface, not just the number of successful examples.
+
+\subsection{Milestones with semantic gates}
+\textbf{M0: query and publication foundation.} Implement strict preparation, environment generations, original-statement checking, closure, transitive dependency audits, and structured outcomes. Gate: fabricated candidates, unresolved holes, stale contexts, and forbidden axioms cannot be published.
+
+\textbf{M1: native nonrecursive construction.} Implement Pi introduction, spines, projections, constructors, continuation rollback, and a bounded fair scheduler. Gate: type-only baseline tasks plus the dependent-witness and dictionary controls pass with stable diagnostics.
+
+\textbf{M2: native dependency and library scale.} Add general dependent cases, universe-aware retrieval, type-class integration, and context-correct caching. Gate: indexed and multi-universe tasks, local-instance shadowing, and replay across workers preserve the same statements and selected values.
+
+\textbf{M3: recursive certificate construction.} Add carrier generalization, structural algebras, and then well-founded call plans. Gate: nontrivial held-out recursive functions receive universal certificates; bounded unrolling is never mislabeled as a general implementation.
+
+\textbf{M4: behavioral refinement.} Add verified domain summaries, CEGIS, finite typed sketches, and reversible parking. Gate: each permanent prune has an applicable certificate; unknown solver/prover outcomes cannot reject valid candidates or block fair progress.
+
+\textbf{M5: production integration and performance.} Add editor/CLI polish, memory-tiered checkpoints, controlled parallelism, and toolchain adapters. Gate: measured gains preserve the M0--M4 semantic controls and the same pinned-query results.
+
+These stages are an implementation order, not a recommendation to retain a Haskell engine permanently. The successor's architecture is Lean-native from M0; existing systems serve as regression references and sources of test problems.
+
+\section{Experiments actually performed}
+\label{sec:experiments}
+\subsection{Environment and verification method}
+The local working container had no Lean toolchain and no usable network path. The supplied tools described AXLE's remote check API. The checks were made synchronously through the Wolfram connector's HTTP facilities, preserving \code{import Lean}, with \code{ignore_imports = false} and \code{theorems_only = false}. The service reported Lean 4.34.0. No claim is made that this was the latest Lean release.\cite{axle}
+
+Both accepted source files were checked in full, including definitions, anonymous expected-failure controls, and \code{#print axioms} commands. The processed-source echo matched each submitted source with exactly one additional terminal line feed. It was not byte-for-byte identical, and the imports were not replaced. The accompanying JSON files are structured transcriptions of the actual returned evidence, not raw HTTP captures. The replay client saves raw responses on new runs.
+
+The service returned generic advisories recommending its cached Mathlib import header. Those were not compiler errors and were not used to change the experiment. It did not report a Mathlib commit; the experiment's source imports only Lean. The reported executor identifiers and request IDs are retained for provenance, but they are not a substitute for rebuilding or independently checking the files.
+
+\subsection{The native search experiment}
+\code{prototype/NativeCore.lean} contains a 178-line self-contained experiment, including its tests. The search implementation operates directly on Lean goals, saves branch state, invokes native application and case analysis, discovers constructor names from the environment, and generates exact structure projections. It uses a depth-first continuation strategy with path fuel 64 and a split allowance of 3.
+
+\begin{longtable}{@{}L{0.29\textwidth}L{0.49\textwidth}L{0.13\textwidth}@{}}
+\toprule
+Checked definition & Purpose & Axioms \\
+\midrule
+\endhead
+\code{identitySort} & Sort-polymorphic identity & None \\
+\code{composeDependent} & Composition between indexed fibers & None \\
+\code{applicationDependent} & Apply a dependent function at its argument & None \\
+\code{usePolymorphic} & Consumer with a polymorphic callback signature & None \\
+\code{useTwoUniverses} & Two callback domains with independent universes & None \\
+\code{swapSum} & Sum case analysis and reconstruction & None \\
+\code{swapProd} & Product reconstruction from actual fields & None \\
+\code{dependentWitness} & Witness constrained by a later equality & None \\
+\code{transport} & Equality transport between dependent fibers & None \\
+\code{vectorHead} & Elimination of an indexed nonempty vector & \code{propext} \\
+\code{vectorReplicate} & Hand-selected induction; synthesized branch bodies & None \\
+\code{chooseDictionary} & Preserve the selected dictionary payload & None \\
+\bottomrule
+\end{longtable}
+There are eleven whole-goal synthesized definitions and one manually chosen recursion template. Two additional \code{rfl} theorems check the actual witness and dictionary result, not merely their types. Two \code{fail_if_success} controls require the bounded tactic to fail on \code{False} and on a universal chooser type. These controls check search behavior; they are not the prototype proving non-inhabitation.
+
+The final service response had \code{okay = true}, no Lean errors, no tool errors, and no failed declarations. Fourteen named axiom inventories were requested: thirteen were empty, and \code{vectorHead} used \code{propext}. None contained \code{sorryAx}. Compiler warnings concerned two intentionally unused binders and the two expected-failure controls.
+
+The accepted request identifier is
+\begin{center}\small\code{217a1c39-4a72-4447-adf2-69426f4439b8}.\end{center}
+The service reported 1,408\,ms for its file-processing total and 1,527\,ms for the whole request. These are not isolated synthesis timings, not a repeatability study, and not a comparison against Leant or Djex.
+
+\subsection{The initial failure and what changed}
+The first native run exhausted the default 200,000-heartbeat limit while trying the dictionary witness. Constructor growth was ahead of structure-field discovery. The revised algorithm added projection proposals before constructors and propagated heartbeat/interrupt exceptions instead of treating them as ordinary backtrackable rule failures.
+
+That earlier file did not pass. Its missing dictionary definition also caused a downstream failed theorem with a \code{sorryAx} dependency. Those diagnostics are not evidence against the corrected final file, but they are useful evidence for the design: branch ordering and failure classification must be tested rather than inferred from a high-level architecture diagram. The final receipt supersedes that failed run; the experiment history records both.
+
+\subsection{Checked reference certificates}
+\code{prototype/Certificates.lean} is a separate, manually authored file. Its recursive append construction and accompanying correctness theorem were accepted without axioms. The actual universal-chooser refutation was also accepted without axioms. The completion-wide prefix rejection theorem was accepted with \code{propext} and \code{Quot.sound}.
+
+The accepted request identifier is
+\begin{center}\small\code{d599bef4-fec8-4a64-b2b1-e09b3fa622b0}.\end{center}
+The file had no Lean errors or warnings and no failed declarations. The two generic service-header advisories remained. Two earlier drafts of this reference file had ordinary syntax/API-use errors, corrected before the accepted run; they are documented in the experiment history. These certificates validate the stated constructions, not an implemented automatic recursion or pruning engine.
+
+\subsection{Finite behavioral laboratory}
+\code{experiments/behavior_lab.py} uses only Python's standard library. It enumerates the grammar
+\[
+ t ::= []\mid x\mid y\mid \mathit{reverse}(t)\mid
+       \mathit{append}(t,t)
+\]
+through seven AST nodes. Inputs are pairs of binary-valued lists of length at most two. Each term has an exact affine length interpretation
+\[
+ |\llbracket t\rrbracket(x,y)|=a_t|x|+b_t|y|.
+\]
+The interpretation follows by structural induction over this grammar: leaves supply $(0,0)$, $(1,0)$, or $(0,1)$; reversal preserves the coefficients; append adds them. The Python implementation was tested on all generated terms and all concrete input pairs. It was not formalized in Lean.
+
+\begin{table}[ht]
+\centering
+\begin{tabularx}{0.88\textwidth}{@{}Yr@{}}
+\toprule
+Measurement & Result \\
+\midrule
+Terms enumerated & 1,875 \\
+Concrete input pairs & 49 \\
+Checks of the affine-length interpretation & 91,875 \\
+Terms with append-compatible coefficients $(1,1)$ & 382 \\
+Terms excluded by the necessary length condition & 1,493 \\
+Terms passing every finite append observation & 89 \\
+Observation buckets as three examples accumulate & $1,\ 2,\ 8$ \\
+Retained members after parking/refinement & 382 \\
+Mechanism unit tests passed & 5 of 5 \\
+\bottomrule
+\end{tabularx}
+\caption{Deterministic finite-laboratory results, not production coverage or speed measurements.}
+\end{table}
+
+The necessity of $(1,1)$ here relies on the laboratory's actual inhabited element domain, where lists of lengths zero and one exist. A generic abstract domain for arbitrary Lean types must preserve such realizability assumptions. This small example is not permission to invent nonempty inputs at an arbitrary fixed type.
+
+The five unit tests cover affine-length evaluation, recovery of a parked candidate after a distinguishing example, the difference between refuting one completion and a whole sketch, nonblocking handling of verification-unknown, and a toy correlated-witness choice. The first append candidate already passes this laboratory's finite tests, so its recorded CEGIS trace contains no nontrivial counterexample iteration. The experiment does not claim a measured CEGIS speedup or a universal append proof from testing. Append is an explicit primitive in this grammar.
+
+\subsection{What remains unimplemented}
+The prototype has no global provider index, fair portfolio scheduler, automatic recursion-carrier discovery, SMT integration, certified abstract-domain plugin, persistent cache, or standalone publication service. Its fuel bounds a continuation path, not total work. It deliberately skips arbitrary natural-number case splitting and its case-proposal guard also omits empty inductives; it is not a general dependent elimination tactic. It relies on the surrounding Lean declaration checker for the tested files, rather than implementing the proposed independent publication transaction.
+
+These boundaries are why the archive calls it a native-core experiment. Its value is that it exercises real Lean expressions, universes, dependent contexts, projections, rollback, and kernel-checked output instead of simulating them in another language. The architecture specifies how to grow from those mechanisms without inheriting the existing cross-language type approximation.
+
+\section{Conclusion}
+Leant2's principal opportunity is not to make Haskell-style inhabitation search more elaborate. It is to let the search use the dependency information that Lean already possesses, and to make behavioral proof obligations participate in construction from the beginning.
+
+The resulting design has a native semantic core, explicit correlated continuations, typed recursion plans, graded behavioral evidence, and one final check against the original query. It retains bounded and specialized search where that is useful, while exposing the bounds honestly. The most important performance mechanisms---library retrieval, carrier discovery, abstract pruning, and observational parking---are designed so that heuristic convenience does not silently become a claim of equivalence, completeness, or impossibility.
+
+The checked experiments support a concrete starting point. The next engineering objective is to turn the small native engine into a replayable obligation scheduler and publication API, then add recursive certificate algebras and certified behavioral domains. That path directly serves Lean programs and proofs; it needs no Haskell frontend, Haskell type approximation, or compatibility obligation.

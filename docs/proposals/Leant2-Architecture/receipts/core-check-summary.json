@@ -1,0 +1,55 @@
+{
+  "receipt_kind": "transcribed structured summary of actual AXLE response, not a raw response dump",
+  "source": "../prototype/Prototype.lean",
+  "http_status": 200,
+  "request_id": "4bb64c09-a0d6-48d6-95e3-26e57d9752a7",
+  "environment": "lean-4.34.0",
+  "okay": true,
+  "failed_declarations": [],
+  "lean_errors": [],
+  "echo_trimmed_equal": true,
+  "cached_response": false,
+  "axioms": {
+    "identity": [],
+    "compose": [],
+    "dependentApply": [],
+    "dependentPair": [],
+    "higherRank": [],
+    "swap": [],
+    "sumElim": [],
+    "vectorHead": [
+      "propext"
+    ],
+    "vectorTail": [
+      "propext"
+    ],
+    "coupledWitness": [],
+    "dictionary": [],
+    "conjunction": [],
+    "impossibleFunction": []
+  },
+  "evaluations": {
+    "Lean.versionString": "4.34.0",
+    "identity 7": 7,
+    "compose increment double 3": 7,
+    "(swap (11,29)).1": 29,
+    "dictionary (Source.mk 29)": 29
+  },
+  "lean_warnings": [
+    "Unused tactic linter on the fail_if_success negative control"
+  ],
+  "service_warnings": [
+    "Missing Mathlib.Tactic header advisory",
+    "Non-default import Lean header advisory"
+  ],
+  "timings": {
+    "parse_ms": 1383,
+    "total_ms": 1386,
+    "total_request_time_ms": 1504,
+    "queue_time_ms": 1,
+    "execution_time_ms": 1502
+  },
+  "executor_commit": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+  "executor_image": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+  "scope": "12 declarations filled by leant2_core, one manually proved noninhabitation theorem; no full Leant2 implementation or general benchmark claim"
+}

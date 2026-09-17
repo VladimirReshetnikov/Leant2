@@ -1,0 +1,357 @@
+\section{Dependent elimination, indices, and transports}\label{sec:dependent}
+
+\subsection{Case analysis is a motive-construction problem}
+
+For ordinary sums, case analysis gives independent-looking branches. For an
+indexed family or a dependent local context, it also changes the types of
+objects that remain in scope. A generic rule must therefore build a legal
+elimination motive, not splice a surface \code{match} around existing holes.
+
+Given a scrutinee $s:I\,\bar p\,\bar i$, the case rule should perform these
+operations in one transaction:
+\begin{enumerate}
+\item Compute the dependency closure of $s$ and its indices in the local
+context, goal, and coupled obligations. Generalize the dependent declarations
+needed by the chosen elimination operation.
+\item Inspect the actual eliminator and its permitted result sort. Construct a
+motive over the indices and scrutinee that returns the generalized goal.
+\item Instantiate each constructor branch, introducing its exact fields and
+index equalities. Reintroduce dependent context entries with their transformed
+types and update the branch-to-parent substitution.
+\item Generate branches or discharge impossible constructor/index combinations
+using checked equality reasoning. Reconstruct the eliminator application and
+its relation to the original goal.
+\end{enumerate}
+
+Use Lean's own dependent-elimination machinery behind a wrapper rather than
+reimplementing all details from constructor names. The wrapper should return a
+mapping between old and new locals, the generated branch goals, and any
+transport obligations. This mapping is needed by contracts and example
+propagation, not only by pretty printing.
+
+Case analysis is expensive when performed indiscriminately. Favor scrutinees
+that occur in the target indices, appear in a discriminating contract, or
+block reduction of a useful expression. Repeatedly splitting an irrelevant
+Boolean is a valid but poor search move. A costed fallback can eventually try
+other scrutinees without treating a heuristic relevance score as a theorem.
+
+\subsection{Definitional equality versus proved equality}
+
+Suppose an expression has type $V(A,n+m)$ while the goal is $V(A,m+n)$. A proof
+that addition is commutative does not make these expressions definitionally
+equal. The engine must either choose a differently oriented construction or
+build a transport using a proof of $n+m=m+n$.
+
+An equality-repair rule should first infer the exact source and target types.
+If conversion fails, it searches for a small common family $F$ and indices
+$i,j$ with source $F(i)$ and target $F(j)$. It then asks for $q:i=j$ and produces
+the appropriate equality recursor applied to the source term. The motive is
+checked in Lean; a raw cast operation is never introduced as a shortcut.
+General heterogeneous equality should be an explicit extension, not an excuse
+to replace unrelated types.
+
+Arithmetic solvers are especially useful here. Their output must be a proof of
+the needed index equation in the actual local context. A normalization that
+uses truncated natural subtraction, integer division, or machine arithmetic
+must match the source operation exactly. ``Both sides look like integers'' is
+not a sufficient translation contract.
+
+\subsection{Indices guide construction without specifying all behavior}
+
+The prototype constructs \code{Fin n} from local $k,n$ and $k<n$, and constructs
+a user-defined vector of length $n+1$ from a head and a length-$n$ tail. These
+are direct uses of dependent constructor telescopes, not recognition of a
+special built-in vector type.
+
+Nevertheless, a function
+\[
+ (xs:\operatorname{List}(A))\to\operatorname{Fin}(|xs|)\to A
+\]
+does not by itself state that the selected element has the given index. On a
+nonempty list, repeatedly returning the head can satisfy this type. Indexed
+types remove invalid states and create useful obligations; behavioral
+contracts still distinguish intended algorithms from other inhabitants.
+The same distinction explains why a vector head result of type $A$ alone does
+not document every desired law of an indexing API.
+
+\subsection{Proof elimination and quotient-aware extensions}
+
+Elimination must respect the declaration's actual recursor and result-sort
+restrictions. From a proof of existence in \code{Prop}, the engine must not
+invent an executable witness unless a permitted construction principle
+supports it. Equality and other permitted eliminations should be handled by
+their real rules rather than by a blanket ban on all proof-to-data dependence.
+
+Quotient operations should initially be synthesized through registered
+constructors and lifting APIs. A lift's well-definedness condition becomes a
+proof obligation about the exact proposed function. Searching for arbitrary
+quotient representatives is a different, often noncomputable request. This
+API-oriented approach extends practical coverage without pretending that every
+new semantic feature is just another algebraic data constructor.
+
+\section{Recursion should be generated from types and contracts}\label{sec:recursion}
+
+A broad practical synthesizer cannot depend solely on finding the right
+nonrecursive composition. Lists, trees, syntax, finite maps, arrays with bounds,
+and well-founded procedures recur throughout Lean developments. Recursion
+therefore needs a dedicated planner, but it should generate \emph{typed
+schemas from declarations}, not a fixed menu of named algorithms such as map,
+filter, and reverse.
+
+\subsection{Three routes, in a deliberate order}
+
+First try a permitted library operation with a matching specification. Second
+try a nonrecursive eliminator or fold already available in the local context.
+Third generate a recursive schema from the input type. These routes can run in
+parallel lanes, but this order is a useful default: reusing a correct library
+implementation is often the right engineering answer, while provider-free mode
+remains essential for evaluating synthesis itself.
+
+A Church-encoded value may supply its own eliminator. Its carrier need not be a
+simple data type: an index lookup can require a function-valued carrier such as
+$\mathbb Z\to A$. The planner should derive carrier candidates from the demanded
+result, remaining inputs, and contract rather than enumerate only base carriers.
+This directly targets a class of composition difficulties visible in the
+current repositories, without claiming that a native host alone solves their
+original queries~\cite{indexing-diagnostic}.
+
+\subsection{Structural schemas}
+
+For an inductive input $I$, read the recursor's parameters, indices, major
+premise, motive, minor premises, and recursive hypotheses. Choose a generalized
+result family $M$. The schema's branch holes have the types of the instantiated
+minor premises; recursive results are available exactly where the recursor
+supplies them.
+
+For lists and a nondependent result $B$, this yields the familiar shape
+\[
+ \operatorname{fold}(b,s,[])=b,\qquad
+ \operatorname{fold}(b,s,x::xs)=s(x,\operatorname{fold}(b,s,xs)),
+\]
+but the engine should discover this shape from the recursor rather than encode
+``a list has one recursive tail'' as a universal rule. A binary tree supplies
+two recursive results. An indexed family changes the branch indices. More
+complex nested or mutual recursors require their actual metadata and may be
+staged as a later capability.
+
+When generating surface recursive definitions instead of explicit recursor
+terms, expose recursive calls through capabilities of the form
+\[
+ \mathsf{recCall}(x',\rho),
+\]
+where $\rho$ witnesses the selected decrease discipline. The branch grammar
+must not contain an unrestricted local assumption $f:T$ representing the very
+function being defined. Otherwise a proof search can ``solve'' the goal by
+calling itself on the original arguments.
+
+Lean ultimately justifies accepted structural recursion through recursors, and
+well-founded recursion through a different termination construction. The
+resulting computational equalities have different reduction behavior~\cite{lean-recursion}.
+Leant2 should record which route it chose and generate proof obligations using
+the appropriate equation lemmas, rather than assume every recursive equation
+is reducible by reflexivity.
+
+\subsection{Proof-carrying motives: compute the value and its invariant}
+
+For a pointwise relation $Q(xs,ys)$, choose the motive
+\begin{equation}\label{eq:packed-motive}
+ M(xs)=\{ys:\operatorname{List}(B)\mid Q(xs,ys)\}.
+\end{equation}
+A recursive branch then receives both a smaller result $r$ and its proof
+$Q(xs,r)$. The branch synthesizer constructs the next result and discharges its
+local contract. Finally, project the data from the recursor result. The global
+correctness theorem follows from the proof field.
+
+For length preservation, the cons branch contains
+\[
+ r:\operatorname{List}(A),\qquad h:|r|=|xs|,
+\]
+and must produce $ys$ with $|ys|=|x::xs|$. Both $x::r$ and $r\mathbin{++}[x]$
+meet that obligation. A stronger order-sensitive contract decides between
+identity and reverse. Thus the motive helps prune but does not invent intent.
+
+This is more effective than first completing an arbitrary recursive function
+and only afterward attempting an unrelated induction proof. It makes the
+induction hypothesis available at the point where the branch is chosen, and
+contract failure can backtrack into that choice. It also avoids an unsound
+circular proof: the hypothesis is supplied by a recursor on smaller data, not
+assumed for the full current call.
+
+For dependent output types, use the corresponding dependent result package or
+an equivalent pair of computational/proof motives supported by the recursor.
+For a function-valued output, the motive may include remaining arguments:
+\[
+ M(xs)=\prod_{a:S}\{y:B(xs,a)\mid Q(xs,a,y)\}.
+\]
+This is where generalizing an accumulator or an index becomes a substantive
+algorithmic choice.
+
+\subsection{Generalization and accumulator invention}
+
+A fixed-result recursion schema may be too weak or inefficient. Generate a
+bounded family of generalized motives by moving selected nondecreasing
+arguments under the motive, introducing a candidate accumulator, or pairing
+several mutually useful summaries. Prefer accumulator types already present
+in the request or library specifications before inventing unrelated types.
+
+For reversal, a useful generalized invariant is
+\begin{equation}\label{eq:reverse-invariant}
+ \operatorname{go}(xs,a)=\operatorname{reverse}(xs)\mathbin{++}a.
+\end{equation}
+The base branch returns $a$. The step recurses on $xs$ with accumulator $x::a$.
+The induction hypothesis and list equations reduce the required branch law to
+associativity and the cons/append identities. The public result is
+$\operatorname{go}(xs,[])$.
+
+The planner can propose this invariant from an expression grammar built from
+the public relation, accumulator variable, available operations, and known
+unit elements. Every proposed invariant has initiation, preservation, and
+postcondition obligations. Failed induction is a failed invariant candidate,
+not evidence that the desired function is impossible.
+
+Accumulator invention should be costed separately from branch synthesis.
+Otherwise the engine may endlessly add useless state fields. Limit the number
+of new fields, their type-expression size, and the grammar of invariant
+formulas per cost tier. Learned successful schemas can be generalized and
+registered only with replayable proofs or as explicitly heuristic suggestions.
+
+\subsection{Well-founded recursion}
+
+Some natural programs recurse on a transformed input rather than a syntactic
+subterm. Use a schema based on a well-founded relation $\prec$:
+\[
+ F(x)=\mathsf{step}\bigl(x,\lambda y\,(h:y\prec x).F(y)\bigr).
+\]
+The second argument of \code{step} only permits recursive calls when the branch
+can prove the decrease. A proof-carrying variant returns both $F(x)$ and its
+pointwise invariant, making the smaller-call hypotheses available to branch
+proofs just as in~\eqref{eq:packed-motive}.
+
+The initial measure grammar should include natural-valued input parameters,
+registered size functions, differences with known bounds, and lexicographic
+tuples. Generated measure candidates produce well-foundedness and per-call
+decrease obligations. Arithmetic automation can prove many of these, but an
+SMT guess that a quantity decreases is not enough. Measure synthesis is a search
+component; termination is an acceptance obligation.
+
+For example, an array loop incrementing $i$ can use $\operatorname{size}(a)-i$
+under a bound invariant, whereas searching for a syntactically smaller $i$ is
+misdirected. The array's mutation semantics and loop postcondition remain
+separate obligations. A purely functional model should be available before
+attempting an optimized mutable implementation.
+
+\subsection{Mutual recursion, nested data, and helper lemmas}
+
+Mutual recursion should be handled as a jointly synthesized strongly connected
+component with a common termination argument. Each component's contract may
+refer to smaller calls in the other components only through the generated
+capabilities. A collection of separately proved-looking cyclic declarations is
+not a correctness argument.
+
+For nested datatypes, the recursor can supply higher-order induction hypotheses
+or require auxiliary traversals. Begin with patterns for which the recursor
+adapter has explicit tests; report an unsupported schema rather than lowering
+the type to a simpler tree. This staged coverage still leaves library-based
+construction available for those types.
+
+Helper-lemma synthesis is valuable when a contract proof repeatedly gets stuck
+at the same algebraic or relational shape. Propose a generalized lemma whose
+parameters are abstracted from the failing goal, then prove it in a context
+that does not assume the desired global result. Its dependency graph must be
+acyclic, or justified by the same legal recursive construction. Unproved
+lemmas cannot become providers merely because they make branch synthesis easy.
+
+\subsection{Relational recursion and effects}
+
+Injectivity or a two-run relation may require induction on two inputs or a
+simulation relation between execution states. Extend the schema registry with
+relational recursors and product-program proof rules rather than force such
+contracts into a single-run postcondition. A structural program can be found
+by the term lane while the proof lane chooses the right induction variables
+and generalized relation.
+
+For an effectful computation, choose a registered semantics such as a state
+transformer, an exception result, or a weakest-precondition interpretation.
+A \code{bind} rule can propagate a postcondition backward through the
+continuation. An inhabitant of \code{IO A} alone says little about its side
+effects. The default evaluator must not execute arbitrary effectful candidates
+while testing their behavior.
+
+Partial-fixpoint and coinductive facilities can be supported through separate
+schema families with their own correctness meanings. They should not be
+silently substituted when a total program's termination proof fails. This is
+an extension of the request profiles, not a relaxation of
+Equation~\eqref{eq:acceptance}.
+
+\section{Library-directed synthesis and proof summaries}\label{sec:library}
+
+\subsection{A provider is an exact term plus useful theorems}
+
+Store each provider's exact declaration or local term, universe telescope,
+binder structure, result-head indexes, instance dependencies, and permitted
+use policy. A specification entry references a theorem whose type relates
+that exact operation to its inputs and output. Registration checks the
+reference and its scope. A human-written annotation is not accepted as an
+axiom that the provider has some convenient semantics.
+
+For instance, a list append provider can carry length, element, and order
+properties. If the current contract only mentions length, the length theorem
+can discharge a substantial part of the branch without unfolding append's
+implementation. If the contract mentions order, a multiset summary is not a
+replacement. Multiple specifications for the same provider can be selected
+according to the demanded observations.
+
+Separate \emph{term retrieval} from \emph{proof retrieval}. A theorem whose
+statement mentions the target function may help prove an emitted composition;
+it does not automatically grant permission to call the reference function in
+the implementation. Likewise, a namespace blacklist is not a robust way to
+hide an oracle if the same operation is reachable through an alias. Provider
+exclusion should follow declaration dependencies and the explicit inventory.
+
+\subsection{Backward contract propagation}
+
+Suppose the sketch is $g(a)$, the desired postcondition is $Q(g(a))$, and a
+registered theorem establishes
+\[
+ \forall a,\ P(a)\to Q(g(a)).
+\]
+Then $P(a)$ is a sufficient obligation for the argument synthesizer. This can
+be much smaller than completing arbitrary arguments and evaluating them later.
+However, sufficiency alone does not justify deleting all arguments that fail
+$P$. They might satisfy $Q(g(a))$ for another reason. Keep this as one
+construction lane unless an equivalence or a necessary-condition theorem
+supports stronger pruning.
+
+For a conditional, split the postcondition into branch conditions under the
+exact guard assumptions. For a pattern match, use the branch substitutions
+from Section~\ref{sec:dependent}. For a constructor, propagate observations to
+fields using constructor laws. For an opaque higher-order provider, stop with
+a symbolic residual unless a suitable theorem is registered.
+
+This formulation is inspired by refinement-type synthesis and bidirectional
+example propagation~\cite{synquid,smyth}. Leant2's distinguishing constraint is
+that these rules operate on Lean's actual dependent expressions, and every
+claimed implication must be reconstructed in its original logic.
+
+\subsection{Law-carrying structures}
+
+Many useful Lean types ask for operations and proofs of their laws together.
+A monoid-like structure is not just three independent goals for multiplication,
+a unit, and associativity. The proof fields constrain the same operation
+metavariables; alternative units and multiplication terms must remain coupled.
+Use the structure telescope to generate holes, then let cheap law checks reject
+bad operation choices early.
+
+Operations can also be transported along an equivalence. Register a generic
+transport construction with its law proofs, and search for an appropriate
+equivalence as a subproblem. This reuses a mathematically meaningful algorithm
+instead of re-proving all laws from scratch. The equivalence itself is an exact
+value in the term graph, including inverse laws, not a Boolean claim from a
+plugin.
+
+Specification precision remains important. For a stable sort, sortedness and a
+permutation statement may not express preservation of the order of equal-key
+records. For a filter, a set-level membership equivalence can lose multiplicity
+information. The registry should support sequence- and position-sensitive
+relations when requested, not pretend every behavioral contract reduces to
+sets or lengths.

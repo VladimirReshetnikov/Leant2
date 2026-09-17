@@ -1,0 +1,129 @@
+\clearpage
+\appendix
+\section{Implementation interfaces and invariants}
+\label{app:interfaces}
+
+The following interface is a \emph{design sketch}. Only the two prototype modules are compiled experimental code. In a production API, constructors of accepted-result wrappers should be private to the acceptance module.
+
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language={}]
+FrozenProblem:
+  environmentIdentity, workerEpoch, toolchain
+  universeParameters, exactLocalTelescope
+  target : Expr
+  mandatorySpecification : Option Expr
+  observations : Array TypedObservation
+  providerPolicy, executionPolicy, trustPolicy, resourcePolicy
+
+RefinementProposal:
+  problemIdentity, branchIdentity
+  recipe : ImmutableRecipe
+  affectedHoles : Array StableHoleId
+  explanation : SearchDiagnostic
+
+BranchState:
+  nativeSnapshot
+  rootTerm, pendingGoals, dependencyGraph
+  delayedConstraints, recursiveCapabilities
+  observationState, immutableRecipe
+
+ProofServiceResult:
+  solved(proofRecipe, declaredAssignments)
+  refuted(refutationRecipe)
+  suspended(continuation, unresolvedReasons)
+
+SearchStepResult:
+  progress(newContinuations)
+  proposal(candidateRecipe)
+  exhausted(exactGrammarFrontier, optionalCertificate)
+  interrupted(reason, resumableState)
+\end{lstlisting}
+\end{minipage}\par
+
+An \code{Expr}-typed field does not establish that an expression is well-typed. Each owner must document which native checks have been performed. A \code{TypedObservation} similarly carries a scope and checking provenance, not merely a printable input/output pair.
+
+The minimum invariants are: all proposal effects remain branch-local until acceptance; all related dependent goals share one substitution state; every recursive use is justified by its schema; frozen assumptions and public universe parameters remain unchanged; resource consumption is never refunded by logical rollback; observations are never silently promoted to universal proofs; and export preserves the exact checked term/specification relationship.
+
+For long-running work, each lane should expose a bounded transition rather than a function that promises to produce its next candidate eventually. A provider enumerator, proof searcher, or normalizer that does not yield defeats fairness at a higher scheduler layer. Heartbeat and process-level limits are fallback interruption mechanisms, not a proof of real-time responsiveness.
+
+\section{The checked continuation-search implementation}
+\label{app:core}
+
+This is the actual search procedure from \code{prototype/Core.lean}. Its dependence on native contexts and the whole remaining-goal continuation is visible in the code. The production extensions discussed in the article are intentionally absent.
+
+\lstinputlisting[firstline=12,lastline=56,basicstyle=\ttfamily\footnotesize]{../prototype/Core.lean}
+
+The fuel is a recursive depth allowance, not a global bound on all explored alternatives. In particular, depth-first backtracking can explore many states at the same depth. Production scheduling must add a global charged-work ledger and make the continuation structure resumable. The prototype's catch-all exception handling is also not the production cancellation policy.
+
+\section{The checked behavioral certificate boundary}
+\label{app:behavior}
+
+The following excerpt is from \code{prototype/Behavior.lean}. The candidate returned by \code{certify} carries a proof of the universal specification. The counterexample theorem has a different role: it justifies rejecting a candidate that fails an observation.
+
+\lstinputlisting[firstline=49,lastline=68]{../prototype/Behavior.lean}
+
+The complete file includes the proof of \code{affine_spec_iff}, the finite grammar, the counterexample-guided loop, the executed result, and the count theorems. It is deliberately a small self-contained certified domain, not a replacement representation of Lean types.
+
+\section{Reproduction and artifact map}
+\label{app:reproduce}
+
+The archive contains this article's modular LaTeX source and PDF, both final prototype files, a pinned \code{lean-toolchain}, a minimal Lake file, selected verification receipts, an attempt history, and the user's supplied remote-checking tools. The failed indexed-helper revision is preserved only under \code{evidence}; it is not a build target.
+
+From the \code{prototype} directory, a local replay with the specified toolchain is:
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language={}]
+lake env lean Core.lean
+lake env lean Behavior.lean
+\end{lstlisting}
+\end{minipage}\par
+These commands are reproduction instructions, not a claim that a local replay occurred during preparation. For a remote replay using the supplied Python client, run from the archive root:
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language={}]
+python tools/axle_check.py prototype/Core.lean \
+  --no-audit --theorem Leant2Prototype.vecMap_spec \
+  --environment lean-4.34.0 --timeout 40 \
+  --output evidence/Core.replay.json
+
+python tools/axle_check.py prototype/Behavior.lean \
+  --no-audit --theorem Leant2Behavior.run_result \
+  --environment lean-4.34.0 --timeout 40 \
+  --output evidence/Behavior.replay.json
+\end{lstlisting}
+\end{minipage}\par
+The files already contain their axiom diagnostics. The selected \code{--theorem} controls the client's principal audit target; all named audits remain available in the full response. The artifact checker also compares the source identities and all retained audit inventories in the existing receipts. It performs no new Lean proof check.
+
+The two final source identities are:
+\begin{center}\footnotesize
+\code{Core.lean}\\
+\code{1ff971316812ea9815096746deda2588f1a6cc03aeed232b773460a1d878ea7f}\\[4pt]
+\code{Behavior.lean}\\
+\code{671b737e138efa949fb8334f94ae38827a3c3189362bb10e4b58ff42315e8535}
+\end{center}
+These identify the submitted source bytes; they are not a substitute for checking the files. The returned source echoes were additionally compared modulo surrounding whitespace.
+
+Build the article from its directory with \code{make}, or run \code{pdflatex} on \code{leant2.tex} three times to settle references and the contents. No external bibliography processor is required. The Python counterexample-count mirror and artifact-integrity checker can be run without Lean; their outputs are explicitly not Lean certification.
+
+\Needspace{34\baselineskip}
+\section{Status ledger}
+\label{app:status}
+
+\begin{longtable}{@{}L{0.35\textwidth}L{0.58\textwidth}@{}}
+\toprule
+Item & Status at delivery \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Native continuation-search tactic & Implemented in Lean; final file remotely accepted \\
+Thirteen small fully synthesized declarations & Remotely accepted at their exact included signatures \\
+Indexed-vector recursive map & Supplied skeleton with synthesized branch bodies; accepted \\
+Universal vector-map theorem & Author-written proof; accepted; \code{propext} dependency reported \\
+Affine finite grammar and CEGIS loop & Implemented and executed in Lean \\
+Affine universal certificate and replay theorem & Proved in Lean; accepted with the reported standard axiom dependencies \\
+Global native scheduler and demand index & Architecture and algorithms proposed; not implemented here \\
+Automatic recursion/motive/invariant discovery & Architecture and algorithms proposed; not demonstrated by the sketch test \\
+General behavioral proof service or SMT adapter & Interface and algorithms proposed; not implemented by the affine microbenchmark \\
+Original predecessor indexing/two-box fixtures & Reviewed as diagnostic evidence; not solved or rerun in this artifact \\
+Large-scale practical coverage or speedup & Evaluation protocol proposed; no benchmark claim \\
+Independent local kernel/comparator replay & Not performed; remote compiler checks and source identities retained \\
+\end{longtable}

@@ -1,0 +1,161 @@
+{
+  "representation": "Manually transcribed summary of Wolfram tool responses; not a raw, signed, or independently generated certificate.",
+  "date": "2026-09-17",
+  "execution_route": "Wolfram Language URLRead -> AXLE check endpoint; no local Lean compiler was available.",
+  "endpoint": "https://axle.axiommath.ai/api/v1/check",
+  "request_settings": {
+    "environment": "lean-4.34.0",
+    "ignore_imports": false,
+    "theorems_only": false,
+    "timeout_seconds": 90
+  },
+  "executor_identifiers_reported": {
+    "commit": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+    "docker_image_id": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+    "artifact_sha256": "127b8dcb3bbc7cfa7861743f512fbe955bd8a35e940d6f2959d02327a7aa8520"
+  },
+  "environment_limitations": [
+    "No Mathlib commit reported.",
+    "These files import Lean; imports were not overridden.",
+    "No independent typechecker or local Lean run was performed."
+  ],
+  "checks": [
+    {
+      "name": "Initial microprototype parser attempt",
+      "request_id": "bf75b7fe-8407-4593-9542-9fe2439487a9",
+      "okay": false,
+      "outcome": "Failed: optional TSepArray incorrectly treated as Array. Repaired by obtaining getElems before mapM. This failed source is not a delivered implementation."
+    },
+    {
+      "name": "Earlier 13-case successful microprototype",
+      "request_id": "1b3219e3-ad33-4312-8437-2d429aa35875",
+      "okay": true,
+      "failed_declarations": [],
+      "lean_errors": [],
+      "outcome": "Superseded by expanded final check below; three outputs audited at this earlier stage."
+    },
+    {
+      "name": "Final expanded microprototype",
+      "submitted_file": "MicroSynth.submitted.lean",
+      "annotated_file": "../prototype/MicroSynth.lean",
+      "request_id": "1490aa69-0708-478a-903d-b85ce0adbf78",
+      "http_status": 200,
+      "okay": true,
+      "failed_declarations": [],
+      "lean_errors": [],
+      "service_errors": [],
+      "same_trimmed_source": true,
+      "cached_response": false,
+      "reported_lean_version": "4.34.0",
+      "complete_synthesis_declarations": 15,
+      "supplied_elimination_skeletons": 2,
+      "expected_bounded_failure_controls": 3,
+      "axiom_reports": {
+        "microIdentity": [],
+        "microCompose": [],
+        "microDependent": [],
+        "microSigma": [],
+        "microRankN": [],
+        "microTwoUniverses": [],
+        "microIndexed": [],
+        "microFin": [],
+        "microChooseSecond": [],
+        "microChooseFirst": [],
+        "microConjunction": [],
+        "microStrictImplicit": [],
+        "microInstance": [],
+        "microChooseSecondAll": [],
+        "microDictionaryChoice": [],
+        "transportSkeleton": [],
+        "indexedHeadSkeleton": [
+          "propext"
+        ]
+      },
+      "evaluations": {
+        "microChooseSecond.val 11 29": 29,
+        "microChooseFirst.val 11 29": 11
+      },
+      "printed_terms": {
+        "microRankN": "fun R consume => consume fun A a => a",
+        "microTwoUniverses": "fun R consume => consume (fun A a => a) fun B a => a",
+        "microChooseSecond": "⟨fun a a_1 => a_1, microChooseSecond._proof_1⟩"
+      },
+      "timings_reported_ms": {
+        "parse": 1446,
+        "total": 1448,
+        "request_total": 1586,
+        "execution": 1581,
+        "queue": 5
+      },
+      "warning_summary": [
+        "Three unused-tactic linter warnings for expected-failure controls.",
+        "One unused local variable h warning.",
+        "Two service import-header advisories; no import replacement."
+      ]
+    },
+    {
+      "name": "Fresh certificate check",
+      "submitted_file": "Certificates.submitted.lean",
+      "annotated_file": "../prototype/Certificates.lean",
+      "request_id": "a4f8d54b-9c4d-42a1-96cd-a6186919d756",
+      "http_status": 200,
+      "okay": true,
+      "failed_declarations": [],
+      "lean_errors": [],
+      "service_errors": [],
+      "cached_response": false,
+      "reported_lean_version": "4.34.0",
+      "axiom_reports": {
+        "Leant2Evidence.Step.summary_sound": [
+          "propext",
+          "Quot.sound"
+        ],
+        "Leant2Evidence.Step.length_preserved": [
+          "propext",
+          "Quot.sound"
+        ],
+        "Leant2Evidence.Step.summary_necessary": [
+          "propext",
+          "Quot.sound"
+        ],
+        "Leant2Evidence.selected_correct": [
+          "propext"
+        ]
+      },
+      "evaluations": {
+        "selectedStep.run [1, 2, 3, 4]": [
+          4,
+          3,
+          2,
+          1
+        ]
+      },
+      "timings_reported_ms": {
+        "parse": 1345,
+        "total": 1350,
+        "request_total": 1466,
+        "execution": 1460,
+        "queue": 6
+      },
+      "warning_summary": [
+        "One unnecessarySeqFocus style linter warning.",
+        "Two service import-header advisories."
+      ],
+      "echo_comparison_note": "A first comparison using an explicit newline pattern returned false. A separate probe showed the service appends a newline. The identical cached repeat below used plain StringTrim and confirmed equality."
+    },
+    {
+      "name": "Certificate identical-source repeat",
+      "submitted_file": "Certificates.submitted.lean",
+      "request_id": "e80c576f-ad6b-406d-abf7-f4b41fa6af5c",
+      "http_status": 200,
+      "okay": true,
+      "failed_declarations": [],
+      "lean_errors": [],
+      "service_errors": [],
+      "cached_response": true,
+      "same_trimmed_source": true,
+      "outcome": "Same compilation/audit result; this was a cache hit, not a new independent execution."
+    }
+  ],
+  "experiment_scope": "MicroSynth is a small bounded synthesis tactic. Certificate theorems are handwritten, not synthesized. CEGIS is a separate finite Python grammar experiment. These do not constitute a complete Leant2 implementation."
+}

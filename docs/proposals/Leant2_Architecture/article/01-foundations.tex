@@ -1,0 +1,236 @@
+\section{The design decision}
+\label{sec:decision}
+The right successor is not ``Djex translated into Lean.'' It is a native dependent-term synthesizer that retains the useful lessons of Djex while removing the requirement that Lean types first fit a Haskell-oriented search language. Its central unit of work is a contextual judgment, not a string, a simple type, or an independently solved hole:
+\[
+  \Env;\G\vdash e:\Ty,
+  \qquad
+  \Env;\G\vdash p:\Spec(e).
+\]
+The environment $\Env$ contains imported declarations; $\G$ is an ordered local telescope, including types, terms, propositions, let-bindings, and local instances; $\Ty$ is the exact requested type; and $\Spec$ is an optional behavioral proposition about the generated term. A successful constrained result contains both $e$ and $p$. A useful unconstrained result contains $e$ and a type-checking receipt, but it makes no unstated claim about intended behavior.
+
+This choice has three important consequences. First, dependencies between types and terms are useful information rather than obstacles to be erased. A goal such as \code{Vec alpha (n + 1)} should expose an index constraint, not become an opaque atom unless a particular accelerator deliberately abstracts it. Second, proof search and program search must share choices. A proof failure about an earlier program fragment must be able to reopen that fragment. Third, the trusted acceptance boundary is deliberately smaller than the search implementation: a complicated heuristic is allowed to make poor suggestions, but not to redefine success.
+
+\subsection{What the present repositories already provide}
+The baseline is the Leant tree at commit \code{6bf05ad78c467989e68290f2d08bbed40802d485}, with Djex submodule \code{e237e8667190aff38faaa590ce5b12afbffac452}. The reviewed files are identified in Appendix~\ref{app:sources}. This is a source-grounded design review, not a rerun of the repositories' full test suites.
+
+Djex already separates a shared synthesis foundation from Djinn's logical search and Exference's ranked search. Its architecture treats checked inventories, source identities, and candidate evidence as owned values rather than informal annotations~\cite{djexarch}. Leant's fragment translator documents the remaining semantic gap: some type applications retain structure, but term-indexed applications and other unsupported dependent subterms can remain opaque; negative claims are correspondingly restricted~\cite{fragment}. The behavioral checker already distinguishes a proof of the requested proposition, a proof of its negation, and an inconclusive attempt. It also retains the actual candidate when checking a contract that might ignore it~\cite{behavioral}.
+
+Therefore, the rewrite must not regress to a simplistic ``enumerate strings and run Lean'' architecture. Nor should it advertise rank-N support, exact dictionaries, or candidate replay as entirely new inventions. The improvement sought here is a broader native search space and a better integration of dependency, behavior, recursion, and resources.
+
+The existing Lean rewrite analysis already advocates exact expressions and a project-matched worker boundary~\cite{rewrite}. The present article takes those principles as a starting point and specifies the missing operational design: how to construct dependent terms, coordinate shared holes, generate recursive programs, propagate contracts, and distinguish empirical success from justified completeness.
+
+\subsection{A practical scope, not a percentage promise}
+``A large fraction of practical Lean types'' is an evaluation goal, not a theorem. It depends on the user population, available libraries, admissible axioms, whether library reuse counts, whether a useful specification is supplied, and the resource budget. A type like \code{List alpha -> List alpha} has a trivial inhabitant; synthesizing the intended stable sort is a different task. A type involving an inaccessible noncomputable object may have a mathematical inhabitant but no admissible executable result.
+
+The initial product should target polymorphic plumbing, products and records, user-defined inductives, indexed constructors, dependent adapters, short library compositions, structurally recursive traversals, and programs with tractable equational contracts. Stronger mathematical proofs, invariant discovery, mutually recursive indexed families, quotient computation, and effects belong to explicit capability tiers, not a catch-all success claim.
+
+\begin{designbox}
+\textbf{Recommended identity.} Leant2 is a native, proof-carrying program synthesizer with a portfolio of bounded search methods. It is neither a universal inhabitance decider nor merely a new name for an existing proof tactic.
+\end{designbox}
+
+\section{The query and result contracts}
+\label{sec:query}
+\subsection{Freeze the question before searching}
+A query is the tuple
+\[
+ Q=(\Env,U,\G,\Ty,\Spec,X,\Grammar,\Pi,\Budget).
+\]
+Here $U$ is the universe-parameter context, $X$ is a finite set of typed observations, $\Grammar$ is the admitted construction grammar and provider inventory, $\Pi$ is the trust and executability policy, and $\Budget$ is the resource policy. These components are elaborated and sealed before speculative search begins.
+
+The statement cannot contain an unsolved elaborator metavariable that search is free to instantiate to make the problem easier. Query elaboration should resolve synthetic metavariables and report unresolved input ambiguity before freezing. Universally quantified universe parameters remain parameters. A user may explicitly ask the synthesizer to choose a type or an index, but that is represented as an owned synthesis hole under a stated binder, not as an accidental ambiguity in the specification.
+
+Consider a user request with an overloaded operation. Its selected instance is part of the elaborated question. A solver must not silently change the instance and then prove a proposition about a different operation. Similarly, a local assumption appearing in the proof remains a parameter of the exported declaration. It does not disappear just because it was implicit in the editor context.
+
+For $\Ty:\code{Type}$, the familiar encoding
+\[
+ \{f:\Ty\mid\Spec(f)\}
+\]
+is convenient and is used in several experiments. It is not the only internal encoding. Since queries can target arbitrary \code{Sort u}, the interface should store a program root and a proof root separately, with a common context. A sort-polymorphic wrapper such as an appropriately formed dependent pair is an implementation option, not a reason to restrict all targets to the universe accepted by a particular wrapper.
+
+\subsection{Behavioral inputs are Lean propositions}
+The primary constraint language is Lean itself. For example, the intended proposed frontend could offer:
+\begin{lstlisting}
+-- Proposed surface syntax, not implemented by the prototype.
+synth successor : Nat -> Nat
+  satisfying fun f => forall n, f n = n + 1
+  using [Nat.succ]
+
+synth mapVec : (alpha -> beta) -> Vec alpha n -> Vec beta n
+  satisfying fun g => forall f xs,
+    toList (g f xs) = List.map f (toList xs)
+\end{lstlisting}
+The frontend elaborates the target and predicate using the project's namespaces, notation, coercions, and instances. Specialized arithmetic or finite-domain constraints are derived views of the resulting proposition. They do not constitute a second public language whose semantics can drift from Lean.
+
+Examples are equally explicit. A list of observations $f(a_i)=b_i$ is a finite conjunction, not a disguised universal specification. A property-based test plan is a search aid. A universal contract remains universal even when the current test bank is empty. If the full contract is too difficult to prove, the result can be presented as test-consistent only in a mode that permits that status; it cannot be silently accepted as certified.
+
+\subsection{Statuses that cannot be conflated}
+\begin{longtable}{@{}L{0.24\textwidth}L{0.71\textwidth}@{}}
+\toprule
+Status & Exact meaning\\\midrule\endhead
+Typed candidate & A term checks at the frozen target. No additional behavioral claim is made.\\
+Test-consistent candidate & A typed term passed the stated finite observations or tests. This is not universal correctness.\\
+Certified candidate & The term and a proof of the exact requested contract pass acceptance under the stated assumptions and policy.\\
+Refuted candidate & A checked counterexample or proof of the negation rejects this candidate. It says nothing about all other candidates.\\
+Grammar exhausted & A specified finite search space was completely examined, with enough evidence to justify that particular exhaustion claim.\\
+Search exhausted & A configured resource limit was reached or available search lanes ended without the necessary completeness evidence.\\
+Unsupported & An essential requested capability or admissible representation is outside the enabled implementation.\\
+Exact negative result & A Lean proof of the appropriate negative statement, or a separately described theorem about an exact formal fragment, has been obtained.\\
+Infrastructure failure & Worker crash, canceled request, malformed solver response, or environmental inconsistency. Not mathematical evidence.\\
+\bottomrule
+\end{longtable}
+A candidate can be typed and refuted, or typed and still awaiting verification. These are best represented as orthogonal evidence fields internally, rather than a single Boolean. The table describes user-visible summaries.
+
+A ``best'' result is also qualified. It means best among the verified candidates actually considered under a declared cost policy. Global minimality requires exhaustive exploration below the candidate's cost and an appropriate lower-bound argument. The ordinary interactive mode should not imply it.
+
+\subsection{Trust profiles and computational requirements}
+The trust policy has separate fields for admitted logical assumptions and operational requirements. A strict constructive profile can forbid all additional axioms. An ordinary mathematical profile may admit Lean's standard logical axioms while still excluding \code{sorryAx}, arbitrary new axioms, and unauthorized premises. An executable profile additionally requires that the selected program compile and respect an explicit effects policy.
+
+These dimensions must not be collapsed. A classical proof about an executable function need not make the function noncomputable: the proof can be erased. Conversely, an axiom-free term built using a recursor need not be accepted by a particular code-generation route. The vector experiment in Section~\ref{sec:experiments} encountered exactly this second issue. Checking the program's dependency closure and its actual compilation route is different from merely inspecting the proof's axiom list.
+
+\section{System architecture and semantic ownership}
+\label{sec:architecture}
+\subsection{A Lean controller and project-matched workers}
+The frontend should be a Lean library exposing tactic, term-elaborator, and command interfaces, plus an optional Lean executable for REPL and batch use. Each project-local worker is built with that project's toolchain and imports. A lightweight controller manages requests, cancellation, progress, and worker replacement. There is no Haskell frontend or Haskell semantic compatibility layer.
+
+Within a worker, synthesis and ordinary Lean metaprogramming can share an environment snapshot. Process isolation is still valuable for untrusted plugins, external solver calls, memory exhaustion, and irreversible effects. An in-process proof tactic is the fast path; a replaceable worker is the robustness boundary. The architecture does not require the worker to exchange Lean internal pointers with a different toolchain.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[node distance=8mm and 8mm,
+ box/.style={draw=accent,rounded corners=2pt,fill=light,align=center,text width=4.2cm,minimum height=1cm,font=\small},
+ arr/.style={-{Latex[length=2mm]},thick,draw=ink}]
+\node[box] (front) {Lean frontend\\command / tactic / editor};
+\node[box,right=of front] (query) {Frozen query owner\\environment, context, policy};
+\node[box,below=of front] (index) {Provider and recursor indexes\\demand-driven retrieval};
+\node[box,below=of query] (search) {Native search worker\\shared program--proof hole graph};
+\node[box,below=of index] (domains) {Search accelerators\\contracts, abstractions, solvers};
+\node[box,below=of search] (verify) {Independent acceptance stage\\statement, kernel, axioms, code};
+\node[box,below=of verify] (export) {Verified export and receipts\\term, proof, provenance};
+\draw[arr] (front)--(query);
+\draw[arr] (query)--(search);
+\draw[arr] (index)--(search);
+\draw[arr] (domains)--(search);
+\draw[arr] (search)--(verify);
+\draw[arr] (verify)--(export);
+\draw[arr] (search.west) to[bend right=15] (domains.east);
+\draw[arr,dashed] (verify.east) to[bend right=35] node[right,font=\scriptsize,align=left]{rejected or\\deferred} (search.east);
+\end{tikzpicture}
+\caption{Proposed architecture. Search accelerators suggest and filter under explicit contracts; only the acceptance stage can issue a certified result.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{One semantic owner, several derived views}
+The query owner stores the authoritative elaborated target and contract, their telescope, the admitted environment, and policy. Indexes, feature vectors, abstraction graphs, pretty-printed text, and test signatures are derived views. None may replace the original values at an acceptance boundary.
+
+Lean's \Expr{} is a syntax representation, not an intrinsic proof that the represented expression is well typed. The advantage of using it is exact vocabulary and access to Lean's own operations, not permission to omit validation. An application assembled with \code{mkAppN}, for example, can still be ill typed. A local free-variable identifier is meaningful only relative to its local context. A metavariable identifier is meaningful only relative to its owning metavariable context.
+
+The proposed internal ownership hierarchy is:
+\begin{lstlisting}
+QueryOwner
+  frozen environment / universe parameters / local telescope
+  exact target / exact contract / admissibility policy
+  provider inventory version / grammar description
+
+BranchOwner
+  query reference
+  branch-local Meta state and local-context views
+  program root / contract root / dependency graph
+  pending constraints / continuations / search provenance
+
+AcceptedCandidate
+  query identity
+  closed program / closed contract proof
+  acceptance receipt / axiom and computation reports
+\end{lstlisting}
+This is a schematic interface, not a compilable declaration. In particular, an accepted candidate should be constructible only by the verifier. A public record whose fields users can fill arbitrarily is not a meaningful authority boundary by itself.
+
+\subsection{Persist plans, not dangling metavariables}
+There are two useful persistence formats. In a live worker, persistent Lean state snapshots support cheap branch rollback. Across processes or sessions, save a replayable construction plan containing declaration names, universe applications, binder positions, rule choices, and explicit witnesses, or a validated closed expression in a pinned environment. Do not serialize a raw \code{MVarId} and assume it denotes the same unknown after reloading.
+
+A construction-plan format is not a new approximate type system. Its purpose is transport and replay. All types referenced by the plan are reconstituted as Lean expressions and checked in the destination worker. Unknown or incompatible environment identities cause replay failure, never reinterpretation. The displayed source is generated only after a candidate has passed semantic checks, and its copy-paste replay is a separate usability check.
+
+\subsection{Acceptance is a transaction}
+The acceptance stage closes the candidate under the frozen telescope, instantiates only legitimately solved synthesis metavariables, and checks that no unresolved expression or universe metavariables remain. It then validates the program declaration against the frozen target and the proof declaration against the frozen predicate applied to that program. Both declarations are retained even when the predicate ignores its argument.
+
+The transaction runs in a scratch environment with kernel checking enabled. It rejects unexpected environment mutations and unauthorized newly introduced assumptions. It audits dependencies of both the program and proof, not just the final printed theorem. Where execution is requested, it compiles the actual program and records the result separately. The user's project receives no declaration until the entire transaction succeeds.
+
+For a higher-assurance deployment, candidate-producing metaprograms are treated as untrusted code and the exported declarations are replayed in a separate controlled checker process against a separately prepared challenge. This strengthens the ordinary tactic/kernel boundary, which by itself does not sandbox arbitrary metaprogram effects. Lean's validation documentation distinguishes such assurance levels~\cite{validation}. The experiments here used remote compilation and explicit axiom audits, not that stronger independent-checker workflow.
+
+\section{The native search state}
+\label{sec:state}
+\subsection{A dependent AND--OR graph}
+A partial candidate consists of a root expression with holes and a graph recording how those holes were introduced. Each hole $h$ has a local telescope $\G_h$, a target $T_h$, a role, and a set of unresolved dependencies. Roles include program term, type argument, universe choice, instance argument, contract proof, termination proof, and invariant.
+
+An application of a function can create an AND node: all required arguments must be constructed. A choice of constructor or provider is an OR node. Unlike a propositional proof tree, however, the child problems are not generally independent. The type of a later argument can mention an earlier argument; an instance can determine a computational operation; and a contract can reject an otherwise well-typed program choice.
+
+For the target
+\[
+ \{n:\mathbb N\mid n=1\},
+\]
+a constructor choice produces a term hole $h:\mathbb N$ and a proof hole $q:h=1$. The assignment $h:=0$ solves the first hole but blocks the second. Treating the first solution as permanent loses the valid result $h:=1$. A product of independent ``first-answer'' solvers is therefore not a correct search architecture for the desired behavior.
+
+\subsection{Continuation-aware backtracking}
+The basic control rule is: a choice succeeds only when its newly created obligations \emph{and the surrounding continuation} succeed. A small depth-first version is:
+\begin{lstlisting}
+solve(fuel, pendingGoals):
+  if pendingGoals is empty: return success
+  if fuel is zero: return unknown(limit)
+  choose an eligible goal g
+  save the complete allowed branch state S
+  for action in alternatives(g):
+    restore S
+    outcome := run action with its own resource limit
+    if outcome introduces children:
+      result := solve(fuel - 1, children ++ remainingGoals)
+      if result is success: return success
+    retain diagnostic or deferred work as appropriate
+  restore S
+  return no-success-at-this-budget
+\end{lstlisting}
+This is the mechanism tested by the native prototype. Production search should expose resumable alternatives instead of relying on the host call stack, but it must preserve the same dependency semantics. Merely running a tactic separately on every hole and concatenating the results is not equivalent.
+
+The state restored for a speculative rule includes all mutable information the rule is allowed to change: metavariable assignments, local-instance state, postponed constraints, and any owned elaborator state. A strictly \code{MetaM}-only rule can have a narrower transaction than a tactic invoking term elaboration. Commands that create declarations or external effects do not belong inside a rollback-only Meta transaction; they require an isolated scratch environment or subprocess. Names allocated during unsuccessful branches are not reused as if they identified the same objects.
+
+\subsection{Which goal should be solved next?}
+The default choice is the most constrained eligible goal, subject to dependency barriers. A constructor-index equation or a determined instance obligation can cheaply constrain several program holes. A proof goal involving an unknown function may instead be deliberately delayed until enough program structure exists. The scheduler computes watchers from each unresolved metavariable to the goals whose targets or constraints mention it.
+
+When an assignment occurs, only affected goals are reclassified. A flex--rigid equation that becomes pattern-like is retried. A class obligation whose type parameters become known is retried. A contract whose application now reduces is simplified. This event-driven scheme avoids repeatedly normalizing every goal after every small step.
+
+Syntactic separation is not enough to prove independence: the absence of the same hole identifier from two printed targets does not rule out shared universe or local-instance constraints. An implementation may optimize genuinely independent subgraphs only after computing their full dependency support.
+
+\subsection{Freezing and reopening program choices}
+For efficiency, a candidate sent to expensive verification is frozen as a closed term relative to the query telescope. The verifier may not solve its proof obligation by changing the candidate. A successful proof is evidence about that frozen candidate. A failed proof returns either a real counterexample, a scoped search conflict, or an unknown result.
+
+The search engine can then reopen an earlier program choice in its own branch graph. This does not contradict freezing: the replacement is a new candidate with a new identity. The proof of the previous candidate cannot be attached to it without an explicit equality transport or a fresh proof. This rule prevents a subtle form of evidence reuse in which a shared metavariable assignment silently changes the subject of an already accepted proof.
+
+\section{The provider inventory and type-level search}
+\label{sec:providers}
+\subsection{Retrieve a bounded relevant inventory}
+A production project may expose a very large environment. Exhaustively trying every constant at every hole is neither a useful ranking policy nor a sensible first implementation. Build persistent indexes when modules are imported, keyed by weak-head result heads, argument/result dependencies, inductive family, names, and optional user tags.
+
+The default retrieval sequence is local variables and local instances; explicitly requested providers; constructors and projections relevant to the target; tagged library combinators; a namespace or module neighborhood; and finally a broader environment fallback. Each expansion is visible in the query's effective grammar and budget record. A user can lock the inventory for reproducible searches.
+
+An index must include wildcard and reducible-head buckets. If a result head is a variable, or is revealed only after reduction, excluding it from all concrete-head buckets can lose a useful provider. The index is a retrieval accelerator, not a proof of impossibility. Broader retrieval can be resumed when a narrow inventory is exhausted.
+
+\subsection{Instantiate full dependent spines}
+Given a provider
+\[
+ c:\Pi(x_1:A_1)\cdots(x_k:A_k(x_1,\ldots,x_{k-1})).R(x_1,\ldots,x_k),
+\]
+create fresh universe metavariables for this occurrence of a global constant and open its full telescope in order. Explicit, implicit, strict-implicit, and instance-implicit binders are retained. Later argument types are instantiated with the actual earlier arguments or their shared holes. Unify the resulting output with the target under branch-local Lean definitional equality.
+
+Some explicit arguments can be inferred from result matching; some implicit ones remain genuine search problems. The binder's presentation category is not a reliable criterion for whether it needs search. In particular, automatically filling every implicit argument with an unconstrained metavariable and then forgetting it is not a solution.
+
+Local providers are different from global schemes. Their free-variable identities and existing universe parameters must be preserved exactly. Freshening a local provider as though it were a global polymorphic declaration can turn a fixed universe or a fixed dictionary into a new choice.
+
+\subsection{Type arguments are terms too}
+Moving to Lean removes an artificial ceiling on the forms of type expression retained in the search state. It does not make type-level synthesis decidable. When an argument has type \code{Sort u}, demand-directed alternatives should first come from types visible in the target, local hypotheses, instantiated provider parameters, and declared input/output relationships. Only then should a bounded type-expression grammar construct products, sums, dependent pairs, function types, and type-constructor applications.
+
+This grammar is scoped. A type proposed under a binder may mention that binder, but may not escape it. Its universe constraints must be solved by Lean rather than flattened to a single ``proper type'' category. Lean's universe hierarchy remains part of the problem; the impredicativity of propositions does not make arbitrary \code{Type}-level instantiation universe-free~\cite{universes}.
+
+For unresolved higher-order equations, try Lean's ordinary elaboration and unification machinery under bounded transparency, then explicit pattern-oriented or demand-generated alternatives. A stuck equation is not necessarily inconsistent. It can be postponed, escalated to a different transparency level, or left unsupported by the current strategy. The general higher-order problem is not solved merely by calling \code{isDefEq}.
+
+\subsection{Dictionary evidence has computational identity}
+Two values of the same class type can implement different operations. Therefore, cache keys and candidate identity cannot erase dictionary terms just because their types agree. In ordinary Lean-source mode, instance search should follow Lean's usual local and global resolution policy. In an explicitly selected-provider mode, the user may supply a particular dictionary as an ordinary term; the generated application must retain it.
+
+The native prototype exercises this boundary modestly through \code{Inhabited.default} and a local instance. It also includes two same-typed payload records where the contract selects the right-hand value. It does not implement a general alternative-instance exploration policy. Such a policy should be opt-in and should show the selected instances in the generated result, rather than silently searching for an unusual interpretation of overloaded notation.

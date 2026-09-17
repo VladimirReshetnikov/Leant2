@@ -1,0 +1,218 @@
+\section{Concrete implementation organization}
+\label{sec:implementation}
+\subsection{Module boundaries}
+The main library should depend initially on Lean and its standard library. Proof backends that require additional project libraries are optional imports. This keeps basic synthesis useful outside Mathlib while allowing a richer mathematical profile inside it. The proposed module layout is:
+\begin{lstlisting}
+Leant2/
+  Frontend/       -- commands, terms, tactics, editor suggestions
+  Query/          -- frozen elaboration, contexts, policy, identities
+  Native/         -- version-specific Lean API adapters
+  Index/          -- providers, constructors, recursors, contracts
+  Search/         -- holes, dependencies, rules, continuations, queues
+  Rules/          -- introductions, spines, cases, transport
+  Recursion/      -- descriptors, carriers, structural/WF templates
+  Contracts/     -- exact predicates, examples, backward rules
+  Domains/        -- length, affine folds, finite data, bitvectors
+  Proof/          -- core automation and optional tactic adapters
+  Verify/         -- closed declarations, statement and axiom audit
+  Export/         -- checked plans, presentation, replay receipts
+  Worker/         -- project-local protocol, resources, isolation
+  Tests/          -- semantic regressions and negative controls
+\end{lstlisting}
+The version-sensitive layer is intentionally small. It wraps native context operations, goal construction, constructor metadata, instance synthesis, dependent elimination, and final declaration checking. Search policies should not scatter assumptions about Lean internal APIs throughout the codebase.
+
+The existing proof automation and semantic libraries should be reused through adapters, not copied into a second quasi-standard library. Relevant concrete facilities are Lean's expression and metavariable operations, persistent environment extensions and discrimination-style indexes, constructor and recursor metadata, ordinary simplification and decision procedures, and project-enabled Aesop or arithmetic tactics. Exact API names outside the compiled prototype should be confirmed against the selected toolchain when implemented.
+
+\subsection{Rule and worker interfaces}
+A production rule should expose bounded resumable work, rather than a function that can monopolize the request until it succeeds. One schematic interface is:
+\begin{lstlisting}
+Rule.prepare : FrozenQuery -> HoleView -> MetaM RuleCursor
+Rule.step    : RuleCursor -> SliceBudget -> MetaM RuleStep
+
+RuleStep :=
+  | alternative CheckedConstructionPlan NewObligations Continuation
+  | suspended RuleCursor ResourceReport
+  | exhausted ScopeReport
+  | unsupported Reason
+
+Verifier.check : FrozenQuery -> FrozenCandidate -> VerifyBudget
+              -> VerificationOutcome
+\end{lstlisting}
+``Checked construction plan'' here means checked as an intermediate rule application in its owning context. It is not yet an accepted solution. Only the verifier can create the final certified-result authority.
+
+Workers exchange request identifiers, environment identities, serialized query handles, plans or closed terms, and structured diagnostics. Every response identifies its owning request and candidate. Stale responses from a canceled request are discarded. A protocol parser is bounded in input size, nesting, and message count. Neither a log line nor a solver-supplied success tag is a proof artifact.
+
+\subsection{A complete finalization algorithm}
+The implementation should make finalization easy to inspect:
+\begin{lstlisting}
+finalize(Q, proposedProgram, proposedProof):
+  require Q is still the active frozen query
+  freeze and close program under Q.telescope
+  reject unresolved term/universe metavariables or escaping locals
+  check program at the exact frozen target in a scratch environment
+  freeze and close proof against Q.contract applied to that program
+  check proof in the same controlled environment
+  audit both dependency closures and all introduced declarations
+  enforce Q.assumptionPolicy
+  if Q.requiresExecutable:
+    compile the exact program and check Q.effectPolicy
+  export only after the transaction succeeds
+  optionally re-elaborate displayed source and compare its meaning
+\end{lstlisting}
+This order prevents a contract that ignores its argument from hiding an invalid program. It also prevents the proof backend from changing the frozen statement by resolving leftover input metavariables. A separate high-assurance deployment can replay exported declarations against a challenge in an independent checker process.
+
+For typed-only mode, omit the behavioral proof step but retain the program, environment, and policy checks. For test-consistent mode, record every checked or evaluated observation and its assurance level. The same object must not be reported as certified merely because its status passed through the typed-only path first.
+
+\subsection{Initial operational profiles}
+Use named profiles rather than many unexplained numeric knobs. A \emph{local} profile searches locals, constructors, projections, and explicitly supplied providers with small type-instantiation and case budgets. A \emph{library} profile adds indexed provider composition and selected proof automation. A \emph{recursive} profile enables registered templates and verified summaries. An \emph{audit} profile uses a fixed explicit grammar, deterministic enumeration, no silent beam eviction, and complete discarded-work accounting.
+
+Each profile still has total heartbeats or equivalent work, wall time, memory, generated-node count, candidate count, proof-worker limits, and cancellation behavior. Default numerical values should be tuned from actual benchmark measurements rather than invented from the tiny experiment here. The prototype's fuel values of 6, 24, and 32 are experimental depth limits only; they are not proposed production defaults.
+
+\subsection{Errors should explain the missing mechanism}
+A useful failure report identifies the best partial constructions, the blocking obligations, the provider scope searched, and which limits were reached. For instance:
+\begin{lstlisting}
+No certified result within this request.
+  Native constructor/application search: exhausted at depth 12.
+  Recursive templates tried: list fold, generalized accumulator.
+  Best typed candidate: retained for inspection.
+  Remaining obligation: accumulator invariant preservation.
+  Verification: arithmetic backend timed out; no counterexample.
+  Negative conclusion about all Lean inhabitants: not established.
+\end{lstlisting}
+This is proposed diagnostic text. It is more actionable than a generic ``unsupported dependent type'' message and more honest than ``no implementation exists.'' The report should not invent a human explanation from opaque failure codes; rule adapters return structured reasons that the renderer can summarize.
+
+\section{A development sequence with measurable gates}
+\label{sec:roadmap}
+\subsection{Stage I: freeze, construct, and reject correctly}
+Build the query owner, exact local telescope handling, native introduction/application/constructor rules, and finalizer. The acceptance gate is not just a set of successful examples. It includes wrong-target, wrong-instance, unresolved-metavariable, escaping-local, hidden-sorry, custom-axiom, and stale-environment controls. The first public form can be a tactic that replaces a term hole and a command that emits a definition plus its contract theorem.
+
+The supplied native core is a useful starting experiment, not a production module to adopt unchanged. Before adoption it needs complete resource accounting, structured failures, qualified-name resolution, explicit root validation, and ownership tests. Its shared-continuation mechanism should remain visible and testable as those features are added.
+
+\subsection{Stage II: native dependency as a first-class feature}
+Add result-directed provider indexes, full dependent spines, contextual universe tests, local-instance fidelity, dependent-pair search, indexed constructors, and equality transport. The gate contains at least one positive and one negative case for each kind of dependency. Tests should include two locals with identical types but different values, two class dictionaries with distinct computational payloads, and multiple universes whose roles cannot be swapped.
+
+A successful signature alone is insufficient when there are trivial inhabitants. Every behavioral family should have contracts that distinguish its intended provider usage or data flow. The separate higher-rank contract in the prototype illustrates this requirement.
+
+\subsection{Stage III: dependent elimination and structural recursion}
+Implement the motive/generalization adapter and a small recursion-descriptor library for lists, trees, and vectors. Begin with fixed public templates, then add demand-derived carriers and generalized accumulator parameters. The gate requires executable code, termination checking, exact result indices, and checked behavioral theorems. A manually provided template and an automatically discovered template are separate benchmark categories.
+
+Regression cases should include vector map, vector append with any necessary index equality transport, a tree fold, a list left-fold expressed through a function carrier, and accumulator reverse. Each tests a different failure mode. Passing vector map does not establish support for arbitrary indexed recursion.
+
+\subsection{Stage IV: contract domains and proof integration}
+Port the affine-fold parameter search from the Python experiment into a Lean domain plugin, keeping its generic certificate theorem. Add a length-summary domain and a finite-data domain with independently checked encodings. Introduce the three-valued verifier interface and fair revisiting of unknown candidates.
+
+The gate requires exact Lean replay of every rejected model used for proof-authorized pruning, proof reconstruction for every certified answer, and spurious-model controls for deliberately coarse abstractions. Measure both certificate calls and end-to-end time; reductions in one cannot stand in for the other.
+
+\subsection{Stage V: scale and assurance}
+Add persistent indexes, scoped positive caches, bounded conflict learning, abstraction-guided provider composition, and parallel workers. Only after the serial invariants are stable should the system share validated cache entries across workers. CI should exercise request cancellation, worker replacement, malformed outputs, stale results, and environment changes.
+
+At this stage, add independent declaration replay and challenge comparison for higher-assurance deployments. A theorem-producing library plugin should not be able to redefine the user's proposition or add a hidden axiom merely by changing the worker environment. Logical correctness and operating-system isolation need separate tests.
+
+\subsection{Stage VI: broaden deliberately}
+Well-founded recursion, automatically synthesized invariant families, quotient-respecting constructions, and effectful programs should be added as explicit capabilities with individual acceptance gates. For effectful programs, a verified weakest-precondition interface is preferable to executing arbitrary \code{IO} candidates during search. Lean's current \code{mvcgen} facility is a relevant integration point for supported monadic verification, not a claim that arbitrary effects become synthesizable~\cite{mvcgen}.
+
+The expansion criterion is evidence of a reusable mechanism on held-out tasks. Merely adding many one-off templates can improve a benchmark count without improving the architecture. The public documentation should distinguish built-in templates, library reuse, and genuine open-ended term construction.
+
+\section{Evaluation: making practical coverage meaningful}
+\label{sec:evaluation}
+\subsection{Separate tasks that look superficially similar}
+A useful evaluation suite has several independent tracks. Type inhabitation asks for any admissible term. Behavioral synthesis asks for a specified implementation. Library composition allows the intended operation as an available component. Rediscovery withholds that operation and relevant aliases. Template completion supplies a recursion structure. Template discovery does not. Proof repair and program repair are separate tasks with different allowed edits.
+
+Reporting a single success percentage across these tracks would obscure what the system actually does. In particular, \code{fun _ => []} may solve an unconstrained list-to-list type but should not count as successful list processing in the behavioral track.
+
+\subsection{Coverage matrix}
+\begin{longtable}{@{}L{0.24\textwidth}L{0.39\textwidth}L{0.29\textwidth}@{}}
+\toprule
+Family & Proposed benchmark focus & Evidence in this package\\\midrule\endhead
+Polymorphic plumbing & Several universes, nested callbacks, explicit and implicit binders & Small compiled positive corpus.\\
+Dependent pairs and records & Earlier-field choices affect later fields and contracts & Sigma and payload examples.\\
+Indexed constructors & Inferred parameters and nontrivial index constraints & Vector cons example.\\
+Dependent elimination & Motives, dependent locals, impossible branches & Hand-guided equality transport; broader adapter proposed.\\
+Structural recursion & Smaller calls, generalized parameters, executable export & Hand-supplied vector-map template with synthesized branches.\\
+Contract domains & Exact bridge, certificates, replayed counterexamples & Affine-fold search plus 27 universal proofs.\\
+Large library composition & Retrieval quality, opaque/reducible heads, provider diversity & Proposed, not benchmarked here.\\
+Well-founded recursion & Measures and decrease proofs & Proposed.\\
+Effects and quotients & WP or quotient-respect obligations & Proposed later capabilities.\\
+\bottomrule
+\end{longtable}
+
+\subsection{Benchmark provenance and held-out evaluation}
+Reuse suitable existing Leant/Djex examples as a compatibility corpus, but pin their source revisions and do not mix historical receipts with new runs. Add native Lean cases that the old fragment representation necessarily treats conservatively. Select held-out tasks from actual user modules after removing names or declarations that directly solve the query, according to the track's rules.
+
+Record exact imports, toolchain, provider inventory, type and behavior constraints, trust policy, resource limits, and allowed templates. Development examples should not be presented as held-out tests. Family-level splits are preferable to merely renaming identifiers in near-duplicate tasks. Performance results should be repeated enough to separate warm-cache behavior, compilation overhead, and actual search variation.
+
+\subsection{Metrics beyond solved count}
+Measure time to first typed candidate, first test-consistent candidate, and first certified candidate separately. Record peak memory, expanded native states, unification and normalization effort, provider candidates retrieved, proof attempts, counterexample replays, compilation failures, and final proof size. Candidate quality includes readability and dependency footprint, but these must not override correctness.
+
+Ablations should remove shared-continuation backtracking, dependent result matching, carrier generalization, semantic filtering, and cache layers one at a time. The payload and constrained-natural examples provide small regression witnesses for backtracking. Larger workloads are needed to judge its performance cost. The affine experiment provides a domain-level comparison of certificate attempts, not an end-to-end Leant2 ablation.
+
+For negative results, count separately: checked impossibility theorems; exhaustive rejection of a finite candidate grammar; exhaustive failure of a bounded proof grammar; and ordinary timeout. Even a finite program grammar does not by itself make arbitrary universal contracts decidable. Enumerating all its candidates while leaving some proofs unknown cannot establish that the grammar contains no correct program.
+
+\section{Design alternatives and final recommendation}
+\label{sec:conclusion}
+A direct Haskell-to-Lean translation would preserve too much of the original approximation boundary. A tactic-only wrapper would delegate useful proof obligations but provide too little control over program alternatives, recursion structures, and behavioral ranking. A solver-only design would either restrict the specification language severely or place an unsafe semantic translation at its center. A giant unrestricted enumerator would retain exactness but squander the information already present in dependent types and contracts.
+
+The recommended design combines a small exact native core with explicitly scoped accelerators. Its decisive engineering commitments are a frozen query, one owner for contextual semantics, continuation-aware program/proof search, exact dependent spines and motives, restricted recursive-call capabilities, proof-producing contract domains, and an acceptance transaction independent of heuristic success. Resource limits and incomplete search are normal operational outcomes, not exceptions to hide.
+
+The experiments justify implementing the first stages: the native core already handles representative polymorphic and dependent constructions, shared backtracking resolves behavioral choices, structural-template completion can produce executable code, and a small domain can reconstruct universal proofs from synthesized parameters. They also identify two immediate safeguards: compiler acceptance must be checked separately from logical typing, and a reported compilation success must be combined with declaration and axiom audits.
+
+The resulting Leant2 would have a credible route toward broad practical usefulness without claiming to solve an undecidable general problem. Its strength would come from using Lean's full semantic structure where it is available, and from making every shortcut, unsupported case, and completeness claim explicit.
+
+\appendix
+\section{Repository source map and version scope}
+\label{app:sources}
+The Leant commit inspected was \code{6bf05ad78c467989e68290f2d08bbed40802d485}. Its pinned Djex submodule was \code{e237e8667190aff38faaa590ce5b12afbffac452}. The review used repository README material and these focused source/document ranges:
+\begin{longtable}{@{}L{0.53\textwidth}L{0.4\textwidth}@{}}
+\toprule
+Path and reviewed range & Design relevance\\\midrule\endhead
+Leant \pathcode{src/Leant/Synth/Fragment.hs}, lines 1--160 & Exact retained fragment versus opaque dependent subterms; restrictions on negative conclusions.\\
+Leant \pathcode{src/Leant/Synth/Behavioral.hs}, lines 1--180 & Same-candidate behavior checks, candidate retention, proof/refutation/unknown distinction.\\
+Leant \pathcode{docs/synth-internals.md}, lines 1--220 & Ownership of semantic origin and candidate evidence.\\
+Djex \pathcode{docs/architecture.md}, lines 1--165 & Shared foundation, checked adapters, ownership and component layout.\\
+Leant \pathcode{docs/Leant_Djex_Lean4_Rewrite_Analysis/Leant_Djex_Lean4_Rewrite_Analysis.tex}, lines 1--260 & Earlier feasibility and worker-boundary proposal, used as a starting point rather than a new contribution.\\
+\bottomrule
+\end{longtable}
+These ranges support the architectural observations stated here; this is not a claim of having audited every line of either repository. The existing rewrite report itself uses older historical snapshots, which are not substituted for the current review baseline.
+
+The Lean documentation references use their official rolling endpoints as accessed on September 17, 2026. The experiments are specifically pinned to the remotely reported Lean 4.34.0 environment. The code generator behavior and tactic outcomes reported in Section~\ref{sec:experiments} concern that environment, not every Lean release.
+
+\section{Artifact guide and reproduction}
+\label{app:artifacts}
+The archive contains the complete LaTeX source tree and compiled PDF under \pathcode{article/}. The main source is \pathcode{article/leant2.tex}. It requires a conventional LaTeX installation with the packages named in its preamble and can be built with \code{latexmk -pdf leant2.tex} from that directory.
+
+The primary native test is the standalone \pathcode{prototype/Combined.lean}, exactly as submitted in the final successful run. \pathcode{NativeCore.lean} and \pathcode{DependentExamples.lean} provide a modular view; the latter imports the former. The combined file is the authoritative remotely checked artifact. The local modular build arrangement was not separately run in this session.
+
+Run \code{python3 experiments/run_experiments.py} from the archive root to regenerate the deterministic experiment data and \pathcode{Certificates.lean}. The generic certificate prelude is an intentionally open namespace fragment; it is consumed by the generator rather than compiled alone. The generated \pathcode{experiments/Certificates.lean} is self-contained and requires a compatible Mathlib environment. The service did not expose an exact Mathlib commit, so this archive does not invent one.
+
+The optional \pathcode{experiments/check_axle.py} client sends a specified source file to the same endpoint using Python's standard library and stores the raw response in a user-selected output file. It needs network access and does not by itself constitute a high-assurance verifier. Its conservative status report checks compilation, failed declarations, and required axiom-audit messages. Future local or remote reruns can differ when the service or dependencies change.
+
+Normalized receipts under \pathcode{experiments/receipts/} retain request identifiers, source identities, observed audit outcomes, warnings, and development failures. They are transcriptions of the actual reported results, not original raw response bytes. Deliberately invalid controls are isolated under \pathcode{experiments/negative_controls/}; they must not be included in an ordinary positive build.
+
+\section{The minimal continuation mechanism}
+\label{app:core}
+The following pseudocode extracts the key mechanism from the compiled prototype. The actual Lean source contains the API details and test corpus.
+\begin{lstlisting}
+search(fuel + 1, goal :: rest):
+  checkpoint := saveState()
+  attempt(action):
+    restore(checkpoint)
+    try:
+      children := action(goal)
+      if search(fuel, children ++ rest):
+        return true
+    catch branchFailure:
+      pass
+    restore(checkpoint)
+    return false
+
+  try function introduction when the target is a Pi
+  try reflexivity
+  try each local provider
+  try each explicitly admitted global provider
+  try each constructor of the target inductive
+  restore(checkpoint)
+  return false
+\end{lstlisting}
+The consequential line is \code{children ++ rest}. It keeps later dependent obligations inside the success condition of an earlier choice. Replacing it with ``solve children, return their first answer, then solve rest elsewhere'' loses this behavior unless the surrounding system explicitly preserves and resumes those alternatives.
+
+The minimal code is deliberately not a recommended final resource scheduler: recursive fuel bounds derivation depth but does not bound all primitive work, and broad exception catching is too coarse for production diagnostics. The full design adds per-action limits, resumable cursors, dependency support, separate acceptance, and honest unknown results around this same mechanism.

@@ -1,0 +1,14 @@
+test_allow_propext_but_not_empty_profile (__main__.ReceiptGuardTests.test_allow_propext_but_not_empty_profile) ... ok
+test_changed_source (__main__.ReceiptGuardTests.test_changed_source) ... ok
+test_failed_declaration (__main__.ReceiptGuardTests.test_failed_declaration) ... ok
+test_lean_error (__main__.ReceiptGuardTests.test_lean_error) ... ok
+test_missing_audit (__main__.ReceiptGuardTests.test_missing_audit) ... ok
+test_no_expected_refuses_vacuous_success (__main__.ReceiptGuardTests.test_no_expected_refuses_vacuous_success) ... ok
+test_okay_false (__main__.ReceiptGuardTests.test_okay_false) ... ok
+test_sorry (__main__.ReceiptGuardTests.test_sorry) ... ok
+test_valid (__main__.ReceiptGuardTests.test_valid) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.001s
+
+OK

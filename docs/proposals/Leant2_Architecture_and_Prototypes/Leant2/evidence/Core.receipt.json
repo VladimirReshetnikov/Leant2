@@ -1,0 +1,73 @@
+{
+  "record_kind": "Selected fields transcribed from the AXLE response returned by the Wolfram connector; not a byte-for-byte HTTP archive",
+  "checked_on": "2026-09-17",
+  "submitted_file": "prototype/Core.lean",
+  "source_sha256": "1ff971316812ea9815096746deda2588f1a6cc03aeed232b773460a1d878ea7f",
+  "transport": "Wolfram URLRead; ExportByteArray RawJSON; ImportByteArray RawJSON",
+  "request": {
+    "endpoint": "https://axle.axiommath.ai/api/v1/check",
+    "environment": "lean-4.34.0",
+    "ignore_imports": false,
+    "theorems_only": false,
+    "timeout_seconds": 40
+  },
+  "response": {
+    "okay": true,
+    "failed_declarations": [],
+    "lean_errors": [],
+    "tool_errors": [],
+    "echo_trim_equal": true,
+    "reported_lean_version": "4.34.0",
+    "axiom_audits": {
+      "Leant2Prototype.ident": [],
+      "Leant2Prototype.swap": [],
+      "Leant2Prototype.sumElim": [],
+      "Leant2Prototype.depApply": [],
+      "Leant2Prototype.sigmaRepack": [],
+      "Leant2Prototype.dependentProjection": [],
+      "Leant2Prototype.strictIdentity": [],
+      "Leant2Prototype.fromInstance": [],
+      "Leant2Prototype.uniformEmpty": [],
+      "Leant2Prototype.vecMap": [],
+      "Leant2Prototype.actualFalseControl": [],
+      "Leant2Prototype.noWitnessControl": [],
+      "Leant2Prototype.propEliminationControl": [],
+      "Leant2Prototype.allTests": [],
+      "Leant2Prototype.vecMap_spec": [
+        "propext"
+      ],
+      "Leant2Prototype.dependentChoice": [],
+      "Leant2Prototype.compose": [],
+      "Leant2Prototype.twoUniverses": [],
+      "Leant2Prototype.higherRank": [],
+      "Leant2Prototype.absurdElim": []
+    },
+    "lean_warnings": [
+      "Unused variable binder A in propEliminationControl at 99:32; expected-failure test still accepted."
+    ],
+    "tool_advisories": [
+      "Mathlib.Tactic is a required import but is missing from the header imports. You may experience inconsistent and incorrect behavior. We highly recommend adding `import Mathlib.Tactic` to the header imports.",
+      "Note: you are not using the default header. Expected 'import Mathlib\\n', got 'import Lean\\n\\n'. You may experience significant slowdowns. We encourage you to use the cached default header if possible, which will significantly speed up execution. Please enable `ignoreImports` to automatically override imports with the default header."
+    ],
+    "timings_ms": {
+      "parse": 1503,
+      "total": 1507,
+      "request": 1636,
+      "execution": 1634,
+      "queue": 1
+    },
+    "info": {
+      "environment": "lean-4.34.0",
+      "executor_commit_sha": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+      "executor_docker_image_id": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+      "executor_artifact_sha256": "127b8dcb3bbc7cfa7861743f512fbe955bd8a35e940d6f2959d02327a7aa8520",
+      "cached_response": false,
+      "request_id": "527aff4b-47fd-4d50-b992-4d3d3d712b00"
+    }
+  },
+  "limitations": [
+    "Remote check, not a local Lean installation or independent second kernel.",
+    "Only import Lean in submitted file; service emitted its Mathlib-header advisories.",
+    "Reported timings include remote elaboration/checking and are not synthesis-only performance measurements."
+  ]
+}

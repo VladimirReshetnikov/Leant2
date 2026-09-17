@@ -1,0 +1,214 @@
+\section{Acceptance, trust, and executable meaning}
+\label{sec:trust}
+
+\subsection{A small, explicit acceptance path}
+
+A candidate found by search is a proposal. Publication should pass through the following sequence.
+
+\begin{enumerate}
+\item Restore the exact frozen context and instantiate the candidate's assigned metavariables. Reject unsolved expression or universe metavariables and escaped local variables. Internal level choices must not silently add new public parameters or identify originally independent ones.
+\item Construct the closed declaration by abstracting the exact telescope, including the dependencies of local definitions. Freeze its type separately from its proposed body. Do the same for the behavioral theorem; its statement mentions this exact implementation.
+\item Check all generated auxiliary declarations in dependency order in a disposable environment. Reject arbitrary new axioms and circular dependencies. Force ordinary kernel checking; a metaprogram's successful type inference is not the acceptance criterion.
+\item Audit the transitive axiom inventory and computational dependency policy. The logical and executable assessments are recorded separately.
+\item Delaborate for display and export. Re-elaborate the exported source against the frozen public signature, or retain a kernel-checkable artifact and a precise source correspondence. Commit only the validated declarations and their receipts.
+\end{enumerate}
+
+The API probe checked the relevant Lean 4.34.0 entry points: \code{MVarId.intro1}, \code{MVarId.cases}, \code{Meta.saveState}, \code{Kernel.check}, and \code{Kernel.Environment.addDecl}, all in the \code{Lean} namespace. A production adapter should encapsulate such APIs and be tested separately for each supported Lean version. \code{Meta.check} and \code{isDefEq} are useful during search, but do not replace the ordinary kernel declaration boundary \cite{lean-validation}.
+
+\begin{theorem}[Acceptance soundness, relative to Lean and the declared policy]
+Assume the frozen environment is the environment against which exported declarations are checked, the kernel is not bypassed, and the acceptance implementation faithfully performs the preceding checks. Every certified result contains a term of the frozen requested type and, when required, a proof of its frozen behavioral specification. Its logical assumptions are exactly those exposed by the transitive dependency audit.
+\end{theorem}
+\begin{proof}
+The closed term declaration is accepted only with the frozen type. The certificate declaration is accepted only with the proposition obtained by applying the frozen specification to that term. Abstracting and later instantiating the recorded telescope yields the corresponding contextual judgments. Transitive dependency inspection records the axioms used by these declarations. The proposal mechanism does not occur as a premise of either typing judgment.
+\end{proof}
+
+This theorem is an architectural argument, not a Lean formalization of the entire acceptance implementation. A private \code{VerifiedCandidate} wrapper around \code{Expr} values can enforce API discipline, but its name alone is not a formal typing theorem. Kernel-checked object-language proofs and carefully implemented boundary ownership are still required.
+
+\subsection{What a kernel proof does not certify}
+
+A proof is relative to its environment and local assumptions. If a user supplies an inconsistent axiom, a certified result can depend on that inconsistency. The system should expose such dependencies; it cannot turn relative provability into an absolute consistency guarantee.
+
+Logical checking also does not certify every runtime implementation choice. External implementations, unsafe code, runtime overrides, and partial dependencies require a separate policy. A trusted compiled evaluator may be useful for testing, but a proof about a logical constant does not automatically validate an arbitrary foreign implementation of that constant. The reference documentation distinguishes Lean's proof validation and runtime concerns \cite{lean-validation,lean-runtime}.
+
+An initial executable policy should admit approved total computational declarations, approved runtime primitives, and proofs from an explicit axiom allowlist. It should reject or flag noncomputable choice used to obtain runtime data, unchecked external bodies, partial computational dependencies, and effects outside the allowed capability set. The exact runtime primitive allowlist belongs to the toolchain adapter.
+
+\subsection{Hardened verification for untrusted extensions}
+
+An in-process kernel call protects against ordinary mistakes in the search implementation, not against arbitrary hostile metaprograms sharing that process. Unreviewed plugins or generated metaprogram code should run in a sandboxed proposal worker. A clean verifier should receive only a bounded, validated declaration/term representation, reconstruct it against the independently frozen challenge, and avoid executing the proposal engine's code. For higher assurance, add comparator-style statement matching and independent external checking, following Lean's validation guidance \cite{lean-validation}. Do not load attacker-provided compiled module structures as though they were harmless proof data.
+
+The default native rule library can remain an ordinary reviewed component. The stronger boundary is needed when extension code is outside that trust assumption. The experiments in this article used ordinary remote compilation; they did not run comparator or an external checker.
+
+\subsection{No evidence laundering through presentation or caches}
+
+The identity of a candidate is not its pretty-printed string. Different universe instantiations, dictionary arguments, local contexts, or elaboration choices can display similarly. A proof or counterexample for one occurrence cannot be donated to another based on matching text.
+
+Every receipt should identify the environment, problem, candidate, specification, admitted providers, and transformation history. An optimized candidate needs its own checked specification or a checked proof transfer from the old one. A cached result from another environment epoch must be replayed, not accepted because its hash is familiar. Hashes establish identity checks under an operational model; they are not proofs of semantic equivalence.
+
+\section{Compiler-checked experiments}
+\label{sec:experiments}
+
+\subsection{Environment and reproducibility}
+
+Both final prototype files were submitted through the Wolfram connector to the AXLE check endpoint. The request selected \code{lean-4.34.0}, set \code{ignore_imports = false} and \code{theorems_only = false}, and retained the files' sole import, \code{import Lean}. Each file reported Lean version 4.34.0. The source hash reported in Wolfram matched the corresponding local artifact, and the service's echoed source matched after trimming surrounding whitespace.
+
+For both final requests, \code{okay} was true, \code{failed_declarations} was empty, and both Lean and service error lists were empty. The service emitted its two nondefault-header advisories. The core file also had one unused-variable linter warning in an expected-failure control. These warnings are retained in the evidence record rather than suppressed in the report.
+
+There was no local Lean installation and no independent second-kernel replay in this environment. The provided source and toolchain pin make local replay possible, but it is not claimed to have happened. The service reports executor identities, not a Mathlib commit; no unstated Mathlib revision is claimed. The experimental sources themselves import only Lean.
+
+\begin{table}[ht]
+\centering\small
+\caption{Final remote checks. Times are whole-file service measurements, not synthesis-only benchmarks.}
+\begin{tabularx}{\textwidth}{@{}L{0.22\textwidth}YY@{}}
+\toprule
+ & Native core & Affine behavior lane \\
+\midrule
+File & \code{prototype/Core.lean} & \code{prototype/Behavior.lean} \\
+Lean version & 4.34.0 & 4.34.0 \\
+Remote status & Accepted; zero errors & Accepted; zero errors \\
+Service total time & 1,507 ms & 1,387 ms \\
+Request wall time & 1,636 ms & 1,516 ms \\
+Cached response & No & No \\
+Evidence & \code{evidence/Core.receipt.json} & \code{evidence/Behavior.receipt.json} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The two request identifiers are
+\begin{center}\small
+\code{527aff4b-47fd-4d50-b992-4d3d3d712b00}\\
+\code{1caada9d-c739-46cb-a8e6-25a70b2b7335}.
+\end{center}
+The JSON files are explicitly labeled selected-field transcriptions of the returned tool responses; they are not represented as byte-for-byte HTTP captures. A subsequent run with the included clients can retain the full response.
+
+\subsection{Native dependent search}
+
+The core tactic implements bounded continuation search with lambda introduction, local application, constructor application, reflexivity, and case splitting of nonrecursive, nonindexed local inductives. It uses native terms and saved states, not a translated approximation of the target type.
+
+Thirteen declarations have bodies produced entirely by \code{leant2_core}: identity, composition, product swapping, sum elimination, dependent application, dependent-pair construction, a constrained natural-number witness, a two-universe plumbing task, a higher-rank callback task, false elimination, dependent-pair projection, strict-implicit identity, and extraction from a supplied class value. The indexed-vector map adds two synthesized branch bodies inside an author-supplied recursive sketch.
+
+\begin{longtable}{@{}L{0.28\textwidth}L{0.31\textwidth}L{0.34\textwidth}@{}}
+\caption{What the core experiment establishes, and what it does not.}\label{tab:core-tests}\\
+\toprule
+Mechanism & Checked artifact & Boundary \\
+\midrule
+\endfirsthead
+\toprule Mechanism & Checked artifact & Boundary \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Dependent witnesses & \code{dependentChoice}, \code{sigmaRepack} & Small goals under depth bound 30; no general arithmetic synthesis claim \\
+Dependent elimination & \code{dependentProjection} & Splitting a nonrecursive Sigma-like object; arbitrary indexed elimination is not implemented \\
+Higher-order and levels & \code{compose}, \code{higherRank}, \code{twoUniverses} & Different from the predecessors' original simultaneous two-box fixture \\
+Binder and instance data & \code{strictIdentity}, \code{fromInstance} & Preserves strict implicit syntax and supplied class data; no general instance-search benchmark \\
+Recursive data & \code{vecMap} & Skeleton and recursive call supplied; branch contents synthesized \\
+Universal behavior & \code{vecMap_spec} & Author-written induction proof, not synthesized by the tactic \\
+Negative controls & Expected failures on \code{False}, an impossible subtype, and \code{Nonempty A -> A} & Checks rejection behavior, not completeness or a proof that every such Lean type is empty \\
+True noninhabitation & \code{uniformEmpty} & Author-written Lean contradiction from a hypothetical uniform inhabitant \\
+\end{longtable}
+
+Twenty named declarations in the core file were audited with \code{#print axioms}. Nineteen reported no axioms. The vector-map correctness theorem reported \code{propext}. In particular, the generated vector-map implementation itself reported no axioms. The four concrete observations in \code{allTests} were checked by \code{decide}; its audit was empty.
+
+\subsection{A finite certifying behavioral lane}
+
+The second prototype searches programs
+\[
+ f_{a,b}(n)=an+b,\qquad a,b\in\{0,1,2,3,4\},
+\]
+in lexicographic coefficient order. Its mandatory specification is
+\[
+ f(0)=1\quad\land\quad\forall n:\mathbb N,\ f(n+1)=f(n)+2.
+\]
+The infinite quantifier is not replaced by a test bound. A Lean theorem proves, for arbitrary natural coefficients,
+\[
+ \Spec(f_{a,b})\ \longleftrightarrow\ (a,b)=(2,1).
+\]
+A certifier uses that theorem to return an optional subtype value carrying the universal proof. The theorem characterizes only the affine program language; it is not a general decision procedure for specifications of Lean functions.
+
+The counterexample bank begins empty. The first candidate $(0,0)$ fails the base observation. The next candidate that survives that observation, $(0,1)$, fails the step observation at zero. After both observations are stored, later candidates can be cheaply rejected before the full certifier is invoked. The winner is $(2,1)$.
+
+The executed result and Lean-proved count theorem agree:
+\[
+\begin{array}{c|r}
+\text{Grammar size} & 25\\
+\text{Candidates visited before success} & 12\\
+\text{Certifier invocations} & 3\\
+\text{Candidates pruned by the observation bank} & 9\\
+\text{Inconclusive cases in this run} & 0
+\end{array}
+\]
+Without bank pruning, visiting the same ordered candidates and invoking the certifier for each would require 12 invocations before that winner. This is an enumeration-count comparison, not a measured runtime speedup. The certifier in this microbenchmark is inexpensive and specialized.
+
+The \code{replay_sound} theorem proves that a failed observation refutes the universal specification. The final winner has a proof-carrying type, and \code{run_result} checks its coefficients. All five audited behavioral theorems depend only on \code{propext} or on \code{propext} together with \code{Quot.sound}; none reported \code{sorryAx} or \code{Classical.choice}.
+
+\subsection{Failed attempts and prototype shortcomings}
+
+The history is not a clean-room claim that every attempt worked. An API probe used two incorrect names and was corrected. The first affine proof had a redundant \code{omega} after simplification had already solved the goal; Lean rejected it and the service refused evaluation of the resulting incomplete declarations. The expanded vector helper initially fixed its recursive index incorrectly. The final two files were separately checked after these corrections. A malformed compressed transport attempt failed its guard before any Lean submission. These events are summarized in \code{attempt-history.json}.
+
+The core prototype is intentionally small. It has depth-first search, a depth bound of 30, no global library inventory, no fair resumable scheduler, no automatic recursion discovery, and no production exception classification. Its case splitter excludes recursive and indexed inductives. It neither optimizes programs nor automatically proves arbitrary behavioral properties. The affine prototype supplies a hand-proved specialized verifier and does not implement a general unknown-proof continuation manager. These limitations are specific implementation facts, not reasons to weaken the proposed architecture.
+
+\section{Evaluation: making practical coverage measurable}
+\label{sec:evaluation}
+
+\subsection{A benchmark with separate objectives}
+
+A useful benchmark distinguishes three questions: can the system inhabit the exact type, can it meet the intended behavioral specification, and can it produce acceptable executable code? A pass on the first is not a pass on the other two. Record all three, along with the admitted library and schema policy.
+
+Build a stratified corpus from real Lean programming tasks, with synthetic boundary controls alongside it. The strata should include ordinary higher-order plumbing, dependent structures and subtypes, local typeclasses, native lists and trees, indexed vectors and finite indices, arithmetic side conditions, structurally recursive functions, accumulator helpers, and selected well-founded algorithms. Proof-only tasks and effectful tasks should be reported separately from pure executable synthesis.
+
+Every case freezes its Lean toolchain, imports, universe parameters, full statement, assumptions, mandatory specification, optional observations, provider exclusions, and resource settings. Exact legacy fixtures should remain exact: easier signatures, larger budgets, or supplied helpers are useful ablations, not replacements for the original task.
+
+\subsection{Preventing target leakage}
+
+When a declaration body is withheld as a synthesis target, remove access to that declaration, aliases revealing it, and the oracle implementation used to generate tests. If the benchmark permits a library implementation with an equivalent specification, classify the result as library reuse. For a from-primitives task, that implementation and its revealing wrappers must be excluded.
+
+Splits should occur by task family or project component, not by trivial renaming of nearly identical declarations. Otherwise, a learned ranker can memorize patterns from the evaluation set. Hidden tests help detect overfitting, but a universal proof against the frozen specification remains the strongest behavioral criterion.
+
+\subsection{Baselines and ablations}
+
+The initial comparison should include the existing Leant/Djex route on its supported fixtures, a simple native constructor/application tactic, available Lean proof automation where applicable, and the proposed portfolio with selected lanes disabled. Use the same exact problem and document any features unavailable in a baseline rather than silently translating it to another task.
+
+Ablations should isolate native representation from scheduling and synthesis power. Compare the native core with and without scoped context slices; with and without behavioral propagation; with supplied versus discovered recursive schemas; and with fair continuation scheduling versus a fixed candidate window. Record proof-service effort separately from candidate construction.
+
+Useful metrics are the first certified result's latency, verified success rate, unknown and refuted counts, explored refinements, normalization and unification work, peak memory, proof size, final checking time, and resulting program cost. Report medians and distributions over repeated measurements; do not infer end-to-end speed from one isolated elaboration timing.
+
+\subsection{Adversarial acceptance tests}
+
+The regression suite should actively try to defeat the boundaries. Include two local dictionaries with identical class types but different payloads; independent universe parameters; strict implicit binders; dependent fields sharing a witness; incompatible branch indices; a proposition whose proof cannot be eliminated into data; a candidate that passes every current example but fails a new one; and an inconclusive proof search that later succeeds with more effort.
+
+Also test stale cache reuse after undo, worker restarts, source names shadowed by new declarations, timeouts during a supposedly safe normalization step, callbacks that try to assign ambient metavariables, generated auxiliary declarations leaking into later inventories, and exported source whose elaboration selects a different instance. The suite should contain actual false predicates, not only searches that happened to produce no candidates.
+
+\section{Implementation roadmap and acceptance gates}
+\label{sec:roadmap}
+
+\subsection{Milestone 1: a trustworthy native core}
+
+Implement the frozen problem, exact local-context capture, native branch ownership, continuation search, a single acceptance path, and ordinary Lean source export. Support introduction, local/provider application, constructors, nonrecursive cases, and a small proof service. Gate the milestone on dependent witnesses, independent universe parameters, strict implicits, local dictionary payloads, exact exports, and failure/timeout separation. The provided core is a feasibility seed, not the finished milestone.
+
+\subsection{Milestone 2: scalable compositional search}
+
+Add the declaration inventory, result-shape indexes, scoped demand graphs, parameterized recipe caching, and fair resumable scheduling. Instrument every pruning and resource event. Gate this stage on exact reproductions of the predecessors' difficult composition fixtures, with unchanged statements and clearly separated resource profiles. A new success at a larger bound is valuable but must retain the old miss in the ledger.
+
+\subsection{Milestone 3: dependent recursion}
+
+Implement automatic structural schemas for a selected set of ordinary and indexed inductives using native recursor metadata. Generalize varying indices and parameters, register recursive-call capabilities, and synthesize simple strengthened motives. Gate on map, append, length, index-safe access, and filtering with a relational specification. Distinguish supplied-sketch and skeleton-discovery results. Add mutual and nested schemas only when the simpler boundary tests are stable.
+
+\subsection{Milestone 4: certifying behavior}
+
+Integrate proof obligations with partial program search, typed observation propagation, a reusable counterexample bank, and an unknown-proof queue. Begin with small certified domains like the affine lane and finite Boolean grammars. Gate on universal specifications, proof-preserving candidate transformations, genuine counterexample replay, and correct handling of spurious abstract models. A bare external solver verdict must fail certification tests.
+
+\subsection{Milestone 5: broader algorithmic coverage}
+
+Add accumulator and invariant templates, selected well-founded measures, richer arithmetic and data-domain adapters, and stronger optional proof services. Introduce empirical program-quality optimization only after functional correctness and provenance are stable. Publish a held-out coverage dashboard with task strata, exact settings, and an explicit unknown category. This is the stage at which a claim of broad practical usefulness can become evidence-based.
+
+\subsection{Priority risks}
+
+The largest search risk is combinatorial explosion in motive, carrier, and provider selection. The response is demand-directed decomposition, reusable parameterized recipes, and fair fallback, not arbitrary silent cutoffs. The largest semantic risk is treating dependent goals as independent or allowing a proof service to commit computational choices without backtracking. The response is branch ownership and continuation semantics.
+
+The largest trust risk is accepting an artifact after checking a related but different expression, environment, or specification. The response is one frozen problem and one acceptance owner. The largest product risk is showing many trivial inhabitants while implying intended behavior. The response is separate certified, observed, and type-only result modes, plus visible specifications and operational objectives.
+
+\section{Conclusion}
+
+Leant2's opportunity is not merely to remove Haskell. It is to make Lean's dependent information operational throughout synthesis. Native types constrain candidate construction; specifications constrain holes before programs are complete; recursors organize both algorithms and their proofs; and solver or heuristic contributions remain proposals until checked.
+
+The most important early engineering target is the interaction between these pieces. A sophisticated provider index is not enough if a failed proof cannot reopen a witness. A complete small calculus is not enough if its negative result is overinterpreted. A correct recursive skeleton is not enough if its indices were fixed at the wrong scope. The checked experiments make those boundaries tangible, while the proposed architecture provides a path from the small demonstrations to a practical Lean-native system.

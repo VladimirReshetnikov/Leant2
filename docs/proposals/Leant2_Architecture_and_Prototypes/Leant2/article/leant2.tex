@@ -1,0 +1,90 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,microtype}
+\usepackage[margin=0.93in,headheight=15pt]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs,longtable,tabularx,array}
+\usepackage{xcolor,graphicx,tikz}
+\usetikzlibrary{arrows.meta,positioning,fit}
+\usepackage{listings,enumitem,fancyhdr,needspace}
+\usepackage{hyperref,xurl}
+\definecolor{ink}{HTML}{16364A}
+\definecolor{accent}{HTML}{216B75}
+\definecolor{pale}{HTML}{F3F6F7}
+\hypersetup{colorlinks=true,linkcolor=ink,citecolor=accent,urlcolor=accent,
+ pdfauthor={OpenAI},pdftitle={Leant2: Lean-Native Program Synthesis from Types and Behavioral Specifications}}
+\urlstyle{tt}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\Lean}{Lean~4}
+\newcommand{\Leant}{Leant2}
+\newcommand{\dom}{\operatorname{dom}}
+\newcommand{\FV}{\operatorname{FV}}
+\newcommand{\Spec}{\mathsf{Spec}}
+\newcommand{\Grammar}{\mathcal G}
+\newcommand{\Prov}{\mathcal P}
+\newcommand{\Env}{\mathcal E}
+\newcommand{\Unknown}{\mathsf{Unknown}}
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{theorem}[proposition]{Theorem}
+\newtheorem{definition}[proposition]{Definition}
+\newtheorem{invariant}[proposition]{Invariant}
+\theoremstyle{remark}
+\newtheorem{remark}[proposition]{Remark}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setlength{\parskip}{4pt plus 1pt}
+\setlength{\parindent}{1em}
+\setlength{\emergencystretch}{2em}
+\setlist{itemsep=2pt,topsep=5pt,parsep=0pt}
+\setcounter{tocdepth}{2}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textsc{Leant2}}
+\fancyhead[R]{\small Native types, synthesized programs, checked behavior}
+\fancyfoot[C]{\thepage}
+\lstdefinelanguage{Lean}{
+ morekeywords={import,open,namespace,end,universe,variable,def,partial,unsafe,noncomputable,theorem,example,inductive,structure,class,instance,where,match,with,fun,let,in,by,do,return,if,then,else,forall,exists,termination_by,decreasing_by,Type,Sort,Prop},
+ sensitive=true,morecomment=[l]{--},morecomment=[s]{/-}{-/},morestring=[b]"}
+\lstset{language=Lean,basicstyle=\ttfamily\small,keywordstyle=\bfseries\color{ink},
+ commentstyle=\itshape\color{accent},stringstyle=\color{accent},
+ backgroundcolor=\color{pale},frame=single,rulecolor=\color{black!15},
+ columns=fullflexible,keepspaces=true,showstringspaces=false,breaklines=true,
+ aboveskip=9pt,belowskip=8pt,tabsize=2,
+ literate={←}{{$\leftarrow$}}1 {→}{{$\to$}}1 {∀}{{$\forall$}}1
+ {∧}{{$\land$}}1 {∨}{{$\lor$}}1 {¬}{{$\neg$}}1 {↔}{{$\leftrightarrow$}}1
+ {⟨}{{$\langle$}}1 {⟩}{{$\rangle$}}1 {⦃}{{$\lbrace\!\lbrace$}}1
+ {⦄}{{$\rbrace\!\rbrace$}}1 {·}{{$\cdot$}}1 {×}{{$\times$}}1
+ {Σ}{{$\Sigma$}}1 {Π}{{$\Pi$}}1 {≤}{{$\le$}}1 {≥}{{$\ge$}}1
+ {≠}{{$\ne$}}1 {⊢}{{$\vdash$}}1 {α}{{$\alpha$}}1 {β}{{$\beta$}}1
+ {γ}{{$\gamma$}}1 {₁}{{$_1$}}1 {₂}{{$_2$}}1}
+\begin{document}
+\begin{center}
+{\LARGE\bfseries\color{ink} Leant2: Lean-Native Program Synthesis\par}
+\vspace{5pt}
+{\LARGE\bfseries\color{ink} from Types and Behavioral Specifications\par}
+\vspace{13pt}
+{\large Architecture, main algorithms, trust boundaries,\par
+and compiler-checked feasibility experiments\par}
+\vspace{12pt}
+September 17, 2026
+\end{center}
+\begin{abstract}
+Leant2 should not be a transcription of a Haskell synthesizer into Lean. It should be a synthesis system whose authoritative objects are Lean expressions, dependent local contexts, universe constraints, and proof obligations. We propose a portfolio of cooperating search procedures: focused native term construction, demand-directed library composition, recursor and termination-schema synthesis, behavioral constraint propagation, and certified domain-specific search. A dependency-aware search state keeps program holes and their proof obligations together, so failure of a later obligation can revise an earlier computational choice. Immutable search recipes coexist with transactional Lean metavariable states; no second approximation of Lean's type system is imposed on the general engine.
+
+The design separates kernel-checked inhabitants, proved behavioral specifications, finite observations, grammar exhaustion, and genuine proofs of noninhabitation. It explains how to handle indexed inductives, dependent pairs, higher-rank arguments, noncumulative universes, local instances, recursive calls, and external solver proposals without confusing search heuristics with logical authority. Conditional completeness is stated only relative to an effective search grammar and fair scheduling. A practical evaluation and implementation plan makes broad coverage a measurable objective rather than an unsupported prediction.
+
+Two accompanying Lean prototypes were remotely checked using Lean 4.34.0. One synthesizes dependent and polymorphic terms and fills the branches of a supplied indexed-vector recursion sketch. The other executes a finite counterexample-guided affine-program search and returns a proof of its infinite-domain specification. These experiments establish narrow implementation feasibility; they are not an implementation or a coverage benchmark of the complete proposed system.
+\end{abstract}
+\vspace{4pt}
+\noindent\textbf{Artifact status.} Design proposal with checked experimental code. Full source, selected verification receipts, failed-attempt summaries, and reproduction tools accompany this article. No existing repository was modified.
+\clearpage
+\tableofcontents
+\clearpage
+\input{sections/01-foundations}
+\input{sections/02-native-search}
+\input{sections/03-recursion-behavior}
+\input{sections/04-trust-evaluation}
+\input{sections/05-appendices}
+\input{references}
+\end{document}

@@ -1,0 +1,171 @@
+\section{Acceptance, replay, and trust}\label{sec:acceptance}
+
+\subsection{A separate acceptance transaction}
+
+The search engine is allowed to be heuristic, buggy, or interrupted. The
+acceptance path should be small enough to audit independently:
+\begin{enumerate}
+\item Instantiate all assigned expression and universe metavariables. Reject
+unresolved holes, dangling locals, and unresolved elaboration obligations.
+Generalize only the universe parameters and locals permitted by the original
+request, not newly invented assumptions.
+\item Close the program and contract proof over the exact dependent local
+context. Preserve local definitions appropriately, or substitute them with
+checked capture-avoiding abstraction. Collect generated helper declarations
+in dependency order.
+\item Reconstruct the original requested type and predicate from the frozen
+request, not from a candidate-supplied summary. Check the closed program and
+proof using the ordinary kernel-checked declaration-admission path.
+\item Audit the program's and proof's transitive assumptions and the generated
+auxiliaries. Reject \code{sorryAx}, unapproved axioms, and any bypass of the
+selected kernel-checking policy. Check computational-provider restrictions
+separately from proof-provider restrictions.
+\item Freeze the accepted expressions, declaration delta, request identity,
+and audit result together. Only then create a verified result record and a
+source presentation.
+\end{enumerate}
+
+An \code{inferType} result or successful \code{isDefEq} call is useful during
+search but does not replace declaration admission. In particular, a configured
+skip-kernel-check option or an unchecked admission API must not be reachable
+through the verified-results path. A compiler run containing errors may insert
+placeholder terms; the resulting existence of a declaration name is not a
+successful verification.
+
+The theorem established by this path is Equation~\eqref{eq:acceptance}, relative
+to the original environment and admitted assumptions. It does not certify the
+searcher's completeness, ranking quality, or runtime performance. Writing the
+searcher in Lean is compatible with its implementation being \code{partial};
+its generated programs are separate declarations with their own dependency
+and computability checks.
+
+\subsection{Display is a view, not candidate identity}
+
+An accepted \Expr{} is authoritative. Delaborated syntax is a view for people.
+A source-export command should replay the emitted source in the same context
+and verify that it has the requested type and contract. When exact preservation
+of the accepted program is required, compare the replayed expression with the
+original using conversion or a checked equality appropriate to the type.
+If that comparison cannot be established, report a newly checked source
+variant rather than claim it is the identical accepted object.
+
+Names, implicit arguments, notation, coercions, and local instances can change
+how the same text elaborates. Export should therefore qualify ambiguous names,
+make delicate universe/type/dictionary selections explicit, and retain
+required helper definitions. Source-level simplification is another proposal
+that needs replay; it cannot borrow the original candidate's proof by matching
+the printed function name.
+
+\subsection{Independent validation options}
+
+A separate process using the same Lean kernel checks operational isolation and
+prevents stale metaprogramming state from leaking into acceptance. It is not an
+independent implementation of the kernel. For higher assurance, an additional
+checker such as Lean4Lean can be evaluated for supported artifacts and pinned
+versions, with its own documented scope~\cite{lean4lean}. This is an optional
+validation route, not a claim that this article has performed it.
+
+A particularly useful regression is to replay the \emph{exact emitted program}
+and contract theorem in a fresh module that omits synthesis tactics and test
+oracles from the construction environment. That detects accidental dependency
+on helper assumptions, not just syntax problems in the final pretty printer.
+
+\subsection{Receipt structure}
+
+A production receipt should include the original request, environment/toolchain
+identity, provider and policy selections, accepted declarations, contract type,
+proof dependency closure, runtime dependency observations, source-replay
+outcome, search bounds, and outcome counts. It should also distinguish candidate
+rejections from rule inapplicability and infrastructure failures.
+
+The receipt's opaque accepted-object identifier is tied to its environment
+generation. A fingerprint can detect accidental mismatches but cannot mint a
+new accepted object. If the contract changes, create a new request and verify
+again. If only ranking changes, existing verified candidates may be reranked
+without pretending that new search work or a new correctness proof occurred.
+
+\section{Practical implementation and resource behavior}\label{sec:engineering}
+
+\subsection{Explicit cursors instead of implicit infinite search}
+
+Represent every generator as a finite-step cursor returning a proposal,
+continuation, completion, or diagnostic. An explicit cursor is easier to pause,
+account for, and serialize than a lazily evaluated stream whose next element
+can trigger an unbounded search. It also avoids making Haskell-style laziness
+a compatibility requirement for the Lean implementation.
+
+Persistent snapshots permit efficient branch sharing, but retained snapshots
+can keep large expression graphs alive. Benchmark memory with realistic
+coupled goals, not just short proof terms. Use arenas or generation-indexed
+storage for ephemeral metadata, compact decision trails, and bounded caches
+whose entries are closed templates rather than whole abandoned worker states.
+Do not assume a Lean rewrite is faster or slower without measuring the actual
+workload.
+
+The main blow-up is usually branching, not the cost of one constructor
+application. If $H$ heads are considered and a head creates $a$ unconstrained
+arguments, naive independent enumeration multiplies the choices across all
+$a$ positions. Result-directed unification, argument dependencies, specifications,
+and observation partitions exist to avoid that product as early as possible.
+They are more consequential than micro-optimizing a queue implementation.
+
+\subsection{Budget dimensions}
+
+Maintain separate counters for rule expansions, unification work, generated
+AST cost, proof tasks, solver calls, candidate evaluations, live branch memory,
+and elapsed time. A global wall-clock deadline is still necessary because not
+all operations have comparable heartbeat behavior. Hard memory exhaustion is
+an infrastructure outcome, not a completed negative search.
+
+Per-rule limits should yield a suspended or unknown branch where possible.
+Increasing a proof budget should not require regenerating every earlier term.
+Likewise, increasing a program-cost bound should reuse validated indexes and
+proof templates without reusing stale branch-local metavariables. Log the
+actual resources charged rather than only the user-configured maximum.
+
+\subsection{Cancellation and process isolation}
+
+A worker owns every external solver process it creates, including descendants.
+Cancellation closes solver inputs, terminates the owned process tree when
+necessary, and waits for cleanup before reusing any channel. Responses carry
+request and solver-frame identities so a delayed reply cannot satisfy a newer
+obligation.
+
+The ordinary native engine needs no external solver to produce basic results.
+Optional solver launch hardening should be documented independently from
+synthesis semantics. Reproducing a predecessor's low-level descriptor-bound
+launch guarantees might require a small platform binding; it is not a reason
+to reintroduce Haskell as the semantic host. No external tool may install an
+axiom simply to make its answer accepted.
+
+\subsection{Determinism and reproducibility}
+
+Deterministic mode uses stable provider ordering, deterministic tie-breaking,
+fixed seeds for test generation, and a reproducible logical schedule. Actual
+wall-clock deadlines can still create variation; record that limitation.
+Performance mode may accept the first verified result from parallel workers,
+but the receipt must retain which lane and branch produced it.
+
+Requests should pin the Lean toolchain and imported package versions. API
+adaptation belongs in \code{LeanBridge}; search policy should not be scattered
+with version-specific field accesses. The included prototype intentionally
+pins Lean 4.34.0 rather than claim source compatibility with every Lean release.
+
+\subsection{Diagnostics that explain the actual obstacle}
+
+A useful failure report identifies the nearest residual obligations and the
+kind of restriction encountered. Examples are: a dependent index equality not
+proved; an unresolved instance output parameter; a required constructor absent
+from the selected grammar; a recursive schema requiring generalization; or a
+candidate satisfying all examples with its universal proof still open.
+
+Also report successful partial mechanisms without upgrading them to full
+success. Finding a fold carrier and its step separately is useful diagnostic
+information, but not evidence that the original composition was synthesized.
+Showing an actual rejected wrong candidate is stronger negative-control
+evidence than merely showing that a false-contract query printed no output.
+
+An editor integration can visualize the obligation graph, show the decision
+that constrained a hole, and offer an explicit sketch annotation at that point.
+The normal batch result should remain machine-readable and concise: full traces
+belong in attached artifacts or an opt-in diagnostic channel.

@@ -1,0 +1,24 @@
+{
+  "Leant2Pilot.identity": [],
+  "Leant2Pilot.composition": [],
+  "Leant2Pilot.sCombinator": [],
+  "Leant2Pilot.pairSwap": [],
+  "Leant2Pilot.dependentApply": [],
+  "Leant2Pilot.dependentPair": [],
+  "Leant2Pilot.higherRank": [],
+  "Leant2Pilot.rankNConsumer": [],
+  "Leant2Pilot.indexedWitness": [],
+  "Leant2Pilot.constrainedBool": [],
+  "Leant2Pilot.constrainedNat": [],
+  "Leant2Pilot.sumSwap": [],
+  "Leant2Pilot.modusPonens": [],
+  "Leant2Pilot.disjunctionSwap": [],
+  "Leant2Pilot.Vec.map": [],
+  "Leant2Pilot.Vec.zip": [
+    "propext"
+  ],
+  "Leant2Pilot.reverseAux": [],
+  "Leant2Pilot.reverseAux_spec": [
+    "propext"
+  ]
+}

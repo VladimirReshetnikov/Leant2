@@ -1,0 +1,26 @@
+{
+  "retrieval_date": "2026-09-17",
+  "Leant": {
+    "url": "https://github.com/VladimirReshetnikov/Leant",
+    "commit": "6bf05ad78c467989e68290f2d08bbed40802d485",
+    "commit_author_date": "2026-09-14T17:07:39Z",
+    "documented_vendored_Djex_pin": "e237e866",
+    "inspected": [
+      "README.md",
+      "docs/Leant_Djex_Lean4_Rewrite_Analysis/Leant_Djex_Lean4_Rewrite_Analysis.tex (opening 260 lines)",
+      "docs/synth-internals.md (opening 230 lines)",
+      "docs/behavioral-synthesis.md (opening 210 lines)",
+      "src/Leant/Synth/Fragment.hs (opening 210 lines)"
+    ]
+  },
+  "Djex": {
+    "url": "https://github.com/VladimirReshetnikov/Djex",
+    "commit": "e8778f4ebd63e1f9b9b410fa4de8d14a8a04c9e5",
+    "commit_author_date": "2026-09-14T17:07:35Z",
+    "inspected": [
+      "README.md (opening 130 lines)",
+      "commit metadata"
+    ]
+  },
+  "note": "Repository analysis, not execution of either repository or a full source-code audit."
+}

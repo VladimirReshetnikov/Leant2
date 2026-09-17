@@ -1,0 +1,113 @@
+{
+  "receipt_kind": "Selected fields transcribed from observed AXLE JSON responses via Wolfram; not a signed or complete raw response",
+  "date": "2026-09-17",
+  "method": "POST via Wolfram Language URLRead; exact import header retained",
+  "endpoint": "https://axle.axiommath.ai/api/v1/check",
+  "request_options": {
+    "environment": "lean-4.34.0",
+    "ignore_imports": false,
+    "theorems_only": false
+  },
+  "executor_commit_sha": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+  "executor_docker_image_id": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+  "executor_artifact_sha256": "127b8dcb3bbc7cfa7861743f512fbe955bd8a35e940d6f2959d02327a7aa8520",
+  "echo_equal_trimmed": true,
+  "cached_response": false,
+  "tool_warnings": [
+    "Mathlib.Tactic is a required import but is missing from the header imports. You may experience inconsistent and incorrect behavior. We highly recommend adding `import Mathlib.Tactic` to the header imports.",
+    "The service advised using its default import Mathlib header for performance. The supplied import Lean header was retained with ignore_imports=false."
+  ],
+  "limitations": [
+    "Remote compilation only; no local Lean installation or independent lean4checker replay in this session.",
+    "AXLE did not return a Mathlib commit. These are not full-project performance benchmarks.",
+    "A true okay flag is not by itself proof validity; errors, failed declarations, target checks, and printed axiom inventories were also inspected."
+  ],
+  "source": "../prototype/Leant2Pilot.lean",
+  "request_id": "e8685112-e949-4837-89e6-969f4eb3682b",
+  "okay": true,
+  "failed_declarations": [],
+  "lean_errors": [],
+  "timeout_seconds": 50,
+  "lean_version_output": "4.34.0",
+  "parse_ms": 1459,
+  "total_ms": 1463,
+  "total_request_time_ms": 1586,
+  "queue_time_ms": 6,
+  "execution_time_ms": 1580,
+  "synthesized_declarations": {
+    "Leant2Pilot.identity": {
+      "axioms": []
+    },
+    "Leant2Pilot.composition": {
+      "axioms": []
+    },
+    "Leant2Pilot.sCombinator": {
+      "axioms": []
+    },
+    "Leant2Pilot.pairSwap": {
+      "axioms": []
+    },
+    "Leant2Pilot.dependentApply": {
+      "axioms": []
+    },
+    "Leant2Pilot.dependentPair": {
+      "axioms": []
+    },
+    "Leant2Pilot.higherRank": {
+      "axioms": []
+    },
+    "Leant2Pilot.rankNConsumer": {
+      "axioms": []
+    },
+    "Leant2Pilot.indexedWitness": {
+      "axioms": []
+    },
+    "Leant2Pilot.constrainedBool": {
+      "axioms": []
+    },
+    "Leant2Pilot.constrainedNat": {
+      "axioms": []
+    },
+    "Leant2Pilot.sumSwap": {
+      "axioms": []
+    },
+    "Leant2Pilot.modusPonens": {
+      "axioms": []
+    },
+    "Leant2Pilot.disjunctionSwap": {
+      "axioms": []
+    }
+  },
+  "manually_written_declarations": {
+    "Leant2Pilot.Vec.map": {
+      "axioms": []
+    },
+    "Leant2Pilot.Vec.zip": {
+      "axioms": [
+        "propext"
+      ]
+    },
+    "Leant2Pilot.reverseAux": {
+      "axioms": []
+    },
+    "Leant2Pilot.reverseAux_spec": {
+      "axioms": [
+        "propext"
+      ]
+    }
+  },
+  "eval_outputs": [
+    "4.34.0",
+    "2",
+    "(true, 7)"
+  ],
+  "lean_warnings_summary": [
+    "Unused alpha and beta variables in a negative-control outer theorem.",
+    "Two unused-tactic linter warnings on successful fail_if_success negative controls."
+  ],
+  "control_checks": {
+    "fixed_type_or_evaluation_examples": 7,
+    "fail_if_success_negative_controls": 2
+  },
+  "scope": "Bounded MetaM search with dependent applications, constructors and whitelisted case splits. No automatic recursive program synthesis."
+}

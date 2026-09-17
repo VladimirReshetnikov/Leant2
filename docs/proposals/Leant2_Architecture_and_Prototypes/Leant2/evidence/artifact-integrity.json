@@ -1,0 +1,17 @@
+{
+  "status": "retained evidence consistent; no new Lean check performed",
+  "records": [
+    {
+      "module": "Core",
+      "source_identity_matches": true,
+      "named_axiom_audits": 20,
+      "request_id": "527aff4b-47fd-4d50-b992-4d3d3d712b00"
+    },
+    {
+      "module": "Behavior",
+      "source_identity_matches": true,
+      "named_axiom_audits": 5,
+      "request_id": "1caada9d-c739-46cb-a8e6-25a70b2b7335"
+    }
+  ]
+}

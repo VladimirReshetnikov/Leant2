@@ -1,0 +1,26 @@
+{
+  "expected_axioms": {
+    "Leant2Prototype.identity": [],
+    "Leant2Prototype.compose": [],
+    "Leant2Prototype.sComb": [],
+    "Leant2Prototype.swap": [],
+    "Leant2Prototype.dependentApply": [],
+    "Leant2Prototype.sigmaPack": [],
+    "Leant2Prototype.rankTwo": [],
+    "Leant2Prototype.successorSpec": [],
+    "Leant2Prototype.chooseOne": [],
+    "Leant2Prototype.identity_behavior": [],
+    "Leant2Prototype.successor_behavior": [],
+    "Leant2Prototype.vcons": [],
+    "Leant2Prototype.vecMap": [],
+    "Leant2Prototype.vecMap_behavior": [
+      "propext"
+    ],
+    "Leant2Prototype.transport": [],
+    "Leant2Prototype.inheritedDefault": [],
+    "Leant2Prototype.chooseRight": [],
+    "Leant2Prototype.rankTwoSpec": [],
+    "Leant2Prototype.higherRank": [],
+    "Leant2Prototype.noPolyCast": []
+  }
+}

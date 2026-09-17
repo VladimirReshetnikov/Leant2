@@ -1,0 +1,10 @@
+{
+  "kind": "remote-check-summary",
+  "request_id": "882766d2-deff-46c6-95cf-bc2b7c7e5250",
+  "okay": false,
+  "environment": "lean-4.34.0",
+  "error": "Initial exactSize recursion under List.range.flatMap did not retain the i < n + 1 bound needed for termination. Downstream declarations were incomplete.",
+  "repair": "Replaced that recursion with structurally decreasing exactSizeAux fuel size. The final source has explicit structural fuel and passed on a fresh request.",
+  "note": "Failed version is not claimed as a successful experiment. Summary, not a raw response.",
+  "provenance": "Hand-transcribed summary of fields returned by the actual Wolfram/AXLE call; not a raw or signed HTTP response."
+}

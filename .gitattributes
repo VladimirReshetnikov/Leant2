@@ -1,0 +1,27 @@
+# The REPL speaks LF, so its transcripts and the shell that diffs them
+# must stay LF in the working tree no matter what core.autocrlf says.
+*.sh            text eol=lf
+test/*.txt      text eol=lf
+test/*.golden   text eol=lf
+
+# Haskell and Lean sources are LF everywhere too.
+*.hs            text eol=lf
+*.cabal         text eol=lf
+cabal.project   text eol=lf
+
+# Windows launchers genuinely want CRLF.
+*.cmd           text eol=crlf
+
+*.pdf           binary
+
+# Preserve exact receipt bytes and the SHA-256 identities published with them.
+test-church/receipts/priority4-*.json -text whitespace=cr-at-eol
+
+# Preserve the raw child bytes, including CRLF, hashed by these receipts.
+test-recursive/receipts/native-direct-5s.stdout.txt -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+test-recursive/receipts/native-prepared-5s.stdout.txt -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# These regression runners and fixtures carry explicit SHA-256 dependencies.
+# Preserve their exercised bytes across Windows and Unix checkouts.
+test-context/global-methods/** -text whitespace=cr-at-eol
+test-context/run_production.py -text whitespace=cr-at-eol

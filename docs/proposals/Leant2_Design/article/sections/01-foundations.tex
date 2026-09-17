@@ -1,0 +1,196 @@
+\section{Recommendation and design objectives}
+\label{sec:recommendation}
+
+Build Leant2 as a \emph{Lean-native, certificate-producing program synthesizer}, implemented primarily as a library inside a project-matched Lean worker. Provide a tactic, a command interface, and a small Lean controller or REPL over the same request API. Its main engine should operate on native dependent goals, not on a translated simply typed or Haskell-like approximation. Retain specialized logical and finite synthesis engines as accelerators behind checked adapters, rather than making any one of their languages the universal intermediate representation.
+
+A successful constrained request should return three distinct things: an implementation, a proof of the exact requested property, and a report identifying the assumptions and execution guarantees. These are not three spellings of ``success.'' A term can inhabit its type while violating the intended behavior. A term can satisfy a logical specification while being noncomputable. A compiled program can pass examples without satisfying a universally quantified specification. Leant2's public result format must make these differences impossible to overlook.
+
+The recommended initial target is ordinary functional programming with rich types: higher-order composition; records and sum types; subtypes and dependent pairs; finite indexed data; operations assembled from existing APIs; and total structural recursion over lists, trees, and user-defined inductives. These families share a manageable collection of synthesis rules. Arbitrary theorem discovery, arbitrary invariant discovery, quotient representative selection, and unconstrained type-level programming should be supported through additional strategies and explicit sketches, not promised as uniformly automatic capabilities.
+
+\subsection{What changes relative to Leant and Djex}
+
+The present systems already do substantially more than elementary arrow-type inhabitation. Djex combines a Djinn-derived logical engine with Exference's ranked expression search; its current frontend and checking machinery retain higher-rank quantification, selected impredicative instantiations, and contextual evidence. Leant checks reconstructed Lean candidates and records exact source ownership. Those achievements should be preserved, not dismissed as a trivial Haskell prototype~\cite{leant,djex,internals}.
+
+The concrete architectural bottleneck is visible in Leant's \code{Synth/Fragment.hs}. Its Lean-side serializer decomposes supported native expressions into a fragment consumed by the Haskell engines. The implementation explicitly treats term-indexed applications as opaque and restricts structural expansion of inductives. It also retains additional universe and contextual metadata to reconstruct cases that its simpler search representation cannot directly express. Leant2 removes this \emph{mandatory semantic translation} while keeping optional abstractions for indexing and specialized search~\cite{fragment}.
+
+There is already a repository report recommending a semantic Lean rewrite, including native expressions, a project-local worker, and explicit checking boundaries. This article takes that feasibility conclusion as a starting point. Its additional contribution is an algorithmic design for native dependency-aware search, contract-driven recursive synthesis, a compiler-lowering boundary, and concrete experiments. It does not claim that moving an implementation language alone solves search complexity~\cite{rewrite}.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}L{0.24\textwidth}YY@{}}
+\toprule
+Concern & Preserve from the predecessors & Change in Leant2 \\
+\midrule
+Semantic identity & Exact candidate ownership and source inventory & Native \code{Expr}, levels, names, and contexts throughout \\
+Search & Logical focusing and ranked alternatives & One dependency-aware goal forest, plus specialized lanes \\
+Behavior & Exact proposition checking and inconclusive outcomes & Push contracts into construction, recursion, and counterexample refinement \\
+Negative answers & Conservative completeness accounting & Distinguish certified impossibility from every form of fragment exhaustion \\
+Output & Independently checked displayed candidates & Frozen declarations, separate executability check, replayable source \\
+Compatibility & Useful Lean behavior and diagnostics & No Haskell frontend, kind language, or legacy API obligations \\
+\bottomrule
+\end{tabularx}
+\caption{A semantic redesign, not a module-by-module port.}
+\end{table}
+
+\subsection{Goals that compete with each other}
+
+There is no single objective called ``best synthesis.'' A useful system must balance time to first valid result, quality of the result, diversity of alternatives, proof cost, memory use, and predictable behavior under a resource limit. The shortest term is frequently an unwanted default. The fastest successful tactic may introduce a noncomputable choice. A normal form suitable for a completeness proof may be a poor executable program.
+
+Therefore requests should name a \emph{profile}. A practical default prioritizes executable total programs, inexpensive library reuse, and small proof obligations. A proof profile prioritizes theorem closure and permits a declared classical foundation. A pedagogy profile prefers readable constructions. An exhaustive-fragment profile fixes a grammar and reports its exact search boundary. Profiles change priorities and explicit admissibility policies; they must not silently change the requested type or property.
+
+\section{The request, its meaning, and its result}
+\label{sec:request}
+
+\subsection{A synthesis problem in native type theory}
+
+Fix a Lean environment $\Env$, a well-formed local context $\Ctx$, an expected type $T$, and a behavioral predicate $\Spec$. The core obligations are
+\[
+ \Env;\Ctx\vdash T:\operatorname{Sort}(u),\qquad
+ \Env;\Ctx\vdash\Spec:T\to\operatorname{Prop}.
+\]
+A verified solution consists of expressions $t,p$ such that
+\begin{equation}\label{eq:contract}
+ \Env;\Ctx\vdash t:T,
+ \qquad
+ \Env;\Ctx\vdash p:\Spec(t).
+\end{equation}
+Without a behavioral constraint, take $\Spec(t)=\operatorname{True}$. The request also includes an admissible component inventory, an axiom policy, an execution policy, and search budgets. These determine what the system is allowed to return, not what the bare type means.
+
+For $T:\operatorname{Type}(u)$, one can package a result as a subtype $\{t:T\mid\Spec(t)\}$. The public metaprogramming API should instead retain separate expression fields, or use a genuinely sort-polymorphic dependent packaging such as \code{PSigma}. Using \code{Subtype} as though it accepted an arbitrary $T:\operatorname{Sort}(u)$ would unnecessarily restrict proof-valued and sort-polymorphic requests.
+
+Local assumptions remain local assumptions. When a result is exported, close over the required telescope in dependency order. A candidate obtained under $h:\operatorname{False}$ is conditionally valid but says nothing about an unconditional executable implementation. An acceptance report should therefore display the abstracted premises and the transitive axiom inventory, rather than presenting a closed-looking name that conceals its context.
+
+\subsection{Programs, examples, and laws}
+
+Consider three requests for a binary selector:
+\begin{lstlisting}
+-- Proposed production syntax, not the prototype's parser.
+synth def choose : (A : Type) → A → A → A
+
+synth def choose : (A : Type) → A → A → A
+  satisfying choose Nat 11 29 = 29
+
+synth def choose : (A : Type) → A → A → A
+  satisfying ∀ A a b, choose A a b = b
+\end{lstlisting}
+The first merely requests an inhabitant. The second proves one observation. The third proves a law. Parametricity may suggest that the second observation is highly discriminating within a particular pure grammar, but Leant2 should not silently invoke a parametricity theorem that it has not established for the actual grammar and environment. It should prove the third property separately when that is the desired guarantee.
+
+The native prototype does precisely this separation: it synthesizes a selector satisfying the finite observation and then proves a stronger theorem about the particular generated term by reflexivity. That stronger theorem is additional evidence; it is not a reinterpretation of the user's finite example.
+
+\subsection{A result algebra, not a Boolean flag}
+
+\begin{longtable}{@{}L{0.25\textwidth}L{0.69\textwidth}@{}}
+\toprule
+Result & Required evidence and permissible interpretation \\
+\midrule\endhead
+\code{Verified} & Exact $t:T$ and $p:\Spec(t)$ accepted under the declared axiom policy. Execution status is a separate field. \\
+\code{TypedOnly} & $t:T$ checked, but the requested contract has not been proved. Never silently promoted to verified. \\
+\code{TestedOnly} & Typed candidate with recorded finite observations. Useful for exploration, not proof of an unstated law. \\
+\code{CandidateRefuted} & A checked proof of $\neg\Spec(t)$, or a checked counterexample sufficient to derive it. This rejects this candidate only. \\
+\code{Impossible} & A checked term of $(t:T)\to\Spec(t)\to\operatorname{False}$, relative to the displayed context. \\
+\code{FragmentExhausted} & A precise finite grammar or certified decision fragment has been exhausted. The claim is about that fragment, not all Lean terms. \\
+\code{BudgetExhausted} & Search or verification was interrupted by its resource limit. Include remaining queues and resumable state identifiers. \\
+\code{Unsupported} & A requested policy or backend cannot handle an obligation. Other lanes may still work; unsupported is not false. \\
+\code{InfrastructureError} & Worker failure, version mismatch, transport error, or failed replay. This conveys no mathematical conclusion. \\
+\bottomrule
+\end{longtable}
+
+A user interface may group several of these states, but its structured API must preserve them. A complete candidate can be simultaneously \code{TypedOnly}, refuted by one example, and useful as a source of reusable subterms. Search progress and final authorization are separate concerns.
+
+\subsection{Frontend elaboration protocol}
+
+The frontend first elaborates $T$ in the user's current namespace and scope. It then introduces a fresh local name of type $T$ and elaborates the entire constraint as a proposition. Unknown names should be errors rather than newly invented implicit parameters. Any expected universes and local instances are captured before search begins. This follows the good preflight principle already used by Leant's named behavioral entrance, but retains the resulting native expressions directly~\cite{behavior}.
+
+The synthesizer distinguishes \emph{rigid} user parameters from \emph{owned} search metavariables. It must not solve a request by assigning an ambient user metavariable that the caller intended to remain independent. The safe default is to freeze external metavariables, or require an explicit elaborator contract stating which assignments may escape. A tactic invoked inside an unfinished proof must return its permitted assignments transactionally to that proof state.
+
+The frontend offers three views over one service: \code{by leant2} fills an expected term; a \code{#synth?} command explores alternatives without registering a permanent definition; and a declaration command publishes a named implementation plus a named correctness theorem atomically. The REPL should be an adapter, not a second elaborator.
+
+\section{Architecture and semantic authority}
+\label{sec:architecture}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[font=\small,node distance=7mm and 7mm,
+ box/.style={draw=Ink,rounded corners=2pt,fill=Light,align=center,inner sep=5pt},
+ arrow/.style={-{Latex[length=2mm]},thick,draw=Ink}]
+\node[box,text width=12.4cm] (front) {Lean tactic / declaration command / exploration UI};
+\node[box,text width=12.4cm,below=of front] (prep) {Request elaboration and frozen origin\\$\Env,\Ctx,T,\Spec$, policies, component inventory};
+\node[box,text width=3.5cm,below=of prep] (native) {Native dependent search\\introduce / apply\\eliminate};
+\node[box,text width=3.5cm,left=of native] (recur) {Recursive sketches\\library composition};
+\node[box,text width=3.5cm,right=of native] (plugins) {Finite / symbolic search\\proof tactics\\counterexamples};
+\node[box,text width=12.4cm,below=of native] (forest) {Transactional goal forest and fair scheduler\\shared dependencies; monotone work accounting; replayable plans};
+\node[box,text width=12.4cm,below=of forest] (check) {Candidate gate\\close and audit $\longrightarrow$ kernel check $\longrightarrow$ compiler / execution policy};
+\node[box,text width=12.4cm,below=of check] (out) {Frozen implementation + exact proof + receipt\\checked source export; atomic publication};
+\draw[arrow] (front)--(prep);
+\draw[arrow] (prep)--(native);
+\draw[arrow] (prep.south -| recur.north)--(recur.north);
+\draw[arrow] (prep.south -| plugins.north)--(plugins.north);
+\draw[arrow] (native)--(forest);
+\draw[arrow] (recur.south)--(forest.north -| recur.south);
+\draw[arrow] (plugins.south)--(forest.north -| plugins.south);
+\draw[arrow] (forest)--(check);
+\draw[arrow] (check)--(out);
+\end{tikzpicture}
+\caption{All proposal lanes share one native semantic boundary. Specialized search languages are optional adapters, never authorities for the whole problem.}
+\end{figure}
+
+\subsection{Three representations with different jobs}
+
+\textbf{Semantic representation.} Native \code{Expr}, \code{Level}, \code{Name}, binder information, local contexts, local instances, and the environment identify what a goal or candidate means. Preserve nominal constants and exact local dictionary expressions. A pretty-printed string is not a substitute for any of these.
+
+\textbf{Search-plan representation.} A persistent plan records introductions, applications, constructor choices, case splits, recursive schemes, and proof obligations. It may contain native expression annotations closed over a recorded telescope. It exists to resume and explain search, to lower recursive definitions, and to share immutable structure. It must not quietly introduce a competing typing relation.
+
+\textbf{Acceleration representations.} Discrimination-tree keys, type-head graphs, abstract lengths, finite Boolean syntax, and solver formulas deliberately omit information. Each comes with a reconstruction or soundness boundary. A coarse index proposes a component; native unification decides whether that use is viable. A solver proposes a witness or certificate; Lean determines whether it proves the original statement.
+
+This division reconciles two desirable properties that otherwise seem to conflict: retaining genuine Lean types and keeping search state serializable. Serialize a closed, scoped plan and its origin; do not serialize a naked open \code{Expr} and assume that its free-variable identifiers retain their meaning in another worker.
+
+\subsection{Worker ownership and the trust boundary}
+
+Use the project's selected toolchain to run the worker. Its environment owns imported declarations, namespace resolution, instance search, and the exact Lean API version. An editor integration may invoke the library in the server process for responsiveness, while a strict isolation profile delegates expensive speculative work to a restartable subprocess. The standalone controller and worker can both be Lean programs. No Haskell service is required.
+
+``Implemented in Lean'' need not mean reimplementing the operating system or the Lean runtime. A hardened deployment can retain a small platform-specific process-launch layer. The synthesis algorithms, policies, protocol, and certificate construction remain Lean code. An external SMT solver is optional, untrusted, and replaceable. The no-solver profile must still provide useful native synthesis.
+
+Within a worker, a plug-in is not automatically safe merely because its result will eventually be checked. A plug-in can mutate the environment, create new axioms, change options, execute arbitrary IO, or conceal dependencies through generated helpers. Speculation therefore runs against an origin snapshot with a restricted publication interface. Only a candidate gate may commit new user-visible declarations. In the strongest profile, replay occurs in a fresh process containing the declared imports and candidate bundle, but no speculative state.
+
+\subsection{The origin record}
+
+An immutable \code{Origin} should include a toolchain identity, imported module identities, an environment revision, the closed local telescope, $T$, $\Spec$, component policy, axiom policy, execution policy, and semantic options. The component inventory records constants and local terms, not their display names alone. It also records prohibited providers and whether that prohibition extends transitively to implementation dependencies.
+
+Use fingerprints to find possible cache hits, not as substitutes for structural validation. An in-process cache can exploit persistent environment identity. A cross-process cache needs a canonical serialized form, dependency fingerprints, and collision-resistant digests. A hit must still be replayed against the current origin before it becomes an authorized answer.
+
+Options that affect elaboration or search semantics belong in the origin: transparency policy, active local instances, coercion configuration, admissible classical assumptions, and grammar restrictions. Formatting preferences need not invalidate a semantic candidate, but should invalidate a cached presentation artifact when they change its spelling.
+
+\section{Native Lean features that determine the design}
+\label{sec:nativefeatures}
+
+\subsection{Universes and higher-rank arguments}
+
+Lean's \code{Prop} is impredicative; its \code{Type} hierarchy is not. A callback that accepts a polymorphic function is therefore not permission to instantiate every type metavariable by every polymorphic expression. Native level constraints must remain attached to the whole application spine. In particular, the polymorphic identity type over \code{Type} does not itself inhabit \code{Type}; the negative universe control in the experiment checks this exact mistake~\cite{lean-types,lean-universes}.
+
+For a provider with interleaved type, term, implicit, and instance binders, open the telescope in order, creating fresh owned metavariables with their proper local contexts. Later arguments may constrain earlier type choices. A single occurrence must share those assignments throughout its spine. Distinct provider occurrences normally receive fresh instantiations. Global universe parameters and lexical type variables remain rigid.
+
+Native representation removes artificial fixed limits such as ``at most six correlated type binders.'' It does not eliminate the cost of discovering a useful instantiation. Leant2 should expose budgets for type-expression invention, application depth, and carrier complexity, not encode a semantic rank ceiling into its source language.
+
+\subsection{Dependency is more than an argument order}
+
+For a constructor
+\[
+ c:(a:A)\to B(a)\to C(a),
+\]
+choosing $a$ creates obligations whose types mention that exact choice. For a subtype constructor, choosing a value creates a proof goal about that value. For an indexed constructor, the result's index equation may solve an earlier metavariable, rule out the constructor, or remain blocked. These are native dependency constraints, not independent slots in a product.
+
+The environment also contains dependencies that are easy to miss: an instance can depend on a type metavariable; a coercion can expose an instance obligation; a local declaration can refer to another declaration's value; a postponed elaborator task can later assign a shared hole. The scheduler's dependency graph must include the transitive closure of such relations, not just the syntactic free metavariables in the displayed targets.
+
+\subsection{Data, propositions, and elimination}
+
+An inhabitance proof \code{Nonempty A} is not generally an executable element of \code{A}. Similarly, a proof of a disjunction is not a freely inspectable runtime sum. The allowed eliminator depends on the inductive declaration and its sort. Use Lean's actual recursor metadata and elaborator APIs; do not derive a runtime case split by treating every logical connective as a data constructor~\cite{lean-inductive}.
+
+Equality transport is a first-class synthesis operation. A request for $B(b)$ can be solved from $v:B(a)$ and $h:a=b$ by a checked transport. Dependent case analysis should generalize or revert the context that depends on the scrutinee, then reconstruct it in each branch. Trying to substitute text into a nondependent pattern matcher is not a reliable implementation of this operation.
+
+\subsection{Class evidence is a value}
+
+Lean's native instance synthesizer should resolve ordinary instance-implicit obligations using the active lexical instances and standard search policy. It already handles the language's output-parameter conventions. Leant2 should not duplicate that machinery in a Haskell-style dictionary approximation~\cite{lean-instances}.
+
+Nevertheless, two explicitly supplied structures of the same class type need not have equal computational fields. The search inventory must preserve both terms. Deduplicating providers because their types have the same printed predicate loses real implementations. The correct boundary is: ordinary inference follows Lean's implicit-instance behavior; explicit evidence remains an ordinary selectable value. Switching between these policies is a user-visible choice, not an optimization.
+
+The prototype's \code{exactDictionary} test uses two explicitly supplied records to exercise identity preservation. It does not implement or benchmark a new instance-resolution algorithm.

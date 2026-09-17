@@ -1,0 +1,35 @@
+{
+  "receipt_kind": "Selected fields transcribed from observed AXLE JSON responses via Wolfram; not a signed or complete raw response",
+  "date": "2026-09-17",
+  "method": "POST via Wolfram Language URLRead; exact import header retained",
+  "endpoint": "https://axle.axiommath.ai/api/v1/check",
+  "request_options": {
+    "environment": "lean-4.34.0",
+    "ignore_imports": false,
+    "theorems_only": false
+  },
+  "executor_commit_sha": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+  "executor_docker_image_id": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+  "executor_artifact_sha256": "127b8dcb3bbc7cfa7861743f512fbe955bd8a35e940d6f2959d02327a7aa8520",
+  "echo_equal_trimmed": true,
+  "cached_response": false,
+  "tool_warnings": [
+    "Mathlib.Tactic is a required import but is missing from the header imports. You may experience inconsistent and incorrect behavior. We highly recommend adding `import Mathlib.Tactic` to the header imports.",
+    "The service advised using its default import Mathlib header for performance. The supplied import Lean header was retained with ignore_imports=false."
+  ],
+  "limitations": [
+    "Remote compilation only; no local Lean installation or independent lean4checker replay in this session.",
+    "AXLE did not return a Mathlib commit. These are not full-project performance benchmarks.",
+    "A true okay flag is not by itself proof validity; errors, failed declarations, target checks, and printed axiom inventories were also inspected."
+  ],
+  "source": "Leant2Pilot-first.checked.lean",
+  "request_id": "4d409bab-583d-444e-af0e-2fe822717c7a",
+  "okay": true,
+  "failed_declarations": [],
+  "lean_errors": [],
+  "synthesized_count": 12,
+  "parse_ms": 1463,
+  "total_ms": 1466,
+  "execution_time_ms": 1592,
+  "note": "Earlier exploratory version. Uses default apply goal ordering; does not force witness-first exploration. Superseded by prototype/Leant2Pilot.lean."
+}

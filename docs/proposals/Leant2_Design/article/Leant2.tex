@@ -1,0 +1,86 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{newtxtext}
+\usepackage[a4paper,margin=25mm,headheight=15pt]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amsthm,mathtools}
+\usepackage{newtxmath}
+\usepackage{booktabs,longtable,tabularx,array}
+\usepackage{enumitem}
+\usepackage{graphicx,xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds}
+\usepackage{listings}
+\usepackage{algorithm,algpseudocode}
+\usepackage{fancyhdr}
+\usepackage{needspace}
+\usepackage{xurl}
+\usepackage[colorlinks=true,linkcolor=blue!45!black,citecolor=green!35!black,urlcolor=blue!45!black]{hyperref}
+\usepackage{bookmark}
+\definecolor{Ink}{HTML}{19364B}
+\definecolor{Light}{HTML}{F3F5F7}
+\definecolor{Muted}{HTML}{52636D}
+\hypersetup{pdftitle={Leant2: Native Dependent Program Synthesis in Lean},pdfauthor={OpenAI},pdfsubject={Architecture, algorithms, trust boundaries, and executable experiments}}
+\setlength{\parskip}{3.5pt plus 1pt}
+\setlength{\parindent}{1.2em}
+\setlength{\emergencystretch}{3em}
+\setlist{itemsep=2pt,topsep=4pt}
+\setcounter{tocdepth}{2}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textsc{Leant2: native dependent synthesis}}
+\fancyhead[R]{\small Architecture and algorithms}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.35pt}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\Lean}{Lean~4}
+\newcommand{\Env}{\mathcal E}
+\newcommand{\Ctx}{\Gamma}
+\newcommand{\Met}{\mathcal M}
+\newcommand{\Spec}{\Phi}
+\newcommand{\Grammar}{\mathcal G}
+\newcommand{\unknown}{\mathsf{unknown}}
+\newcommand{\verified}{\mathsf{verified}}
+\newcommand{\checked}{\mathsf{checked}}
+\newcommand{\proposed}{\textbf{Proposed interface.}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\lstdefinelanguage{Lean}{
+ morekeywords={def,theorem,example,inductive,structure,where,match,with,fun,let,in,by,exact,apply,intro,cases,constructor,forall,partial,unsafe,do,return,if,then,else,namespace,deriving,instance,universe,import,open,obtain,refine,all_goals,satisfying,using},
+ morecomment=[l]{--},morecomment=[s]{/-}{-/},morestring=[b]",sensitive=true}
+\lstset{language=Lean,basicstyle=\ttfamily\footnotesize,keywordstyle=\bfseries\color{Ink},commentstyle=\itshape\color{Muted},stringstyle=\color{green!35!black},backgroundcolor=\color{Light},frame=single,rulecolor=\color{black!15},breaklines=true,columns=fullflexible,keepspaces=true,showstringspaces=false,aboveskip=7pt,belowskip=7pt,xleftmargin=3pt,xrightmargin=3pt,
+ literate={→}{{$\to$}}1 {←}{{$\leftarrow$}}1 {∀}{{$\forall$}}1 {∃}{{$\exists$}}1 {⟨}{{$\langle$}}1 {⟩}{{$\rangle$}}1 {×}{{$\times$}}1 {≠}{{$\ne$}}1 {·}{{$\cdot$}}1 {∧}{{$\land$}}1 {∨}{{$\lor$}}1 {¬}{{$\neg$}}1 {⊢}{{$\vdash$}}1 {₂}{{$_2$}}1}
+\floatname{algorithm}{Algorithm}
+\title{\vspace{-1.2em}\Huge\bfseries Leant2\\[0.3em]\LARGE Native Dependent Program Synthesis in Lean\\[0.4em]\large Architecture, algorithms, trust boundaries,\\and executable experiments}
+\author{Research and engineering design}
+\date{September 17, 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+Leant2 should not be a transliteration of a Haskell inhabitation engine. It should be a native Lean elaboration-and-search system that constructs a program together with its behavioral evidence, retaining dependent types, universe levels, local instance identities, and metavariable dependencies throughout search. This article specifies such a system: a transactional native goal forest; bidirectional introductions, application-spine search, and dependent elimination; indexed component retrieval; fair portfolio scheduling; structural and well-founded recursive sketches; specification-directed branch synthesis; counterexample-guided finite backends; and kernel-checked publication under an explicit axiom and executability policy.
+
+The central engineering separation is between semantic authority, search representation, and operational execution. Native expressions are authoritative, but open expressions alone are not portable search states. A proof-producing tactic may establish a type without supplying the desired behavior; a kernel-accepted recursor term may fail code generation; finite observational equality is not a safe permanent quotient; and exhaustion of a propositional or bounded synthesis fragment is not a proof that a Lean type is empty. Each boundary receives a concrete protocol and a precisely scoped guarantee.
+
+Two included Lean-only prototypes were compiled remotely with Lean 4.34.0. One exercises dependent synthesis, shared-goal rollback, higher-rank callbacks, indexed elimination, and author-supplied recursive sketches. The other synthesizes an eight-node Boolean XOR expression using five counterexample-guided proposals and proves its universal Boolean specification by kernel reduction. These experiments validate narrow mechanisms, not the complete architecture or a broad coverage claim. The article supplies implementable algorithms, a module plan, benchmark gates, and a staged path to practical coverage without importing Haskell's type restrictions into the successor.
+\end{abstract}
+\vspace{0.5em}
+\noindent\fcolorbox{black!20}{Light}{\parbox{0.955\textwidth}{\small
+\textbf{Status.} Architecture and production APIs are proposals. The two files in \code{prototype/} are actual checked experiments. No complete Leant2 implementation or comparative benchmark is claimed. Repository observations are pinned to Leant \code{6bf05ad78c46} and Djex \code{e8778f4ebd63}; Leant's documented vendored Djex pin is separately \code{e237e866}.}}
+\clearpage
+{\setlength{\parskip}{0pt}\tableofcontents}
+\clearpage
+\input{sections/01-foundations}
+\input{sections/02-native-search}
+\input{sections/03-recursion-behavior}
+\input{sections/04-engineering-guarantees}
+\input{sections/05-experiments-roadmap}
+\input{sections/references}
+\end{document}

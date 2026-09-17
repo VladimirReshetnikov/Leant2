@@ -1,0 +1,116 @@
+\documentclass[11pt,letterpaper,oneside]{article}
+\usepackage[margin=0.86in,headheight=15pt,footskip=28pt]{geometry}
+\usepackage{fontspec}
+\setmainfont{lmroman10-regular.otf}[
+ BoldFont=lmroman10-bold.otf,ItalicFont=lmroman10-italic.otf,
+ BoldItalicFont=lmroman10-bolditalic.otf]
+\setsansfont{lmsans10-regular.otf}[
+ BoldFont=lmsans10-bold.otf,ItalicFont=lmsans10-oblique.otf,
+ BoldItalicFont=lmsans10-boldoblique.otf]
+\IfFontExistsTF{DejaVu Sans Mono}{\setmonofont{DejaVu Sans Mono}[Scale=0.80]}{\setmonofont{lmmono10-regular.otf}}
+\usepackage{amsmath,amssymb,mathtools,amsthm}
+\usepackage{microtype,stmaryrd}
+\usepackage{xcolor,graphicx,booktabs,longtable,tabularx,array}
+\usepackage{enumitem,fancyhdr,titlesec,needspace}
+\usepackage{listings}
+\usepackage{xurl,hyperref,bookmark}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc}
+\usepackage[most]{tcolorbox}
+\definecolor{Ink}{HTML}{202D35}
+\definecolor{Accent}{HTML}{345D69}
+\definecolor{Olive}{HTML}{626B41}
+\definecolor{Pale}{HTML}{F3F4ED}
+\definecolor{Rule}{HTML}{CED3CF}
+\hypersetup{colorlinks=true,linkcolor=Accent,citecolor=Olive,urlcolor=Accent,
+  pdftitle={Leant2: Native Dependent-Type and Behavioral Program Synthesis in Lean},
+  pdfauthor={OpenAI},pdfsubject={Architecture, algorithms, and checked experiments}}
+\urlstyle{tt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt plus 1pt}
+\setlist{leftmargin=1.5em,itemsep=2pt,topsep=4pt}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+\titleformat{\section}{\Large\bfseries\color{Accent}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{Ink}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{Olive}}{\thesubsubsection}{0.6em}{}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small\sffamily Leant2: architecture and algorithms}
+\fancyhead[R]{\small\sffamily September 2026}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.35pt}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\Expr}{\code{Expr}}
+\newcommand{\MetaM}{\code{MetaM}}
+\newcommand{\ctx}{E;\Gamma}
+\newcommand{\Spec}{\mathit{Spec}}
+\newcommand{\Comp}{\mathit{Comp}}
+\newcommand{\Nat}{\mathbb{N}}
+\newcommand{\Bool}{\mathbb{B}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{definition}[proposition]{Definition}
+\newtheorem{lemma}[proposition]{Lemma}
+\newtcolorbox{decision}[1]{enhanced,breakable,colback=Pale,colframe=Olive,
+  boxrule=0.6pt,arc=1mm,title={#1},fonttitle=\bfseries,
+  left=2.5mm,right=2.5mm,top=1.5mm,bottom=1.5mm}
+\lstdefinelanguage{LeanDesign}{
+ morekeywords={def,theorem,example,inductive,structure,class,instance,where,match,with,
+ fun,let,in,by,exact,apply,intro,cases,constructor,forall,private,partial,unsafe,do,
+ return,if,then,else,namespace,end,elab,try,catch,for,deriving,universe},
+ sensitive=true,morecomment=[l]{--},morecomment=[s]{/-}{-/},morestring=[b]"
+}
+\lstset{language=LeanDesign,basicstyle=\ttfamily\small,keywordstyle=\bfseries\color{Accent},
+ commentstyle=\itshape\color{Olive},stringstyle=\color{Accent},
+ frame=single,rulecolor=\color{Rule},backgroundcolor=\color{Pale},
+ breaklines=true,breakatwhitespace=false,columns=fullflexible,keepspaces=true,
+ showstringspaces=false,tabsize=2,aboveskip=7pt,belowskip=7pt,
+ literate={α}{{$\alpha$}}1 {β}{{$\beta$}}1 {Γ}{{$\Gamma$}}1
+ {∀}{{$\forall$}}1 {→}{{$\to$}}1 {←}{{$\leftarrow$}}1
+ {⟨}{{$\langle$}}1 {⟩}{{$\rangle$}}1 {¬}{{$\neg$}}1
+ {≠}{{$\ne$}}1 {×}{{$\times$}}1 {≤}{{$\le$}}1 {∧}{{$\land$}}1}
+\tikzset{box/.style={draw=Accent,fill=Pale,rounded corners=2pt,align=center,
+ font=\small,text width=38mm,minimum height=12mm,inner sep=4pt},
+ flow/.style={-{Latex[length=2mm]},thick,draw=Accent}}
+\emergencystretch=3em
+\raggedbottom
+\AddToHook{cmd/section/before}{\Needspace{8\baselineskip}}
+\AddToHook{cmd/subsection/before}{\Needspace{4\baselineskip}}
+\begin{document}
+\begin{titlepage}
+\vspace*{18mm}
+{\sffamily\large\color{Olive} TECHNICAL DESIGN / CHECKED EXPERIMENTS\par}
+\vspace{12mm}
+{\Huge\bfseries\color{Ink} Leant2\par}
+\vspace{6mm}
+{\LARGE Native Dependent-Type and Behavioral\par Program Synthesis in Lean\par}
+\vspace{12mm}
+{\large Architecture, search algorithms, correctness boundaries,\par and an implementation path\par}
+\vspace{15mm}
+\begin{decision}{Central design}
+Keep Lean's actual expressions, universes, local contexts, and constraints throughout search. Use a serializable search-plan layer for control, not a second approximation of Lean's type theory. Synthesize a program and its behavioral certificate together, with alternative proposals checked at one publication boundary.
+\end{decision}
+\vfill
+{\large Prepared for Vladimir Reshetnikov\par}
+\vspace{3mm}
+{\large September 17, 2026\par}
+\vspace{7mm}
+{\small The architecture is a proposal. The accompanying native search experiment and reference certificates were remotely compiled with Lean 4.34.0. Experimental evidence, design arguments, and unimplemented components are distinguished throughout.}
+\end{titlepage}
+\pagenumbering{roman}
+\input{00-overview}
+\clearpage
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+\input{01-foundations}
+\input{02-search}
+\input{03-recursion}
+\input{04-behavior}
+\input{05-engineering}
+\input{06-evaluation}
+\appendix
+\input{07-appendices}
+\input{references}
+\end{document}

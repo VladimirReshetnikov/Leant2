@@ -1,0 +1,219 @@
+\section{Recommendation and scope}
+\label{sec:recommendation}
+
+The recommended system is a \emph{Lean-native, proof-producing program synthesizer with several cooperating search lanes}. Its organizing unit is not a translated simple type and not an isolated tactic goal. It is an exact Lean synthesis problem together with a graph of mutually dependent computational and logical obligations. All lanes propose terms or refinements of that graph. A small acceptance path checks the resulting declarations and behavioral proofs in Lean.
+
+Three decisions are fundamental. First, Lean's own expressions and contextual typing information remain authoritative throughout the general search. Second, recursion and behavioral reasoning are construction mechanisms, not expensive filters attached only after complete programs have been enumerated. Third, every negative answer identifies what was actually ruled out. A bounded heuristic miss is never a proof that the requested Lean type is empty.
+
+The goal is substantial coverage of ordinary programming and verification tasks: polymorphic adapters; products, sums, structures and classes; finite and recursive containers; indexed data; proofs accompanying computed values; compositions of library operations; and recursive programs characterized by equations or relational specifications. Unrestricted theorem proving, unrestricted higher-order unification, arbitrary termination arguments, and arbitrary semantic program equivalence are not assumed decidable. Difficult cases remain searchable through increasingly powerful lanes and user-supplied sketches, without inventing a completeness claim.
+
+\paragraph{What the article contributes.}
+The main contribution is a concrete synthesis architecture: a native dependent-state model, a continuation-correct construction algorithm, demand-directed provider and carrier discovery, recursor-based program/proof co-synthesis, a certifying behavioral loop, and explicit interfaces between these mechanisms. The accompanying code tests two of those ideas in small settings. The architecture as a whole, its scheduler, large-scale retrieval system, and recursive-scheme discovery are proposals, not implemented features of the artifact.
+
+\section{What to inherit, what to replace}
+\label{sec:predecessors}
+
+\subsection{Reviewed evidence and revision boundaries}
+
+This design uses selected source and documentation from Leant commit
+\begin{center}\small\code{6bf05ad78c467989e68290f2d08bbed40802d485}\end{center}
+and standalone Djex commit
+\begin{center}\small\code{e8778f4ebd63e1f9b9b410fa4de8d14a8a04c9e5}.\end{center}
+Both are September 14, 2026 snapshots. The reviewed Leant documentation separately identifies its vendored Djex dependency as \code{e237e866}; that is not the same revision as the standalone Djex main snapshot. The comparison is architectural, not a reproduction of the predecessors' complete test suites. Relevant evidence is the actual fragment translator, the synthesis and behavioral guides, Djex's architecture guide, the existing Lean-rewrite analysis, and the latest reviewed indexing diagnostic \cite{leant-fragment,leant-internals,leant-behavior,djex-architecture,rewrite-analysis,indexing-report}.
+
+The existing rewrite analysis already makes the case for eliminating cross-language representation crossings and retaining project-local process isolation. It also recommends keeping an explicit neutral search representation, with Lean metaprogramming concentrated at preparation and lowering. Leant2 should retain the operational insight but change that last choice for its dependent lane: native metavariables and dependent contexts are valuable \emph{inside} search. Determinism and serialization should come from immutable recipes and controlled state ownership, not from translating the whole problem into a smaller type language \cite{rewrite-analysis}.
+
+\subsection{The limitations are more specific than ``Haskell cannot do Lean''}
+
+The predecessors have already developed substantial polymorphic and higher-order support. It would be inaccurate to describe them as merely monomorphic arrow-type inhabitation engines. The concrete mismatch is that the Lean fragment translator must encode selected distinctions explicitly, and some structures, notably term-indexed applications, are still handled opaquely rather than decomposed as arbitrary dependent Lean types \cite{leant-fragment}. A native engine removes that mandatory projection. It does not automatically invent a good search order, an invariant, or a termination argument.
+
+The reviewed indexing diagnostic is especially instructive. Its original bounded Haskell query rejects all 256 observed candidates, although useful function-valued fold states and the integer-case step are individually available. The isolated step is found at candidate 5; adding surrounding context changes the observed successful position to 219. These are diagnostic positions, not an internal trace of the original recursive construction. The same report records continued bounded misses for the original simultaneous-universe fixture \cite{indexing-report}. The architectural lesson is that representation fidelity and compositional search quality are separate problems.
+
+\begin{table}[ht]
+\centering\small
+\caption{Successor decisions, not a promise to preserve every predecessor interface.}
+\begin{tabularx}{\textwidth}{@{}L{0.24\textwidth}YY@{}}
+\toprule
+Concern & Preserve & Replace or extend \\
+\midrule
+Typing authority & Exact candidate checking and source identity & Native \code{Expr}, contexts and levels instead of a mandatory approximate type projection \\
+Search diversity & Distinct logical and heuristic search strategies & Dependent construction, recursion schemas, behavioral feedback and fair continuations \\
+Behavior & Passed/falsified/inconclusive distinction & Obligations propagated into partial programs, with certified domain lanes \\
+Evidence & Candidate-specific provenance and bounded claims & Direct expression/proof artifacts, rather than text as the semantic bridge \\
+Runtime & Project-local worker, cancellation and recovery & Lean controller and worker; no Haskell frontend compatibility layer \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Relationship to existing synthesis research}
+
+Type-directed search and refinement-based program construction are established ideas. Synquid demonstrates the value of decomposing a refinement specification during recursive synthesis; constraint-based type-directed synthesis develops the interaction between typing and synthesis constraints; live bidirectional evaluation explains how examples can constrain incomplete programs \cite{synquid,osera,lubin}. Leant2 should adapt these mechanisms to an exact Lean environment rather than claim that dependent program synthesis is a new field.
+
+Aesop is particularly relevant as Lean-native proof-search infrastructure with shared metavariables \cite{aesop}. It can be a proof-obligation service and a source of engineering patterns. It is not, by itself, a replacement for computational witness enumeration, example propagation, recursion-scheme discovery, or candidate-quality policies. Similarly, a future Forge integration should be an optional implementation of a proof-service interface, not a dependency that defines Leant2's synthesis semantics.
+
+\section{The exact synthesis contract}
+\label{sec:contract}
+
+\subsection{A problem is larger than its displayed type}
+
+\begin{definition}[Frozen synthesis problem]
+A problem is a tuple
+\[
+ Q=(\Env,\Gamma,\mathcal U,T,\Phi,\mathcal O,\Grammar,\mathcal A,\mathcal B).
+\]
+Here $\Env$ is the exact Lean environment; $\Gamma$ is the ordered dependent local context, including local definitions and instances; $\mathcal U$ records universe parameters and constraints; $T$ is the requested type; $\Phi(t)$ is an optional mandatory proposition about a candidate; $\mathcal O$ is a collection of observations; $\Grammar$ is the admitted construction grammar and provider inventory; $\mathcal A$ is the trust and execution policy; and $\mathcal B$ is the resource policy.
+\end{definition}
+
+The successful judgment is
+\[
+ \Env;\Gamma\vdash t:T,
+ \qquad
+ \Env;\Gamma\vdash p:\Phi(t)
+ \quad\text{when a mandatory specification is present.}
+\]
+The type and specification are elaborated once in the user's context and then frozen. Elaborating an unknown name must not silently create an auto-implicit parameter in a behavioral clause. Likewise, an engine must not introduce \code{Inhabited A}, replace an input by a defaulted variant, specialize two independent universe parameters to one, or weaken a postcondition merely to make synthesis succeed.
+
+It is tempting to treat every query as a subtype-inhabitation problem. That is useful for many data-valued targets, but the implementation should retain separate term and proof obligations. It handles arbitrary requested sorts, avoids accidental changes to elimination behavior, and makes it possible to rank executable code separately from its certificate. The obligations share the same candidate metavariable, so this separation is operational rather than semantic.
+
+\subsection{Four different kinds of constraint}
+
+A \emph{logical requirement} is an exact Lean proposition, for example
+\[
+ \forall xs,\ \operatorname{Perm}(f(xs),xs)\ \land\ \operatorname{Sorted}(f(xs)).
+\]
+Acceptance requires a proof of that proposition. A \emph{finite observation} might instead be $f([3,1])=[1,3]$. A finite conjunction of such observations establishes exactly that conjunction, not a universal sorting theorem. For a genuinely finite input type, exhaustive checking can establish a universal theorem only when the enumeration's coverage and the evaluator's correctness are also justified.
+
+A \emph{construction restriction} controls which implementations may be proposed: no calls to a particular library function, at most one structural recursion, or use only an explicit provider set. It is a grammar predicate, not a mathematical property of all equivalent functions. Finally, an \emph{operational objective} concerns runtime, allocation, or an asymptotic cost model. A smaller expression is not automatically faster. Such objectives must be either proved relative to an explicit cost semantics or reported as empirical measurements.
+
+The user should be able to supply all four independently. This prevents an example-only mode from looking certified and prevents a library-reuse benchmark from being mistaken for synthesis from primitives.
+
+\subsection{Public frontend}
+
+The primary frontend should be a Lean library and tactic, with command and editor layers around the same request API. The following is \emph{proposed syntax}, not syntax implemented by the prototype:
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}
+def adapter : (A -> B) -> List A -> List B := by
+  leant2 using [List.map]
+
+#synth transform : List Nat -> List Nat
+  satisfying (fun f => forall xs, f xs = xs.reverse)
+  excluding [List.reverse]
+
+-- A sketch fixes the algorithmic skeleton, not the hole contents.
+def vectorMapSketch ... := by
+  leant2 completing ...
+\end{lstlisting}
+\end{minipage}\par
+
+The API should return structured events and final statuses. Editor support can display the current partial term, the obligation blocking it, a concrete rejected example, and the cost frontier. A \code{synth?}-style command should insert ordinary Lean code plus any required theorem, not a fragile transcript of the entire search. A REPL is useful but should not be the semantic owner of synthesis.
+
+\section{Answers, refusals, and the meaning of completeness}
+\label{sec:answers}
+
+\subsection{A result algebra}
+
+The result type should distinguish at least the following outcomes.
+
+\begin{description}[style=nextline,leftmargin=1.4em]
+\item[Certified candidate]
+An exact term, its checked type, mandatory specification proof if any, explicit axiom dependencies, and execution-policy assessment.
+\item[Observed candidate]
+A type-checked term with precisely named finite observations. This result cannot satisfy a query that required a universal proof.
+\item[Certified empty]
+A Lean proof of $T\to\mathrm{False}$, or of $\neg\exists t:T,\Phi(t)$, under the frozen context. This is the strongest negative result.
+\item[Grammar or fragment exhausted]
+An exhausted finite grammar or a certificate that no derivation exists in a named formal fragment, with its exact scope and coverage statement. It need not imply that the Lean target is empty.
+\item[Unknown]
+A structured reason: bound reached, unresolved unification, missing provider, unsupported elimination, proof timeout, inconclusive solver result, or interrupted worker. Remaining continuations should be resumable when possible.
+\end{description}
+
+A mode can request only the first result, the best result within a bound, or a stream of diverse candidates. None of these modes should change what certification means.
+
+\subsection{Logical unprovability is not Lean negation}
+
+A complete intuitionistic propositional search procedure is useful. Its failure, however, cannot generically be converted into a Lean proof of the negation of the interpreted goal. For instance, an intuitionistic propositional calculus does not derive excluded middle uniformly, while Lean with its classical principles can prove it. A Kripke countermodel concerns derivability in the specified calculus; it does not make every interpretation of the formula false inside the current Lean environment.
+
+There are three safe routes to a stronger negative statement. One may construct an explicit Lean contradiction from a hypothetical inhabitant. One may exhaust a genuinely finite domain with a checked coverage theorem. Or one may use a formally proved reflection/coverage theorem whose conclusion is exactly the desired Lean noninhabitation claim. Merely declaring a source projection ``complete enough'' is not the same as providing such a theorem.
+
+The prototype includes an elementary example of the first route:
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}
+theorem uniformEmpty : (forall A : Type, A) -> False := by
+  intro f
+  exact Empty.elim (f Empty)
+\end{lstlisting}
+\end{minipage}\par
+This is a genuine negative certificate. In contrast, the prototype's expected failures on \code{False} and on an impossible natural-number subtype are tests of a bounded tactic, not machine-checked completeness theorems about that tactic.
+
+\subsection{Coverage should be a vector, not a slogan}
+
+A practical coverage record should have independent axes for syntax, construction rules, logical certificates, execution, and resource bounds. A system might understand an indexed type exactly, construct its constructors, but have no recursive elimination scheme yet. It should say so. Likewise, it may synthesize an inhabitant of a higher-rank type without finding the intended behavior under the current constraints.
+
+The objective ``a large fraction of types occurring in practice'' should therefore be operationalized by a task distribution and a held-out benchmark, not by a type-theoretic universality claim. Section~\ref{sec:evaluation} gives a concrete evaluation protocol.
+
+\Needspace{26\baselineskip}
+\section{Architecture and ownership}
+\label{sec:architecture}
+
+\subsection{One semantic core, several proposal mechanisms}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[node distance=7mm and 7mm,
+ box/.style={draw=ink,rounded corners=2pt,fill=pale,align=center,
+ text width=35mm,minimum height=11mm,font=\small},
+ arrow/.style={-{Latex[length=2mm]},draw=ink,thick}]
+\node[box] (front) {Lean frontend\\and elaboration};
+\node[box,right=of front] (problem) {Frozen problem\\and inventory};
+\node[box,right=of problem] (state) {Dependent agenda\\and branch states};
+\node[box,below=of front] (native) {Native terms\\and library composition};
+\node[box,right=of native] (rec) {Recursion schemas\\and proof service};
+\node[box,right=of rec] (domain) {Behavioral feedback\\and domain lanes};
+\node[box,below=of rec] (check) {Freeze, kernel check,\\audit and export};
+\draw[arrow] (front)--(problem);
+\draw[arrow] (problem)--(state);
+\draw[arrow] (state)--(domain);
+\draw[arrow] (state.south west)--(rec.north east);
+\draw[arrow] (problem.south west)--(native.north east);
+\draw[arrow] (native.south east)--(check.north west);
+\draw[arrow] (rec)--(check);
+\draw[arrow] (domain.south west)--(check.north east);
+\end{tikzpicture}
+\caption{Proposal lanes share one frozen problem and acceptance boundary. Behavioral observations also feed back into the agenda; the diagram suppresses those return arrows.}
+\end{figure}
+
+A practical module layout is:
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language={}]
+Leant2/Frontend       syntax, tactic, command, editor events
+Leant2/Problem        freezing, scopes, policies, identities
+Leant2/Native         elaboration adapter, native state, unification
+Leant2/Search         agenda, recipes, continuations, budgets
+Leant2/Inventory      declaration indices, retrieval, local providers
+Leant2/Construct      introductions, spines, cases, transports
+Leant2/Recursion      motives, call capabilities, termination schemas
+Leant2/Behavior       observations, obligations, replay, counterexamples
+Leant2/Domains        certified finite languages and solver adapters
+Leant2/ProofService   Lean tactics and optional external integrations
+Leant2/Accept         kernel validation, axiom and execution audit
+Leant2/Worker         project process, protocol, cancellation, recovery
+\end{lstlisting}
+\end{minipage}\par
+
+These boundaries are about ownership, not necessarily separate processes. Search modules can be highly heuristic and even contain partial metaprograms. The output is accepted because it survives the checker, not because every line of the search engine has been formally verified.
+
+\subsection{Native expressions plus immutable recipes}
+
+The general engine owns actual \code{Expr}, \code{Level}, \code{FVarId}, \code{MVarId}, \code{LocalContext}, and environment information. It should not define a replacement ``Lean type'' datatype with a hand-maintained approximation of universes, applications, or dependent binders.
+
+Nevertheless, native mutable state is a poor durable file format. Every search action should also have an immutable recipe: introduce a binder, apply a named provider occurrence with these arguments, split this local, introduce this recursor motive, ask this proof service with this budget. Recipes refer to stable problem-local binder indices and declaration identities, not to raw metavariable numbers from another worker. A recipe can be replayed against the frozen problem to reconstruct a branch; checked native snapshots accelerate execution within one worker.
+
+Small reified languages remain desirable in \emph{domain-specific} lanes. An affine arithmetic syntax or a finite Boolean grammar can have a clean semantics and proved checker. Such a language is an optimization with a stated domain, not an ontology through which every Lean target must pass.
+
+\subsection{Process and version boundaries}
+
+The controller and worker can both be implemented in Lean. The worker should run under the target project's pinned Lake environment. This avoids loading incompatible compiled modules into a globally installed process and permits killing a runaway elaboration without losing durable session history. The existing rewrite analysis identifies these reasons for retaining a worker boundary \cite{rewrite-analysis}.
+
+A worker owns an environment epoch. Candidate handles, native snapshots, memo entries, and proof-service responses are valid only in that epoch. Undo, environment replacement, or worker death invalidates them. Durable state consists of the exact source dependencies, problem description, settings, and replay recipes. An in-memory \code{Expr} from a retired worker is not an accepted cross-version certificate.
+
+The baseline requires no Haskell component. Optional SMT executables do not alter that implementation choice. Strong operating-system guarantees, such as race-resistant descriptor-bound executable launch, should be specified separately; rewriting process code in Lean does not automatically preserve every security property of the predecessors' platform shim.

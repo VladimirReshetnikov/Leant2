@@ -1,0 +1,301 @@
+\section{Behavioral constraints inside the search}\label{sec:behavior}
+
+\subsection{The contract is not merely a final filter}
+
+A complete design should support three interacting directions of information:
+types constrain program shape; specifications propagate obligations backward
+through that shape; observations and counterexamples constrain the remaining
+choices. None of these replaces the final proof of the original contract.
+
+Represent each behavioral obligation with its exact expression, local path
+assumptions, program-hole dependencies, and proof status. A proof obligation
+that mentions a completed candidate fragment may be attempted immediately. An
+obligation dominated by an unconstrained function hole should usually wait for
+more structure, or invoke a contract-decomposition rule rather than a generic
+proof search that blindly guesses the function.
+
+Proof tactics can assign metavariables. The controller must therefore choose
+an explicit policy: freeze computational holes while checking a proposed
+fragment, or allow a tactic to return computational assignments as a new
+transactional synthesis proposal. An arbitrary proof worker must not silently
+mutate unrelated program decisions. The proof and term engines share an
+obligation graph, not ungoverned access to one mutable context.
+
+\subsection{A bounded proof-service portfolio}
+
+Begin with low-cost methods: conversion/reflexivity, existing local proofs,
+constructor proofs, and a curated simplifier. Follow with indexed theorem
+application, arithmetic or algebraic methods appropriate to the goal, and
+bounded \code{grind} or Aesop invocations. Induction is a deliberate schema
+choice, preferably coordinated with the program's recursion plan, rather than
+a repeatedly retried final tactic.
+
+Each call returns one of: a checked proof proposal; a checked refutation
+proposal; a reduced residual goal with a proof of the reduction; unsupported;
+or a resource/unknown diagnostic. A failed proof attempt does not falsify the
+candidate. This preserves the sound distinction already present in Leant's
+behavioral interface while allowing much richer search-directed use of the
+contract~\cite{leant-behavior}.
+
+Results must also preserve assumptions. A proof obtained under a temporary
+branch guard can discharge only an obligation under that guard. A simplifier
+that rewrites the target must return its equality or implication proof; its
+pretty-printed residual expression alone is not enough to reconstruct the
+original contract.
+
+\subsection{Counterexample-guided synthesis}
+
+For a universal contract
+\[
+ C(f)=\forall x:A,\ \mathsf{Pre}(x)\to\mathsf{Post}(x,f(x)),
+\]
+maintain a bank of typed inputs and their validity evidence. Candidate search
+uses the bank as a necessary finite condition. A verifier tries to prove the
+full contract, find a violating input, or report unknown. The loop is:
+\begin{Code}
+while resources remain:
+  e := next candidate consistent with retained constraints
+  if there is no such candidate:
+      report exhaustion only for the declared explored grammar
+  p := try proving the original C(e)
+  if p is accepted:
+      return Verified(e, p)
+  outcome := seekCounterexample(e, C)
+  if outcome is a replayed, valid counterexample x:
+      add x; increment bank version; refine observation partitions
+      propagate any certified necessary constraints
+  else:
+      retain e in an unresolved queue with its proof-search status
+      continue with other candidates fairly
+\end{Code}
+
+A counterexample is not just a tuple of integers. It contains a value of the
+actual input type, a proof of any dependent bounds and preconditions, and the
+observed violation. For sound pruning, validate that violation in Lean or via
+a separately certified evaluation procedure. A solver model containing an
+out-of-bounds index does not refute a function defined only on \code{Fin n}.
+
+If the user's request is only a finite conjunction of examples, a proof of
+that conjunction completes the request. When a universal law was requested,
+passing the entire current bank leaves a proof obligation. Exhaustive finite
+domain verification can prove a universal statement only when the enumeration
+has a checked coverage theorem and the relevant evaluation is sound.
+
+\begin{proposition}[Progress of finite counterexample search]
+For a finite candidate set of size $N$, suppose every rejected candidate has a
+valid counterexample that is permanently retained, and candidate selection
+never chooses a candidate violating the retained bank. Then at most $N$
+distinct counterexample rejections occur before acceptance, verifier unknown,
+or exhaustion of that candidate set.
+\end{proposition}
+\begin{proof}
+Each new counterexample excludes the just-rejected candidate from all later
+selection. Thus each rejection eliminates a previously selectable member of a
+finite set. Unknown outcomes do not satisfy this argument and must not be
+counted as counterexamples.
+\end{proof}
+
+The bound is not a practical runtime guarantee: constructing candidates and
+proving or refuting them can dominate the work. Its purpose is to make the
+candidate-retention and bank-update contracts explicit.
+
+\subsection{Typed test generation}
+
+Use a plugin registry of generators and quotation functions for supported
+types. Constructors provide a starting grammar; indices and preconditions
+provide filtering obligations. A generated \code{Fin n} value must include its
+bound proof. A generated dependent pair first chooses the first field and
+then generates a value of its instantiated second-field type.
+
+For polymorphic functions, testing at several concrete types is useful
+falsification evidence, not a proof of universal parametric behavior. Include
+distinct concrete dictionary payloads, heterogeneous products, and asymmetric
+values to avoid tests that accidentally identify meaningful alternatives.
+Higher-order inputs can be sampled from finite tables or small lambda grammars
+when their domains support this; such sampling remains incomplete.
+
+Opaque, noncomputable, or effectful code needs an explicit evaluation policy.
+A timeout, blocked reduction, or inability to quote a result is unknown. Never
+convert it into false just to accelerate candidate rejection. The default
+pure evaluator must not execute file, network, or process effects from an
+unverified candidate.
+
+\section{Certified abstraction and solver boundaries}\label{sec:abstraction}
+
+\subsection{The exact condition for pruning a partial program}
+
+Let $s$ be a typed sketch, $\Phi$ its valid path assumptions, and
+$\Comp(s)$ the set of completions allowed by the current grammar. Let
+$A(s,\Phi)$ be an abstract summary with concretization $\gamma$. A sufficient
+soundness condition is
+\begin{equation}\label{eq:abstract-soundness}
+ \{\Obs(e,\rho):e\in\Comp(s),\ \rho\models\Phi\}
+ \subseteq \gamma(A(s,\Phi)).
+\end{equation}
+The abstract summary overapproximates \emph{all} allowed completions and valid
+inputs, not merely the completions sampled so far. For the point-observation
+pruning rule below, also require an exhibited valid input $\rho_0\models\Phi$
+and a defined observation for every admissible completion at that input.
+Otherwise an empty input domain could make the universal contract vacuously
+true while the observation set is empty. A plugin using whole-program summaries
+instead must prove that every completion has a summary object.
+
+Suppose $K$ is an abstractly expressible necessary condition for the original
+contract. If a checked argument establishes
+\[
+ \gamma(A(s,\Phi))\cap K=\varnothing,
+\]
+then no completion of $s$ can satisfy that condition in the relevant setting.
+The branch may be pruned with the certificate and its assumptions attached.
+An underapproximation or a summary valid for just one chosen completion does
+not support this conclusion.
+
+\begin{proposition}[Sound sketch pruning]
+Assume~\eqref{eq:abstract-soundness}, the valid-input and defined-observation
+conditions above, and that every contract-satisfying completion has its
+observation at $\rho_0$ in $K$. If the displayed intersection is empty,
+then no completion represented by the sketch satisfies the contract under the
+stated assumptions.
+\end{proposition}
+\begin{proof}
+A satisfying completion has a defined observation at the exhibited input
+$\rho_0$. That observation lies in $\gamma(A(s,\Phi))$ by soundness and in $K$
+by necessity, contradicting the empty intersection.
+\end{proof}
+
+This elementary argument is often the missing step in an otherwise plausible
+``use an SMT solver to prune'' design. Leant2 should encode it in the domain
+plugin interface. A plugin lacking a certificate may still supply a ranking
+hint; it cannot supply a semantic refutation.
+
+\subsection{Domain plugins}
+
+A useful plugin offers a typed reification procedure, an interpretation into
+Lean, a relation between concrete and abstract states, transfer rules, and
+proof builders for its claimed implications. Initial domains could cover
+length and size, linear arithmetic, finite tags, bounded machine integers, and
+simple multiset observations. The plugin may decline an unsupported provider
+or return the top abstraction; refusal must not silently become a false fact.
+
+The abstraction often needs assumptions about particular provider occurrences.
+For example, a theorem describing a supplied callback's length behavior must
+be instantiated with that exact callback and dictionary evidence. A theorem
+for one occurrence is not transferable to a similarly printed occurrence from
+a different branch. This preserves the useful candidate/evidence ownership
+principles already present in the source repositories~\cite{leant-internals}.
+
+The prototype experiment in Section~\ref{sec:experiments} gives a small complete
+example: a typed fold-step AST has a provably exact affine length summary. The
+Python search uses this summary, and Lean separately proves the summary rule
+and the selected program's full behavior. The experiment uses no SMT solver.
+
+\subsection{SMT as a proposal and proof-reconstruction service}
+
+There are three different solver uses. A solver may propose choices for a
+finite sketch, propose counterexample inputs, or prove a theory obligation
+through a reconstructed certificate. Those uses have different validation
+requirements; a single Boolean ``solver succeeded'' result is inadequate.
+
+For synthesis, encode finite grammar choices, selected constants, and the
+current examples. A satisfying assignment is decoded into a typed Lean plan
+and checked. For counterexamples, encode the negation of the supported behavior
+fragment and replay the decoded model against the exact candidate. For proofs,
+reconstruct the result in Lean through a certificate checker or an established
+proof-producing integration. Lean-SMT is a relevant optional integration point,
+not a claim that all Lean propositions become SMT-decidable~\cite{lean-smt}.
+
+Every theory translation has an explicit boundary. Naturals require
+nonnegativity and the actual semantics of their operations. Bitvectors use
+modular arithmetic. Arrays need their Lean bounds and extensionality semantics.
+User-defined functions can be uninterpreted in an overapproximation, but models
+of that overapproximation may not correspond to executable Lean values. A
+proof under a sound weakening may still be useful; a countermodel needs replay.
+Division, coercions, and finite-domain assumptions deserve dedicated regression
+tests because superficially similar operations can have different edge cases.
+
+An \code{unsat} answer for an underapproximate grammar excludes only that grammar.
+An \code{unsat} answer for a sound overapproximation can support stronger
+conclusions, but only after its encoding theorem and solver certificate are
+accepted. Solver \code{unknown}, timeout, unsupported proof rules, and malformed
+models remain distinct outcomes.
+
+\subsection{Learning nogoods without leaking assumptions}
+
+A failed branch can yield a useful nogood: these constructor choices, type
+instantiations, and path assumptions cannot all occur in a successful
+completion. Store the smallest justified dependency slice rather than the
+entire failed syntax tree. Nevertheless, the nogood must identify the request,
+contract, instance selections, relevant environment version, and grammar scope.
+A solver unsat core is a proposed slice, not automatically a Lean theorem.
+
+If failure means only that a proof method exhausted its budget, record a
+heuristic penalty or a retry schedule. It is not a nogood. If failure follows
+from a genuinely false finite observation, a checked lemma can sometimes reject
+all candidates containing the same local decision under the same assumptions.
+Generalization beyond that slice requires another proof.
+
+\section{Equivalence, deduplication, and cache validity}\label{sec:equivalence}
+
+\subsection{Observational agreement is provisional}
+
+Let $X$ be the current finite example bank and define
+\[
+ e\sim_X e'\quad\Longleftrightarrow\quad
+ \forall x\in X,\ \Obs(e,x)=\Obs(e',x).
+\]
+This relation groups candidates usefully. It is not universal extensional
+equality, and in a higher-order setting it is not automatically a congruence
+under every future context. Adding a counterexample can split an old class.
+
+Store an observation class as a representative \emph{plus recoverable members}
+and their generation recipes. When the bank changes, refine the partition or
+resume deferred members. Permanent deletion is allowed only with an appropriate
+semantic equivalence proof, a valid dominance argument for the requested
+objective, or an explicitly incomplete fast-lane policy.
+
+The finite experiment demonstrates the problem concretely. Identity and
+reverse agree on the initial empty and singleton examples. Retaining only
+identity deletes every successful reverse candidate in that initial class.
+The next asymmetric list kills identity, leaving an apparently exhausted
+search even though the original finite grammar contained a correct program.
+
+\subsection{Definitional and proved equality}
+
+Definitional equality is stronger evidence than agreement on tests, but its
+use still depends on context and metavariable assignments. Compare completed
+terms in a fixed environment or use a carefully abstracted template. Do not
+use an equality test that mutates one branch's unknowns as a destructive global
+deduplication key.
+
+Proved equality can justify more aggressive normalization. A dependent e-graph
+or rewrite system must track the type of each term, proofs of rewrites, and
+transport through dependent parents. An ordinary untyped e-graph that merges
+two children and leaves their parents unchanged can produce ill-typed terms.
+Use homogeneous equality within a fixed type; when types change, construct
+explicit transport or a verified heterogeneous-congruence step.
+
+Proof irrelevance can help merge proof terms of the same proposition. It must
+not merge operation dictionaries or arbitrary data records in \code{Type}.
+Likewise, an equality between whole functions does not automatically justify a
+cost dominance claim about their compiled implementations.
+
+\subsection{Caching exact subproblems}
+
+A positive cache entry should be a closed, parameterized template with an exact
+type and its proof dependencies. Instantiation creates fresh metavariables and
+rechecks applicability. Canonicalize locals by an explicit dependent telescope,
+not by pretty-printed names. Include local definition values and the selected
+instance terms where they affect meaning.
+
+A negative cache entry is more demanding. It must record whether it is a
+semantic refutation, exhaustive failure of a bounded grammar, or merely an
+operational miss. A result obtained at cost bound $k$ cannot exclude a larger
+bound. A failure with one set of providers cannot exclude another. An unknown
+proof status should normally be cached only to avoid identical immediate
+retries, with budget and method identity attached.
+
+Hashing accelerates lookup; it does not confer authority. On a hit, compare or
+validate the exact key material and replay the template. A request identity
+includes the contract and policy, not just $T$. This is essential for the two
+projection examples: they have the same function type and opposite behavioral
+requirements.

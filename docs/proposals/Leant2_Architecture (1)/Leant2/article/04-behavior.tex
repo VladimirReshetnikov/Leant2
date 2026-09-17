@@ -1,0 +1,153 @@
+\section{Behavioral constraints as active search information}
+\label{sec:behavior}
+\subsection{Combine proof-directed decomposition with example-directed discovery}
+The specification should influence construction before complete terms are enumerated. Three kinds of information are useful: logical obligations that Lean can prove or simplify; concrete observations on admissible inputs; and abstract summaries that approximate the behavior of all completions of a partial program.
+
+Refinement-type synthesis demonstrates the value of decomposing specifications while constructing programs. Type-guided abstraction refinement and abstraction-guided example synthesis offer complementary ways to scale component search. Leant2 should borrow those strategies, while retaining Lean's native dependent typing and requiring checked interpretations for any pruning claimed to preserve solutions.\cite{synquid,tygar,syngar}
+
+A backward contract step selects a provider theorem whose conclusion can imply the desired property and generates obligations on its arguments. A forward step symbolically evaluates a proposed expression or computes its abstract summary. The two meet through the provider's exact instantiated application. For a cons-producing branch, for example, an output-length requirement becomes a condition on the tail; an output equality can expose the required head and tail equations.
+
+For higher-order functions, pass behavior to a callback hole only when the propagation is justified. A map specification with concrete list inputs can generate concrete callback observations at those elements, but a relational property such as injectivity is not generally determined by those observations. A fold may require an invariant relating the accumulator to the processed prefix. Preserve the difference between a useful example projection and a sufficient logical contract.
+
+\subsection{A verifier with four outcomes}
+For a complete typed candidate, use the interface
+\[
+ \mathit{verify}(t,\Phi)\in
+ \{\mathit{Proof}(p),\mathit{Counterexample}(c),
+   \mathit{Unknown}(r),\mathit{Failure}(e)\}.
+\]
+A proof is checked against $\Phi(t)$. A counterexample records an admissible input, any required path/precondition evidence, the relevant evaluation, and a checked contradiction to the candidate's requested behavior. An unknown means that the attempted method did not decide the obligation. An infrastructure failure is not mathematical evidence.
+
+For an open problem, a concrete model can refute the explicitly abstracted universal closure of the candidate. This must not be confused with a proof that the candidate fails at every possible instantiation of the local context. Preserve the closure, the substituted type parameters, and witnesses for all instantiated premises. A solver cannot conjure an element of an arbitrary empty type merely to make a behavioral counterexample convenient.
+
+Untrusted native execution is useful for discovery and ranking. In certified mode, a proposed failing observation must be replayed through an approved logical evaluator, a checked decision result, or an appropriate proved correspondence theorem before it justifies an irreversible semantic rejection. Timeouts, crashes, and unknown outputs are not values in the observation domain.
+
+\subsection{CEGIS without starvation or false verification}
+The basic counterexample-guided loop is familiar, but two details matter enough to make explicit: verification can remain unknown, and later candidates must still receive attention.
+\begin{lstlisting}[language={},caption={Proposed certificate-aware CEGIS coordinator.}]
+examples := initial_examples
+pending_proofs := fair_queue()
+while resources remain:
+  choose fairly between generation, pending proof work, and refinement
+  candidate := obtain a closed typed proposal
+  if a checked example refutes candidate:
+    record the counterexample; refine compatible frontiers; continue
+  outcome := verify_under_a_budget(candidate, original_specification)
+  match outcome:
+    Proof(p): publish only after original-query kernel validation
+    Counterexample(c): replay c; refine examples and completion summaries
+    Unknown(reason): retain candidate and schedule other work
+    Failure(error): report operational failure; do not infer falsehood
+\end{lstlisting}
+A fixed set of examples constrains the next generation round. New examples are applied to candidates and partial-program summaries whose context and domain stamps are compatible. Do not apply a counterexample from one dictionary selection or universe specialization to an unrelated problem merely because its printed function name is the same.
+
+When a candidate passes every currently available test, its status remains tested. It becomes certified only after a proof is reconstructed. For a genuinely finite domain, exhaustive checking can establish a universal property, but only with a completeness theorem for the enumerator and a checked decision procedure for the property. An arbitrary bounded list generator is not such an enumerator for all lists.
+
+The candidate generator should also continue when an external solver returns \code{unknown}. Otherwise the first difficult but unproved candidate can block a later, easily certified one indefinitely. Verification budgets can grow on revisits, while their consumed work remains charged to the global budget.
+
+\section{Solver-assisted completion of finite native sketches}
+\label{sec:smt}
+\subsection{What to encode}
+SMT is most useful when a large combinatorial choice has a small explicit shape: selecting operators, choosing among available arguments, selecting a branch predicate, or filling arithmetic constants in a bounded sketch. It is not a replacement for Lean's elaborator or dependent type checker.
+
+A sketch consists of a finite grammar of native construction alternatives, selector variables, typed holes, and a mapping from each selector assignment to a candidate reconstruction plan. Generate a solver problem from concrete examples or from a proved abstract semantics of that sketch. Decode a model into choices, replay those choices in a fresh native branch, and check the resulting Lean term. The solver is permitted to produce a proposal that fails reconstruction; it is not permitted to declare that proposal well typed.
+
+Type-directed pruning can greatly reduce the selector problem before any solver call. First-order input and output shapes, permitted operations, and explicit finite alternatives are suitable abstractions. TYGAR motivates using coarse type information to avoid exploring the entire component graph at once; in Leant2, an abstraction miss triggers refinement and wider native retrieval rather than a change to the meaning of the requested type.\cite{tygar}
+
+\subsection{Dependent holes cannot be untyped multiplexers}
+For a dependent pair, selecting a witness changes the type of the second field. Suppose one branch chooses $n=0$ and another chooses $n=1$, producing second-field obligations in different fibers. Encoding both as a single untyped solver variable and later attaching the chosen type is invalid.
+
+There are two sound construction strategies. In a branch-expanded encoding, each witness alternative owns its correctly specialized child grammar, guarded by its selector. In a native-first encoding, the solver selects only the witness; Lean then generates the dependent residual problem and a later solver query chooses its completion. The former can exploit larger simultaneous constraints; the latter avoids an exponential family of heterogeneous child grammars. Both reconstruct the same kind of native term.
+
+Similarly, do not ask an SMT engine to invent arbitrary Lean universe expressions or inhabitants of unknown higher-order types. Keep those choices native and bounded, or provide a domain-specific reification with explicit soundness obligations. A solver-level uninterpreted sort named after a Lean type is not itself evidence about that type's inhabitants.
+
+\subsection{Interpretation and proof reconstruction}
+Every solver domain specifies its representation map and the meaning of its constraints. For natural numbers represented by integers, include nonnegativity. Truncated natural subtraction is not integer subtraction without conditions. Fixed-width bit-vector operations must use the correct modular semantics. Division, casts, comparisons, and overflow behavior need explicit treatment, including exceptional or zero-divisor cases supported by the Lean definitions.
+
+The model path and the proof path are separate. A model proposes a program or a counterexample, both replayed in Lean. An \code{unsat} answer is useful for heuristic ranking immediately, but it supports certified pruning only after a trusted translation theorem and checked unsatisfiability evidence are available. Depending on the domain, that evidence may be reconstructed by an existing Lean tactic or by a small reified checker. A raw solver string never becomes a proof term.
+
+A nogood learned from a failed candidate must identify the exact choices it rules out. Generalizing it to other choices requires a certificate or keeps it heuristic. Do not cache a model-based conflict across changed assumptions, different bit widths, changed dictionary values, or different instance environments.
+
+\section{Certified pruning of partial programs}
+\label{sec:pruning}
+\subsection{The object being rejected is a family of completions}
+For a partial program $h$, let $\Comp(h)$ be its legal native completions under the current grammar and inherited constraints. A completion may itself be a dependent tuple: later hole assignments can depend on earlier ones. Let $\mathit{assemble}(h,c)$ be the complete expression obtained from completion $c$.
+
+An irreversible semantic rejection of $h$ is justified by evidence of
+\begin{equation}\label{eq:reject}
+ \forall c:\Comp(h),\quad
+ \neg\Phi(\mathit{assemble}(h,c)).
+\end{equation}
+A counterexample to one completed term is not evidence of \eqref{eq:reject}. For example, the sketch \code{append xs ?tail} has an incorrect completion \code{?tail := []} and a correct completion \code{?tail := ys} for the append specification. Rejecting the whole sketch because the first completion failed would lose the solution.
+
+\subsection{A sufficient abstract rejection theorem}
+Let $\sigma(t)$ describe a complete candidate in an abstract domain. Let $A_h$ overapproximate the summaries of all legal completions, and let $N_\Phi$ be a necessary abstract condition for success:
+\[
+ \forall c:\Comp(h),\ \sigma(\mathit{assemble}(h,c))\in A_h,
+ \qquad
+ \Phi(t)\Longrightarrow \sigma(t)\in N_\Phi.
+\]
+\begin{proposition}[Completion-wide pruning]
+If the two implications above are justified and $A_h\cap N_\Phi=\varnothing$ is proved, then \eqref{eq:reject} follows.
+\end{proposition}
+\begin{proof}
+For an arbitrary legal completion $c$, its summary lies in $A_h$. If its assembled term satisfied $\Phi$, that summary would also lie in $N_\Phi$, contradicting disjointness. Since $c$ was arbitrary, every legal completion is ruled out.
+\end{proof}
+
+The direction of approximation matters. An underapproximation can show that some attractive completions fail, but emptiness of its intersection cannot eliminate the unrepresented completions. Likewise, an abstract model must describe a realizable input before it can become a concrete counterexample. These obligations should be part of each domain plugin's interface, not comments left to its implementer.
+
+\subsection{A checked example: an overlong output prefix}
+Suppose a partial list program has already committed to a fixed output segment and can only append more elements. For an admissible input whose length is smaller than that segment's length, no suffix can make the output have the input's length. The accompanying file checks precisely this theorem:
+\begin{lstlisting}[caption={Checked completion-wide rejection theorem.}]
+theorem prefixCannotComplete {α : Type u} (input fixedPart : List α)
+    (tooLong : input.length < fixedPart.length) :
+    ∀ suffix : List α, (fixedPart ++ suffix).length ≠ input.length := by
+  intro suffix equality
+  simp only [List.length_append] at equality
+  omega
+\end{lstlisting}
+The theorem applies even if the suffix hole has additional constraints, because it quantifies over all suffixes. But it only applies to a grammar position that really preserves the committed segment by append. A later operation allowed to delete or replace that segment invalidates the summary assumption. The rejected family's grammar identity is therefore part of the certificate's applicability check.
+
+This proof depends on \code{propext} and \code{Quot.sound} in the tested toolchain, as reported by the axiom audit. It does not depend on \code{sorryAx}. A stricter axiom profile may select a different arithmetic proof; the published certificate must disclose which policy actually accepted it.
+
+\subsection{When no certificate is available}
+An abstract analysis can still rank, defer, or selectively explore a branch without claiming a theorem. Such heuristics belong in a lane whose omissions are compensated by a fair retained baseline. Store the reason as \code{HeuristicDeprioritization}, not \code{CertifiedReject}. The positive publication guarantee remains intact either way, but only certified rejection or faithful replay preserves the corresponding search-coverage claim.
+
+\section{Reversible observational parking and semantic diversity}
+\label{sec:parking}
+\subsection{Observational equality is provisional}
+For concrete inputs $X=\{x_1,\ldots,x_k\}$, define the observation vector
+\[
+ \mathit{obs}_X(t)=
+ (\mathit{eval}(t,x_1),\ldots,\mathit{eval}(t,x_k)).
+\]
+Many different candidates share this vector. Storing only the cheapest representative can save enormous work, but destroying the others can lose the desired implementation. The empty-list function and identity agree on an empty input and disagree on a singleton input.
+
+Use \emph{parking} instead: a bucket holds an active representative together with its other members or exact regeneration recipes. When a new example arrives, recompute or extend observations and split the bucket. Newly distinguished members become eligible again. The recipe must retain the original context and grammar choices; a vague promise to ``enumerate later'' is not a complete retention mechanism.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[node distance=14mm and 14mm]
+\node[box,text width=48mm] (one) {Initial observation on empty input\\\code{empty}, \code{identity} agree};
+\node[box,text width=48mm,right=of one] (bank) {One bucket, two retained recipes\\representative + parked alternative};
+\node[box,text width=48mm,below=of one] (new) {Add singleton input\\the observations differ};
+\node[box,text width=48mm,right=of new] (two) {Split and reactivate\\identity is still available};
+\draw[flow] (one)--(bank);\draw[flow] (bank)--(two);
+\draw[flow] (one)--(new);\draw[flow] (new)--(two);
+\end{tikzpicture}
+\caption{A finite-test equivalence class is a scheduling device, not a proof that its members are interchangeable.}
+\end{figure}
+
+There is a second liveness requirement: rotate members fairly even when no new counterexample arrives. The active representative may remain hard to prove, while a parked equivalent-looking candidate has a short certificate. Waiting forever for a distinguishing test would block the latter. Proof-search diversity is therefore a reason to reactivate members independently of observational splitting.
+
+\subsection{Open and dependent terms require stricter keys}
+Do not observationally merge arbitrary open expressions. A higher-order term may later be placed in a context that distinguishes it; a dependent term may live in a fiber whose index is still unassigned; and an apparent observation may depend on an unresolved dictionary value.
+
+The initial implementation should restrict parking to closed typed candidates, or to closures over the exact same frozen telescope with the same admissible instantiations and observed result family. Include evaluation status in the bookkeeping, but never equate two timeouts with equal returned values. Dependent outputs need a well-typed comparison operation in the same fiber or an explicit transport into a common observation domain.
+
+When a Lean proof establishes an appropriate equality, stronger merging is possible. For first-order values, a checked equality permits substitution in the specification. For functions, a pointwise equality plus the appropriate extensionality principle can justify the required replacement. This is distinct from finite observation equality and should be represented by a different object in the API.
+
+\subsection{Diversity-aware ranking}
+A useful result stream balances small source size, low proof cost, inexpensive computation under an explicit cost model, and semantic diversity. Prefer a representative from an unexplored behavior bucket over the tenth syntactic variant of the current best candidate. Keep the final score separate from any admissible lower bound used by a completeness-oriented scheduler.
+
+Resource-aware synthesis research shows how a specified cost semantics can guide construction. Leant2 can support such a profile by attaching checked resource bounds to providers and recursive plans. A source-level cost certificate is not a theorem about actual wall-clock performance of compiled code; its operational interpretation must be stated separately.\cite{resyn}

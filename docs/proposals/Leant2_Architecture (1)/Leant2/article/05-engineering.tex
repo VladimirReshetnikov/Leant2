@@ -1,0 +1,160 @@
+\section{Library discovery, indexing, and reusable contracts}
+\label{sec:library}
+\subsection{Index for retrieval, check for applicability}
+A practical synthesizer cannot scan every imported declaration at every hole. Build persistent environment indexes keyed by coarse result heads, argument heads, constructor families, theorem conclusion shapes, and selected semantic tags. Use a discrimination-tree-style index for structural matches and a secondary graph linking providers through input/output type abstractions. Local values and projections form a separate small inventory searched first.
+
+These indexes return candidates, not proof of applicability. Native instantiation and checking decide whether a returned provider fits. Expand retrieval in stages: exact apparent result head, reducible aliases, more general indexed patterns, related input/output heads, and an explicit wider scan under a budget. A failed narrow index query must not become negative inhabitation evidence.
+
+Cache immutable declaration metadata with the environment generation. Cache an instantiated occurrence only with its complete arguments, universes, and inherited constraint stamp. Never reuse a theorem about one local dictionary payload for another merely because both methods have the same printed notation.
+
+\subsection{The first useful provider catalog}
+The initial catalog should cover constructor/projection plumbing, option and sum combinators, list and array iteration, arithmetic and finite-index utilities, function composition, common record transformations, and their elementary specification lemmas. The catalog does not contain a new abstract model of these types; it records native declarations and how their roles can guide search.
+
+Annotations can describe a provider's intended search role, cost estimate, legal unfolding policy, corresponding contract lemmas, and available abstract summaries. For example, a list operation may have a checked length theorem and a content theorem. A proof theorem can be marked as a likely backward rule for a target relation. These are modular additions; users should not have to modify the synthesizer to support a project datatype.
+
+A summary record must identify the theorem that justifies it and a procedure that instantiates that theorem at the \emph{same} provider occurrence used by the candidate. If no checked theorem is attached, the summary is explicitly heuristic. Opaque library implementations remain useful through their interfaces and theorems; aggressive unfolding should not be a prerequisite for reuse.
+
+\subsection{Do not assume parametricity merely from a polymorphic type}
+Some Haskell-inspired synthesis heuristics are motivated by free theorems. Lean's standard axioms permit nonparametric polymorphic functions, so unrestricted parametricity is not a valid global assumption. The Lean reference gives an explicit discussion of this distinction.\cite{axioms}
+
+A parametricity-based pruning domain must be tied to a restricted grammar and a proved logical relation for that grammar, or to a theorem about the particular provider. It may also be used as a nonbinding heuristic. The type $\forall\alpha,\mathrm{List}\,\alpha\to\mathrm{List}\,\alpha$ alone is not authorization to import a Haskell semantic theorem into every Lean context.
+
+\section{Scheduling, caching, and the precise extent of completeness}
+\label{sec:scheduling}
+\subsection{Make the scheduler explicit}
+Use resumable jobs rather than an implicit lazy stream hidden inside one search function. A job records a query generation, branch identifier, plan cursor, pending continuation, priority components, and the resources already spent. Its kind identifies native expansion, provider retrieval, case planning, recursion planning, proof work, or behavioral refinement.
+
+Each scheduling quantum executes one bounded primitive operation or a bounded group of cheap operations. Native checkpoints are taken at well-defined operation boundaries. An arbitrary tactic invocation cannot necessarily be suspended halfway and serialized; on timeout, restore its checkpoint and either retire that attempt or retry with a larger budget later. Retried work is charged again.
+
+Use a heuristic priority such as
+\[
+ s(j)=g(j)+\lambda_h\widehat h(j)+\lambda_p\widehat p(j)
+       +\lambda_d\mathit{duplication}(j)-\lambda_r\mathit{relevance}(j),
+\]
+where $g$ measures constructed program cost and the hats are estimates. This is not advertised as A* with an admissible heuristic. Reserve a nonzero scheduling share for cost-layered grammar enumeration, and another for unresolved verification work. An initial engineering default can give one in eight quanta to the baseline lane, subject to measurement; no theoretical claim depends on that specific ratio.
+
+Every primitive grammar expansion must have positive cost or belong to a bounded normalization phase. Increase provider windows, literal bounds, type-instantiation grammars, and recursion-plan bounds through explicit layers. An infinite sequence of zero-cost variants would defeat both minimal-cost enumeration and fairness.
+
+\subsection{A useful conditional completeness statement}
+\begin{definition}
+Fix a query and an explicit effective grammar of construction plans and certificates. A solution is \emph{replayable} if it has a finite plan whose native reconstruction and final checks succeed using finite resources under the fixed environment and policy.
+\end{definition}
+\begin{proposition}[Proof-relative eventual discovery]
+Assume that each cost layer contains finitely many plans; every finite plan and retained alternative is eventually scheduled with sufficient finite reconstruction resources; pruning is certified or preserves a fair regeneration path; and verification fairly explores the grammar's certificate plans. Then every replayable solution is eventually discoverable in an unbounded run.
+\end{proposition}
+\begin{proof}
+Take a finite successful program-and-certificate plan. It occurs in a finite cost layer and cannot be permanently lost through the permitted pruning or retention operations. By fairness, its finite prefixes and reconstruction attempts are eventually executed with the required resources. The certificate is similarly reached. The publication checks then accept the original-query judgments. The assumptions, rather than heuristic priority scores, provide the guarantee.
+\end{proof}
+
+This is not a completeness theorem for a fixed timeout, for all Lean terms, or for the attached prototype. It is a design contract for the baseline lane. A grammar missing the needed recursor, literal, theorem, universe instantiation, or invariant cannot discover that solution, regardless of its scheduler. Report the grammar and bound with every coverage claim.
+
+\subsection{Cache identities must include the hidden context}
+A sound reuse key contains the environment generation; the closed target and specification; the ordered dependent telescope including local let-values and local instances; universe parameters and relevant constraints; inherited metavariable ownership and reachable assignments; transparency and elaboration options; grammar identity; and semantic-domain versions. Example-dependent caches also contain an observation-set generation.
+
+Do not use pretty-printed types as cache keys. Do not globally union native unification successes as though they were state-independent equalities: a successful comparison may have changed the constraint store. Syntactic hash-consing of immutable expressions is useful, but semantic reuse requires the corresponding context and reconstruction checks.
+
+A successful local solution can be abstracted over its actual dependency telescope and reused as a fresh closure. Instantiate its parameters and universes anew, and check its applicability. The abstraction must preserve local let semantics and must not leave dangling free-variable identifiers. A negative cache entry has a narrower meaning: a particular bounded operation failed under a specific state. Reusing that entry as global non-inhabitation is prohibited.
+
+\subsection{Parallelism and memory}
+Parallelize alternative plans or independent closed verification tasks first. Do not let several workers mutate one native metavariable context. Sibling goals connected by assignments remain one correlated transaction unless a precise independence analysis establishes that their assignment sets and dependencies are disjoint.
+
+A worker result is a closed proposal or a replay plan, not a raw foreign \code{MVarId}. The parent reconstructs or instantiates it under the current query and rechecks it before committing. If the parent context has changed, the old result is stale rather than an invitation to merge incompatible metavariable states.
+
+Measure checkpoint retention, expression sharing, cache hit rate, proof-term size, and replay cost. Bound the hot native-state frontier and evict cold branches to exact recipes. These measurements determine whether a persistent-snapshot or checkpoint-plus-replay profile wins for a workload; neither language folklore nor the performance of the tiny prototype decides that question.
+
+\section{Negative answers and the publication boundary}
+\label{sec:trust}
+\subsection{Three negative claims that must not be conflated}
+A complete propositional search engine is valuable, but its result describes a particular logical fragment. Dyckhoff's contraction-free calculus supplies a basis for a terminating propositional lane; the interpretation of its atoms and permitted premises must be explicit.\cite{dyckhoff,djex}
+
+Failure of intuitionistic proof search for excluded middle is not a Lean proof of its negation. In a policy allowing Lean's standard classical principles, the proposition has an inhabitant. Even in a constructive policy, underivability of a particular formula is different from deriving its negation. A logical-fragment certificate should therefore produce \code{FragmentUnderivable} unless an additional checked theorem transports it to the actual negative claim.
+
+Similarly, exhausting a provider grammar that omits a constructor says nothing about inhabitation in the full environment. A finite-grammar exhaustion certificate needs a checked enumeration/coverage argument for that grammar and checked rejection of its possible candidates. An empty heuristic queue alone is reported as an exhausted frontier within \code{Unknown}, not upgraded to a certificate.
+
+A genuine logical refutation is a separate Lean proof. The accompanying file checks:
+\begin{lstlisting}[caption={Checked actual non-inhabitation proof.}]
+theorem noUniversalChooser : ¬ Nonempty (∀ α : Type, α) := by
+  intro existsChooser
+  obtain ⟨choose⟩ := existsChooser
+  exact (choose Empty).elim
+\end{lstlisting}
+This proof specializes a hypothetical chooser at an actually empty type. It does not infer impossibility from a failed search. A negative lane can attempt such proofs directly, including structural contradiction and specification inconsistency, while ordinary synthesis continues.
+
+\subsection{Publication is a transaction against the original problem}
+The final checker should perform the following sequence as one controlled operation.
+\begin{enumerate}
+\item Load the frozen original query and the candidate's complete auxiliary-declaration closure. Reject stale environment generations and undeclared dependencies.
+\item Instantiate assigned metavariables and reject every remaining term or level metavariable, dangling free variable, or loose bound variable. Close the implementation and property over the original telescope in dependency order.
+\item Construct declarations whose types are the original closed target and the original closed property applied to the exact proposed implementation. Do not substitute the candidate's inferred statement for either one.
+\item Submit the declarations through a kernel-checking path in a controlled environment, with checking bypasses disabled. Check auxiliaries in dependency order and forbid candidate-originated arbitrary axioms.
+\item Audit transitive axiom dependencies and executable-policy requirements, then atomically publish the implementation, theorem, dependency report, and provenance.
+\end{enumerate}
+Lean's proof-validation guidance and axiom-reporting mechanisms provide the existing foundation for these checks. Merely constructing an \Expr{} or successfully running an elaborator is not the whole validation contract.\cite{validation,axioms}
+
+\begin{proposition}[Publication soundness relative to the environment]
+Assuming correctness of the kernel and the permitted imported environment, a publication checker following the sequence above publishes only terms satisfying \eqref{eq:answer}, under its reported assumptions and axiom policy.
+\end{proposition}
+\begin{proof}
+The checker fixes the declarations' types from the original query, closes them over the intended telescope, and requires successful kernel checking. The implementation declaration therefore establishes the first judgment; the specification declaration establishes the second for that exact implementation. The dependency audit excludes unpermitted assumptions introduced by proposals. Search heuristics and external solver verdicts do not occur as additional premises.
+\end{proof}
+
+The theorem does not say that imported axioms are true, that the native compiler is verified, or that the stated specification captures the user's unstated intent. Those are distinct assumptions. This is a small and auditable trust claim, rather than a blanket assertion that anything written in Lean is correct.
+
+\subsection{Axiom policy and executability are separate axes}
+Provide a minimal-axiom profile with an explicit whitelist, a standard mathematical proof profile, and optional project-specific assumptions. Always reject \code{sorryAx} in finished certified artifacts. A native-evaluation proof mechanism can add computation-specific axioms and must not silently pass as a kernel-only reconstructed proof. Inspect actual dependencies rather than relying on a tactic's familiar name.\cite{axioms,validation}
+
+Separately require that generated computational definitions are executable under the requested profile. Classical reasoning in erased proofs need not prevent a program from compiling, whereas classical choice used to produce runtime data can. An axiom whitelist alone is not an executability check. Likewise, an unsafe replacement implementation can behave differently from its logical model even when the logical theorem is valid. A runtime-conformance profile must audit replacement mechanisms and state its compiler and foreign-code assumptions.\cite{axioms,recursion}
+
+For normal code generation, the recommended default is total executable output, ordinary reconstructed proofs under an explicit standard axiom whitelist, and no unreviewed native-evaluation axioms. More restrictive or noncomputable modes should be explicit query options, not accidental consequences of which proof tactic ran first.
+
+\section{Implementation structure and user-facing integration}
+\label{sec:implementation}
+\subsection{A concrete module decomposition}
+The following modules are proposed interfaces, not a list of implemented files. The narrow checked surfaces should hide their constructors and expose inspection views separately from validated values.
+\begin{longtable}{@{}L{0.29\textwidth}L{0.63\textwidth}@{}}
+\toprule
+Module & Responsibility and invariant \\
+\midrule
+\endhead
+\code{Leant2.Query} & Elaborated query, universe/telescope closure, inherited metavariable ownership, grammar and policy identities. Owns the immutable original problem. \\
+\code{Leant2.Native} & Version-specific adapter for native goals, context entry, application, reduction, cases, recursors, instance resolution, and complete state rollback. \\
+\code{Leant2.Plan} & Pure construction recipes and explicit continuations. Stores no competing Lean type calculus and no serializable raw local IDs. \\
+\code{Leant2.Search} & Jobs, fair/heuristic queues, nonrefundable budgets, state materialization, checkpoints, and progress events. \\
+\code{Leant2.Rules} & Introduction, head--spine construction, exact projections, dependent case plans, and controlled higher-order instantiations. \\
+\code{Leant2.Recursion} & Carrier/generalization selection, structural method holes, invariant candidates, and well-founded call evidence. \\
+\code{Leant2.Library} & Environment indexes, staged retrieval, provider roles, and exact-occurrence contract instantiation. \\
+\code{Leant2.Behavior} & Observation banks, admissible inputs, verifier outcomes, CEGIS coordination, and reversible parking. \\
+\code{Leant2.Domain} & Reified domain interfaces, checked interpretation theorems, summary applicability, and completion-wide rejection certificates. \\
+\code{Leant2.Solver} & Optional solver process owner, finite sketch encodings, model decoding, proof reconstruction dispatch, and timeout/error separation. \\
+\code{Leant2.Check} & Closure validation, original-statement kernel checking, auxiliary dependency audit, axiom/executable policy, and atomic publication. \\
+\code{Leant2.Frontend} & Tactics, commands, editor actions, and standalone request presentation. Contains no independent synthesis semantics. \\
+\code{Leant2.Worker} & Toolchain-matched worker protocol, environment generations, cancellation, restart, and durable replay. \\
+\bottomrule
+\end{longtable}
+
+The engine needs four especially important interface contracts. A proposal cursor produces resumable construction choices without claiming success. A native executor runs a choice transactionally and returns its complete assignment and obligation effects. A behavioral domain either returns a checked certificate with an applicability witness or an explicitly heuristic result. The publisher alone constructs a \code{CertifiedResult}. Making these contracts precise early is more important than assigning a large number of implementation modules.
+
+\subsection{Frontends share one request model}
+Proposed surface forms include \code{by leant2} for a goal, \code{leant2?} for a replayable suggestion, and a command such as:
+\begin{lstlisting}[caption={Proposed command syntax, not implemented by the attached prototype.}]
+#synth appendLike : List Nat → List Nat → List Nat
+  where ∀ xs ys, appendLike xs ys = xs ++ ys
+  using [List.nil, List.cons, List.rec]
+\end{lstlisting}
+The command elaborates the named function only as a specification binder until synthesis succeeds. It must not insert an axiom of the requested type as a provider. On success it emits a definition and a theorem; on failure it leaves neither a partial definition nor a trusted placeholder in the environment.
+
+The exact spelling is secondary to the shared API: prepared query in, structured event stream out, checked publication or qualified termination result. An editor can display the best typed candidate, unresolved proof obligations, current recursion plan, and remaining search budget. A CLI can serialize the same information. Generated source suggestions should be re-elaborated against the same statement before being advertised as copy-paste-ready.
+
+\subsection{Lean-native does not require one process}
+Implement the semantic engine and frontends in Lean. A standalone Lean controller should launch a project-toolchain-matched worker under the project's Lake environment. The worker owns native environments and checkpoints. A tactic can also run the library in-process, while using the same query preparation and publication code. Toolchain isolation is an architectural requirement independent of the implementation language.\cite{rewrite}
+
+Protocol messages should contain a version, query ID, environment generation, cancellation token, operation, and bounded payload. A worker-local capability is valid only for its owning generation. Persistent state consists of replayable project/session commands and closed artifacts, not raw environment handles. A timeout kills or cancels a worker-owned operation without committing partial declarations.
+
+External solvers are optional services, not a required second implementation of synthesis. Ordinary process launching can use Lean's process APIs. If a deployment requires the descriptor-bound executable-identity guarantees of Djex's existing Linux launcher, an optional narrow platform shim can preserve that policy; this does not justify retaining Haskell in the semantic architecture.\cite{djexarchitecture}
+
+Metaprogram plugins can execute host code even though their logical proposals are untrusted. Use process/resource isolation appropriate to the plugin trust level, and do not let an untrusted proposer mutate the publisher's baseline environment. The logical trust boundary and the operating-system execution boundary solve different problems.
+
+\subsection{Diagnostics are part of the design}
+A useful failure report identifies the blocked obligation and attempted strategies: unresolved family instantiation, insufficient recursion generalization, failed decrease proof, unavailable contract lemma, rejected axiom, stale cache, or exhausted grammar layer. It should include the relevant native type and the chosen argument/universe/dictionary assignments.
+
+Record deterministic replay identifiers, proposal counts, branch restorations, proof attempts, solver outcomes, summary rejections, and parked-member reactivations. A large trace should be demand-driven; the default report should show the shortest causal explanation and one or two promising residual plans. This information makes the synthesizer debuggable as a semantic engine rather than a black box that occasionally prints a term.

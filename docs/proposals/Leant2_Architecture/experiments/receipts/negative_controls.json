@@ -1,0 +1,64 @@
+{
+  "metadata": {
+    "receipt_format": "normalized transcription of observed AXLE tool response; not raw HTTP archive",
+    "date": "2026-09-17",
+    "transport": "Wolfram URLRead -> AXLE /api/v1/check",
+    "environment": "lean-4.34.0",
+    "ignore_imports": false,
+    "theorems_only": false,
+    "executor_commit": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+    "executor_docker_image": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+    "mathlib_commit": "not reported by service; not independently identified",
+    "local_lean_compiler": false
+  },
+  "controls": [
+    {
+      "name": "false_goal",
+      "request_id": "b0cebc08-0373-48ff-a1c5-300822151959",
+      "okay": false,
+      "failed_declarations": [
+        "false_goal"
+      ],
+      "error_summary": "Type mismatch: True.intro has type True, expected False",
+      "axioms": [],
+      "accepted": false
+    },
+    {
+      "name": "wrong_behavior",
+      "request_id": "42c9bd32-5737-4983-ae7c-d30c5f381557",
+      "okay": false,
+      "failed_declarations": [
+        "wrong_behavior"
+      ],
+      "error_summary": "rfl failed: 0 and 1 are not definitionally equal",
+      "axioms": [],
+      "accepted": false
+    },
+    {
+      "name": "forbidden_axiom",
+      "request_id": "13023672-c662-4e36-9143-a717c0775540",
+      "okay": true,
+      "failed_declarations": [
+        "apparent_success"
+      ],
+      "error_summary": null,
+      "axioms": [
+        "forged"
+      ],
+      "accepted": false
+    },
+    {
+      "name": "sorry_control",
+      "request_id": "9e2c5dd1-75ce-4b97-a266-8cd5eb91e22f",
+      "okay": true,
+      "failed_declarations": [
+        "incomplete"
+      ],
+      "error_summary": null,
+      "axioms": [
+        "sorryAx"
+      ],
+      "accepted": false
+    }
+  ]
+}

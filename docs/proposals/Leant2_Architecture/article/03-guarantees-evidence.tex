@@ -1,0 +1,241 @@
+\section{Guarantees and their exact assumptions}
+\label{sec:guarantees}
+The following statements describe the proposed architecture. Their assumptions are part of the claims. In particular, sound result acceptance is much easier to obtain than completeness, useful candidate ranking, or good performance.
+
+\subsection{Acceptance soundness}
+\begin{theorem}[Relative soundness of certified results]
+\label{thm:sound}
+Fix a query $Q$ whose elaborated environment, telescope, target, and predicate are frozen. Assume the acceptance stage correctly closes the returned expressions under that telescope, checks them with a sound Lean kernel against the frozen declarations, and enforces the stated assumption policy. If it reports a certified result $(e,p)$, then, relative to the admitted environment and local assumptions,
+\[
+  \Env;\G\vdash e:\Ty\quad\text{and}\quad
+  \Env;\G\vdash p:\Spec(e).
+\]
+The conclusion is independent of the correctness of the search heuristics.
+\end{theorem}
+\begin{proof}
+The acceptance stage checks a declaration whose type is the closure of the frozen $\Ty$ and whose value is the closure of $e$. Kernel soundness gives the first judgment after reopening the telescope. It separately checks the closed proof against the frozen $\Spec$ applied to the same accepted program. Reopening gives the second judgment. Assumption auditing restricts the premises to those admitted by policy. The search algorithm occurs nowhere in this derivation: it supplies candidate syntax, which the acceptance stage checks rather than trusts.
+\end{proof}
+The theorem does not prove that the formal contract expresses the user's informal intention. It also does not prove that the runtime compiler preserves every semantic property, that external effects terminate, or that arbitrary metaprograms are safely sandboxed. These are separate obligations and are deliberately visible in the architecture.
+
+\subsection{Termination of a bounded audit run}
+\begin{definition}[Finite effective search envelope]
+An envelope consists of a finite provider inventory; a finite term, type, literal, motive, measure, and proof grammar at each declared bound; a finite bound on rule depth or expanded states; and a terminating, resource-limited implementation of every primitive action. A timeout is an unknown result, not a successful decision.
+\end{definition}
+\begin{proposition}
+A search confined to a finite effective envelope terminates, provided its scheduler does not reschedule the same unfinished action indefinitely without consuming a finite request resource.
+\end{proposition}
+\begin{proof}
+There are finitely many scheduled derivations or states under the envelope. Each primitive action returns within its limit. Every scheduled step either removes work, advances a bounded continuation, or consumes a finite request resource. Thus no infinite sequence of productive or repeatedly suspended steps is possible within the request.
+\end{proof}
+This proposition says nothing about whether the budget is sufficient. In particular, a queue cap that discards candidates can preserve termination while invalidating an exhaustion or minimality claim. The discarded-work record must therefore be part of the audit result.
+
+\subsection{Relative completeness by dovetailing}
+\begin{theorem}[Conditional relative completeness]
+\label{thm:complete}
+Fix a query, an admitted environment, and effective grammars for programs and contract proofs. Assume: (i) a pair $(e,p)$ satisfying the query has a finite derivation in these grammars; (ii) each step of that derivation is eventually considered with sufficient primitive resource limits; (iii) scheduling fairly increases both construction and proof bounds; and (iv) no pruning rule removes every derivation of a valid pair unless justified by an equivalence preserving such a pair. Then the unbounded sequence of audit runs eventually returns a certified result, assuming the acceptance stage terminates on that pair.
+\end{theorem}
+\begin{proof}
+Choose a finite derivation of a valid pair. Its syntax sizes, rule count, provider selections, and the resources needed by each successful primitive computation have finite upper bounds. A fair diagonal schedule eventually reaches an envelope containing those bounds. Fair enumeration eventually visits the derivation or a validity-preserving replacement. By the pruning hypothesis, all such derivations have not been removed. The completed pair reaches the acceptance stage and is accepted.
+\end{proof}
+This is not a completeness theorem for arbitrary Lean inhabitation. The selected grammar may omit the necessary recursor, type instantiation, induction invariant, equality transport, or proof. A finite practical request may stop long before the relevant envelope is reached. A production beam-search lane may intentionally violate assumption (iv). These limitations do not threaten Theorem~\ref{thm:sound}; they limit discovery, not correctness of accepted results.
+
+A subtle point is the proof grammar. Enumerating all program candidates fairly while giving each an eternally fixed proof timeout does not satisfy the theorem. A correct but hard-to-verify program can otherwise be starved forever. The same applies to a fixed unification timeout on a particular type instantiation.
+
+\subsection{Justified pruning}
+\begin{proposition}[Contextual replacement]
+Suppose $e$ and $e'$ are well typed in the same context and a checked proof establishes $e=e'$. If the contract proof is transported along that equality, replacing $e$ by $e'$ preserves existence of a certified result for that contract. Agreement on a finite sample set alone does not establish this premise.
+\end{proposition}
+\begin{proof}
+Equality elimination transports a proof of $\Spec(e)$ to a proof of $\Spec(e')$. Both the equality and the transported proof are checked at their exact types. For the second assertion, two functions on naturals can agree on any fixed finite set while differing at a natural outside it. Thus finite agreement does not imply the equality required by the first assertion.
+\end{proof}
+For dependent subterms, the surrounding context may itself require transport. The implementation must reconstruct that transport rather than merely substitute syntactically. A domain-specific pruning theorem may be weaker than full equality and still sufficient for a particular contract; its assumptions must be attached to the pruning action.
+
+\subsection{What a negative result can mean}
+Three forms of negative evidence deserve separate treatment. A Lean proof of
+\[
+  (\Pi f:\Ty.\Spec(f)\to\mathsf{False})
+\]
+shows that no term of the requested type can satisfy the contract under the stated assumptions. A proof about a finite reified grammar shows only that no candidate in that grammar satisfies it. A terminating propositional search can establish nonderivability in its own logic, but that is not automatically a Lean proof of negation.
+
+For example, constructive propositional search may fail to derive excluded middle as a uniform principle. Lean with admitted classical reasoning can nevertheless prove it. Returning ``uninhabited in Lean'' from the constructive search would be wrong. Similarly, abstracting an inhabited type to an opaque propositional atom cannot support a general negative result merely because the abstract search has no constructor for that atom.
+
+By contrast, the following precise polymorphic negative statement has an elementary checked proof:
+\begin{lstlisting}
+theorem noPolyCast :
+    ((alpha : Type) -> (beta : Type) -> alpha -> beta) -> False := by
+  intro f
+  exact Empty.elim (f Unit Empty ())
+\end{lstlisting}
+It specializes the purported function to \code{Unit} and \code{Empty}. This theorem is included in the native experiment. The prototype's unsuccessful bounded search for such a function is not what proves the theorem; the explicit argument does.
+
+\section{An exact contract domain: affine list folds}
+\label{sec:affine}
+This section develops a small synthesis domain in full, so that the contract architecture has an executable and mathematically transparent instance. It is intentionally narrower than general program synthesis.
+
+\subsection{Candidate schema and specification family}
+For natural parameters $c,a,b,d$, define
+\begin{align*}
+ F_{c,a,b,d}([])&=c,\\
+ F_{c,a,b,d}(x::xs)&=a x+bF_{c,a,b,d}(xs)+d.
+\end{align*}
+The target family is
+\[
+ S_{A,B,C}(xs)=A\sum xs+B\,|xs|+C,
+ \qquad A,B,C\in\mathbb N.
+\]
+Length, sum, a weighted combination of the two, and a constant offset are all instances. The synthesis problem is to choose the four implementation parameters so that $F_{c,a,b,d}=S_{A,B,C}$ on all finite lists of naturals.
+
+\begin{theorem}[Exact affine-fold certificate]
+\label{thm:affine}
+For natural parameters, the following are equivalent:
+\begin{enumerate}
+\item $F_{c,a,b,d}(xs)=S_{A,B,C}(xs)$ for every finite list $xs$.
+\item The five equations
+\begin{equation}
+\label{eq:affine}
+ c=C,\qquad a=A,\qquad bA=A,\qquad bB=B,\qquad bC+d=B+C
+\end{equation}
+hold.
+\item The two functions agree on the five lists
+\[
+ [],\quad [0],\quad [1],\quad [0,0],\quad [0,1].
+\]
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+Clearly (1) implies (3). Assume (3). The empty list gives $c=C$. The list $[0]$ then gives $bC+d=B+C$. For $[1]$, we obtain
+\[
+ a+bC+d=A+B+C,
+\]
+so cancellation gives $a=A$. Since $F([0])=B+C$, evaluation on $[0,0]$ gives
+\[
+ b(B+C)+d=2B+C.
+\]
+Substituting $bC+d=B+C$ and canceling gives $bB=B$. Finally, $F([1])=A+B+C$, and evaluation on $[0,1]$ gives
+\[
+ b(A+B+C)+d=A+2B+C.
+\]
+Using the already established equations reduces this to
+\[
+ bA+2B+C=A+2B+C,
+\]
+whence $bA=A$. Thus (3) implies (2).
+
+Assume (2). The empty-list equality is $c=C$. For the induction step, suppose $F(xs)=A\sum xs+B|xs|+C$. Then
+\begin{align*}
+ F(x::xs)
+ &=a x+b\bigl(A\sum xs+B|xs|+C\bigr)+d\\
+ &=A x+(bA)\sum xs+(bB)|xs|+(bC+d)\\
+ &=A x+A\sum xs+B|xs|+B+C\\
+ &=A\sum(x::xs)+B|x::xs|+C.
+\end{align*}
+This proves (1) by induction.
+\end{proof}
+The implication (2)$\Rightarrow$(1) is formalized in the supplied Lean theorem \code{Leant2Affine.certify}. The other implications are proved above and checked exhaustively by Python on the finite experimental parameter domain; their unrestricted natural-parameter statements are not formalized in the supplied file.
+
+\subsection{Why this domain fits Leant2}
+The certificate is not a statistical assertion. The five equations are finite obligations whose satisfaction yields a proof for lists of arbitrary length and arbitrary natural entries. A parameter solver can search or solve these equations without enumerating large recursive expression trees. The proof reconstruction instantiates one generic induction theorem.
+
+The domain also has a complete counterexample family. Any candidate failing its intended universal contract differs on at least one of the five lists. A counterexample-guided loop can therefore obtain a real separating input rather than treating a failed proof attempt as evidence of incorrectness. This completeness is specific to the affine-fold schema; changing the candidate grammar requires revisiting the theorem.
+
+There can be several correct implementations. For a zero target, many choices of the recurrence multiplier are irrelevant when the base and added contributions remain zero. Therefore, the solver is not expected to recover a unique parameter tuple. It returns the first correct candidate according to the explicitly stated ordering.
+
+\subsection{The executable experiment}
+The Python experiment uses all $3^4=81$ candidate tuples with $c,a,b,d\in\{0,1,2\}$. It orders them by
+\[
+ (c+a+b+d,\ c,\ a,\ b,\ d).
+\]
+There are $3^3=27$ target tuples $(A,B,C)$ in the same coefficient range. For each target, the baseline examines candidates in this order and runs the five-equation certificate check until the first success.
+
+The counterexample-guided version maintains a bank of separating lists. It cheaply skips candidates that disagree with an existing observation. For a remaining candidate, it tries the certificate. If the certificate fails, it scans the fixed five-list family, stores the first mismatch, and continues. If it succeeds, it emits the parameter tuple and a Lean theorem instantiating \code{certify}.
+
+All arithmetic is exact integer arithmetic. The finite domain and loop order are deterministic. The full traces, certificate equations, observation bank, candidate counts, and generated theorem file are included in \pathcode{experiments/results.json} and the accompanying source.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}Y r@{}}
+\toprule
+Measured quantity & Result\\\midrule
+Candidate grammar size & 81\\
+Target specifications solved & 27 / 27\\
+Baseline certificate attempts & 1,104\\
+Counterexample-guided certificate attempts & 105\\
+Replayed counterexamples added across tasks & 78\\
+Largest bank reached for a task & 4\\
+Candidate--specification pairs exhaustively cross-checked & 2,187\\
+Pairs satisfying the universal certificate equations & 31\\
+Other pairs with an explicit separating list & 2,156\\
+Held-out lists per selected candidate & 1,093\\
+Held-out evaluations across selected candidates & 29,511\\
+\bottomrule
+\end{tabularx}
+\caption{Deterministic affine-fold experiment. Certificate-attempt counts are operation counts, not elapsed-time measurements or a comparison with Leant/Djex.}
+\label{tab:affine}
+\end{table}
+The 1,093 held-out lists have lengths zero through six and entries in $\{0,2,5\}$. They are a separate implementation check. Universal correctness comes from the certificate theorem, not from these tests. Likewise, the reduction from 1,104 to 105 certificate attempts does not establish a corresponding runtime speedup: the guided method performs additional point evaluations and bookkeeping.
+
+\subsection{Lean proof reconstruction}
+The generic theorem has exactly the five equations as premises. After substituting $a=A$, its proof inducts on the list, expands the recurrence, rewrites the induction hypothesis and multiplier equations, and closes the remaining arithmetic with \code{omega}. Each generated theorem then uses:
+\begin{lstlisting}
+-- Example of a generated universal certificate.
+theorem length_contract : forall xs : List Nat,
+    affine 0 0 1 1 xs = 0 * xs.sum + 1 * xs.length + 0 := by
+  apply certify <;> decide
+\end{lstlisting}
+The actual generated file contains named theorems \code{task_000} through \code{task_026}. In the successful remote run, the generic theorem and all twenty-seven instances reported only \code{propext} and \code{Quot.sound} as axioms. No custom axiom, \code{sorryAx}, or classical choice dependency appeared.
+
+A failed earlier proof script is retained in the development history. It rewrote $a$ inside the recursive expression before the induction hypothesis matched, causing a downstream arithmetic failure and recovery placeholders. Substituting $a$ before induction repaired the script. The failed run was not counted as accepted evidence.
+
+\section{Native Lean experiments and verification results}
+\label{sec:experiments}
+\subsection{What was implemented}
+The native prototype is a small \code{MetaM} search procedure, not a Python simulation of Lean typing. It supports function introduction, reflexivity, application of local providers, explicitly selected global providers with fresh universe metavariables, target-constructor application, and continuation-aware rollback. It has no approximate Haskell type representation.
+
+The final standalone file is \pathcode{prototype/Combined.lean}. Its search code calls native operations such as \code{whnf}, \code{MVarId.intro1}, \code{MVarId.apply}, \code{MVarId.refl}, \code{mkConstWithFreshMVarLevels}, and state save/restore. The \code{leant2_with} prototype deliberately accepts exact global names rather than implementing full namespace-aware frontend resolution. That limitation is documented rather than hidden in the examples.
+
+The procedure has a depth/fuel limit, not the production scheduler's complete work-accounting discipline. It catches failed branch attempts and tries alternatives. It does not implement a persistent provider index, arbitrary case discovery, a verified negative-search calculus, fair interleaving, learned conflicts, automatic invariants, or a hardened standalone acceptance service. Ordinary Lean elaboration and compilation check the generated declarations in this experiment.
+
+\subsection{The final native corpus}
+Fourteen definitions are fully synthesized by the prototype: identity, composition, the S combinator, pair construction with swapped fields, dependent function application, dependent-pair packing, a simple rank-two target, a successor satisfying a universal contract, a natural witness constrained to be one, an indexed vector constructor, use of a local \code{Inhabited} instance, contract-directed selection between same-typed payloads, a behavior-constrained rank-two function, and a function that constructs a polymorphic callback.
+
+Two further definitions use manually supplied templates: vector mapping supplies the structural match and smaller recursive call, and equality transport supplies a case split on the equality. Their remaining branch terms are synthesized. The helper that converts a vector to a list is written directly. Four audited theorems state identity behavior, successor behavior, vector-map behavior, and impossibility of the unrestricted polymorphic cast.
+
+Thus the final combined run audits twenty named declarations: sixteen synthesized or template-assisted definitions and four theorems. Nineteen report no axioms. The vector-map behavior theorem reports only \code{propext}. The run evaluates the successor at 12 to 13, the constrained natural witness to 1, the selected right payload to 9, and a two-element mapped vector to the list $[3,4]$.
+
+A rank-two type alone does not enforce callback use. The simple \code{rankTwo} case tests acceptance of the higher-rank target shape, but it could be solved by a behaviorally uninteresting function. The separate \code{rankTwoSpec} case forces agreement with application of the supplied polymorphic function. This distinction prevents a trivial inhabitant from being mislabeled as evidence for intended higher-order behavior.
+
+\subsection{Remote compilation protocol}
+The local container had no Lean compiler and could not resolve external hosts. The attached tools documented AXLE's checking endpoint, so generated Lean source was sent through a synchronous Wolfram HTTP request to AXLE. Requests specified environment \code{lean-4.34.0}, retained the actual imports, and checked definitions as well as theorems. The returned source was compared with the submitted source modulo final whitespace, and \code{Lean.versionString} returned \code{4.34.0}. The service's documentation distinguishes compilation status from proof acceptance~\cite{axle}.
+
+The final native run's request identifier is \code{ca4a866a-9382-4e0d-aa57-bae130d2f51c}. It returned \code{okay=true}, no failed declarations, and no Lean errors. It retained two nonfatal linter warnings: the negative \code{fail_if_success} harness deliberately leaves no proof-state change, and the left payload is an intentionally available alternative that the final chosen term does not use explicitly. The service also issued advisory warnings about using \code{import Lean} instead of its preferred Mathlib header. Imports were not overridden.
+
+The affine certificate run's request identifier is \code{4e277309-c66b-4cc3-bd76-74a1f2153b02}. It returned \code{okay=true}, no failed declarations, no Lean errors, and no Lean or service warnings. Both final receipts include the reported executor identity. Their server timings are preserved for provenance, but are not presented as comparative synthesis benchmarks.
+
+\subsection{A useful failed attempt: recursor versus executable form}
+The first combined vector attempt used tactic induction directly to construct the computational definition. The axiom audit of that definition was empty, but the code generator reported that it did not support the resulting \code{Vec.rec} form. The associated behavior proof and evaluation also failed in that run.
+
+The final file changes the implementation to a structural pattern match. In the cons branch it binds the explicitly smaller call and lets the prototype fill the result. This version compiles, its behavior proof checks, and its evaluation succeeds. The development history records both outcomes. The lesson is architectural: logical inhabitation and code-generation acceptance are different gates, even when the intended function is elementary and total.
+
+\subsection{Negative integrity controls}
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}L{0.27\textwidth}cY@{}}
+\toprule
+Control & \code{okay} & Observed reason for rejection\\\midrule
+Use \code{True.intro} as a proof of \code{False} & false & Type mismatch; declaration failed.\\
+Prove identity sends zero to one by reflexivity & false & Reflexivity failed; declaration failed.\\
+Declare a custom axiom of \code{False} and use it & true & Failed-declaration report and axiom audit expose \code{forged}.\\
+Use \code{sorry} to prove \code{False} & true & Failed-declaration report, warning, and axiom audit expose \code{sorryAx}.\\
+\bottomrule
+\end{tabularx}
+\caption{All four controls are rejected by the stated acceptance policy. The last two demonstrate why compilation status alone is insufficient.}
+\label{tab:controls}
+\end{table}
+The negative-source files are deliberately isolated under \pathcode{experiments/negative_controls}. They are not imported by the positive prototype or certificate files. A successful run of these controls means that their expected rejection behavior was observed, not that any false proposition was accepted as a valid theorem.
+
+The native corpus also contains a bounded synthesis-failure harness for an unrestricted polymorphic cast. Its failure is an empirical search outcome. The separately proved \code{noPolyCast} theorem supplies the actual mathematical negative evidence.
+
+\subsection{What the evidence does not establish}
+The experiments do not measure success on the full Leant or Djex corpora. They do not show that the new system is faster, that it covers a given percentage of practical Lean types, or that the proposed scheduler scales to a large Mathlib environment. The Python search experiment is an executable model of a semantic domain, not a production Lean implementation of that domain. The remote service did not provide an exact Mathlib revision, and no independent checker was run.
+
+What is established is narrower and concrete: exact Lean metaprogramming can implement the chosen shared-continuation search mechanism; several universe-polymorphic and dependent examples compile; contract constraints can force backtracking over program values; an executable structural template can be completed; a small semantic synthesis domain yields checked universal proofs; and negative controls distinguish superficial compilation from accepted evidence.

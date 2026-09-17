@@ -1,0 +1,13 @@
+{
+  "kind": "remote-check-summary",
+  "request_id": "e4512af8-4492-4e96-b6cc-7350fc6d7152",
+  "environment": "lean-4.34.0",
+  "okay": false,
+  "errors": [
+    "Bare List.rec definition generated a code-generator error despite axiom-free logical declaration.",
+    "IsEmpty was not available under import Lean; automatic implicit insertion caused type errors."
+  ],
+  "repair": "Used structural equations for certifiedRecursor and direct T -> False propositions for negative theorems. Fresh final request passed.",
+  "note": "Failed version is not claimed as a successful experiment. Summary, not raw response.",
+  "provenance": "Hand-transcribed summary of fields returned by the actual Wolfram/AXLE call; not a raw or signed HTTP response."
+}

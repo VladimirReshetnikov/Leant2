@@ -1,0 +1,41 @@
+\clearpage
+\section{Complete checked native-core experiment}
+\label{app:core}
+The following is the complete \code{NativeCore.lean} submitted in the accepted run. It is small enough to audit, but it is not the production architecture. The source in the archive preserves Unicode and can be checked with the pinned toolchain. Line wrapping below is only for presentation.
+\lstinputlisting[numbers=left,numberstyle=\tiny\color{Olive},numbersep=6pt,
+ basicstyle=\ttfamily\small]{../prototype/NativeCore.lean}
+
+\clearpage
+\section{Representative production invariants and regression tests}
+\label{app:invariants}
+\begin{longtable}{@{}L{0.31\textwidth}L{0.61\textwidth}@{}}
+\toprule
+Invariant & Minimum regression test \\
+\midrule
+\endhead
+Original statement is immutable & A candidate specialized to equal universes must not satisfy a query with two independent universe parameters. \\
+Continuation choices are reversible & The first well-typed witness violates a later dependent predicate; a second witness succeeds. \\
+Local dictionaries are values & Two same-typed dictionaries with different payloads remain distinguishable in both output and certificates. \\
+Case motives preserve dependency & An indexed constructor changes the type of a later local declaration; branch reconstruction must use the specialized declaration. \\
+Recursion hypotheses are restricted & A proposed self-call at the same major argument cannot acquire an unrestricted recursive provider. \\
+Generalization is behavioral as well as type-directed & Lookup in a list needs the tail hypothesis at a changed index. \\
+Tests do not prove universals & A candidate matching all initial inputs but failing a later admissible input never receives a universal status. \\
+Pruning covers all completions & A failed empty-tail completion cannot reject a sketch whose nonempty-tail completion is correct. \\
+Parking is reversible and live & Two candidates agree initially; after refinement or fair member rotation, the previously parked candidate is explored. \\
+Negative outcomes are qualified & Missing all providers, proof timeout, logical-fragment underivability, and checked non-inhabitation have different result constructors. \\
+Caches include semantic context & Reusing a result after changing a local let-value or instance selection forces applicability checking or invalidation. \\
+Publication audits auxiliaries & A helper depending on \code{sorryAx} cannot hide behind a short final theorem. \\
+Cancellation does not refund work & Repeated restore/retry operations cannot evade a global rule or solver budget. \\
+Worker capabilities have generations & A completed task from a replaced environment cannot commit into the new environment. \\
+\bottomrule
+\end{longtable}
+
+\clearpage
+\section{Artifact map and reproducibility}
+\code{article/Leant2.tex} is the master source. Its neighboring numbered \code{.tex} files contain the article and references. Build with three XeLaTeX passes from a clean source directory to stabilize the contents and cross-references. The archive's Makefile provides the same operation. Latin Modern fonts are standard TeX dependencies; the monospace configuration prefers DejaVu Sans Mono when available and otherwise uses Latin Modern Mono. No font binaries are included.
+
+\code{prototype/NativeCore.lean} and \code{prototype/Certificates.lean} are the exact accepted sources. \code{prototype/lean-toolchain} selects Lean 4.34.0. With that toolchain installed, run \code{lean NativeCore.lean} and \code{lean Certificates.lean} from the prototype directory. The optional Python remote-check client requires network access and records a fresh raw response; the actual checks for this article used Wolfram's HTTP transport instead.
+
+\code{experiments/native_core_receipt.json} and \code{experiments/certificates_receipt.json} preserve structured summaries of the successful remote responses, including source-echo qualifications, axioms, timings, and executor identity. \code{experiments/HISTORY.md} records failed preliminary runs and their corrections. These files are evidence reports, not independently signed attestations.
+
+\code{experiments/behavior_lab.py} regenerates \code{behavior_results.json} and runs the five finite mechanism tests. The script has no third-party Python dependency. Its results are intentionally classified as finite executable checks rather than Lean proofs. The architecture, solver integration, scheduling theorem assumptions, and production module interfaces remain design artifacts.

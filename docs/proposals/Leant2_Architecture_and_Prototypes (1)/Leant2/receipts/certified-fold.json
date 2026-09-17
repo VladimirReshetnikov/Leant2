@@ -1,0 +1,47 @@
+{
+  "kind": "remote-check-summary",
+  "source": "lean/CertifiedFold.lean",
+  "service": "AXLE",
+  "transport": "Wolfram URLRead",
+  "environment": "lean-4.34.0",
+  "lean_version_reported": "4.34.0",
+  "request_id": "5dcabcdf-7462-4dd2-a076-deb662583971",
+  "okay": true,
+  "failed_declarations": [],
+  "lean_errors": [],
+  "tool_errors": [],
+  "sourceEchoMatch_trimmed": true,
+  "cached_response": false,
+  "timings_ms": {
+    "parse": 1247,
+    "total": 1248,
+    "request": 1365
+  },
+  "executor_commit": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+  "executor_docker_image_id": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+  "executor_artifact_sha256": "127b8dcb3bbc7cfa7861743f512fbe955bd8a35e940d6f2959d02327a7aa8520",
+  "mathlib_revision": null,
+  "warnings": [
+    "AXLE recommends Mathlib.Tactic/default import Mathlib; source import Lean was retained."
+  ],
+  "axioms": {
+    "fold_contract": [],
+    "certifiedRecursor": [],
+    "indexFold": [],
+    "indexFold_correct": [],
+    "noUniversalValue": [],
+    "noUniformConversion": []
+  },
+  "scope": "Hand-supplied recursive schemas and universal proofs, not automatic discovery of a recursive implementation.",
+  "outputs": {
+    "indexFold_test": [
+      "some 10",
+      "some 20",
+      "some 30",
+      "none",
+      "none",
+      "none"
+    ]
+  },
+  "provenance": "Hand-transcribed summary of fields returned by the actual Wolfram/AXLE call; not a raw or signed HTTP response."
+}

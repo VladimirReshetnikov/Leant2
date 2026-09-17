@@ -1,0 +1,213 @@
+\section{Native dependent search state}
+\label{sec:state}
+
+\subsection{The state is an obligation graph}
+
+A branch state should contain a native metavariable context, a root term hole, pending goals, universe constraints, delayed elaboration obligations, recursive-call permissions, behavioral observations, and a replay recipe. A useful conceptual representation is
+\[
+ S=(M,r,H,D,U,C,R,O,\rho),
+\]
+where $M$ is the branch's native metavariable state, $r$ is the root expression, $H$ is the set of holes, $D$ is their dependency graph, $U$ is the universe store, $C$ contains delayed constraints, $R$ contains recursive-call capabilities, $O$ contains observations, and $\rho$ is the immutable recipe.
+
+An edge $h_i\leadsto h_j$ means that assigning $h_i$ may change the type, context, specification, or observation of $h_j$. Constructor application normally creates a dependent \emph{hyperedge}, not independent child problems. For
+\[
+ \Sigma (x:A), B(x),
+\]
+choosing $x$ changes the second goal. For a subtype, choosing the witness changes a proof obligation. For a generic provider, choosing its type parameter changes the types of later ordinary and instance arguments. Branch identity must include all these shared assignments.
+
+\begin{invariant}[Branch ownership]
+Every unassigned metavariable belongs either to the frozen surrounding problem or to one explicitly owned branch. A branch may not mutate frozen ambient metavariables, publish another branch's free locals, or reuse an assignment whose context embedding has not been checked.
+\end{invariant}
+
+When invoked in an unfinished Lean proof, the tactic cannot simply assume that every surrounding metavariable is its own. Preparation should identify the permitted assignment set. Read-only ambient holes can be abstracted as parameters or treated as rigid constraints. A successful proposal is then integrated transactionally into the caller's proof state.
+
+\subsection{Why ordinary backtracking is insufficient}
+
+Consider
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}
+{n : Nat // n = 1}
+\end{lstlisting}
+\end{minipage}\par
+A constructor-first search may try $n=0$. That inhabits the witness type \code{Nat}; the later proof goal $0=1$ fails. If the engine permanently commits the first witness before searching its sibling proof, it misses the solution $n=1$. The same error occurs with dependent dictionary arguments, indexed constructors, and behavioral proofs about an already synthesized function.
+
+The correct unit of backtracking is the \emph{whole continuation}, including the siblings whose types or specifications depend on a choice. The following schematic algorithm captures this requirement:
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language={}]
+solve(state, goals, budget):
+  remove goals already assigned by shared substitutions
+  if no goals remain: return completed state
+  g := selectGoal(goals, dependencyGraph)
+  for refinement in fairRefinements(g, state):
+    childState := restoreOrFork(state)
+    children := applyRefinement(refinement, childState)
+    answer := solve(childState, children + remainingGoals, budget')
+    if answer succeeds: yield answer
+    otherwise resume another refinement of g
+\end{lstlisting}
+\end{minipage}\par
+The actual prototype uses this continuation structure with \code{Meta.saveState} and the saved state's \code{restore} method. Its \code{children ++ rest} is not an incidental implementation detail: it is what allows a failed dependent sibling to revise an earlier witness. A production implementation should retain multiple successful continuations, not just the first one.
+
+\subsection{Transactional state and nontransactional budgets}
+
+Saving and restoring \code{MetaM} state is appropriate for native construction. When a step invokes a tactic or term elaborator, the adapter must also account for the elaborator's state: synthetic metavariables, pending instances, messages, and any environment changes. It is unsafe to assume that a \code{Meta.SavedState} automatically snapshots every layer of an arbitrary plugin's execution.
+
+Resource accounting is deliberately \emph{not} rolled back. Failed branches have consumed time, allocations, and search work. The global budget ledger lives outside logical branch snapshots. Cancellation and heartbeat exhaustion are interruption events, not ordinary failed alternatives to be swallowed and retried indefinitely. The small prototype catches exceptions uniformly for simplicity; production code must classify them and propagate nonrecoverable interruptions.
+
+Parallelism should initially operate on immutable recipes or separate worker states. Two tasks must not concurrently mutate one shared native metavariable context. A completed task returns a closed proposal plus its provenance, or a replayable branch refinement; merging a raw set of assignments from unrelated snapshots is not supported.
+
+\subsection{Universes, binders, and equality}
+
+Lean's universe levels are expressions, not Haskell kinds. The search must preserve rigid parameters and use fresh level metavariables for each new provider occurrence. \code{Type} is predicative and Lean's universes are noncumulative; \code{Prop} has different quantification rules. A native implementation therefore uses Lean's level constraints and requests explicit lifting constructions when needed, rather than silently coercing types upward \cite{lean-universes}.
+
+Binder information is retained exactly: explicit, implicit, strict implicit, and instance implicit binders affect elaboration and reconstruction. Local instances are values with identities, not just a multiset of class names. Two dictionaries of the same class type can contain different operations. A synthesis rule must preserve the dictionary actually selected for that provider occurrence.
+
+Definitional equality is handled by controlled normalization and native unification. Propositional equality requires a proof and, where necessary, an explicit transport such as an equality recursor. For example, converting a vector of length $n+m$ to one of length $m+n$ is not generally solved by pretending the indices are definitionally identical. The engine can prove the index equality and build a transport, with a cost that makes gratuitous casts unattractive.
+
+Normalization needs a transparency policy and a work budget. Eagerly unfolding every definition is neither necessary nor efficient. Try weak-head reduction first; unfold selected reducible wrappers on demand; record when a step relied on a stronger transparency setting. Final checking is against the original target, not against an independently invented normal form.
+
+\section{The native construction calculus}
+\label{sec:construction}
+
+\subsection{Bidirectional and focused organization}
+
+The core combines goal-directed checking with type synthesis for applications. Introduction rules exploit the expected type; elimination rules exploit available heads and their telescopes. This is the same broad reason that type-directed synthesis can avoid untyped enumeration \cite{osera,frankle}. It does not require a complete decision procedure for dependent types.
+
+For a dependent function goal, introduce a local and continue in its extended context:
+\[
+ \frac{\Gamma,x:A\vdash b:B(x)}
+      {\Gamma\vdash (\lambda x.b):(x:A)\to B(x)}.
+\]
+For a constructor $c$ with dependent telescope $\Delta_c$ and result $I(\vec p,\vec i)$, instantiate the telescope, unify the result with the expected family, and retain every remaining argument obligation. The fields are not flattened into an untyped product.
+
+A focused lane prioritizes invertible decompositions and delays branching choices. The word ``safe'' is relative to a calculus and admissible grammar: a transformation that preserves inhabitation may still change cost, syntax restrictions, or the best executable representation. The system should not silently turn a proof-theoretic normalization principle into a claim of minimum program size.
+
+\subsection{Head and spine synthesis}
+
+For an elimination candidate $h$, the engine traverses its exact Pi telescope. It creates argument metavariables in order, substitutes them into later binder types, and attempts to match the residual result against the expected type. It then schedules unresolved arguments and side conditions. A single provider may therefore induce data holes, type holes, proof holes, instance holes, and universe obligations.
+
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language={}]
+expandHead(h, expected, state):
+  freshen provider universes and make this occurrence explicit
+  ty := inferType(h)
+  args := []
+  while ty exposes an admissible Pi binder:
+    a := freshGoal(domain(ty), exactContext, binderInfo(ty))
+    args.append(a)
+    ty := instantiateBody(ty, a)
+    offer a partial application when its type can meet expected
+  constrain ty definitionally equal to expected
+  retain unresolved arguments, instances and level constraints
+  emit one shared branch, not separately solved arguments
+\end{lstlisting}
+\end{minipage}\par
+
+Partial applications matter. A function-valued fold step may be an already available local function, rather than a lambda that is expanded and searched from scratch. Conversely, a higher-rank argument may need to be constructed by opening a local type binder inside that argument. Both cases arise naturally from the native telescope, without choosing a global fixed rank bound for the whole language.
+
+Argument metavariables should not all be solved greedily. An implicit type argument may be fixed by the result; a proof may constrain a witness; a typeclass goal may remain underdetermined until a later index is chosen. Native unification is a mechanism for recording those constraints, not an obligation to guess immediately.
+
+\subsection{Unification policy}
+
+The first implementation should use Lean's native machinery for routine definitional equality and a disciplined higher-order-pattern-oriented policy for search-generated holes. Flexible equations that do not resolve should become explicit delayed obligations. Retrying after a relevant assignment can solve many practical cases without a general higher-order-unification algorithm.
+
+More ambitious alternatives, such as bounded imitation/projection choices or synthesis of type families, belong in a separate expensive lane. They must have explicit costs and resumable continuations. A failed or timed-out unification attempt gives no authority to claim the branch is impossible unless the failure is a genuine rigid contradiction. In particular, a suspended flexible equation is not equivalent to an inconsistent equation.
+
+This policy preserves a useful distinction: the system can \emph{represent} an arbitrary elaborated Lean target while admitting only selected ways to resolve its unknowns. A supported representation does not promise that every metavariable equation will be solved automatically.
+
+\subsection{Cases and dependent elimination}
+
+Case splitting should use Lean's actual inductive and recursor information. The engine identifies the major premise, parameters, indices, motive, and constructor branches through native metadata and elaboration. It must generalize or transport dependent local hypotheses as required by the elimination, rather than treating a split as a substitution in a simple sum type.
+
+Indexed families benefit immediately. A vector at index zero and one at successor index have different admissible constructor shapes. An impossible branch is discharged by a checked index contradiction or no-confusion argument. A branch is not removed merely because a custom arithmetic heuristic predicts that its indices cannot match.
+
+Elimination from propositions requires particular care. A proof of \code{False} eliminates into arbitrary sorts. A proof of \code{Nonempty A} is not, in the constructive computational mode, a freely extractable \code{A}. Likewise, \code{Exists} and a data-valued dependent pair are not interchangeable. Native recursor validation enforces the relevant distinction \cite{lean-inductives}. The prototype includes a rejection control for the attempted computational extraction from \code{Nonempty}.
+
+Useful split candidates include a scrutinee demanded by an observation, a local inductive whose constructors expose a needed value, or a decidable proposition whose two branches have distinct residual specifications. Repeated irrelevant splitting should be penalized and bounded, not optimized away by an unsound assertion that it can never help.
+
+\subsection{Typeclass synthesis and explicit dictionaries}
+
+A production typeclass lane should first try normal Lean instance synthesis in the frozen local context. It should also retain named local dictionary values as explicit providers when the query or a provider application selects them. Backtracking must include instance assignments if computational behavior depends on the choice.
+
+Do not cache a successful method application under only the class name and argument types. The key must identify its dictionary payload or a verified equivalent context embedding. Do not manufacture an extra global instance to solve a local hole: that changes the environment and can affect unrelated elaboration. Temporary instance exposure, when needed, belongs in a branch-local context and must be reproducible.
+
+The included \code{fromInstance} test only extracts a field from a supplied class value by structural search. It is not evidence that general instance synthesis, overlapping instances, or superclass search has been implemented.
+
+\section{Demand-directed library and carrier discovery}
+\label{sec:inventory}
+
+\subsection{An indexed inventory}
+
+Searching every declaration for every goal will not scale. Build persistent indexes from declaration types, not from pretty-printed names. A provider entry records its declaration identity, universe parameters, full telescope, terminal result shape, constructor or projection role, computational policy, and any supplied specification lemmas.
+
+A discrimination-tree-style index over normalized result shapes is a good first filter. Rigid constants, family heads, and argument positions guide retrieval; flexible positions are wildcards. Every retrieved candidate still goes through native instantiation and checking. The index may have false positives. If it has intentional false negatives, a wider fallback lane must remain available and the restricted lane must not claim completeness.
+
+Local declarations deserve a separate small index. Projection saturation can expose structure fields; bounded forward application can derive useful intermediate values. A typed shared DAG records the derivations and their exact contexts, avoiding repeated recomputation while keeping the expressions as authoritative objects.
+
+\subsection{Backward demand and scoped subproblems}
+
+A demand graph is built backward from target holes and specification observations. If a needed result has shape $C$, a provider ending in $C$ induces demands for its arguments. Those demands in turn identify providers for $A\to B$, a dictionary, an index equality, or a recursive subresult. Bounded forward facts from the context meet this backward graph.
+
+For each demand, compute a \emph{candidate context slice}: locals in its type, specification, and pending constraints, together with a bounded predecessor closure through usable providers. Search that slice as a high-priority lane. Keep the full-context lane as fallback. A slice can improve ordering dramatically, but excluding a local merely because its type does not occur syntactically in the goal is not a proof that it is irrelevant.
+
+A solution found in a slice is transported into the larger context using an explicit weakening or renaming map and checked again. Cached subsolutions are recipes parameterized over an abstracted telescope. They are not bare expressions containing stale free-variable identifiers. Negative results from the smaller context cannot be generalized to the larger one.
+
+\subsection{Discovering hidden carriers}
+
+For polymorphic folds and Church encodings, the right accumulator type is often absent from the outer target. Carrier synthesis should be demand-driven. Candidate carriers begin with result and argument types, products of demanded components, functions from a demanded control input to a result, and small indexed families already present in the environment. More complex native type expressions enter through increasing-cost enumeration.
+
+Consider a Church list whose fold result can be chosen at \code{Type u}. To implement defaulted integer indexing, a useful carrier is \code{Int -> A}. The fold's base then has type \code{Int -> A}; its step has type
+\par\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}
+A -> (Int -> A) -> Int -> A
+\end{lstlisting}
+\end{minipage}\par
+rather than simply \code{A -> A -> A}. The outer demand to consume an integer index suggests the function carrier. A branch-local specification distinguishes negative, zero, and positive inputs and makes the appropriate integer case operation relevant.
+
+This design targets the kind of compositional ordering problem in the predecessors' diagnostic \cite{indexing-report}. It does not establish that the original fixture is solved. The artifact has no end-to-end reproduction of that query, and its simpler two-universe test is not substituted for the original two-box signature.
+
+\subsection{Provider and semantic restrictions}
+
+The default inventory should be transparent to the user. A result should say whether it reused a complete library implementation, composed smaller operations, or filled a recursive sketch. Benchmark mode must enforce explicit exclusions: a hidden oracle definition, a private alias of the target, or a theorem that trivially reveals the target body can otherwise make apparent synthesis success meaningless.
+
+Usage preferences are ranking features, not default logical constraints. Functions that ignore an argument can be perfectly correct. Conversely, mentioning every argument does not establish the intended behavior. A user may request a syntactic usage restriction, but it must be reported as a separate grammar condition.
+
+\section{Scheduling, memoization, and relative completeness}
+\label{sec:scheduler}
+
+\subsection{A portfolio with a fair reference lane}
+
+A reasonable initial portfolio contains a native focused lane, a library-composition lane, a structural-recursion lane, a behavioral/domain lane, and a proof-obligation lane. Each exposes a bounded \code{step} operation returning progress, proposals, suspended work, or exhaustion at a stated bound. A lane must yield during expensive candidate generation, not merely between completed candidates.
+
+Maintain two scheduling layers. A best-first layer prioritizes promising states. A fair reference layer enumerates increasingly costly admitted recipes and verification efforts. Fixed positive quanta for both prevent heuristic preferences from starving an otherwise reachable candidate. Work queues are allowed to be bounded in a practical mode, but dropping states must then be reported as an incompleteness event.
+
+Costs should be vectors: construction size, eliminations, recursion depth, carrier complexity, equality transports, unresolved constraints, proof effort, and operational estimates. A scalar combination is an engineering heuristic, not an admissible A* heuristic unless that property is separately proved. Keep a Pareto frontier or diverse top candidates when different objectives conflict.
+
+\subsection{Budgets must include proving the candidate}
+
+Candidate generation and verification are two unbounded searches. A scheduler that fairly enumerates programs but permanently discards each after a fixed failed proof attempt is not relatively complete for certified synthesis. An unresolved candidate needs a verification continuation with increasing proof budget, unless a valid counterexample has ruled it out.
+
+Likewise, a fixed display window of ill-behaved inhabitants must not masquerade as exhaustion of all useful implementations. The user may set a candidate or verification cap, but reaching it should produce \code{Unknown(candidateBudget)}, retaining the distinction between an algorithmic impossibility and a chosen resource policy.
+
+\begin{theorem}[Conditional relative completeness]
+Fix an effectively enumerable grammar $\Grammar$ of finite candidate-and-certificate recipes for a frozen problem. Assume that (i) every required finite validation step terminates when sufficiently provisioned, (ii) scheduling eventually executes every finite admitted recipe and gives its validation sufficient effort, (iii) the reference lane prunes only with a checked impossibility certificate or a success-preserving replacement by an admitted, retained recipe of strictly smaller natural-number rank, and (iv) no permanent resource cap discards the successful recipe. If an admitted recipe constructs $t:T$ and a required proof $p:\Phi(t)$, then the search eventually offers a certified candidate.
+\end{theorem}
+\begin{proof}
+Choose a finite successful recipe. Effective enumeration and fairness eventually schedule its finite prefix of construction steps. An impossibility certificate cannot exclude a successful recipe. Each permitted replacement preserves success for the frozen grammar, specification, and policy; strict rank decrease makes every replacement chain finite. Thus a successful representative remains available. The same fairness condition applies to its finite certificate and validation sequence. After those steps complete, the acceptance path checks the candidate and certificate and emits the result.
+\end{proof}
+
+This is a design theorem under explicit assumptions, not a formal completeness proof of the included tactic. It also does not say that every inhabited Lean type has an inhabitant in a particular practical grammar. An unrestricted reference enumerator may be conceptually useful, but the intended coverage comes from useful schemas and indexes, not from waiting for raw enumeration.
+
+\subsection{Cache keys and reuse rules}
+
+A cache key must include the frozen environment identity, abstracted ordered context, expected type, relevant specification, universe constraints, transparency policy, grammar version, local-instance identities, recursive permissions, and the applicable observation bank. Branch metavariable numbers are not stable canonical names; contexts and holes need an alpha-normalized representation with explicit dependencies.
+
+Positive reuse is by instantiation and rechecking. A cached proof or term can be valuable even when the new query is slightly different, provided the engine constructs a checked transport or substitution. A negative entry is valid only at its stated grammar and resource frontier. ``No solution within depth 6'' is not a permanent fact about the type.
+
+Do not merge two programs merely because they agree on current tests. They may differ on the next counterexample. Such agreement is useful for ranking and for retaining a compact set of representatives with recoverable alternatives. Destructive merging requires proved equivalence under the contexts in which the programs will be used, or an explicit loss of completeness. With dependent consumers, even a proved equality may require a transport; textual replacement is not enough.
+
+\subsection{State-selection policy}
+
+Among ready holes, prefer those constrained by rigid expected heads, concrete observations, or shared dependencies. Type arguments determined by result unification should be solved before an expensive instance search. A witness with a cheap contradictory postcondition should be tested early. An independent proof can run in parallel, but a proof that may determine a data hole remains part of that same branch transaction.
+
+A useful empirical score is a weighted sum of outstanding computational obligations, estimated provider distance, unresolved dependent indices, and certificate cost, with small rewards for covered observations. The weights should be trained or tuned on held-out development tasks and logged. The fair lane is the safeguard against a score that consistently misjudges an important construction family.

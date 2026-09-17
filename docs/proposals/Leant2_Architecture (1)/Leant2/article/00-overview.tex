@@ -1,0 +1,23 @@
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
+Leant2 should synthesize directly over Lean's expressions, universes, and dependent contexts, rather than translate a Haskell-shaped type approximation. Its search-plan layer records alternatives, dependencies, costs, and replay operations without becoming a second type checker. The implementation and its behavioral proof are checked together against the original query.
+
+This article specifies continuation-based search across correlated obligations; native head--spine construction and dependent elimination; polymorphic instantiation; structural and well-founded recursion plans; counterexample-guided refinement; finite typed solver sketches; certified completion-wide pruning; reversible observational parking; and fair scheduling. It also develops publication checks, axiom policies, exact cache identities, project-toolchain workers, implementation modules, and acceptance tests. The design preserves Leant and Djex's evidence and ownership discipline while removing their cross-language semantic approximation.
+
+The accompanying 178-line Lean experiment was remotely checked with Lean 4.34.0. It includes eleven whole-goal synthesized definitions, one manually chosen recursion template with synthesized branches, two output-equality checks, and two expected-failure controls. A separate checked file illustrates recursive certificates, genuine non-inhabitation, and completion-wide pruning. A Python laboratory validates five finite mechanism tests. These experiments support particular algorithms; they are not an implementation or coverage measurement of the complete architecture.
+
+\section*{Reading guide and principal decisions}
+\addcontentsline{toc}{section}{Reading guide and principal decisions}
+The article proceeds from native representation and search to recursion, behavior, implementation, and evaluation. Appendix~\ref{app:core} contains the tested prototype; the archive includes its sources and reproduction instructions.
+
+\begin{decision}{Five decisions that determine the rest of the system}
+\textbf{One semantic type representation.} Lean's \Expr, universe levels, environment, and local context remain authoritative. Domain abstractions are optional views with an explicit interpretation.
+
+\textbf{Backtrack across dependent obligations.} A data witness is not committed merely because it has the right type. Its remaining proof and sibling obligations must succeed, or the choice must remain revisitable.
+
+\textbf{Recursion is a typed construction.} Start with library recursors and structurally justified templates, then extend to well-founded templates with explicit decreasing-call evidence.
+
+\textbf{Behavioral information has graded authority.} Tests can refute concrete candidates; a proof can certify a universal specification; a completion-wide certificate can eliminate a partial program. These are different operations.
+
+\textbf{All positive results cross one check boundary.} Search engines, solvers, tactics, and learned heuristics may propose. Only checked terms against the frozen original query may be published as certified solutions.
+\end{decision}

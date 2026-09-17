@@ -1,0 +1,183 @@
+{
+  "common": {
+    "evidence_kind": "Manually transcribed subset of actual Wolfram connector output; not an original HTTP receipt or signed attestation",
+    "environment": "lean-4.34.0",
+    "request_settings": {
+      "ignore_imports": false,
+      "theorems_only": false,
+      "timeout_seconds": 40
+    },
+    "executor_commit_sha": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+    "executor_docker_image_id": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+    "executor_artifact_sha256": "127b8dcb3bbc7cfa7861743f512fbe955bd8a35e940d6f2959d02327a7aa8520",
+    "mathlib_commit_reported": false,
+    "actual_import": "Lean",
+    "local_lean_toolchain_available": false,
+    "transport": "AXLE HTTPS POST via Wolfram URLRead; UTF-8 byte-array JSON",
+    "service_advisories": [
+      "Mathlib.Tactic is a required import but is missing from the header imports. You may experience inconsistent and incorrect behavior. We highly recommend adding import Mathlib.Tactic to the header imports.",
+      "Non-default import Lean header; the service recommends its cached import Mathlib header. ignore_imports was false and the echo preserved the submitted header."
+    ]
+  },
+  "final_runs": [
+    {
+      "file": "prototype/NativeSearch.lean",
+      "source_sha256": "212414979d1a79e4d00d85703131e2b23aa537d547e30a6cb9b9b91cf225b8ca",
+      "source_lines": 219,
+      "request_id": "075fd65f-ec56-4045-b07e-30ddeeaac524",
+      "http_status": 200,
+      "okay": true,
+      "failed_declarations": [],
+      "lean_errors": [],
+      "tool_errors": [],
+      "echo_matches_after_whitespace_trim": true,
+      "source_hash_matches_submitted_utf8": true,
+      "service_total_ms": 1610,
+      "total_request_time_ms": 1740,
+      "cached_response": false,
+      "audited_declarations": {
+        "Leant2Demo.identity": [],
+        "Leant2Demo.compose": [],
+        "Leant2Demo.substitute": [],
+        "Leant2Demo.swap": [],
+        "Leant2Demo.mapSum": [],
+        "Leant2Demo.dependentApply": [],
+        "Leant2Demo.dependentPair": [],
+        "Leant2Demo.dependentProjection": [],
+        "Leant2Demo.transport": [],
+        "Leant2Demo.rankN": [],
+        "Leant2Demo.mixedUniverses": [],
+        "Leant2Demo.chooseSecond": [],
+        "Leant2Demo.chooseSecond_all": [],
+        "Leant2Demo.exactDictionary": [],
+        "Leant2Demo.emptyElim": [],
+        "Leant2Demo.rollback": [],
+        "Leant2Demo.noFalse": [],
+        "Leant2Demo.universeNegative": [],
+        "Leant2Demo.vectorHead": [
+          "propext"
+        ],
+        "Leant2Demo.vectorMap": [],
+        "Leant2Demo.listMap": [],
+        "Leant2Demo.alignedLength": [],
+        "Leant2Demo.listMap_length": [],
+        "Leant2Demo.Vec.toList": []
+      },
+      "eval_outputs_subset": [
+        29,
+        "right",
+        [
+          11,
+          12,
+          13
+        ],
+        7,
+        [
+          11,
+          12
+        ],
+        "4.34.0"
+      ],
+      "lean_warnings": [
+        "Unused tactic linter warning for fail_if_success noFalse control",
+        "Unused tactic linter warning for fail_if_success universeNegative control"
+      ],
+      "scope_limitations": [
+        "No automatic recursion-skeleton discovery",
+        "No full production scheduler, component index, CEGIS or policy gate",
+        "Supplied recursive/output-spine sketches are identified in source",
+        "Not the exact prior Church benchmark; explicit record evidence test is not a class inference implementation"
+      ]
+    },
+    {
+      "file": "prototype/FiniteCEGIS.lean",
+      "source_sha256": "10cc64385f217812fe92bc8c4d6f62fd8a207529f70ec7dae66aad737d33fe59",
+      "source_lines": 114,
+      "request_id": "49fad6b0-3799-42bb-a41c-92b34b1c1d5c",
+      "http_status": 200,
+      "okay": true,
+      "failed_declarations": [],
+      "lean_errors": [],
+      "tool_errors": [],
+      "echo_matches_after_whitespace_trim": true,
+      "source_hash_matches_submitted_utf8": true,
+      "service_total_ms": 1574,
+      "total_request_time_ms": 1697,
+      "cached_response": false,
+      "audited_declarations": {
+        "Leant2Finite.synthesizedXor": [],
+        "Leant2Finite.synthesizedXor_correct": [],
+        "Leant2Finite.sampleCollision": [],
+        "Leant2Finite.separatedLater": [],
+        "Leant2Finite.impossibleSpecification": []
+      },
+      "eval_outputs_subset": [
+        [
+          0,
+          2,
+          2,
+          10,
+          26,
+          114,
+          402,
+          1722,
+          6890
+        ],
+        [
+          false,
+          true,
+          true,
+          false
+        ],
+        "4.34.0"
+      ],
+      "lean_warnings": [],
+      "scope_limitations": [
+        "Finite Boolean grammar only",
+        "Kernel theorem proves functional correctness, not enumerator completeness or minimality",
+        "No external solver; no native_decide in correctness proof"
+      ]
+    }
+  ],
+  "failed_runs": [
+    {
+      "file": "evidence/NativeSearch.initial.lean",
+      "source_sha256": "b518efe17b885d803e80f2cc4d85642afadb7184196278abfec1c4d6014dc2de",
+      "request_id": "919a442d-fd32-49ae-8c80-7c576b224a13",
+      "okay": false,
+      "diagnostic_summary": [
+        "Sort-valued declaration incorrectly marked theorem",
+        "Executable code generation rejected direct recursor-based vectorMap",
+        "List.Forall₂ absent in chosen core import"
+      ],
+      "not_a_build_target": true
+    },
+    {
+      "file": "evidence/NativeSearch.second.lean",
+      "source_sha256": "54e0c9fb05e7658fcc8b6f78f0abb11404f58a1b4756206bf089483502091980",
+      "request_id": "8a8ac47b-deff-4993-acd4-6a21bbf70f29",
+      "okay": false,
+      "diagnostic_summary": [
+        "listMap_length induction target had a compound index; generalized indexed relation lemma fixed it"
+      ],
+      "not_a_build_target": true
+    },
+    {
+      "file": "evidence/FiniteCEGIS.initial.lean",
+      "source_sha256": "0087e9430713d6a535e247603a19a028ca638d40249cc500e94edfa811b301d7",
+      "request_id": "2d4fe849-6a4f-4f38-a09c-9a16711140b6",
+      "okay": false,
+      "diagnostic_summary": [
+        "Pattern variable x collided with BExpr.x constructor; renamed input variables"
+      ],
+      "not_a_build_target": true
+    }
+  ],
+  "initial_api_probe": {
+    "request_id": "1f27be39-5969-44bc-86fd-d4456b66f7aa",
+    "okay": true,
+    "lean_version": "4.34.0",
+    "probe_theorem_axioms": [],
+    "note": "API signature probe; exact source is summarized in the experiment report, not preserved as a standalone file."
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "receipt_kind": "transcribed structured summary of actual AXLE response",
+  "source": "../prototype/ReverseCertificate.lean",
+  "request_id": "4f185f0a-778d-45c1-a49e-14ac27a99ee4",
+  "http_status": 200,
+  "environment": "lean-4.34.0",
+  "okay": true,
+  "echo_trimmed_equal": true,
+  "failed_declarations": [],
+  "lean_errors": [],
+  "lean_warnings": [],
+  "axioms": {
+    "generatedReverse": [],
+    "foldInvariant": [
+      "propext"
+    ],
+    "generatedReverse_correct": [
+      "propext"
+    ]
+  },
+  "evaluation": [
+    3,
+    2,
+    1
+  ],
+  "execution_time_ms": 1336,
+  "cached_response": false,
+  "proof_origin": "Candidate step selected by Python finite-grammar CEGIS. The inductive invariant and proof were written for this experiment, not synthesized by leant2_core.",
+  "development_failure": {
+    "request_id": "2f7ca70c-dfb7-4d51-92f8-6b376c3a8db6",
+    "okay": false,
+    "reason": "Proof left singleton append equality unsolved; corrected by adding List.cons_append and List.nil_append rewrites."
+  },
+  "service_warnings": [
+    "Missing Mathlib.Tactic header advisory",
+    "Non-default import Lean header advisory"
+  ]
+}

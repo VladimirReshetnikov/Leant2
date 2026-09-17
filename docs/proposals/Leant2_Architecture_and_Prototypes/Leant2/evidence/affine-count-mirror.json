@@ -1,0 +1,17 @@
+{
+  "status": "independent enumeration-count mirror, not Lean certification",
+  "grammar_size": 25,
+  "winner": {
+    "slope": 2,
+    "offset": 1
+  },
+  "considered": 12,
+  "certifier_calls": 3,
+  "pruned": 9,
+  "inconclusive": 0,
+  "unfiltered_baseline_certifier_calls": 12,
+  "bank": [
+    "base",
+    "step0"
+  ]
+}

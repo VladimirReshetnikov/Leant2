@@ -1,0 +1,13 @@
+test_changed_source (test_receipts.ReceiptTests.test_changed_source) ... ok
+test_disallowed_axiom (test_receipts.ReceiptTests.test_disallowed_axiom) ... ok
+test_failed_declaration (test_receipts.ReceiptTests.test_failed_declaration) ... ok
+test_false_successflag (test_receipts.ReceiptTests.test_false_successflag) ... ok
+test_missing_audit_rejected (test_receipts.ReceiptTests.test_missing_audit_rejected) ... ok
+test_missing_echo (test_receipts.ReceiptTests.test_missing_echo) ... ok
+test_sorry_warning (test_receipts.ReceiptTests.test_sorry_warning) ... ok
+test_valid_inventory (test_receipts.ReceiptTests.test_valid_inventory) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.001s
+
+OK

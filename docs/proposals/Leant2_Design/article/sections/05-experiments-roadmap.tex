@@ -1,0 +1,183 @@
+\section{Executed Lean experiments}
+\label{sec:experiments}
+
+\subsection{Method and reproducibility boundary}
+
+The local document-building environment had no Lean toolchain and could not resolve external hosts. The supplied \code{tools.zip} described the AXLE check API and supplied Python and Wolfram Language clients. A Wolfram evaluator was able to send UTF-8 JSON requests to that service, so the Lean experiments were actually compiled remotely rather than merely inspected.
+
+Both final files were submitted to environment \code{lean-4.34.0} with \code{ignore_imports = false}, \code{theorems_only = false}, and a 40-second server allowance. Each imports only \code{Lean}. The requests checked the whole file, including definitions, theorems, \code{#eval} commands, and \code{#print axioms} commands. The reported version was 4.34.0. Source hashes matched the files included in this archive, and the echoed source matched after trimming surrounding whitespace.
+
+The service's \code{okay} field was not used alone. Acceptance additionally required no failed declarations, no Lean or service errors, no sorry-use diagnostics, and the expected axiom reports. This matters because a service can report successful processing for incomplete proof material. The service's published checking interface and the user's clients both make the distinction relevant~\cite{axle}.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}L{0.28\textwidth}YY@{}}
+\toprule
+Item & Native search & Finite CEGIS \\
+\midrule
+File & \code{NativeSearch.lean} & \code{FiniteCEGIS.lean} \\
+Source lines & 219 & 114 \\
+Lean version & 4.34.0 & 4.34.0 \\
+Final service verdict & \code{okay = true} & \code{okay = true} \\
+Failed declarations & None & None \\
+Lean errors & None & None \\
+Axiom reports & 24 & 5 \\
+Empty inventories & 23 & 5 \\
+Nonempty inventory & \code{vectorHead}: \code{propext} & None \\
+Server-reported total & 1610 ms & 1574 ms \\
+\bottomrule
+\end{tabularx}
+\caption{Actual final runs. Times describe these service runs, not isolated synthesis timings or a benchmark comparison.}
+\end{table}
+
+The native file produced two unused-tactic linter warnings for its \code{fail_if_success} negative controls. Both files received service advisories about not using its cached Mathlib header; the import-preservation check showed that the requested core-only headers remained intact. No local Lean compilation, independently installed second Lean kernel, or signed remote attestation is claimed. The archive includes summaries of the tool responses, exact submitted files, and scripts for independent reruns.
+
+The documentation consulted is rolling documentation: during retrieval it identified a later release-candidate manual. API compatibility claims in this article are therefore anchored to the actual 4.34.0 experiments, not to an assumption that every rolling-reference feature is present in that environment.
+
+\subsection{Native search: what was exercised}
+
+The native solver uses introductions, local application, target constructors, reflexivity, and dependent case analysis under a depth bound of 80. Its essential feature is that a choice remains backtrackable until its whole residual forest succeeds. It has no global library search, no learned ranking, no CEGIS loop, and no automatic recursive-sketch generator.
+
+\begin{longtable}{@{}L{0.31\textwidth}L{0.63\textwidth}@{}}
+\toprule
+Declarations or group & What the run establishes \\
+\midrule\endhead
+\code{identity}, \code{compose}, \code{substitute} & Native polymorphic and higher-order local composition. \\
+\code{swap}, \code{mapSum} & Product construction and sum elimination. \\
+\code{dependentApply}, \code{dependentPair}, \code{dependentProjection} & Real dependent argument and pair types, not erased approximations. \\
+\code{transport} & Equality-dependent movement between fibers. \\
+\code{rankN}, \code{mixedUniverses} & Polymorphic arguments and two independently scoped universe-polymorphic callbacks. Not the repositories' full two-universe Church benchmark. \\
+\code{chooseSecond} & A later behavioral equality causes backtracking over an earlier function choice. \\
+\code{chooseSecond_all} & A separate proof of the stronger universal law for the generated selector. \\
+\code{exactDictionary} & Distinct explicitly supplied record values remain distinguishable. Not a new type-class solver. \\
+\code{emptyElim}, \code{vectorHead} & Empty elimination and a real indexed impossible branch. \\
+\code{rollback} & A successful metavariable assignment disappears after restoring the checkpoint. \\
+\code{noFalse}, \code{universeNegative} & Expected failure of a bounded search and rejection of an invalid universe assignment. \\
+\code{vectorMap} & Synthesized branches inside an author-supplied structural recursion skeleton. \\
+\code{listMap}, length lemmas & Relational hole filling inside an author-supplied recursive/output-spine sketch, plus a hand-written general length proof. \\
+\bottomrule
+\end{longtable}
+
+Actual evaluations returned 29 for the numeric selector, \code{"right"} for its string instance, \code{[11, 12, 13]} for the relational list transformation, 7 for vector head, and \code{[11, 12]} for the vector transformation followed by conversion to a list. The source contains the exact evaluation inputs and all audited declaration names.
+
+The solver's blanket exception catch, fixed depth bound, repeated case-split enumeration, and lack of goal indexing are deliberate prototype limitations. They are not recommended production behavior. The generated final declarations, however, do not depend on the search metaprogram or on its partial recursion: the search is an untrusted construction procedure whose output is ordinary Lean code and proofs.
+
+\subsection{Finite CEGIS: exact grammar and trace}
+
+The grammar is
+\[
+ e::=x\mid y\mid\neg e\mid(e\land e)\mid(e\lor e),
+\]
+with every syntax-tree node costing one. Let $a_n$ be the number of expressions of exactly $n$ nodes, with $a_0=0$. Structural decomposition gives
+\[
+ a_1=2,\qquad
+ a_n=a_{n-1}+2\sum_{k=1}^{n-2}a_k a_{n-1-k}\quad(n\ge2).
+\]
+The factors correspond to one unary constructor and two ordered binary constructors. The implementation enumerates those cases directly, without commutativity deduplication. The observed counts were
+\[
+ (a_0,\ldots,a_8)=(0,2,2,10,26,114,402,1722,6890),
+\]
+for 9168 candidates up to eight nodes.
+
+The desired truth function is $x\ne y$. Starting with no examples, the five proposals and their counterexamples were:
+\begin{center}\small
+\begin{tabular}{@{}clc@{}}
+\toprule
+Round & Proposal & New counterexample $(x,y)$ \\
+\midrule
+1 & $x$ & $(0,1)$ \\
+2 & $y$ & $(1,0)$ \\
+3 & $x\lor y$ & $(1,1)$ \\
+4 & $\neg(x\land y)$ & $(0,0)$ \\
+5 & $(x\lor y)\land\neg(x\land y)$ & None \\
+\bottomrule
+\end{tabular}
+\end{center}
+The final expression has eight nodes. A term elaborator quotes that literal expression into Lean, and ordinary \code{decide} proves
+\begin{lstlisting}
+∀ x y : Bool, synthesizedXor.eval x y = (x != y)
+\end{lstlisting}
+The generated syntax and this correctness theorem have empty axiom inventories. The other three audited results establish an observational collision, its separation at a later input, and a genuinely impossible specification.
+
+The Python reference script independently reproduced the counts, proposal trace, truth table, and absence of a smaller solution in the enumerated grammar. It is not a second Lean checker. The Lean enumeration uses repeated list concatenation and retains every syntax tree; a production finite backend should use arrays or builders, structural sharing, and exact finite-domain truth-table indexing where justified. No efficiency claim is made for this toy enumerator.
+
+\subsection{Failed attempts are part of the evidence}
+
+The archive retains three earlier failing source files under \code{evidence/}, outside the build targets. The first native attempt exposed the recursor/code-generation boundary, mistakenly used \code{theorem} for a data-producing sort-polymorphic declaration, and referred to a relation not present in the chosen core-only import. The second native attempt fixed those points but attempted induction with a compound relation index. The initial finite attempt used variable names colliding with grammar constructor names in a pattern definition.
+
+These were genuine errors, corrected before the final successful runs. In particular, diagnostic pretty-printing of an intermediate term is not evidence that its whole file compiled: earlier error recovery produced \code{sorryAx} dependencies in incomplete declarations. The final acceptance table excludes those runs. Retaining them documents why checking only the successful-looking declarations or only an \code{okay} field would be inadequate.
+
+\section{Benchmark plan and development gates}
+\label{sec:roadmap}
+
+\subsection{A benchmark that measures the intended system}
+
+Construct a versioned corpus with separate strata for simple types, dependent pairs, indexed inductives, polymorphic callbacks, local dictionary identity, recursive traversals, accumulator algorithms, and explicit negative controls. Every entry records its Lean type, exact property, imports, admitted implementation components, proof-only components, permitted axioms, resource profile, and any supplied sketch.
+
+Keep reference implementations and test oracles out of the implementation-provider inventory. Proofs may legitimately refer to a reference specification, but the candidate's computational dependencies should be audited separately to ensure it did not simply call the answer. An opaque wrapper around a forbidden provider is still leakage if the benchmark's policy prohibits it transitively.
+
+Separate three assistance levels: no sketch, a supplied recursion skeleton, and a supplied output/invariant sketch. A system solving a sketched map task has not demonstrated automatic recursion discovery. Similarly, solving a specialized monomorphic task is not success on the original universe-polymorphic task. Compare exact requested declarations, not nearby convenient variants.
+
+\subsection{Metrics and ablations}
+
+Report time to first verified executable result, total raw proposals, native rule work, peak live search memory, contract-proof work, candidate size, proof size, and remaining unknowns. Record compilation and source-replay failures separately from type or behavior failures. Present distributions and censored timeouts rather than an average over successes alone.
+
+The important ablations are structural: native dependency retention versus opaque indexed atoms; whole-forest versus greedy child commitment; contracts during construction versus postfiltering; component retrieval versus local-only search; recursive-scheme generation versus supplied sketches; heuristic-only versus fairness-preserving scheduling; and reversible versus irreversible observation bucketing. Some ablations are intentionally incorrect and belong in regression tests, not in production configuration.
+
+For predecessor comparisons, pin both repositories, toolchains, fixtures, and all limits. The current repository documentation contains historical acceptance ledgers; those should not be reinterpreted as a fresh end-to-end pass rate. The present report did not execute Leant or Djex, so it supplies no comparative speedup or coverage number.
+
+\subsection{Milestone gates}
+
+\textbf{Gate A: semantic core.} Implement origin capture, native forest transactions, simple introductions/applications/elimination, and final checking. Require rollback, scope, duplicate-name, universe, and false-success regressions before adding broad search. The native prototype is a seed for this gate, not its completed deliverable.
+
+\textbf{Gate B: practical component synthesis.} Add indexed retrieval, exact provider occurrences, ordinary native class synthesis, type-invention tiers, and a fair scheduler. Require replay of generated code in fresh scopes and preservation of distinct same-typed dictionaries. Measure retrieval misses explicitly.
+
+\textbf{Gate C: contract integration.} Add exact property attachment, the pointwise packaging transform, proved constructor decomposition, a counterexample bank, and separate verification queues. Require finite observations never to become an unstated universal guarantee and require inconclusive verification not to suppress future candidates.
+
+\textbf{Gate D: recursive executable synthesis.} Generate structural sketches, select dependency-closed motives, lower through the equation compiler, and attach relational proofs. Require no-sketch list and tree tasks, indexed-family regressions, and compiler-boundary tests. Only after this gate should the system be described as an automatic recursive implementation synthesizer.
+
+\textbf{Gate E: broader search.} Add accumulator carriers, invariant grammars, well-founded schemes, optional solver adapters, and proof-aware optimization. Require every adapter to document its fragment, translation, proof reconstruction, failure semantics, and resource behavior. Learned proposals may be introduced here or earlier, but should never weaken the candidate gate.
+
+These are acceptance gates, not delivery dates. A phase should advance because its correctness and coverage evidence is convincing, not because a predefined calendar expired.
+
+\section{Final design choices}
+
+Leant2's most important decision is to make a native Lean problem, with all of its dependencies and assumptions, the permanent object of search. The most important algorithmic decision is to let implementation choices and later proof obligations backtrack together. The most important practical extension is a library of native recursive sketches whose branches are synthesized under relational contracts and whose final code passes through Lean's executable declaration pipeline.
+
+The system should borrow methods rather than inherit restrictions: logical focusing from inhabitation engines, rule indexing and structured proof search from Lean automation, refinement propagation from synthesis research, and counterexample-guided search for tractable sublanguages. Each method remains subordinate to the exact source type and property.
+
+The experiments establish that small Lean-native mechanisms already handle genuine dependencies, universe-polymorphic callbacks, shared witness/proof choices, and a finite synthesis loop with a universal certificate. They also expose a boundary that a paper design could easily miss: logical acceptance and executable code generation require separate validation. Building that distinction into the architecture now is more valuable than adding it as an exception after a large search engine has been written.
+
+\appendix
+\section{Artifact inventory and rerunning the experiments}
+
+The archive contains the article's master \code{Leant2.tex}, section sources, and PDF; the two final Lean files; a core-only toolchain file and local build script; an independent Python enumeration; an exact-source remote-check script; the original user-provided AXLE clients; and evidence summaries plus earlier failed experiments. Failed sources are not build targets.
+
+For an existing Lean 4.34.0 installation, run from the archive root:
+\begin{lstlisting}[language={}]
+./scripts/check_local.sh
+python3 scripts/finite_reference.py
+\end{lstlisting}
+The local script checks the two standalone files individually; no Mathlib package is required. The supplied \code{lean-toolchain} selects \code{leanprover/lean4:v4.34.0}. Installing a toolchain may require network access and is outside the local checks actually performed for this report.
+
+The remote script submits the exact files and audits every printed declaration:
+\begin{lstlisting}[language={}]
+python3 scripts/check_remote.py prototype/NativeSearch.lean
+python3 scripts/check_remote.py prototype/FiniteCEGIS.lean
+\end{lstlisting}
+This script requires network access to AXLE. Its default axiom allowance is only \code{propext}, enough for the observed indexed elimination; all other audited outputs were axiom-free. It writes a complete new response receipt for the rerun. The evidence distributed with this article is explicitly a transcription of the connector's observed result fields, not a fabricated original HTTP response file.
+
+Build the article with:
+\begin{lstlisting}[language={}]
+cd article
+latexmk -pdf -interaction=nonstopmode -halt-on-error Leant2.tex
+\end{lstlisting}
+The reproduction scripts were syntax-checked locally. The Python finite reference was executed locally. The two final Lean sources were checked remotely. The local shell script and the new Python remote wrapper were not themselves used to perform those Lean checks; their commands encode the same standalone inputs and validation policy.
+
+\section{A compact implementation checklist}
+
+Before returning a candidate, ask whether the exact type and constraint were elaborated in the intended scope; whether external metavariables stayed rigid; whether all internal holes are closed; whether universe and dictionary assignments remained correlated; whether all branch obligations and termination proofs were discharged; whether the final lowered declaration rather than a precursor owns the proof; whether its axioms and runtime dependencies satisfy policy; and whether the exported spelling was replayed.
+
+Before pruning a branch, ask whether the reason is a genuine contradiction, a checked abstraction rejection, or merely bounded failure; whether the reason depends on examples, local instances, path conditions, or a particular provider specialization; whether those dependencies are in the cache key; and whether later evidence can split a provisional observational bucket.
+
+Before claiming coverage, ask whether the task was the original type, at its original universes, with its full property; whether the reference implementation leaked into providers; whether a recursion or invariant sketch was supplied; whether timeout cases were retained in the denominator; and whether the claimed result was typed, behaviorally verified, executable, or all three.

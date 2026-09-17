@@ -1,0 +1,235 @@
+\section{Recursive synthesis: schemes before unrestricted recursion}
+\label{sec:recursion}
+
+\subsection{Why native types are not sufficient}
+
+A native solver can compose callbacks and fill dependent constructor fields without automatically discovering an induction principle, an accumulator invariant, or a useful traversal order. Recursion must be an explicit search dimension. The recommended progression is: reuse an existing operation; instantiate a registered fold or traversal; generate a structural recursive sketch; then try well-founded, nested, or mutually recursive sketches with additional obligations.
+
+This is related to the use of reusable recursive templates in synthesis research, but Lean changes the implementation boundary: a template is instantiated against an actual dependent telescope, and termination and behavioral obligations are checked in the same host logic~\cite{adt-templates}. The template library is a strategic restriction that improves feasibility, not a replacement for the source type system.
+
+\subsection{The recursive sketch object}
+
+A \code{RecSketch} contains a proposed function telescope, the selected decreasing argument or arguments, the result family, constructor branches, permitted recursive calls, and a lowering plan. A recursive-call capability records the smaller argument and the evidence making that call admissible. It is not an unrestricted local function of the final target type.
+
+For ordinary structural recursion, the initial capabilities are the recursive results supplied by the selected recursor or by known immediate recursive subterms. Branch bodies can use those results, ordinary local fields, and admitted components. A branch cannot call the synthesized function on the unchanged original input unless a separate, accepted termination argument justifies it.
+
+The sketch's result family should quantify over parameters that may change during recursion. For vector indexing, an index argument depends on the vector length; for accumulator algorithms, the accumulator changes between calls. Generalizing too little makes the induction hypothesis unusable. Generalizing everything creates larger higher-order goals. Enumerate small dependency-closed generalization sets, guided by variables appearing in recursive-call arguments and residual contracts.
+
+\begin{algorithm}[ht]
+\caption{Native structural recursive-sketch generation}
+\label{alg:recursion}
+\begin{algorithmic}[1]
+\Function{StructuralSketches}{$T,\Spec,\Ctx,b$}
+ \State Introduce the function telescope, preserving its dependencies
+ \For{each relevant inductive argument $x$ within the scheme budget}
+   \For{each dependency-closed generalization set $V$ within the motive budget}
+     \State Build a native result family over $x$'s indices and $V$
+     \State Query the inductive/recursor metadata for branch telescopes
+     \For{each reachable constructor branch}
+       \State Introduce fields and checked recursive-result capabilities
+       \State Specialize the behavioral relation to this branch
+       \State Create coupled implementation and proof holes
+     \EndFor
+     \State Submit the complete branch forest to the native scheduler
+     \State On success, lower through the equation compiler and recheck the contract
+   \EndFor
+ \EndFor
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+Ordinary strictly positive inductives, indexed families, nested inductives, and mutual inductives do not have one interchangeable branch shape. The initial implementation should support a documented subset and use registered adapters for more elaborate recursors. Native metadata establishes which eliminators exist; it does not by itself tell a heuristic which motive will make a program easy to synthesize.
+
+\subsection{A constructive pointwise specification transform}
+
+Suppose a contract has the shape
+\[
+ f:(x:A)\to B(x),\qquad \forall x,\;R(x,f(x)),
+\]
+with $B(x)$ a data type. Instead of synthesizing $f$ and proving the law afterward, synthesize
+\begin{equation}\label{eq:pointwise}
+ F:(x:A)\to\{y:B(x)\mid R(x,y)\}.
+\end{equation}
+Set $f(x)=(F(x)).\mathrm{val}$ and take $(F(x)).\mathrm{property}$ as the proof. This is constructive: it does not extract data from a merely propositional existential using choice. It is especially effective for recursive functions because the recursive result carries both its value and the precise relation available to the next branch.
+
+\begin{proposition}[Pointwise packaging]
+For the stated data-valued family, any term of~\eqref{eq:pointwise} yields a solution of the original pointwise contract, and a solution $f,p$ yields such a packaged function.
+\end{proposition}
+\begin{proof}
+The forward direction uses the two projections pointwise. The reverse direction maps $x$ to $\langle f(x),p(x)\rangle$. Both are directly typed dependent functions; no inference from finite tests or noncomputable witness extraction is involved.
+\end{proof}
+
+This transformation does \emph{not} independently solve arbitrary global contracts. Injectivity, an involution law, or a law relating two different inputs may still depend on the entire function. A contract decomposer must supply a checked bridge from its local obligations to the original $\Spec$. When it cannot, keep the global proof goal attached to the whole candidate.
+
+\subsection{Worked synthesis: relational list map}
+
+Let $\operatorname{Aligned}(R,xs,ys)$ mean that $xs$ and $ys$ have the same list structure and their corresponding elements satisfy $R$. For a supplied $f:A\to B$, request
+\[
+ (xs:\operatorname{List}(A))\to
+ \{ys:\operatorname{List}(B)\mid
+      \operatorname{Aligned}(\lambda a\,b.\ b=f(a),xs,ys)\}.
+\]
+The empty-input branch is forced by the relation's empty constructor. In the cons branch, recursive synthesis supplies
+\[
+ ys:\operatorname{List}(B),\qquad
+ h:\operatorname{Aligned}(\lambda a\,b.\ b=f(a),tail,ys).
+\]
+The relation's cons constructor exposes an output head $b:B$ and the obligation $b=f(head)$. The native application search proposes $f(head)$, and reflexivity completes the local relation. The resulting output is $f(head)::ys$.
+
+This derivation uses types, constructor relations, and the available callback. It does not require an admitted \code{List.map} component. In the experiment, the author supplied the recursive skeleton and output-spine refinement, and the native solver filled the head and proof holes. The production algorithm above is the proposed mechanism for discovering those sketches; that discovery is not implemented in the miniature prototype.
+
+The length theorem follows from induction on \code{Aligned}. Crucially, the proof's list indices should first be generalized to variables. Attempting induction directly on a relation whose second index is the compound expression \code{(listMap f xs).val} caused an actual failed experiment. A generic lemma over variable indices fixed it. This supplies a small but concrete regression test for the motive/generalization component.
+
+\subsection{Worked synthesis: indexed vectors}
+
+For a vector family $\operatorname{Vec}(A,n)$, the type
+\[
+ (A\to B)\to\operatorname{Vec}(A,n)\to\operatorname{Vec}(B,n)
+\]
+forces length preservation but does not fully specify elementwise mapping. In a nonempty branch it may allow repeating a transformed head rather than transforming each original position. Leant2 must distinguish the guarantee encoded by the index from additional semantics encoded by a relation or law.
+
+The vector-map experiment checks that native branch synthesis can retain $n$ correctly and construct a length-preserving recursive program from the supplied skeleton. A separate pointwise relation would be required to make it a verified implementation of a fully specified map operation. The actual generated branch is the expected mapping branch, but the requested bare vector type alone does not establish that characterization for all possible inhabitants.
+
+For vector head, the type $\operatorname{Vec}(A,n+1)\to A$ permits elimination of the impossible empty case. Native indexed elimination produced a working implementation in the experiment. Its axiom inventory contained \code{propext}; this is an observed property of that generated elimination proof, not a reason to declare all indexed synthesis axiom-free or to prohibit indexed types.
+
+\subsection{Carrier invention: list indexing as a fold}
+
+A useful higher-order sketch for
+\[
+ \operatorname{List}(A)\to\mathbb N\to\operatorname{Option}(A)
+\]
+folds the list into a \emph{function-valued} accumulator. Let
+\[
+ C=\mathbb N\to\operatorname{Option}(A),\qquad z=\lambda i.\operatorname{none},
+\]
+and search for a step of type $A\to C\to C$. Its natural equations are
+\[
+ s(a,k,0)=\operatorname{some}(a),\qquad s(a,k,n+1)=k(n).
+\]
+Then $\operatorname{foldr}(s,z,xs)(i)$ is the desired lookup function. The key search decision is the carrier $C$, not merely choosing a list constructor.
+
+A practical carrier heuristic takes arguments that remain to be consumed after a traversal and abstracts them into the accumulator's domain. The branch contracts then explain how those arguments change. This provides a specific algorithmic avenue for the kind of bounded-composition gap documented in the repositories, but it is not a claim to have solved their exact integer-indexed benchmark. Integer inputs require an explicit policy for negative indices, which must be included in the specification and proof rather than guessed.
+
+\subsection{Accumulator invariants and well-founded recursion}
+
+For an accumulator reverse, a strong candidate invariant is
+\[
+ \operatorname{go}(xs,acc)=\operatorname{reverse}(xs)\mathbin{+\!+}acc.
+\]
+The top-level contract at $acc=[]$ is too weak to justify a recursive call with a nonempty accumulator. A synthesis lane can propose invariants from relational summaries of admitted operations, small expression grammars, or user sketches. It must prove the initialization, branch preservation, and finalization implications. Failed proof search for one invariant does not refute the implementation.
+
+For nonstructural recursion, enumerate a small family of measures: natural-valued arguments, list lengths, structural sizes, and lexicographic tuples. A proposed call on $y$ from $x$ creates the goal $\mu(y)<\mu(x)$ or the corresponding well-founded relation. Discharge it using hypotheses, simplification, arithmetic automation, or a supplied lemma. Retain it as an ordinary proof obligation until solved. Register the definition only after Lean accepts its termination elaboration~\cite{lean-recursion}.
+
+This architecture also permits a relational recursion scheme where a smaller argument is returned together with a decrease proof. It avoids an unsafe shortcut: hypothesizing the desired recursive function at every input and later hoping that a termination checker accepts the resulting body. Recursive capabilities should constrain generation before final checking, while final checking remains authoritative.
+
+\section{The kernel/compiler boundary}
+\label{sec:compiler}
+
+\subsection{A boundary established by experiment}
+
+The first native experiment defined vector map using an induction tactic inside an executable \code{def}. The resulting expression had the intended type and no axioms in its logical dependency inventory, but Lean's code generator rejected the direct recursor use. Rewriting the same recursive sketch as pattern equations routed it through the equation compiler and produced executable code. The final program evaluated correctly.
+
+This is a strong reason not to design Leant2 around the rule ``an arbitrary accepted \code{Expr} can simply be emitted as an executable definition.'' Lean elaboration and compilation are related but distinct stages~\cite{lean-compilation}. Native semantic search should retain a structured recursion plan so that it can use the supported declaration and equation-compilation path.
+
+\subsection{A two-stage lowering protocol}
+
+For a recursion-free expression, closing and registering a normal definition may suffice. For a recursive plan, generate a declaration telescope, pattern equations, branch bodies, and any termination annotation through Lean's declaration elaborator. The output of this stage is a fresh declaration bundle containing the main value and generated helpers.
+
+The original logical plan and the compiled declaration need not be textually identical. There are two safe routes. The simplest is to prove $\Spec$ directly about the lowered declaration. Alternatively, prove an equality between the logical candidate and the lowered value, then transport the original proof. In both routes, the final certificate names the lowered value, not a pre-lowering placeholder.
+
+\begin{algorithm}[ht]
+\caption{Lower and authorize a candidate bundle}
+\label{alg:publish}
+\begin{algorithmic}[1]
+\Function{Authorize}{$O,P$}
+ \State Restore the origin environment in an isolated validation context
+ \State Lower the plan $P$ to declarations through the relevant Lean elaborators
+ \State Reject unresolved term/level metavariables, leaked free variables, and errors
+ \State Kernel-check the declaration bundle and its exact contract theorem
+ \State Audit transitive axioms and implementation dependencies against $O$
+ \If{the request requires executable code}
+   \State Check the compilation policy and compile the lowered implementation
+   \State Reject noncomputable or inadmissible runtime dependencies
+ \EndIf
+ \State Export explicit replay source and check its elaborated result
+ \State Publish the implementation, proof, and receipt atomically
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+The acceptance record should distinguish \code{kernelChecked}, \code{compiled}, and \code{evaluatedOnExamples}. Compilation is not a machine-checked theorem about the compiler's native-code semantics. Evaluation tests are valuable regressions, not a replacement for the logical contract. A deployment requiring stronger end-to-end assurance needs an independently validated compilation story, beyond the scope of the current prototypes.
+
+\subsection{Partial and noncomputable definitions}
+
+The default implementation profile should reject candidates that require noncomputable choice or opaque partial recursion to meet an intended total executable interface. A theorem-proving profile can allow noncomputable objects under a declared foundation, but should label them accordingly. The existence of a type-correct opaque constant does not establish that its runtime implementation terminates or implements its expected equations.
+
+Axiom auditing and executability auditing solve different problems. \code{Classical.choice} is relevant to mathematical assumptions and computability; an \code{extern} or an alternate runtime implementation can raise operational trust questions even without adding an obvious theorem axiom. Preserve a separate runtime-dependency inventory and state explicitly which runtime and compiler assumptions the output relies on.
+
+\section{Behavioral synthesis as coupled construction and proof}
+\label{sec:behavior}
+
+\subsection{Three sources of useful constraints}
+
+The source type contributes structural information: vector lengths, subtype predicates, dependent output families, and interfaces that require callbacks or dictionaries. User examples contribute concrete observations. User laws and component summaries contribute logical relations. All three should participate in search, but they have different proof obligations.
+
+Refinement-type synthesis shows the value of propagating a specification into subexpressions rather than treating verification only as a final filter~\cite{synquid}. Leant2 should adopt that principle without restricting every host proposition to a decidable refinement logic. A backend handles the fragment it understands; an opaque or higher-order property remains a genuine Lean goal for another lane or for user guidance.
+
+A \code{ContractDecomposer} receives the native property and a proposed program constructor. It returns local obligations plus a reconstruction term showing that those obligations imply the original property. Initially implement a small library: conjunctions; pointwise universally quantified output relations; constructor-aligned relations; and registered component pre/postconditions. Avoid heuristic rewriting of arbitrary predicates into supposedly independent subgoals without a checked bridge.
+
+\subsection{Proof automation as a portfolio}
+
+Use lightweight kernel reduction and reflexivity first, then bounded simplification with controlled theorem sets, then targeted native arithmetic or congruence reasoning, and optional Aesop/Mathlib adapters. Induction and auxiliary lemma invention are separate strategies with explicit budgets. This layered approach makes inexpensive local obligations cheap without requiring every synthesis problem to load a large external library.
+
+The default certificate profile should distinguish kernel reduction from native-code-backed decision shortcuts. A tactic that emits a proof can still depend on additional axioms. In particular, the name of a decision or certificate tactic does not alone establish that its checker is reduced inside the kernel. Audit the actual proof dependencies; do not describe a backend as axiom-free merely because its underlying solver produces a certificate~\cite{lean-axioms,lean-tactics}.
+
+A proof of the contract's negation is useful for rejecting a candidate. Failure to prove the contract, failure to prove its negation, or an automation timeout leaves the candidate unresolved. This preserves the predecessor's positive/falsified/inconclusive distinction while permitting much stronger proof strategies~\cite{behavior}.
+
+\subsection{Counterexample-guided synthesis with an unknown branch}
+
+Let $R(t,x)$ express the desired behavior on input $x$, and let $E$ be the bank of accepted counterexamples. Candidate construction seeks a typed $t$ satisfying the current finite obligations. Verification then attempts to establish $\forall x, R(t,x)$ or produce a concrete $x$ for which $R(t,x)$ is false.
+
+\begin{algorithm}[ht]
+\caption{Fair CEGIS with proof-producing acceptance}
+\label{alg:cegis}
+\begin{algorithmic}[1]
+\State $E\gets\varnothing$; $W\gets\varnothing$ \Comment{examples and unresolved candidates}
+\While{the global budget permits}
+ \State Obtain a new typed candidate consistent with $E$, or revisit a candidate in $W$
+ \State Run a bounded verifier on the exact native specification
+ \If{a proof of the specification is returned}
+   \State Submit the candidate and proof to the common authorization gate
+ \ElsIf{a counterexample $x$ is returned}
+   \State Decode $x$ into its native input type, including required preconditions
+   \State Check a proof of the violation and add it to $E$
+   \State Repartition observation buckets and wake affected synthesis tasks
+ \Else
+   \State Retain the candidate in $W$ with a larger future verification tier
+ \EndIf
+\EndWhile
+\State Report remaining candidates and bounded/inconclusive status
+\end{algorithmic}
+\end{algorithm}
+
+For a request with a precondition $Q(x)$, a returned counterexample must include evidence of $Q(x)$ as well as the violation. A solver model outside the dependent input domain is not a counterexample. For example, a model with an out-of-range integer is not an inhabitant of \code{Fin n}; a model of an abstract list length need not decode to a valid source list satisfying all path constraints.
+
+The finite prototype implements the simple terminating case where all Boolean input pairs can be checked. The production design additionally requires the unknown branch, queues, proof-carrying counterexamples, and dependency-sensitive invalidation.
+
+\subsection{Finite domains and a genuine universal result}
+
+For a finite source domain, exhaustive checking can establish a universal property when the enumeration's coverage is justified. In the experiment, Lean's ordinary \code{decide} proves the property for both Boolean arguments after the synthesized expression is quoted as a literal. The compiled search procedure is not trusted to establish the theorem. It merely chooses which small syntax tree the kernel then checks.
+
+This is a useful architectural pattern: an efficient untrusted metaprogram proposes a small certificate-bearing artifact, while the final proof avoids replaying the expensive enumeration. The runtime of synthesis and the size of the proof are therefore decoupled. A similar boundary can support finite maps, small bit-vector grammars, or bounded expression templates, provided the source embedding and final proposition remain exact.
+
+\subsection{External solvers and arithmetic}
+
+An SMT adapter should explicitly identify its supported theory: for example, a quantifier-free integer arithmetic fragment with a particular interpretation of operations. A source \code{Nat} must not be translated as an unconstrained integer; natural subtraction must not silently become integer subtraction; bounded machine arithmetic must not silently become unbounded arithmetic. The adapter owns these translation lemmas.
+
+A satisfiable result is a candidate model, not automatically a valid source witness. An unsatisfiable result is not a theorem unless a checked certificate and translation argument connect it to the exact Lean proposition. If reconstruction fails or an operator is unsupported, return unknown. A strict no-external-trust profile can use a solver solely to discover terms or counterexamples and ask native Lean tactics to prove their consequences.
+
+For affine subproblems, a useful staged implementation is to enumerate a coefficient-bounded template, ask the solver for coefficients, substitute those coefficients into a native expression, and prove the requested law in Lean. The bounds are grammar restrictions. If the solver exhausts them, the result is template exhaustion, not global impossibility.
+
+\subsection{Higher-order observations and effects}
+
+For higher-order inputs, examples require explicit callable test values or symbolic specifications of callbacks. A finite collection of callbacks is not a universal quantifier over functions. Instead of manufacturing random closures and claiming functional coverage, expose an observation algebra: application at named arguments, constructor observations, and checked equality tests where decidable. Retain the limitations in the result.
+
+Do not execute an arbitrary synthesized \code{IO} value merely to inspect its behavior. Start with pure models of state, exceptions, parsers, or finite traces; prove the implementation's relation to the model under explicit assumptions. Actual effectful testing requires an opt-in sandbox and an operational policy. A plain \code{IO Unit} signature does not specify which external actions are acceptable.

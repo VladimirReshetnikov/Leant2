@@ -1,0 +1,104 @@
+\section{Native search: construction rules and correlated alternatives}
+\label{sec:native}
+\subsection{Focused introduction, without premature commitment}
+At each goal, perform cheap weak-head reduction under a controlled transparency policy, instantiate already assigned metavariables, and expose the outer type constructor. Lean's metaprogramming API provides the native expression, context, inference, and definitional-equality operations needed here.\cite{metabook}
+
+A dependent function goal has a canonical introduction rule:
+\[
+ \frac{\ctx,x:A\vdash b:B(x)}
+      {\ctx\vdash \lambda x.b:\Pi x:A,B(x)}.
+\]
+This introduction is suitable for eager, focused search when the objective is existence: any function inhabitant can be applied to the fresh variable to obtain a body. Preserve the binder's visibility and the domain's universe exactly. The same operation handles an ordinary argument, a type parameter, a dependent index, or an instance binder. There is no separate Haskell-style ``type-variable introduction'' calculus.
+
+However, existence-preserving focusing does not establish that the resulting term is the best presentation or the smallest syntax tree. A provider that already has the desired function type might be preferable to its eta-expanded form. Therefore the synthesis profile may first record a cheap direct-head candidate, while the focused lane continues through lambda introduction. The quality objective and the completeness argument must not silently use different normal-form assumptions.
+
+Products and records require similar care. Constructor-directed construction is useful, but direct local values and inexpensive projections should remain available. A sum constructor, a witness for a dependent pair, and a computational instance are genuine choices, not invertible proof steps. Their alternatives belong in the search graph.
+
+\subsection{The critical control rule: solve the continuation}
+Consider a context containing $a,b:\mathrm{Nat}$ and the target
+\[
+ \{n:\mathrm{Nat}\mid n=b\}.
+\]
+A greedy subgoal solver may fill the witness with $a$, because $a:\mathrm{Nat}$, and then become stuck on $a=b$. The appropriate algorithm restores the witness choice and tries $b$. This is not an exotic corner case: it is the normal interaction between dependent construction and behavioral specifications.
+
+The core control rule is:
+\begin{lstlisting}[language={},caption={Proposed continuation-based search. Each alternative owns its complete dependent continuation.}]
+search(goals, state):
+  if goals are all assigned:
+    return validate_residual_constraints(state)
+  h, rest := choose_goal_and_dependency_order(goals)
+  for proposal in resumable_proposals(h):
+    checkpoint := save_branch_state()
+    outcome := execute(proposal, h)
+    if outcome creates children:
+      if search(children together with rest, current_state) succeeds:
+        return success
+    restore_branch_state(checkpoint)
+  return exhausted_this_frontier
+\end{lstlisting}
+``Together with rest'' means under the same constraint store. It does not require a fixed left-to-right order. The dependency scheduler may prefer a proof equation that determines a data metavariable before it enumerates data inhabitants. The indispensable condition is that a choice remains reversible until the correlated continuation has succeeded or has been explicitly suspended with its choice point intact.
+
+This is implemented directly in the small experiment: each native \code{apply} alternative calls the solver on \code{children ++ rest} before its transaction commits. The full engine should generalize this to a resumable continuation stack, not discard the dependency discipline when moving from depth-first to best-first search.
+
+\subsection{Head--spine construction}
+The primary non-introduction rule chooses a head $f$ and constructs an application spine. Heads come from local variables, native structure projections, relevant declarations, constructors, and scoped recursion hypotheses. Given
+\[
+ f:\Pi x_1:A_1.\;\Pi x_2:A_2(x_1).\;\cdots\;R(x_1,\ldots,x_k),
+\]
+freshen its universe parameters and create native metavariables for arguments as needed. Constrain the result against the expected target, then synthesize unresolved arguments in dependency order.
+
+Do not always saturate the entire source declaration. A partially applied provider may have the desired function type; a later explicit type argument may depend on an earlier value argument; and a callback can itself be polymorphic. Enumerate meaningful spine prefixes, using the expected type to reject irrelevant ones cheaply. An explicit type argument and a value argument are both terms in a native Pi telescope, although their search policies differ.
+
+A practical implementation uses Lean's native application machinery for ordinary proposals, wrapped to retain all remaining goals and postponed inference obligations. It must track arguments that unification assigned automatically as well as arguments searched explicitly. A candidate occurrence is identified by the declaration or local head, its complete level instantiation, its actual ordered arguments, and its local scope. An argument assignment inferred from the result type has no less semantic importance than a displayed explicit argument.
+
+For an unresolved computational argument, enumerate local values, projections, constructors, and recursively synthesized expressions. For a proof argument, schedule proof search. For an instance argument, first invoke Lean's normal instance resolution under the current local context. For a type-valued argument, use demanded subexpressions of the goal and provider types, then bounded type-constructor applications and lambda abstractions. These are scheduling policies over the same native representation, not different notions of type correctness.
+
+\subsection{Use native unification; do not confuse it with an oracle}
+Definitional equality can instantiate metavariables. It must run inside the branch transaction. Sharing a unifier's mutable state across alternatives is unsound as a search implementation even when the final kernel check would catch the resulting malformed candidate.
+
+For higher-order constraints, begin with Lean's supported unification behavior and make the residual problem explicit. When the unifier cannot resolve a flexible family application, consider a finite set of typed instantiations: projections, constant families, available type constructors, or lambdas obtained from the demanded target shape. Each is a branch. Do not replace a failed or resource-limited unification attempt by a theorem that two arbitrary dependent expressions are unequal.
+
+In particular, distinguish three outcomes in the adapter: a successful assignment; a certified or syntactically decisive incompatibility within the attempted rule; and an unresolved constraint requiring a different transparency setting, additional arguments, or further search. The last is not a reason to cache global non-inhabitation.
+
+The first-order simplification layer should also wake constraints when their dependencies change. Attach a dependency stamp to postponed work; retry after a relevant metavariable assignment, not after every unrelated step. This avoids both premature rejection and repeated expensive unification of an unchanged problem.
+
+\subsection{Projection-first scheduling is a practical requirement}
+Our first prototype tried constructors before discovering structure fields. A target natural-number witness constrained to equal the value in the second of two dictionaries caused constructor growth and eventually exhausted Lean's heartbeat limit. Adding exact structure-projection proposals before constructor expansion made the final test file compile successfully.
+
+This does not prove that projections should always dominate every constructor. It establishes a concrete failure mode for a naive priority policy. The default proposal order should be cheap local heads, constraint-directed reflexivity, inexpensive projections, relevant library heads, bounded constructors, and then increasingly expensive elimination and recursion plans. The fair lane may explore other orders, but the heuristic lane should not construct large numerals before inspecting an already available field of the required type.
+
+\section{Universes, polymorphism, dictionaries, and dependent elimination}
+\label{sec:dependent}
+\subsection{Polymorphism is native Pi structure, not unrestricted impredicativity}
+A callback of type
+\[
+ \forall \alpha:\mathrm{Type}\,u,\ \alpha\to\alpha
+\]
+is synthesized by introducing the type parameter and then the value parameter. Constructing such a callback as an argument to another function does not need a Haskell rank-N approximation. The same rule composes dependent callbacks of type $\forall x, P(x)\to Q(x)$.
+
+Native representation does not remove Lean's universe discipline. A polymorphic function type quantified over \code{Type u} can live at a higher universe than the types it quantifies over. Leant2 must not instantiate a parameter expecting a smaller universe with that type merely because a System-F-like encoding would permit it. Keep \code{Level} parameters and constraints; preserve the distinction between proposition-valued products and data-valued products; and do not assume an implicit universe-subtyping or lifting rule.\cite{typesystem}
+
+Fresh universe metavariables are allocated for each provider occurrence, while named universe parameters in the original query remain rigid. Two occurrences of a polymorphic provider may receive different instantiations. Conversely, a single occurrence with correlated arguments must share its own equations. A target involving two independent universes is not solved by silently identifying them. The accompanying experiment checks a small two-universe callback example, not the original larger two-universe Church-composition regression from Leant's repository.
+
+\subsection{Dictionary identity is computational identity}
+For a class with a field \code{value : A}, two values $d_1,d_2:C\,A$ can contain different data. Their types being definitionally equal does not justify substituting one dictionary for the other. Store the actual dictionary expression at every method occurrence. A context key containing only the class predicate is insufficient.
+
+Use Lean's ordinary local-instance and type-class behavior as the default policy. This preserves the meaning of a user-written method call. Optionally allow explicit synthesis over multiple dictionary values, but describe that as a construction choice, not as an alternate hidden instance-resolution semantics. The output must retain the chosen dictionary even if a pretty printer would ordinarily omit it.
+
+Likewise, \code{Decidable P} lives in the computational world and contains a choice between two constructors. It is not erased merely because it carries proofs. Proof irrelevance applies to proofs of a fixed proposition; it does not identify arbitrary data structures containing proofs. The successful \code{chooseDictionary} experiment checks the actual selected payload with a definitional equality theorem.
+
+\subsection{Native case analysis with a dependent motive}
+For a local value $x:I\,\vec p\,\vec i$, obtain the inductive declaration and recursor metadata from the environment. The search adapter should initially delegate the difficult details of dependent case analysis to Lean's native case-analysis machinery, which produces the branch contexts and goals. A custom high-performance path can be added later against differential tests; it should not be the first implementation of dependent elimination.\cite{inductives}
+
+The elimination plan has four explicit steps. First, find every local declaration and target fragment whose type depends on the scrutinee or indices. Second, generalize the necessary dependent suffix of the context into the motive. Third, create constructor branches and specialize the motive using the actual constructor arguments and index equations. Fourth, search each branch under its resulting context and reconstruct the eliminator application.
+
+An impossible branch is removed only when the native construction proves its impossibility: incompatible constructors, contradictory indices, or a checked local contradiction. A syntactic mismatch between an opaque index expression and a constructor result is not enough. When normalization does not decide an arithmetic relation between indices, generate a proof obligation or select another eliminator plan.
+
+For the target $\mathrm{Vec}\,\alpha\,(n+1)\to\alpha$, the empty constructor cannot describe the input. The surviving cons branch introduces a head of type $\alpha$, which solves the result. No conversion to a non-indexed list type is necessary. The prototype exercises exactly this mechanism.
+
+\subsection{Equality transport and elimination restrictions}
+When the context contains $e:a=b$ and $v:P(a)$, the desired $P(b)$ need not be definitionally equal to $P(a)$. A valid proposal performs equality elimination or introduces a checked transport. Record the equality proof and the motive; do not just change an expression's stored type after an SMT equality result.
+
+Proposition-valued inductives require their actual Lean elimination rules. An existential proposition or \code{Nonempty A} is not interchangeable with a computational dependent pair. Extracting an arbitrary executable witness from such evidence may require classical choice and a noncomputable definition. Leant2 should offer that route only under an explicit policy and label it accordingly, rather than silently converting proof search into computational synthesis.\cite{inductives,axioms}
+
+For records, indexed structures, and families with dependent fields, preserve constructor telescopes in order. A later field can constrain an earlier field even when the earlier field is not a proof. The continuation mechanism of Section~\ref{sec:native} is therefore the general rule for both ordinary programs and certified data structures.

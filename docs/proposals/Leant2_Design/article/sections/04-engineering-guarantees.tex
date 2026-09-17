@@ -1,0 +1,179 @@
+\section{Guarantees, limits, and negative evidence}
+\label{sec:guarantees}
+
+\subsection{The success guarantee is small and strong}
+
+\begin{theorem}[Conditional certificate soundness]\label{thm:sound}
+Assume the validation environment is the recorded environment, the kernel and imported foundation satisfy their stated trust assumptions, and the publication gate accepts only closed instances of~\eqref{eq:contract} whose dependency inventories satisfy the request's policies. Every published \code{Verified} result inhabits the requested native type and satisfies the exact recorded behavioral predicate, relative to the displayed local premises and allowed axioms.
+\end{theorem}
+\begin{proof}
+The gate accepts the implementation declaration only after checking its value at the closed requested type. It accepts the correctness declaration only after checking its proof at the predicate applied to that exact implementation. Closing and reopening the recorded telescope specializes those declarations to the original context. The dependency audit fixes which assumptions those judgments may use. Search order, examples, learned scores, solver answers, and abstract representations do not appear in this argument because none can authorize publication without the two checked judgments.
+\end{proof}
+
+This theorem is an architectural implication, not a formal verification of the proposed gate's implementation. The small accepted prototypes give examples of the relevant checks, not a proof that a future worker has no transaction or audit bugs. A valuable future formalization target is a small explicit checker for serialized candidate bundles and policy receipts, while the high-performance search remains untrusted.
+
+\subsection{Relative completeness is not a marketing claim}
+
+Fix a grammar $\Grammar$ of candidate plans, a finite component alphabet, a policy, and an effective size measure. A plan includes any auxiliary definitions, recursion scheme, type instantiations, and proof certificate needed for acceptance. Assume there are finitely many plans of each size and a procedure that enumerates them. Invalid plans may fail or time out during elaboration; a valid accepted plan has a finite successful validation computation.
+
+\begin{theorem}[Fair relative discovery]\label{thm:complete}
+If a lane fairly enumerates all plans in $\Grammar$ and dovetails their validation with unbounded increasing allowances, then every admissible plan with a finite successful validation computation is eventually accepted, unless the user stops the run.
+\end{theorem}
+\begin{proof}
+Let $P$ be such a plan. Its finite encoding appears at a finite position in the enumeration. Its successful validation uses a finite amount of work, so some allowance tier suffices. Fair scheduling eventually visits that plan at that tier. Its validation then completes, and the common gate accepts it.
+\end{proof}
+
+The qualifications matter. A heuristic provider cutoff, a permanently discarded observational bucket, a fixed universe bound, a restricted recursion library, or a proof procedure that never enumerates the needed proof can invalidate the relevant coverage premise. Practical interactive search has finite budgets and does not receive a termination or completeness guarantee from this theorem. The theorem explains how to preserve an honest completeness lane while optimizing other lanes aggressively.
+
+A universal finite decider for all inhabited Lean types is not the goal. The implementable target is broad useful coverage with reliable positive certificates, explicit fragment guarantees, and informative inconclusive outcomes. The difficult research questions concern search efficiency and specification discovery, not permission to weaken the meaning of success.
+
+\subsection{Three different meanings of ``no solution''}
+
+For a finite syntax grammar, enumeration can establish that no candidate in that grammar passes a complete checker. For a decidable logical fragment, a decision procedure can establish nonderivability in that fragment. A semantic Lean impossibility theorem is stronger and different: it supplies
+\[
+ q:(t:T)\to\Spec(t)\to\operatorname{False}.
+\]
+No scheduler flag can replace $q$.
+
+A propositional LJT lane remains useful for fast inhabitation and fragment classification. The predecessor uses this tradition, originating in contraction-free intuitionistic sequent calculi~\cite{djex,dyckhoff}. But an intuitionistic countermodel does not generally construct a Lean proof of the negation of the goal. With classical axioms available, a proposition such as $P\lor\neg P$ illustrates the difference particularly clearly. Even without classical axioms, failure to prove an arbitrary proposition is not a proof that it is false.
+
+Therefore the negative ledger records the logic, grammar, assumptions, abstraction direction, completeness theorem, and exhausted bounds. A strict semantic \code{Impossible} result is reserved for a checked source-level proof. The finite prototype contains a genuine such proof for the impossible specification $\forall b, f(b)\ne f(b)$; its native \code{noFalse} control, by contrast, records only that the bounded demo tactic did not solve \code{False}.
+
+\subsection{Sound rejection from abstractions}
+
+\begin{proposition}[Completion-preserving pruning]
+Suppose $A(P)$ overapproximates all behaviors of all grammar-admissible completions of a partial plan $P$, and the source contract permits only behaviors in $B$. If a checked argument establishes $A(P)\cap B=\varnothing$, pruning $P$ preserves every satisfying completion in that grammar.
+\end{proposition}
+\begin{proof}
+Any satisfying completion would have behavior in $A(P)$ by overapproximation and in $B$ by the contract. It would therefore supply an element of the supposedly empty intersection, a contradiction.
+\end{proof}
+
+The overapproximation is over \emph{completions}, not just the particular filled subterms sampled so far. Summaries that accidentally assume an unsolved callback is the identity, that ignore a constructor alternative, or that replace an opaque provider by a guessed length formula fail this premise. Make the premise an explicit adapter obligation.
+
+\subsection{Costs and minimality}
+
+Define a syntax cost before claiming minimality. For example,
+\[
+ c(t)=n_{\mathrm{nodes}}(t)+w_c n_{\mathrm{cases}}(t)+
+ w_r n_{\mathrm{recursiveCalls}}(t)+w_l n_{\mathrm{nonlocalComponents}}(t).
+\]
+This is not runtime complexity. A proof of an asymptotic resource bound needs a model of execution and a source theorem, possibly supplied by a resource-aware synthesis plugin. Prior resource-guided synthesis research offers a route for such an extension, but it should not be conflated with a tree-size heuristic~\cite{resyn}.
+
+The finite XOR experiment finds its first solution in an exact-size enumeration. This supports a minimality observation within that finite grammar and enumeration, and the included independent enumerator checks the same result. The Lean theorem in the artifact proves functional correctness, not the enumerator's completeness or a minimality theorem. Keeping those claims separate makes the evidence more useful.
+
+\section{Production modules and APIs}
+\label{sec:modules}
+
+\subsection{Module boundaries}
+
+The following is a proposed source layout. The names specify responsibilities, not files already implemented in the prototype.
+
+\begin{longtable}{@{}L{0.31\textwidth}L{0.63\textwidth}@{}}
+\toprule
+Module family & Owned responsibility \\
+\midrule\endhead
+\code{Leant2.Frontend} & Tactic, command, and exploration syntax; request elaboration; user-visible diagnostics. \\
+\code{Leant2.Core.Origin} & Frozen environment/context/specification identity and semantic policies. \\
+\code{Leant2.Core.Transaction} & Version-adapted snapshots, owned assignments, context reinstallation, cancellation propagation. \\
+\code{Leant2.Core.Plan} & Typed construction plans, recursive sketches, closure over telescopes, serialization and replay. \\
+\code{Leant2.Search.Forest} & Residual goals, dependencies, blocked obligations, connected components, continuations. \\
+\code{Leant2.Search.Native} & Introductions, exact use, application spines, constructors, projections, dependent elimination. \\
+\code{Leant2.Search.Index} & Component metadata, native-head retrieval, widening tiers, optional abstract type graph. \\
+\code{Leant2.Search.Schedule} & Work ledger, fair quanta, profiles, widening, cancellation, candidate and verifier queues. \\
+\code{Leant2.Recursion} & Structural schemes, motive/generalization candidates, carrier invention, decrease obligations. \\
+\code{Leant2.Contract} & Exact property attachment, proved decomposition rules, example bank, relational summaries. \\
+\code{Leant2.Backend} & Optional finite grammar, arithmetic, SMT, learned proposals, and abstract-interpretation adapters. \\
+\code{Leant2.Proof} & Core proof tactics and optional pinned Aesop/Mathlib strategies; proof budgets and evidence. \\
+\code{Leant2.Check} & Closing, kernel checking, axiom audit, dependency audit, execution policy, final receipts. \\
+\code{Leant2.Emit} & Equation-compiler lowering, explicit source export, replay, and atomic declaration publication. \\
+\code{Leant2.Worker} & Project-local process protocol, imported environment lifecycle, isolated expensive tasks. \\
+\bottomrule
+\end{longtable}
+
+Separate the optional Mathlib and external-solver adapters into distinct packages. The native core and basic examples should depend only on the selected Lean distribution. This reduces cold-start cost and makes version mismatches easier to diagnose. Aesop and Mathlib adapters must be pinned to compatible versions rather than loaded from a floating branch into an arbitrary project.
+
+\subsection{Capability-oriented plugin interfaces}
+
+A proposal lane may inspect a goal and return a plan, but it may not publish declarations. A proof backend may return a proof expression, but it may not change the origin's axiom policy. A verifier may return a model, but it may not insert it into the counterexample bank until native validation succeeds. These capabilities should be distinct interfaces rather than conventions inside one large monad.
+
+A schematic API is:
+\begin{lstlisting}[language={}]
+ProposalLane.step : Origin -> Task -> Quantum -> WorkerM StepResult
+ContractDecomposer.open : Goal -> ConstructorPlan -> WorkerM Decomposition
+CounterexampleChecker.check : Origin -> Candidate -> Model -> WorkerM CheckedCex
+Lowerer.lower : Origin -> ClosedPlan -> WorkerM DeclarationBundle
+CandidateGate.validate : Origin -> DeclarationBundle -> WorkerM Verdict
+Publisher.commit : AuthorizedBundle -> CommandElabM Publication
+\end{lstlisting}
+These signatures are design pseudocode. In a concrete implementation, \code{AuthorizedBundle} and \code{CheckedCex} should have private constructors and origin-indexed handles. Their contents include the exact expressions and policy evidence, not just a success Boolean. A serialized handle must be revalidated before it acquires authority in another process.
+
+\subsection{Native API adapters to implement first}
+
+The experiment verified the existence and use of the following Lean 4.34.0 API surface: \code{Meta.saveState} and restore, \code{MVarId.intro1P}, \code{MVarId.apply}, \code{MVarId.cases}, \code{MVarId.induction}, fresh opaque goal creation, \code{Meta.check}, and \code{Lean.addDecl}. Only the subset visible in \code{NativeSearch.lean} is used in its synthesis loop. The initial API probe checked the other signatures, not a finished implementation around them.
+
+Build wrappers for: exposing a goal telescope; creating owned holes; exact-context constant instantiation; native unification with rollback; retrieving inductive metadata; dependent elimination; closing an expression; declaration checking; and collecting transitive dependencies. These wrappers should centralize version sensitivity. The search layer should not scatter raw elaborator state mutations across dozens of modules.
+
+\subsection{Do not overload a tactic interface with declaration synthesis}
+
+A tactic can fill a term hole with a nonrecursive expression or an application of existing recursive combinators. Creating a new recursive definition, helper theorem, and executable declaration bundle naturally belongs at the command-elaboration level. The tactic interface should either use an internal local helper construction that the elaborator explicitly supports, or delegate to a declared helper-generation service with an auditable scope.
+
+This avoids a common confusion: a tactic producing a term by induction can satisfy the kernel's logical expectations without arranging the declarations and compiler metadata needed for execution. The command frontend is not optional cosmetic syntax once recursive code generation is a central feature.
+
+\section{Publication, provenance, and reproducible output}
+\label{sec:publication}
+
+\subsection{What the final receipt records}
+
+A receipt records the exact requested type and property, the closed implementation and proof identities, environment and toolchain identities, admitted components, axiom inventory, local premises, execution status, and the budgets actually consumed. It also records whether the implementation was generated from scratch, selected as an existing component, or completed from a user or system sketch.
+
+A source hash is useful for connecting a remote check to a local file, but it is not a proof certificate by itself. The authoritative evidence is the checked declaration bundle in its recorded environment. A receipt should not claim cryptographic attestation unless the service actually provides one. The experiment summaries in this archive are explicitly transcribed tool-result summaries, not signed service attestations.
+
+\subsection{Exact-source replay}
+
+Pretty printing may omit implicit arguments or choose notation that elaborates differently in another scope. Export sufficiently explicit names, universe arguments, binders, and helper declarations. Re-elaborate that exported source in a fresh validation context and compare the resulting candidate with the authorized native value under the declared comparison policy. If direct equality is inconvenient, prove the contract afresh for the exported declaration.
+
+Do not assume that two identical strings have interchangeable typed provenance. A local identifier may resolve to different constants or dictionaries, and a declaration's universe instantiation may differ despite similar text. Preserve the source owner and origin through normalization, display deduplication, and selection. This retains a soundness discipline already prominent in the predecessor's internals~\cite{internals}.
+
+\subsection{Atomic environment mutation}
+
+Publishing a recursive implementation can add auxiliary definitions, equation theorems, and a correctness theorem. Stage the complete bundle in an isolated environment. If compilation, proof checking, policy audit, or source replay fails, publish nothing. On success, add the bundle in dependency order and record a single publication transaction.
+
+Environment caches should use persistent revisions. If an imported module, local instance, component registration, or semantic option changes, invalidate affected queries. A proof of an unchanged-looking proposition in an earlier environment is not automatically a proof under the new meaning of all referenced names. Stable hashes and exact dependency tracking make invalidation selective without making it speculative.
+
+\section{Operational safety and resource behavior}
+\label{sec:operations}
+
+Use three independent controls: logical work budgets, wall-clock deadlines, and process-level resource limits. Heartbeats are useful but do not account for every external computation, compilation step, or IO wait. A deadline needs cancellation that actually stops the relevant worker or process tree. Solver timeouts must not leave stale responses that can be attached to the next request.
+
+A task scheduler should produce periodic structured progress: active lane, explored plans, verified candidates, disproved candidates, pending proofs, memory use, and the reason for a pause. Avoid overwhelming the user with every unification failure. A compact failed-attempt explanation might say: ``Both list constructors were considered; the cons branch is waiting for a recursive result at a smaller index; no applicable recursion scheme is enabled.''
+
+Persist only closed plans and origin metadata across worker restarts. A raw \code{MVarId} from a dead process has no usable authority. In-memory snapshots can be efficient and persistent, but their lifetime is the owning environment and toolchain. A long-lived daemon should separate project identities and avoid silently reusing declarations compiled against a different Lean release.
+
+The resource ledger should separately count synthesis and proof work. A candidate that is easy to generate but expensive to verify may be less useful interactively than a slightly larger program with a short certificate. The ranking model can learn that preference, but the completeness lane must not permanently exclude expensive proofs solely because an early estimate was pessimistic.
+
+\section{Practical coverage and deliberate boundaries}
+\label{sec:coverage}
+
+\begin{longtable}{@{}L{0.28\textwidth}L{0.41\textwidth}L{0.23\textwidth}@{}}
+\toprule
+Family & Principal algorithms & Initial status target \\
+\midrule\endhead
+Arrows and higher-order plumbing & Native introductions, exact reuse, application spines & Core milestone \\
+Products, sums, records & Constructor search, projections, case analysis & Core milestone \\
+Dependent pairs and subtypes & Coupled witness/proof forest, relations & Core milestone \\
+Finite indexed families & Native index refinement, dependent elimination & Early extension \\
+Polymorphic and universe-polymorphic callbacks & Exact telescopes and levels; bounded type invention & Early extension \\
+Type-class-based components & Native instance synthesis plus explicit dictionary identity & Early extension \\
+Lists and ordinary trees & Registered folds; generated structural sketches & Recursion milestone \\
+Accumulator algorithms & Carrier invention, invariant templates, strengthened motives & Advanced extension \\
+Well-founded or mutual recursion & Explicit schemes and checked decrease obligations & Advanced extension \\
+Quotients and abstract mathematics & Library reuse, lifting proofs, permitted noncomputable profile & Selective support \\
+Type-valued programs & Bounded native type-expression synthesis and recursion & Explicit opt-in grammar \\
+Effectful programs & Pure models, trace specifications, optional sandboxed evaluation & Separate policy layer \\
+Arbitrary theorems or invariants & General proof search and optional learned proposals & No uniform coverage claim \\
+\bottomrule
+\end{longtable}
+
+The phrase ``a large fraction of types that occur in practice'' needs a workload definition. A corpus of data-transformation APIs has different needs from a corpus of algebraic theorems or effectful systems code. Report coverage by family, with exact imports, provider inventories, contracts, and sketch assistance. A single overall percentage conceals more than it explains.
+
+The strongest practical leverage is likely to come from combining component reuse, native dependent constraints, and a modest library of verified recursion schemes. This is an engineering hypothesis, not a measured result of the present experiments. The benchmark plan below is intended to test it rather than assume it.

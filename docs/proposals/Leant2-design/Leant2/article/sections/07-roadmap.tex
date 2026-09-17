@@ -1,0 +1,200 @@
+\section{Specialized accelerators and learning}\label{sec:accelerators}
+
+\subsection{A native propositional-search lane}
+
+Djinn's logical-search heritage remains useful. Implement a native
+proof-producing propositional solver as a specialized lane, using a focused or
+contraction-controlled calculus for its precisely reified fragment. The
+reification records how every connective and atom maps to an exact Lean type
+or proposition. A positive derivation is translated into a Lean term and
+checked. This can be much cheaper than unconstrained enumeration for pure
+higher-order plumbing.
+
+Do not reuse a propositional decision procedure as a universal decision
+procedure for dependent inhabitation. A case where the reification deliberately
+abstracts a dependent family as an atom may still produce a valid positive
+term after reconstruction, but failure of the abstraction is not a full-Lean
+emptiness result. The fragment certificate must say what was represented and
+what was omitted. This preserves the distinction between the predecessor's
+logical lane and its broader bounded synthesis extensions~\cite{djex-readme}.
+
+Some polymorphic impossibilities have direct Lean certificates. For example,
+an alleged value of
+\code{forall A B : Type, A -> B} can be specialized to an inhabited source and
+an empty target to derive a contradiction. That is a genuine semantic
+refutation in the stated context. It should be distinguished from both bounded
+search failure and non-derivability of an unrelated propositional abstraction.
+
+\subsection{Finite synthesis and arithmetic templates}
+
+Small finite domains admit an additional exact route: enumerate or solve a
+finite truth table, reify it as a Lean expression, and prove coverage of the
+domain. For bounded bitvector adapters and finite state transitions, a SAT/SMT
+choice grammar can be effective. The relevant completeness bound includes the
+permitted expression grammar and domain enumeration, not just the solver's
+Boolean search.
+
+For arithmetic functions, use typed templates such as affine expressions,
+piecewise affine expressions with a bounded number of guards, and polynomial
+forms of bounded degree. Solver results instantiate coefficients; Lean proves
+the resulting universal specification in the supported theory. A found formula
+can be useful even when the grammar is incomplete. A failed coefficient search
+cannot exclude a non-template solution.
+
+\subsection{Optional learned proposal ranking}
+
+A learned model can rank providers, suggest generalized motives, or propose
+small sketches. Its output should enter the same typed-plan interface as any
+other heuristic rule. It cannot change the request's policy, add a hypothesis,
+or turn a raw prediction into a proof.
+
+Training examples should include failed partial branches and their validated
+failure reasons, not just successful final programs. The controller can learn
+which obligation order reduces branching or which invariant grammar to try
+first. Keep a reproducible nonlearned reference lane and report ablations;
+otherwise a change in the model silently changes the effective synthesis
+language. No model is required for the initial Leant2 implementation.
+
+\section{Evaluation: measuring practical coverage honestly}\label{sec:evaluation}
+
+\subsection{Benchmark requests, not screenshots}
+
+Each benchmark records the original type, local context, exact universes,
+contract, imports, allowed term and proof providers, semantic policy, and
+resource bounds. Preserve binder order and dictionary selections. A easier
+variant that succeeds is a useful diagnostic but remains a different benchmark.
+
+Use at least four complementary strata: provider-free structural tasks;
+realistic library-adapter tasks; dependent/indexed construction; and
+behavior-sensitive recursive programs. Include proofs and law-carrying
+structures without allowing the relevant completed target declaration itself
+to become a provider. Keep effectful and noncomputable profiles in separate
+strata because their success criteria differ.
+
+Hold out projects or families of related types, not merely random rows from a
+corpus containing near-duplicate signatures. A solution that memorizes the
+standard term for a familiar Church signature should not be mistaken for
+coverage of arbitrary dependent data. Conversely, legitimate library reuse is
+valuable and should be measured in its own stratum rather than prohibited in
+all evaluations.
+
+\subsection{Metrics and controls}
+
+Report the fraction of original requests with verified implementations, not
+the fraction for which some type-correct term was emitted. Separate finite
+example contracts from universal contracts; separate supplied sketches from
+fully synthesized programs. Record first verified result, explored alternatives,
+proof time, search time, peak memory, generated-code complexity, and the selected
+assumption profile. Report medians and tails, not only the best examples.
+
+The most informative controls exercise boundaries:
+\begin{itemize}
+\item Wrong total programs at the exact type, with actual observed/proved
+rejection; false contracts with evidence that the predicate check ran.
+\item Alpha-renaming, binder permutation with appropriately transformed types,
+fresh universe names, and two distinguishable dictionaries of one class type.
+\item Metavariable assignment leakage, stale environment generations, invalid
+cache reuse after a contract change, and source re-elaboration under changed
+instances.
+\item Impossible indexed branches, nondefinitional arithmetic casts, and
+attempted recursion without a decrease capability.
+\item Solver unknown, malformed certificates, worker crashes, cancelled
+requests, and late replies from obsolete solver frames.
+\end{itemize}
+
+Ablations should disable one mechanism at a time: continuation-aware
+backtracking, result-head indexing, contract propagation, proof-carrying
+motives, length abstractions, retained observation classes, or learned ranking.
+Keep the same original request and budget. The finite experiment already
+provides two such controls, but production conclusions require the wider
+benchmark suite.
+
+\subsection{Metamorphic and generated tests}
+
+Generate well-typed terms in a restricted grammar, erase selected subterms to
+make synthesis requests, and check whether the declared bound includes the
+known witness. This tests relative coverage without requiring a human oracle
+for every case. Transform the requests by alpha-renaming, universe renaming,
+wrapping in equivalent structures, or adding irrelevant locals. Changes in
+performance are permissible; changes in verified meaning are not.
+
+Use deliberately different-but-same-typed values to test evidence identity.
+For dependent terms, generate a first component and then the type of the second
+component, rather than independently generating ill-typed pairs and blaming
+the synthesizer for rejecting them. Keep generated counterexample input codecs
+and proof of validity in the test artifact.
+
+\section{Implementation sequence and acceptance gates}\label{sec:roadmap}
+
+\begin{longtable}{@{}L{0.12\linewidth}L{0.34\linewidth}L{0.43\linewidth}@{}}
+\caption{A Lean-only delivery sequence. Gates describe evidence, not dates.}\\
+\toprule
+Stage & Deliverable & Acceptance gate \\
+\midrule
+\endfirsthead
+\toprule Stage & Deliverable & Acceptance gate \\\midrule
+\endhead
+\bottomrule\endfoot
+M0 & Exact request/accepted-result protocol; LeanBridge; transaction tests; source export. & Fresh declaration checks reject unresolved holes, extra premises, stale handles, and forbidden dependencies. \\
+M1 & Local and provider spine search; nested polymorphism; coupled goals; basic proof services; explicit scheduler. & Original-type replay for rank-N, independent universes, strict implicits, dictionaries, and contract-driven backtracking. \\
+M2 & Generic constructors, dependent cases, transport search, indexed library retrieval. & User-defined indexed families and context-dependent elimination; no handwritten case skeleton counted as automatic discovery. \\
+M3 & Recursor schemas, proof-carrying motives, contract propagation, typed CEGIS and first certified domains. & Provider-free map/append/reverse/filter-style tasks with universal contracts, retained alternatives, and valid negative controls. \\
+M4 & Generalized motives, accumulator/measure synthesis, well-founded and selected mutual recursion; effect-specific adapters. & Original recursive requests pass program, contract, and termination checks; cost/assumption profiles remain explicit. \\
+M5 & Wider project evaluation, optimized indexes/caches, optional SMT and learned ranking, robust editor/REPL integration. & Holdout benchmarks, failure accounting, bounded-memory operation, reproducible source export, and documented version support. \\
+\end{longtable}
+
+M0 and M1 should not depend on Z3, a learned model, or a Haskell service. The
+microprototype is an experiment toward M1, not a delivery of M0's full
+acceptance infrastructure. M2 and M3 provide the largest semantic gains over a
+type-projection architecture: generic dependent construction and recursion
+whose correctness obligations influence the program as it is built.
+
+Porting the predecessor's whole module structure is not a prerequisite. Reuse
+its test intent, acceptance distinctions, and useful logical algorithms; keep
+its Haskell implementation as a historical comparison executable only when
+needed for measurement. There is no architectural requirement to preserve a
+Haskell frontend or a neutral Haskell-compatible public API in Leant2.
+
+\subsection{The highest-risk implementation choices}
+
+The first risk is \emph{state coupling}: an engine can produce individually
+plausible subproofs while mishandling shared assignments. Address it with the
+continuation invariant and adversarial tests before optimizing the queue.
+The second is \emph{recursive generalization}: most useful recursive synthesis
+failures will not be fixed by deeper blind enumeration. Invest in typed
+motive, accumulator, and measure grammars with proof obligations.
+
+The third is \emph{proof bottlenecks}. A correct program whose contract is
+beyond the configured proof methods remains unresolved. Keep its candidate
+and residual proof state, and distinguish that from program-construction
+failure. The fourth is \emph{scaling exactness}: environment-aware caches,
+provider retrieval, and branch snapshots must be measured under large imports
+without weakening their identity contracts.
+
+These are concrete engineering and research tasks, not reasons to weaken the
+goal to a Haskell-shaped fragment. The architecture isolates them so that each
+can be improved and evaluated without rewriting the semantic foundation.
+
+\section{Conclusion}
+
+Leant2 should synthesize \emph{typed programs with attached obligations}, not
+strings that resemble inhabitants. Exact Lean expressions eliminate an
+unnecessary semantic projection, while explicit search plans preserve control,
+reproducibility, and scheduling. Dependent telescopes supply the right local
+constraints; contracts distinguish inhabitants; recursors supply legal
+recursion; theorem-backed abstractions eliminate impossible choices; and the
+kernel checks the final program/proof pair.
+
+The decisive implementation principle is that all these components constrain
+the same object. A program hole, its dictionary choice, its index, its recursive
+invariant, its behavioral observations, and its proof must not drift into
+parallel approximations that can be recombined by name or printed text. The
+continuation-aware Lean experiment and the observation-deduplication ablation
+show two small but concrete consequences of this principle.
+
+The recommended starting point is therefore a native exact-expression core
+with strong transaction and acceptance boundaries, followed quickly by generic
+dependent elimination and proof-carrying recursion. That gives Leant2 a route
+to substantially broader practical Lean coverage without making universal
+inhabitation, solver omniscience, or unmeasured performance promises part of its
+contract.

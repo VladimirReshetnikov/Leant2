@@ -1,0 +1,64 @@
+{
+  "kind": "remote-check-summary",
+  "source": "lean/FiniteCegis.lean",
+  "service": "AXLE",
+  "transport": "Wolfram URLRead",
+  "environment": "lean-4.34.0",
+  "lean_version_reported": "4.34.0",
+  "request_id": "c3473f01-5b7a-4543-9cb4-294ebeb2eda2",
+  "okay": true,
+  "failed_declarations": [],
+  "lean_errors": [],
+  "tool_errors": [],
+  "sourceEchoMatch_trimmed": true,
+  "cached_response": false,
+  "timings_ms": {
+    "parse": 1942,
+    "total": 1950,
+    "request": 2109
+  },
+  "executor_commit": "4e4d05b692e56b4d928ac95c4f783f411eadabba",
+  "executor_docker_image_id": "sha256:bef56e9c4dd4d8de7bfc8916c6d6199f6936e841100716b1b5ea9012b37cb86c",
+  "executor_artifact_sha256": "127b8dcb3bbc7cfa7861743f512fbe955bd8a35e940d6f2959d02327a7aa8520",
+  "mathlib_revision": null,
+  "warnings": [
+    "AXLE recommends Mathlib.Tactic/default import Mathlib; source import Lean was retained."
+  ],
+  "axioms": {
+    "verify_sound": [
+      "propext"
+    ],
+    "all_found": [
+      "propext"
+    ],
+    "all_correct": [
+      "propext"
+    ],
+    "generatedXor": [],
+    "generatedXor_correct": []
+  },
+  "scope": "16 two-input Boolean truth tables; 208 syntax-tree candidates of node size <=4; exhaustive four-input verifier; universal correctness and successful-search theorems checked by ordinary decide, not native_decide.",
+  "outputs": {
+    "pool_length": 208,
+    "rounds_by_mask": [
+      3,
+      4,
+      5,
+      3,
+      5,
+      3,
+      5,
+      5,
+      4,
+      5,
+      2,
+      5,
+      1,
+      5,
+      4,
+      2
+    ],
+    "generatedXor": "(Circuit.left.xor Circuit.right).eval"
+  },
+  "provenance": "Hand-transcribed summary of fields returned by the actual Wolfram/AXLE call; not a raw or signed HTTP response."
+}

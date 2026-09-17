@@ -1,0 +1,138 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[margin=0.88in,headheight=15pt,footskip=27pt]{geometry}
+\usepackage{fontspec}
+\setmainfont{lmroman10-regular.otf}[BoldFont=lmroman10-bold.otf,
+ ItalicFont=lmroman10-italic.otf,BoldItalicFont=lmroman10-bolditalic.otf]
+\setsansfont{lmsans10-regular.otf}[BoldFont=lmsans10-bold.otf,
+ ItalicFont=lmsans10-oblique.otf,BoldItalicFont=lmsans10-boldoblique.otf]
+\setmonofont{DejaVu Sans Mono}[Scale=0.80]
+\usepackage{amsmath,amssymb,amsthm,mathtools,stmaryrd}
+\usepackage{microtype}
+\usepackage{booktabs,longtable,tabularx,array}
+\usepackage{graphicx,xcolor,tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc}
+\usepackage{enumitem,fancyhdr,titlesec,needspace}
+\usepackage{fvextra}
+\usepackage[most]{tcolorbox}
+\usepackage{xurl,hyperref,bookmark}
+\usepackage{caption}
+\definecolor{ink}{HTML}{202820}
+\definecolor{accent}{HTML}{435A46}
+\definecolor{muted}{HTML}{626962}
+\definecolor{soft}{HTML}{F3F4ED}
+\definecolor{rule}{HTML}{B7BEB1}
+\hypersetup{colorlinks=true,linkcolor=accent,citecolor=accent,urlcolor=accent,
+ pdftitle={Leant2: Lean-Native Synthesis of Programs and Their Contracts},
+ pdfauthor={OpenAI},pdfsubject={Architecture, algorithms, and reproducible prototype experiments}}
+\urlstyle{same}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt plus 1pt minus 1pt}
+\setlength{\emergencystretch}{3em}
+\setlist{nosep,leftmargin=1.6em,topsep=4pt}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+\titleformat{\section}{\Large\sffamily\bfseries\color{accent}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\sffamily\bfseries}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{18pt}{7pt}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small\sffamily Leant2\enspace /\enspace Technical design}
+\fancyhead[R]{\small\sffamily\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0pt}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\Expr}{\code{Expr}}
+\newcommand{\MetaM}{\code{MetaM}}
+\newcommand{\Sort}{\mathsf{Sort}}
+\newcommand{\Prop}{\mathsf{Prop}}
+\newcommand{\Type}{\mathsf{Type}}
+\newcommand{\G}{\Gamma}
+\newcommand{\E}{\mathcal E}
+\newcommand{\Q}{\mathcal Q}
+\newcommand{\C}{\mathcal C}
+\newcommand{\R}{\mathcal R}
+\newcommand{\Budget}{\mathcal B}
+\newcommand{\FV}{\operatorname{FV}}
+\newcommand{\Comp}{\operatorname{Comp}}
+\newcommand{\Obs}{\operatorname{Obs}}
+\newcommand{\dom}{\operatorname{dom}}
+\newcommand{\whnf}{\operatorname{whnf}}
+\newcommand{\judges}{\vdash}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\DefineVerbatimEnvironment{Code}{Verbatim}{fontsize=\small,breaklines=true,
+ breakanywhere=true,frame=leftline,framesep=7pt,rulecolor=\color{rule},
+ xleftmargin=7pt,tabsize=2}
+\AddToHook{env/Code/before}{\Needspace{6\baselineskip}}
+\newtcolorbox{designbox}[1]{enhanced,breakable,colback=soft,colframe=rule,
+ boxrule=0.5pt,arc=1mm,left=2.5mm,right=2.5mm,top=2mm,bottom=2mm,
+ title={#1},coltitle=ink,colbacktitle=soft,fonttitle=\bfseries\sffamily}
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{invariant}[proposition]{Invariant}
+\newtheorem{definition}[proposition]{Definition}
+\theoremstyle{remark}\newtheorem{remark}[proposition]{Remark}
+\newcommand{\repoLeant}{\href{https://github.com/VladimirReshetnikov/Leant/tree/6bf05ad78c467989e68290f2d08bbed40802d485}{Leant, revision 6bf05ad7}}
+\newcommand{\repoDjex}{\href{https://github.com/VladimirReshetnikov/Djex/tree/e8778f4ebd63e1f9b9b410fa4de8d14a8a04c9e5}{Djex, revision e8778f4e}}
+\begin{document}
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+\vspace*{0.45in}
+{\sffamily\small\color{accent} ARCHITECTURE\quad /\quad ALGORITHMS\quad /\quad EXPERIMENTS}\par
+\vspace{0.45in}
+{\Huge\sffamily\bfseries Leant2}\par
+\vspace{0.15in}
+{\LARGE\sffamily Lean-Native Synthesis of\par Programs and Their Contracts}\par
+\vspace{0.32in}
+{\large A technical design for a Lean-only successor\par to Leant and Djex}\par
+\vspace{0.3in}
+{\normalsize Prepared for Vladimir Reshetnikov\par September 17, 2026}\par
+\vspace{0.45in}
+\begin{abstract}
+We propose a program synthesizer whose semantic language is Lean itself: exact
+universe-polymorphic expressions, dependent telescopes, inductive families,
+class evidence, and behavioral propositions. Its central operation is not
+``inhabit a simplified type, then test the rendering,'' but a transactional
+search for a program and a proof of its exact contract. The search combines
+bidirectional term construction, dependency-aware proof obligations,
+recursor-derived recursion schemas, library specifications, counterexample
+guidance, and optional certified theory solvers. A separate acceptance path
+checks closed declarations in the kernel and records their assumptions.
+
+The design specifies the boundaries that make such a system implementable:
+which state must be backtracked, how polymorphic applications are instantiated,
+how dependent elimination creates motives and transports, when an abstraction
+may prune a sketch, and why finite-example equivalence must not permanently
+delete alternatives. It also gives an implementation sequence and a benchmark
+protocol for measuring practical coverage without changing the original goals.
+
+Two accompanying experiments ground the proposal. A small Lean-native search
+engine passed fifteen complete synthesis cases and two supplied elimination
+skeletons with synthesized branches on Lean 4.34.0. A finite list-fold experiment
+compares ordinary and length-guided counterexample search; separate Lean proofs
+verify the length abstraction and the exact selected reverse program. These
+experiments validate mechanisms, not a completed Leant2 implementation or a
+measured success rate on arbitrary Lean projects.
+\end{abstract}
+\vfill
+{\small\color{muted} Source snapshots: Leant \code{6bf05ad7}; Djex \code{e8778f4e}.\par
+Experimental checker: Lean 4.34.0 via AXLE, invoked through Wolfram Language.\par
+The archive includes source, experiment scripts, results, and check summaries.}
+\end{titlepage}
+\hypersetup{pageanchor=true}
+\pagenumbering{roman}
+{\small\linespread{0.9}\selectfont\setlength{\parskip}{0pt}
+\tableofcontents}
+\newpage
+\pagenumbering{arabic}
+\input{sections/01-foundation}
+\input{sections/02-search}
+\input{sections/03-dependent-recursion}
+\input{sections/04-behavior}
+\input{sections/05-engineering}
+\input{sections/06-experiments}
+\input{sections/07-roadmap}
+\appendix
+\input{sections/08-appendices}
+\input{references}
+\end{document}

@@ -1,0 +1,92 @@
+{
+  "synthesis": {
+    "status": "passes_finite_domain_not_universally_proved",
+    "grammar_nodes_bound": 7,
+    "grammar_terms": 471,
+    "finite_domain_size": 40,
+    "candidate_checks_including_revisits": 20,
+    "candidate_step": "([x] ++ acc)",
+    "history": [
+      {
+        "candidate": "acc",
+        "examples_before": [
+          []
+        ],
+        "counterexample": [
+          -1
+        ]
+      },
+      {
+        "candidate": "[x]",
+        "examples_before": [
+          [],
+          [
+            -1
+          ]
+        ],
+        "counterexample": [
+          -1,
+          -1
+        ]
+      },
+      {
+        "candidate": "(acc ++ [x])",
+        "examples_before": [
+          [],
+          [
+            -1
+          ],
+          [
+            -1,
+            -1
+          ]
+        ],
+        "counterexample": [
+          -1,
+          0
+        ]
+      },
+      {
+        "candidate": "([x] ++ acc)",
+        "examples_before": [
+          [],
+          [
+            -1
+          ],
+          [
+            -1,
+            -1
+          ],
+          [
+            -1,
+            0
+          ]
+        ],
+        "counterexample": null
+      }
+    ],
+    "lean_universal_proof_file": "../prototype/ReverseCertificate.lean"
+  },
+  "regressions": {
+    "observational_equality_is_not_global_equality": {
+      "initial_tests": 3,
+      "distinguishing_input": [
+        0,
+        1
+      ],
+      "identity_output": [
+        0,
+        1
+      ],
+      "reverse_output": [
+        1,
+        0
+      ]
+    },
+    "repeated_hole_requires_functional_consistency": {
+      "consistent_assignments": 0,
+      "incorrect_independent_assignments": 1
+    },
+    "all_assertions_passed": true
+  }
+}

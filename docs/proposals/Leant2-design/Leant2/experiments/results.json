@@ -1,0 +1,141 @@
+{
+  "grammar": "step ::= nil | single(head) | tailResult | append(step, step)",
+  "max_ast_nodes": 9,
+  "generated_candidates": 3873,
+  "candidates_by_size": {
+    "1": 3,
+    "3": 9,
+    "5": 54,
+    "7": 405,
+    "9": 3402
+  },
+  "length_viable_candidates": 354,
+  "length_pruned_candidates": 3519,
+  "summary_concrete_checks": 19365,
+  "plain_cegis": {
+    "status": "finite_corpus_pass",
+    "rounds": [
+      {
+        "bank": [
+          [],
+          [
+            0
+          ]
+        ],
+        "observation_classes": 6,
+        "consistent_candidates": 1309,
+        "selected_step": "Step.single",
+        "selected_size": 1,
+        "counterexample": [
+          0,
+          0
+        ]
+      },
+      {
+        "bank": [
+          [],
+          [
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "observation_classes": 16,
+        "consistent_candidates": 354,
+        "selected_step": "(Step.append Step.single Step.tail)",
+        "selected_size": 3,
+        "counterexample": [
+          0,
+          1
+        ]
+      },
+      {
+        "bank": [
+          [],
+          [
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "observation_classes": 58,
+        "consistent_candidates": 177,
+        "selected_step": "(Step.append Step.tail Step.single)",
+        "selected_size": 3,
+        "counterexample": null
+      }
+    ],
+    "selected_step": "(Step.append Step.tail Step.single)",
+    "corpus_size": 121
+  },
+  "length_guided_cegis": {
+    "status": "finite_corpus_pass",
+    "rounds": [
+      {
+        "bank": [
+          [],
+          [
+            0
+          ]
+        ],
+        "observation_classes": 1,
+        "consistent_candidates": 354,
+        "selected_step": "(Step.append Step.single Step.tail)",
+        "selected_size": 3,
+        "counterexample": [
+          0,
+          1
+        ]
+      },
+      {
+        "bank": [
+          [],
+          [
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "observation_classes": 2,
+        "consistent_candidates": 177,
+        "selected_step": "(Step.append Step.tail Step.single)",
+        "selected_size": 3,
+        "counterexample": null
+      }
+    ],
+    "selected_step": "(Step.append Step.tail Step.single)",
+    "corpus_size": 121
+  },
+  "permanent_observation_dedup_control": {
+    "status": "finite_grammar_exhausted",
+    "rounds": [
+      {
+        "bank": [
+          [],
+          [
+            0
+          ]
+        ],
+        "observation_classes": 1,
+        "consistent_candidates": 1,
+        "selected_step": "(Step.append Step.single Step.tail)",
+        "selected_size": 3,
+        "counterexample": [
+          0,
+          1
+        ]
+      }
+    ]
+  },
+  "interpretation": "Finite corpus passes are not universal correctness proofs. See the Lean certificate for the exact selected AST."
+}

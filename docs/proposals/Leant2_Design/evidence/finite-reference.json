@@ -1,0 +1,76 @@
+{
+  "kind": "independent Python computation, not a Lean proof",
+  "layer_counts_including_zero": [
+    0,
+    2,
+    2,
+    10,
+    26,
+    114,
+    402,
+    1722,
+    6890
+  ],
+  "total_candidates": 9168,
+  "proposals": [
+    {
+      "expression": "x",
+      "counterexample": [
+        false,
+        true
+      ]
+    },
+    {
+      "expression": "y",
+      "counterexample": [
+        true,
+        false
+      ]
+    },
+    {
+      "expression": "(x || y)",
+      "counterexample": [
+        true,
+        true
+      ]
+    },
+    {
+      "expression": "!((x && y))",
+      "counterexample": [
+        false,
+        false
+      ]
+    },
+    {
+      "expression": "((x || y) && !((x && y)))",
+      "counterexample": null
+    }
+  ],
+  "counterexamples": [
+    [
+      false,
+      true
+    ],
+    [
+      true,
+      false
+    ],
+    [
+      true,
+      true
+    ],
+    [
+      false,
+      false
+    ]
+  ],
+  "result": "((x || y) && !((x && y)))",
+  "truth_table": [
+    false,
+    true,
+    true,
+    false
+  ],
+  "first_full_solution_size": 8,
+  "observational_pruning_counterexample_checked": true
+}

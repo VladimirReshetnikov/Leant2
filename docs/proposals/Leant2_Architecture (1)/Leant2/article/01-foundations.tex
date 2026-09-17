@@ -1,0 +1,136 @@
+\section{Starting point: retain the semantics, replace the approximation}
+\label{sec:baseline}
+\subsection{What was inspected}
+The source baseline for Leant is commit
+\begin{center}\small\code{6bf05ad78c467989e68290f2d08bbed40802d485}.\end{center}
+Its \code{lib/Djex} submodule identifies Djex commit
+\begin{center}\small\code{e237e8667190aff38faaa590ce5b12afbffac452}.\end{center}
+The inspection covered the current READMEs, Leant's synthesis-internals document and fragment translator, Djex's architecture guide, and the earlier Lean rewrite analysis. The READMEs and architecture guide also contain historical acceptance reports. Their counts are repository evidence, not tests rerun for this article. References give the exact Leant snapshot and distinguish it from documentation read on the default branch.\cite{leant,fragment,internals,djex,djexarchitecture,rewrite}
+
+The current system is substantially more capable than an elementary simply typed lambda-term enumerator. Djex combines a Dyckhoff-style propositional engine with a heuristic expression-search engine; its higher-rank work retains nested quantifiers, source selections, and dictionary obligations. Leant reconstructs and checks Lean candidates, and its behavioral layer maintains exact candidate/evidence associations. A successor should preserve these achievements rather than present them as newly invented features.\cite{djex,internals,dyckhoff}
+
+The source of the architectural restriction is particularly clear in \code{src/Leant/Synth/Fragment.hs}. The current bridge elaborates a Lean expression, serializes a logical projection, and represents it in the Haskell search world. Its own documentation states that term-indexed applications remain opaque. Some inductive structures are expanded under restrictions, while other dependent formulas are transported as uninterpreted cargo. This can preserve sound positive reconstruction, but it prevents the search engine from using information that the original Lean type already contains.\cite{fragment}
+
+For example, an index in \code{Vec A (n + 1)} is not merely a label: it can rule out the empty constructor, determine a branch's index equations, and constrain a recursive result. A \code{Subtype} predicate can determine which apparently interchangeable natural-number witness must be chosen. A dictionary argument can carry executable data even when another dictionary has exactly the same class type. These observations motivate a native search representation.
+
+\subsection{Preserve, remove, and redesign}
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}L{0.19\textwidth}YYY@{}}
+\toprule
+Concern & Preserve & Remove & Redesign for Leant2 \\
+\midrule
+Typing & Exact source identity and checked reconstruction & Haskell-kind approximation of Lean types & Native dependent constraints and levels \\
+Search & Logical search plus ranked alternatives & Compatibility-driven engine boundaries & Shared correlated obligations and several proposal lanes \\
+Behavior & Exact candidate ownership and counterexample replay & String/sidecar reconstruction as a semantic crossing & Direct specification terms and checked abstract summaries \\
+Results & Budgets and qualified negative outcomes & Ambiguous ``no implementation'' status & Explicit typed, tested, proved, refuted, and unknown events \\
+Execution & Project-local worker isolation & Haskell frontend and public Haskell API obligations & Lean library, tactic, commands, and version-matched worker \\
+\bottomrule
+\end{tabularx}
+\caption{The successor is a redesign, not a compatibility port.}
+\end{table}
+
+The earlier rewrite report recommends pure serializable search IR and uses \MetaM{} primarily at preparation and lowering boundaries. That is a defensible migration strategy for retaining the existing engines. Leant2 should take a different step: retain a pure \emph{control and recipe} representation, but allow native metavariables within isolated branches. Serialization does not require replacing dependent types with another calculus. Deterministic replay does not require pretending that Lean unification is a pure operation.\cite{rewrite}
+
+The earlier report's runtime comparisons are not adopted as measured facts here. Branch snapshots, reference sharing, replay, and retained search frontiers need profiling under the proposed implementation. Nor does moving a metaprogram into Lean automatically make its search algorithm a theorem: a correct publication checker can keep a buggy proposer outside the logical trust boundary.
+
+\section{The synthesis contract}
+\label{sec:contract}
+\subsection{A query is more than a type}
+Represent a fully prepared problem mathematically as
+\[
+ Q=(E,\Gamma,T,\Phi,\mathcal G,\Pi,B),
+\]
+where $E$ is the imported environment; $\Gamma$ is an ordered dependent telescope of local declarations and local instances; $T:\mathrm{Sort}\,u$ is the target; $\Phi:T\to\mathrm{Prop}$ is the behavioral obligation; $\mathcal G$ describes permitted construction operations and providers; $\Pi$ is the acceptance policy; and $B$ is the resource budget. In type-only mode, $\Phi$ is the constantly true proposition.
+
+A certified answer consists of terms satisfying
+\begin{equation}\label{eq:answer}
+ \ctx\vdash t:T,
+ \qquad
+ \ctx\vdash p:\Phi(t).
+\end{equation}
+For $T:\mathrm{Type}\,u$, a subtype is often a convenient internal packaging. The general API should instead expose the two checked judgments: proof goals and sort-polymorphic targets need not be forced into a \code{Subtype}-shaped public representation.
+
+A specification can be pointwise, relational, algebraic, or a conjunction. For example,
+\[
+ T=\mathrm{List}\,\alpha\to\mathrm{List}\,\alpha\to\mathrm{List}\,\alpha,
+ \quad
+ \Phi(f)=\forall x\,y,\ f\,x\,y=x\mathbin{++}y.
+\]
+This is deliberately a component-reuse specification when \code{List.append} is an allowed provider. To measure algorithm discovery, remove the exact solution and equivalent high-level providers from $\mathcal G$, while keeping the semantic specification. A type such as $\mathrm{List}\,\alpha\to\mathrm{List}\,\alpha$ alone does not distinguish identity, reversal, deletion, or duplication.
+
+Finite input/output observations belong to a separate object $X$, not to an implicit weakening of $\Phi$. The user can request an example-only synthesis problem, but the result must then say that the supplied examples were checked. A universal specification is not replaced by the examples collected while searching for its implementation.
+
+\subsection{Freeze the intended problem}
+Elaborate the target and specification in the actual project environment before search. Preserve explicit universe parameters, binder visibility, local let-values, instance arguments, and the user-selected options. Unknown identifiers must not silently become unintended parameters in a standalone synthesis command; use a strict preparation mode and show inferred parameters explicitly.
+
+There is a subtlety inside an existing tactic proof. A target can contain metavariables owned by its parent elaborator. The adapter must classify these as either \emph{rigid inherited inputs} or \emph{explicitly assignable parent obligations}. Leant2-created holes are branch-owned. A successful branch may return an assignment delta for the second category, but only through the parent transaction. It must not specialize an originally universal declaration merely to make synthesis easier. Standalone fully typed declarations should ordinarily enter search with no unresolved inherited inference holes.
+
+The frozen query is a semantic record, not a pretty-printed string. After a candidate is found, validate it against that record, not against a goal reconstructed from the candidate's inferred type. This closes an otherwise easy loophole: a synthesizer could accidentally weaken or specialize its own request and then correctly prove the wrong thing.
+
+\subsection{Result types must encode the claim}
+\begin{longtable}{@{}L{0.23\textwidth}L{0.69\textwidth}@{}}
+\toprule
+Event or outcome & Meaning \\
+\midrule
+\endhead
+\code{TypedCandidate} & $t:T$ has been checked; the requested universal $\Phi(t)$ has not. \\
+\code{ExamplesChecked} & A checked typed candidate satisfies the explicitly identified finite observations. This is not a universal certificate. \\
+\code{Certified} & Both judgments in \eqref{eq:answer} hold under the reported environment and axiom policy. \\
+\code{LogicalRefutation} & A checked proof of $\forall t:T,\neg\Phi(t)$, or of $T\to\mathrm{False}$ in type-only mode, under the original context. \\
+\code{GrammarExhausted} & A precisely specified finite grammar/bound was exhausted, with the stated form of checked negative evidence. This says nothing about terms outside that grammar. \\
+\code{FragmentUnderivable} & A complete procedure has a certificate about a reified logical fragment. Its interpretation is recorded; it is not automatically a Lean negation. \\
+\code{Unknown} & Time, memory, proof-search, instantiation, recursion-template, or other search limits prevented a conclusion. \\
+\code{InfrastructureFailure} & A worker, toolchain, import, protocol, or solver failed. No mathematical conclusion follows. \\
+\bottomrule
+\end{longtable}
+A query may stream several typed or tested proposals before a certified one, provided those statuses are visually and programmatically distinct. In a proof script, \code{by leant2} should succeed only when its assigned term closes the actual proof obligations. A command that promises a behavioral implementation should publish the implementation and its specification theorem atomically.
+
+\section{Architecture: native semantics with replayable control}
+\label{sec:architecture}
+\subsection{The main components}
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[node distance=9mm and 8mm]
+\node[box,text width=116mm] (front) {Lean command / tactic / editor request\\Elaborate and freeze the original query};
+\node[box,text width=116mm,below=of front] (state) {Native problem store\\Environment, dependent telescope, expressions, levels, specification};
+\node[box,minimum height=16mm,below=of state,xshift=-45mm] (native) {Native structural search\\spines, cases, recursors};
+\node[box,minimum height=16mm,below=of state] (behavior) {Behavioral refinement\\examples and summaries\\typed sketches};
+\node[box,minimum height=16mm,below=of state,xshift=45mm] (proof) {Proof / retrieval lanes\\tactics and lemmas\\optional solvers};
+\node[box,text width=116mm,below=of behavior] (sched) {Correlated obligation scheduler\\branch snapshots, replay plans, alternatives, budgets};
+\node[box,text width=116mm,below=of sched] (check) {Publication checker\\original target + property, closure, dependencies, kernel checks};
+\node[box,text width=116mm,below=of check] (out) {Certified implementation and theorem / qualified diagnostic};
+\draw[flow] (front)--(state);
+\foreach \n in {native,behavior,proof}{\draw[flow] (state)--(\n);\draw[flow] (\n)--(sched);}
+\draw[flow] (sched)--(check);\draw[flow] (check)--(out);
+\end{tikzpicture}
+\caption{Proposal engines share one native problem and one acceptance path. The boxes do not denote separate type systems.}
+\end{figure}
+
+Use three distinct representations, each with a narrow purpose.
+
+\textbf{Semantic objects} are Lean expressions, universe levels, declarations, and local contexts. They describe the actual problem and candidate. \textbf{Search plans} describe operations such as introducing a binder, selecting a provider occurrence, choosing a case split, or completing a recursor branch. They can be serialized after closing over stable references. \textbf{Domain abstractions} describe, for example, list lengths or bit-vector expressions. Every abstraction has an explicit connection to the semantic objects; it never replaces their typing authority.
+
+This separation permits two execution profiles. A fast in-process profile retains native branch checkpoints. A compact frontier profile stores a checkpoint plus replay plans and reconstructs native states on demand. Both execute the same operations through the same Lean adapter. A production implementation can mix them: keep hot branches materialized and cold branches as plans.
+
+\subsection{A native hole and its dependency closure}
+A hole $h$ contains an expected type $T_h$, a local telescope $\Gamma_h$, a metavariable identity owned by its branch, an optional residual behavioral obligation, and provenance describing how it arose. The type can depend on other holes. Its dependency set is therefore not just the free variables in $T_h$: include reachable metavariables in local declaration types, local let-values, postponed constraints, and the specification.
+
+Represent the frontier as a hypergraph of construction choices and obligations. A constructor application may create several child holes and equations. Solving one child can instantiate variables appearing in the others. These children are not independent jobs merely because they have separate goal identifiers. An AND-node is an obligation to solve them under one compatible assignment; an OR-node offers alternative construction plans.
+
+The scheduler should favor a hole that is constrained by many other obligations, that exposes a cheap constructor discrimination, or that blocks several postponed problems. A useful initial score is
+\[
+ \begin{aligned}
+ \mathit{pressure}(h)={}&
+ a\,\mathit{dependentUses}(h)+b\,\mathit{knownIndexTests}(h)\\
+ &+c\,\mathit{behaviorConstraints}(h)-d\,\mathit{estimatedBranching}(h).
+ \end{aligned}
+\]
+These coefficients are heuristics, not part of soundness. Preserve deterministic tie-breaking and an independent fair lane.
+
+\subsection{Transactions have two kinds of state}
+Branch-local state includes the native metavariable context, pending goals, unification constraints, chosen provider occurrences, recursion hypotheses, and conditional behavioral facts. If an operation enters term elaboration, it also includes the relevant elaborator state: postponed synthetic metavariables, local instances, and diagnostics. Saving only a \MetaM{} checkpoint is insufficient for an operation that mutates the surrounding elaborator or environment.
+
+Query-global accounting is different. Rule applications, solver calls, consumed heartbeats, elapsed time, and rejected candidates must not be refunded when a branch is restored. Otherwise repeated failed choices can evade the budget. Maintain the budget owner outside backtrackable state. Trace output can be buffered per branch but must retain a monotonically increasing work identifier.
+
+Environment changes are rare search operations. Hold generated auxiliary declarations in a branch transaction or replayable declaration plan, rather than polluting the shared environment during every proposal. Final publication checks the complete auxiliary dependency closure before committing it.

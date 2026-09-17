@@ -1,0 +1,116 @@
+{
+  "expected_axioms": {
+    "Leant2Affine.certify": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_000": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_001": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_002": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_003": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_004": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_005": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_006": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_007": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_008": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_009": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_010": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_011": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_012": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_013": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_014": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_015": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_016": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_017": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_018": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_019": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_020": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_021": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_022": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_023": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_024": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_025": [
+      "propext",
+      "Quot.sound"
+    ],
+    "Leant2Affine.task_026": [
+      "propext",
+      "Quot.sound"
+    ]
+  }
+}
