@@ -11,11 +11,11 @@ Solving a hole never commits its value before the remaining obligations that dep
 \end{decision}
 
 \begin{decision}[Typing, behavior, and executability are separate results]\label{dec:three}
-A term may inhabit the type, satisfy the contract, and compile to acceptable executable code; these are three outcomes, not three spellings of one. A kernel-accepted recursor term can be rejected by the code generator, as several prototypes observed. Executability is a field of the result, not a consequence of typing\prov{\Ref{4},\Ref{6},\Ref{8},\Ref{9}}.
+A term may inhabit the type, satisfy the contract, and compile to acceptable executable code; these are three outcomes, not three spellings of one. A kernel-accepted recursor term can be rejected by the code generator, as several prototypes observed. Executability is a field of the result, not a consequence of typing\prov{\Pn{4},\Pn{6},\Pn{8},\Pn{9}}.
 \end{decision}
 
 \begin{decision}[Recursion enters only through typed schemas]\label{dec:recursion}
-The definition under construction is never an ordinary provider. Recursive calls are available only as \emph{capabilities} that carry the decrease evidence for a specific smaller argument, and a recursion schema records its motive, branches, and termination obligations. One proposal's first run failed precisely because unfiltered locals exposed a provisional self-reference\prov{\Ref{2}}.
+The definition under construction is never an ordinary provider. Recursive calls are available only as \emph{capabilities} that carry the decrease evidence for a specific smaller argument, and a recursion schema records its motive, branches, and termination obligations. One proposal's first run failed precisely because unfiltered locals exposed a provisional self-reference\prov{\Pn{2}}.
 \end{decision}
 
 \begin{decision}[Behavioral information has graded authority]\label{dec:graded}
@@ -31,13 +31,14 @@ Every positive result crosses one gate that reconstructs the frozen query, close
 \end{decision}
 
 \begin{decision}[Resources are never refunded by rollback]\label{dec:ledger}
-Restoring a metavariable context restores logical state only. Work charged for rule applications, unification, proof attempts, solver calls, and evaluation lives in a monotone ledger outside the snapshot. Cancellation, heartbeat exhaustion, and memory pressure are interruptions that unwind to the controller; they are never caught as ``rule not applicable''\prov{\Ref{1},\Ref{2},\Ref{5},\Ref{7},\Ref{9}}.
+Restoring a metavariable context restores logical state only. Work charged for rule applications, unification, proof attempts, solver calls, and evaluation lives in a monotone ledger outside the snapshot. Cancellation, heartbeat exhaustion, and memory pressure are interruptions that unwind to the controller; they are never caught as ``rule not applicable''\prov{\Pn{1},\Pn{2},\Pn{5},\Pn{7},\Pn{9}}.
 \end{decision}
 
 Together with Decisions~\ref{dec:single-engine} to~\ref{dec:forge}, these fix the shape of the system. Figure~\ref{fig:pipeline} shows the pipeline.
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[node distance=6mm and 8mm]
 \node[box] (fe) {Frontends\\tactic, command, REPL};
 \node[box, right=of fe] (fr) {Freeze query\\environment, telescope,\\type, contract, policy};
@@ -53,7 +54,7 @@ Together with Decisions~\ref{dec:single-engine} to~\ref{dec:forge}, these fix th
 \draw[flow] (ix) -- (se);
 \draw[flow, <->] (se) -- (pr);
 \draw[flow] (ga.south) to[out=-90,in=-20] node[below,font=\scriptsize]{rejected / deferred} (se.south east);
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption{The pipeline. Everything left of the gate is untrusted search; the gate adds nothing to what the kernel checks except refusal.}
 \label{fig:pipeline}
 \end{figure}
@@ -70,23 +71,23 @@ Q = (\E,\; U,\; \Gamma,\; T,\; \Phi,\; \Obs,\; \G,\; \Pol,\; \Bud)
 where $\E$ is the environment with its import identities and revision; $U$ is the universe-parameter context; $\Gamma$ is the ordered dependent local context, including \code{let} values and local instances; $T$ is the target with $\E;U;\Gamma \vdash T : \Sort\,u$; $\Phi$ is the optional contract with $\E;U;\Gamma, f{:}T \vdash \Phi(f) : \Prop$, taken as $\mathrm{True}$ when absent; $\Obs$ is a finite set of typed observations; $\G$ is the admitted construction grammar and provider inventory, stated in terms of constants and local terms rather than names; $\Pol$ is the trust and execution policy; and $\Bud$ is the resource policy\prov{all}.
 \end{definition}
 
-The query is elaborated once in the real project environment and frozen before search. Unknown identifiers are errors, not auto-bound implicits; universe parameters remain parameters and are never specialized; instance selection in the statement is part of the frozen question; and no metavariable owned by the caller may be assigned by search except through an explicit permission set returned as an atomic patch\prov{\Ref{5},\Ref{6},\Ref{8}}.
+The query is elaborated once in the real project environment and frozen before search. Unknown identifiers are errors, not auto-bound implicits; universe parameters remain parameters and are never specialized; instance selection in the statement is part of the frozen question; and no metavariable owned by the caller may be assigned by search except through an explicit permission set returned as an atomic patch\prov{\Pn{5},\Pn{6},\Pn{8}}.
 
 \begin{definition}[Answer]\label{def:answer}
 A verified answer to $Q$ is a pair of judgments
 \[
 \E,\Delta;\,U;\,\Gamma \vdash t : T \qquad\text{and}\qquad \E,\Delta;\,U;\,\Gamma \vdash p : \Phi(t),
 \]
-where $\Delta$ is a finite list of generated auxiliary declarations accepted in dependency order under $\Pol$. The two judgments are kept separate rather than packed into a subtype, because $T$ may live in any sort and because a proof that specializes the candidate would describe a different program\prov{\Ref{2},\Ref{3},\Ref{5},\Ref{8}}.
+where $\Delta$ is a finite list of generated auxiliary declarations accepted in dependency order under $\Pol$. The two judgments are kept separate rather than packed into a subtype, because $T$ may live in any sort and because a proof that specializes the candidate would describe a different program\prov{\Pn{2},\Pn{3},\Pn{5},\Pn{8}}.
 \end{definition}
 
 \begin{proposition}[Pointwise packaging]\label{prop:pointwise}
-If $\Phi(f) \equiv \forall x{:}A,\, R(x, f\,x)$, then a term $g : \prod_{x:A}\{y : B(x) \,//\, R(x,y)\}$ yields $f := \lambda x.\,(g\,x).\mathrm{val}$ with $\forall x, R(x, f\,x)$, and conversely, constructively. The engine registers this as a checked transformation and uses the packed form to carry the contract into recursive branches (Section~\ref{sec:recursion}); it never pattern-matches on the syntax of $\Phi$ to decide correctness\prov{\Ref{1},\Ref{3},\Ref{9}}.
+If $\Phi(f) \equiv \forall x{:}A,\, R(x, f\,x)$, then a term $g : \prod_{x:A}\{y : B(x) \,//\, R(x,y)\}$ yields $f := \lambda x.\,(g\,x).\mathrm{val}$ with $\forall x, R(x, f\,x)$, and conversely, constructively. The engine registers this as a checked transformation and uses the packed form to carry the contract into recursive branches (Section~\ref{sec:recursion}); it never pattern-matches on the syntax of $\Phi$ to decide correctness\prov{\Pn{1},\Pn{3},\Pn{9}}.
 \end{proposition}
 
 \subsection{Kinds of constraint}\label{sec:constraint-kinds}
 
-Four kinds of behavioral input are supplied independently and are never silently converted into one another\prov{\Ref{1},\Ref{7}}:
+Four kinds of behavioral input are supplied independently and are never silently converted into one another\prov{\Pn{1},\Pn{7}}:
 \begin{itemize}
 \item a \emph{hard contract} $\Phi$, which must be proved;
 \item \emph{observations} $\Obs$: typed inputs with precondition evidence and expected outputs, or a proposition about particular inputs. They refute candidates and guide search; passing them establishes only themselves;
@@ -98,7 +99,7 @@ Leant's \code{:synth f : T where P} supplies a hard contract $P$ elaborated unde
 
 \subsection{The result algebra}\label{sec:results}
 
-The nine proposals propose between five and nine result constructors. They are merged as follows; the internal representation carries orthogonal evidence fields, and the frontend may group constructors for display but the structured API preserves them\prov{\Ref{4},\Ref{6},\Ref{8},\Ref{9}}.
+The nine proposals propose between five and nine result constructors. They are merged as follows; the internal representation carries orthogonal evidence fields, and the frontend may group constructors for display but the structured API preserves them\prov{\Pn{4},\Pn{6},\Pn{8},\Pn{9}}.
 
 \begin{lstlisting}
 inductive Outcome where
@@ -114,13 +115,13 @@ inductive Outcome where
   | infrastructure (error : String)
 \end{lstlisting}
 
-Each accepted object additionally records three independent flags, \code{kernelChecked}, \code{compiled}, and \code{evaluatedOnExamples}, together with the axiom inventory of the proof and the runtime-dependency inventory of the program (Decision~\ref{dec:three}). ``Best'' candidate means best among verified candidates under a declared cost model; ``minimal'' requires an exhausted cheaper prefix and is otherwise reported as ``lowest cost found under this schedule''\prov{\Ref{6},\Ref{8}}.
+Each accepted object additionally records three independent flags, \code{kernelChecked}, \code{compiled}, and \code{evaluatedOnExamples}, together with the axiom inventory of the proof and the runtime-dependency inventory of the program (Decision~\ref{dec:three}). ``Best'' candidate means best among verified candidates under a declared cost model; ``minimal'' requires an exhausted cheaper prefix and is otherwise reported as ``lowest cost found under this schedule''\prov{\Pn{6},\Pn{8}}.
 
 The baseline mapping is: Leant's displayed candidates correspond to \code{verified} (type-only queries have $\Phi = \mathrm{True}$, so the contract proof is trivial); ``provably uninhabited'' corresponds to \code{impossible} or \code{fragmentUnderivable}; ``no term found'' corresponds to \code{budgetExhausted} or \code{grammarExhausted}; ``none passed'' corresponds to \code{refutedCandidate} results with no \code{verified} result.
 
 \subsection{Trust profiles}\label{sec:profiles}
 
-Three policy profiles are recognized, each fixing an axiom allowlist for proofs and a separate runtime policy for programs\prov{\Ref{1},\Ref{3},\Ref{6},\Ref{9}}:
+Three policy profiles are recognized, each fixing an axiom allowlist for proofs and a separate runtime policy for programs\prov{\Pn{1},\Pn{3},\Pn{6},\Pn{9}}:
 \begin{itemize}
 \item \emph{strict constructive}: empty axiom inventory beyond explicitly accepted query assumptions; total, computable program; no \code{Classical.choice} on the computational path;
 \item \emph{standard}: \code{propext}, \code{Quot.sound}, and \code{Classical.choice} permitted in proofs and erased transports, with actual use always reported; program still total and computable;

@@ -2,7 +2,7 @@
 
 \subsection{Three representations, one type theory}
 
-Every proposal converges on the same division of labor, in three tiers\prov{\Ref{3},\Ref{5},\Ref{8},\Ref{9}}.
+Every proposal converges on the same division of labor, in three tiers\prov{\Pn{3},\Pn{5},\Pn{8},\Pn{9}}.
 
 \begin{enumerate}
 \item \textbf{Semantic objects.} Native \code{Expr}, \code{Level}, names, binder information, local contexts, local instances, and the environment. These are authoritative and are never replaced by their pretty-printed form.
@@ -11,33 +11,33 @@ Every proposal converges on the same division of labor, in three tiers\prov{\Ref
 \end{enumerate}
 
 \begin{invariant}[No naked open expressions cross a process boundary]\label{inv:serialize}
-Raw \code{MVarId} and \code{FVarId} are never durable. A task shipped to another process or session is a closed plan over an ordered telescope with scope-stable binder positions, exact level and constant names, an environment fingerprint, and a protocol version. The receiver reopens it with fresh identifiers and rechecks; a mismatched fingerprint rejects the package rather than reinterpreting it\prov{\Ref{4},\Ref{8},\Ref{9}}.
+Raw \code{MVarId} and \code{FVarId} are never durable. A task shipped to another process or session is a closed plan over an ordered telescope with scope-stable binder positions, exact level and constant names, an environment fingerprint, and a protocol version. The receiver reopens it with fresh identifiers and rechecks; a mismatched fingerprint rejects the package rather than reinterpreting it\prov{\Pn{4},\Pn{8},\Pn{9}}.
 \end{invariant}
 
-Within one worker, native snapshots (\code{Meta.saveState}/\code{restore}) are the fast path. A production engine mixes two profiles: hot branches keep a materialized native checkpoint; cold branches are stored as a checkpoint plus the plan suffix needed to rematerialize them, bounding memory\prov{\Ref{5}}.
+Within one worker, native snapshots (\code{Meta.saveState}/\code{restore}) are the fast path. A production engine mixes two profiles: hot branches keep a materialized native checkpoint; cold branches are stored as a checkpoint plus the plan suffix needed to rematerialize them, bounding memory\prov{\Pn{5}}.
 
 \subsection{Origin record and environment epochs}
 
-The frozen query is stored as an immutable \emph{origin record}: toolchain identity, imported module identities, environment revision, the closed telescope, $T$, $\Phi$, the component policy, the axiom and execution policy, and the semantic options in force (transparency, active local instances, coercion configuration, grammar restrictions). Fingerprints locate cache entries; they never replace structural revalidation\prov{\Ref{9}}.
+The frozen query is stored as an immutable \emph{origin record}: toolchain identity, imported module identities, environment revision, the closed telescope, $T$, $\Phi$, the component policy, the axiom and execution policy, and the semantic options in force (transparency, active local instances, coercion configuration, grammar restrictions). Fingerprints locate cache entries; they never replace structural revalidation\prov{\Pn{9}}.
 
-A worker owns an \emph{environment epoch}. Every handle, snapshot, cache entry, provider index, and proof-service reply is stamped with the epoch in which it was made. An undo, a \code{:reset}, an import change, or a worker restart bumps the epoch and invalidates everything stamped with the old one. Leant's session model, in which \code{:reset} and declaration replay change the environment mid-transcript, maps directly onto epochs\prov{\Ref{1},\Ref{6},\Ref{7}}.
+A worker owns an \emph{environment epoch}. Every handle, snapshot, cache entry, provider index, and proof-service reply is stamped with the epoch in which it was made. An undo, a \code{:reset}, an import change, or a worker restart bumps the epoch and invalidates everything stamped with the old one. Leant's session model, in which \code{:reset} and declaration replay change the environment mid-transcript, maps directly onto epochs\prov{\Pn{1},\Pn{6},\Pn{7}}.
 
 \subsection{Branch state and the obligation graph}\label{sec:obligation-graph}
 
 \begin{definition}[Branch state]\label{def:branch}
-A branch is $S = (O, M, r, H, D, K, R, \Obs_S, \rho, c)$: the origin record; the native metavariable and elaboration state; the root program and root contract-proof expressions; the set of open obligations; the dependency graph over them; the delayed-constraint store; the set of recursive-call capabilities in scope; the branch-local observation bank version; the plan suffix that regenerates the branch; and the branch cost vector\prov{\Ref{2},\Ref{3},\Ref{7},\Ref{9}}.
+A branch is $S = (O, M, r, H, D, K, R, \Obs_S, \rho, c)$: the origin record; the native metavariable and elaboration state; the root program and root contract-proof expressions; the set of open obligations; the dependency graph over them; the delayed-constraint store; the set of recursive-call capabilities in scope; the branch-local observation bank version; the plan suffix that regenerates the branch; and the branch cost vector\prov{\Pn{2},\Pn{3},\Pn{7},\Pn{9}}.
 \end{definition}
 
 Each obligation $h \in H$ records its goal metavariable, its local context $\Gamma_h$, its target $T_h$, its residual contract $\Phi_h$ if any, and a \emph{role}: program value, type or universe argument, instance evidence, index equality, contract proof, termination proof, invariant, or reconstruction check. Roles guide scheduling; they never affect typing.
 
-The dependency graph has an edge $h_1 \to h_2$ whenever assigning a metavariable reachable from $h_1$ can change the type, context, admissibility, or residual contract of $h_2$. Reachability is computed over local declaration types and values, delayed constraints, instance arguments, and the contract, not only over syntactic occurrence; read and write footprints are conservative over-approximations. Obligations that can assign metavariables reachable from one another form \emph{coupled clusters}, the strongly connected components of $D$, and are scheduled as units. A constructor application whose fields depend on one another is one hyperedge, not a sequence of independent children\prov{\Ref{3},\Ref{6},\Ref{7},\Ref{8}}.
+The dependency graph has an edge $h_1 \to h_2$ whenever assigning a metavariable reachable from $h_1$ can change the type, context, admissibility, or residual contract of $h_2$. Reachability is computed over local declaration types and values, delayed constraints, instance arguments, and the contract, not only over syntactic occurrence; read and write footprints are conservative over-approximations. Obligations that can assign metavariables reachable from one another form \emph{coupled clusters}, the strongly connected components of $D$, and are scheduled as units. A constructor application whose fields depend on one another is one hyperedge, not a sequence of independent children\prov{\Pn{3},\Pn{6},\Pn{7},\Pn{8}}.
 
 \begin{invariant}[Branch ownership]\label{inv:ownership}
-Every unassigned metavariable belongs either to the frozen ambient problem or to exactly one branch lineage. A branch may assign only its own search metavariables; it may not change the frozen statement, specialize the query's universe parameters, publish declarations, or reuse another branch's assignment without a checked context embedding. When Leant2 runs inside an unfinished proof, the permitted assignment set for ambient metavariables is computed at freeze time and any delta is returned as one atomic patch\prov{\Ref{6},\Ref{7},\Ref{8}}.
+Every unassigned metavariable belongs either to the frozen ambient problem or to exactly one branch lineage. A branch may assign only its own search metavariables; it may not change the frozen statement, specialize the query's universe parameters, publish declarations, or reuse another branch's assignment without a checked context embedding. When Leant2 runs inside an unfinished proof, the permitted assignment set for ambient metavariables is computed at freeze time and any delta is returned as one atomic patch\prov{\Pn{6},\Pn{7},\Pn{8}}.
 \end{invariant}
 
 \begin{invariant}[Scope closure, type coherence, dependency coherence, evidence ownership]\label{inv:four}
-Every obligation's target is closed under its own context; an unresolved proof obligation remains an obligation rather than being weakened; assigning a metavariable invalidates any observation, index entry, or summary whose recorded support depends on it; and a proof, counterexample, or summary is meaningful only for the exact expression, context, contract, and policy it was produced for\prov{\Ref{8}}.
+Every obligation's target is closed under its own context; an unresolved proof obligation remains an obligation rather than being weakened; assigning a metavariable invalidates any observation, index entry, or summary whose recorded support depends on it; and a proof, counterexample, or summary is meaningful only for the exact expression, context, contract, and policy it was produced for\prov{\Pn{8}}.
 \end{invariant}
 
 \section{Transactional search}\label{sec:transactions}
@@ -62,28 +62,28 @@ partial def solve (fuel : Nat) : List MVarId -> SearchM Bool
     return false
 \end{lstlisting}
 
-The production engine replaces recursion by explicit \emph{cursor frames} (focused obligation, siblings, saved state, rule family, next alternative, cost allowance) so that a branch can be suspended, resumed, serialized, and scheduled fairly, but the semantics of the attempt are those above\prov{\Ref{6},\Ref{8}}.
+The production engine replaces recursion by explicit \emph{cursor frames} (focused obligation, siblings, saved state, rule family, next alternative, cost allowance) so that a branch can be suspended, resumed, serialized, and scheduled fairly, but the semantics of the attempt are those above\prov{\Pn{6},\Pn{8}}.
 
 \begin{invariant}[Commit criterion]\label{inv:commit}
-A subgoal's solution may be memoized as an alternative, but its assignments become irrevocable only when every dependent obligation in the enclosing coupled cluster has been discharged or the generalization has been independently justified. An AND-node is a joint obligation with correlated substitutions, not a Cartesian product of independent first answers\prov{\Ref{2}}.
+A subgoal's solution may be memoized as an alternative, but its assignments become irrevocable only when every dependent obligation in the enclosing coupled cluster has been discharged or the generalization has been independently justified. An AND-node is a joint obligation with correlated substitutions, not a Cartesian product of independent first answers\prov{\Pn{2}}.
 \end{invariant}
 
-What a snapshot must cover depends on the rule. A pure \code{MetaM} rule needs the metavariable context and caches. A rule that elaborates syntax needs the elaborator state, postponed synthetic metavariables, local instances, and diagnostics. A rule that creates declarations needs an environment transaction, and such rules are staged: they run against a scratch environment and are committed only by the acceptance gate\prov{\Ref{2},\Ref{5},\Ref{9}}.
+What a snapshot must cover depends on the rule. A pure \code{MetaM} rule needs the metavariable context and caches. A rule that elaborates syntax needs the elaborator state, postponed synthetic metavariables, local instances, and diagnostics. A rule that creates declarations needs an environment transaction, and such rules are staged: they run against a scratch environment and are committed only by the acceptance gate\prov{\Pn{2},\Pn{5},\Pn{9}}.
 
 \subsection{Rule outcomes and blocked states}
 
-A rule returns one of \code{progress} (new obligations, changed holes), \code{solved}, \code{blocked}, \code{rejected} (optionally with a certificate), \code{unsupported}, or \code{interrupted}. Three kinds of ``blocked'' are distinguished and none is a contradiction: blocked on assignments (a delayed equation or instance goal waiting for named metavariables), unsupported by this lane (with the continuation preserved for another lane), and yielded for budget (with the charged work and the continuation)\prov{\Ref{2},\Ref{6}}. Delayed constraints carry dependency stamps and are woken only when a relevant metavariable is assigned; a flex-rigid equation that becomes a pattern, an instance goal whose output parameters become ground, and a contract that reduces after an assignment are all wake-up events\prov{\Ref{4},\Ref{6},\Ref{9}}.
+A rule returns one of \code{progress} (new obligations, changed holes), \code{solved}, \code{blocked}, \code{rejected} (optionally with a certificate), \code{unsupported}, or \code{interrupted}. Three kinds of ``blocked'' are distinguished and none is a contradiction: blocked on assignments (a delayed equation or instance goal waiting for named metavariables), unsupported by this lane (with the continuation preserved for another lane), and yielded for budget (with the charged work and the continuation)\prov{\Pn{2},\Pn{6}}. Delayed constraints carry dependency stamps and are woken only when a relevant metavariable is assigned; a flex-rigid equation that becomes a pattern, an instance goal whose output parameters become ground, and a contract that reduces after an assignment are all wake-up events\prov{\Pn{4},\Pn{6},\Pn{9}}.
 
-Unification is a service, not a completeness oracle. Its results are classified as deterministic progress, blocked, speculative, or mismatch; a rigid-head mismatch rejects an alternative cheaply; a budget failure or a stuck higher-order equation is unknown and never enters a negative cache\prov{\Ref{3},\Ref{7}}.
+Unification is a service, not a completeness oracle. Its results are classified as deterministic progress, blocked, speculative, or mismatch; a rigid-head mismatch rejects an alternative cheaply; a budget failure or a stuck higher-order equation is unknown and never enters a negative cache\prov{\Pn{3},\Pn{7}}.
 
 \subsection{Joint mode and frozen mode}\label{sec:joint-frozen}
 
-Proof services are invoked in one of two modes, and the modes are distinct APIs\prov{\Ref{1},\Ref{2},\Ref{7}}.
+Proof services are invoked in one of two modes, and the modes are distinct APIs\prov{\Pn{1},\Pn{2},\Pn{7}}.
 \begin{itemize}
 \item In \emph{joint mode} a proof attempt may assign program holes within the current transaction. Solving $?m = n + 1$ by unification determines the witness. Any such assignment is returned as part of the branch's construction choice, is subject to the commit criterion, and must respect the executable policy.
 \item In \emph{frozen mode} the candidate is closed and the service may not replace or specialize it. A proof of $\neg\Phi(t)$ rejects exactly $t$ in exactly this context. A verifier that could mutate its candidate would produce receipts about a different program.
 \end{itemize}
-A reopened data choice creates a new candidate identity; evidence transfers between identities only through an explicit checked equality with contract transport\prov{\Ref{4}}.
+A reopened data choice creates a new candidate identity; evidence transfers between identities only through an explicit checked equality with contract transport\prov{\Pn{4}}.
 
 \section{Adaptive scheduling}\label{sec:scheduling}
 
@@ -91,7 +91,7 @@ Decision~\ref{dec:single-engine} removes Leant's engine switches and settings. W
 
 \subsection{Lanes}
 
-A lane is a policy over the same search actions; lane identity never changes what a candidate means. The initial lanes are\prov{\Ref{1},\Ref{2},\Ref{7},\Ref{9}}:
+A lane is a policy over the same search actions; lane identity never changes what a candidate means. The initial lanes are\prov{\Pn{1},\Pn{2},\Pn{7},\Pn{9}}:
 \begin{itemize}
 \item \emph{exact reuse}: locals, projections of known locals, and direct heads that already have the target type;
 \item \emph{focused construction}: introductions, constructors, and application spines over locals and the goal's own constructors;
@@ -104,13 +104,16 @@ A lane is a policy over the same search actions; lane identity never changes wha
 \item \emph{behavioral}: counterexample-guided refinement and domain checkers (Section~\ref{sec:cegis});
 \item \emph{reference}: a conservatively enumerated fallback grammar with increasing cost bounds, which prunes only with a checked certificate.
 \end{itemize}
-Every lane exposes a bounded step, \code{step : Origin -> Task -> Quantum -> WorkerM StepResult}, returning a continuation, proposals, and a work delta. Every generator is a finite-step cursor, not a lazy stream\prov{\Ref{3},\Ref{9}}.
+Every lane exposes a bounded step, \code{step : Origin -> Task -> Quantum -> WorkerM StepResult}, returning a continuation, proposals, and a work delta. Every generator is a finite-step cursor, not a lazy stream\prov{\Pn{3},\Pn{9}}.
 
 \subsection{Allocation}
 
-Within a branch, the next obligation is chosen by \emph{pressure}\prov{\Ref{5},\Ref{6}}:
+Within a branch, the next obligation is chosen by \emph{pressure}\prov{\Pn{5},\Pn{6}}:
 \[
-\mathrm{pressure}(h) = a\cdot\mathrm{dependentUses}(h) + b\cdot\mathrm{knownIndexTests}(h) + c\cdot\mathrm{behaviorConstraints}(h) - d\cdot\mathrm{estimatedBranching}(h),
+\begin{aligned}
+\mathrm{pressure}(h) = {}& a\cdot\mathrm{dependentUses}(h) + b\cdot\mathrm{knownIndexTests}(h) \\
+& + c\cdot\mathrm{behaviorConstraints}(h) - d\cdot\mathrm{estimatedBranching}(h),
+\end{aligned}
 \]
 with aging to prevent starvation. A cheap proof field that determines a data field is preferred over the data field (proof-first); when no such field exists, witness-first search with continuation backtracking is retained. Coupled clusters are scheduled as units.
 
@@ -118,11 +121,11 @@ Across branches the scheduler runs weighted round-robin over lane families with 
 \[
 s(j) = g(j) + \lambda_h\,\hat h(j) + \lambda_p\,\hat p(j) + \lambda_d\,\mathrm{duplication}(j) - \lambda_r\,\mathrm{relevance}(j),
 \]
-where $g$ is charged cost, $\hat h$ an estimate of remaining construction, $\hat p$ an estimate of proof debt, and the last two terms penalize syntactic near-duplicates and reward obligations that mention rigid heads and concrete observations. This is a heuristic order, explicitly not an admissible A$^*$ heuristic\prov{\Ref{1},\Ref{5}}.
+where $g$ is charged cost, $\hat h$ an estimate of remaining construction, $\hat p$ an estimate of proof debt, and the last two terms penalize syntactic near-duplicates and reward obligations that mention rigid heads and concrete observations. This is a heuristic order, explicitly not an admissible A$^*$ heuristic\prov{\Pn{1},\Pn{5}}.
 
-Fairness is guaranteed structurally, not by weights. The reference lane holds a reserved nonzero share of quanta (one in eight by default) and enumerates admitted plans by a \emph{diagonal schedule} over the tuple (lane, expression-cost bound, recursion-scheme bound, verification allowance), increasing the sum with deterministic ties. Within a tier the heuristic queue is complemented by a reserved FIFO stream so that the fairness claim is honest. Queue caps in fast lanes are permitted, and every dropped state is recorded as an incompleteness event in the ledger rather than treated as a refutation\prov{\Ref{2},\Ref{5},\Ref{7},\Ref{9}}.
+Fairness is guaranteed structurally, not by weights. The reference lane holds a reserved nonzero share of quanta (one in eight by default) and enumerates admitted plans by a \emph{diagonal schedule} over the tuple (lane, expression-cost bound, recursion-scheme bound, verification allowance), increasing the sum with deterministic ties. Within a tier the heuristic queue is complemented by a reserved FIFO stream so that the fairness claim is honest. Queue caps in fast lanes are permitted, and every dropped state is recorded as an incompleteness event in the ledger rather than treated as a refutation\prov{\Pn{2},\Pn{5},\Pn{7},\Pn{9}}.
 
-Verification is scheduled alongside generation. A candidate whose contract proof returns unknown keeps a verification continuation with an increasing proof budget in an \emph{unresolved queue}; a bare rejection never shrinks the raw candidate window; a successful-result quota is not a raw-candidate quota\prov{\Ref{7},\Ref{8}}.
+Verification is scheduled alongside generation. A candidate whose contract proof returns unknown keeps a verification continuation with an increasing proof budget in an \emph{unresolved queue}; a bare rejection never shrinks the raw candidate window; a successful-result quota is not a raw-candidate quota\prov{\Pn{7},\Pn{8}}.
 
 \subsection{How the adaptive engine replaces Leant's settings}\label{sec:adaptive}
 
@@ -138,14 +141,17 @@ Because allocation adapts, Leant2 may find candidates that Leant's fixed-window 
 
 \subsection{Ranking and multiple answers}\label{sec:ranking}
 
-The cost of a candidate is a structured vector, not a scalar\prov{\Ref{2},\Ref{3},\Ref{6},\Ref{8}}:
+The cost of a candidate is a structured vector, not a scalar\prov{\Pn{2},\Pn{3},\Pn{6},\Pn{8}}:
 \[
-(\text{policy violations},\ \text{term size},\ \text{eliminations},\ \text{recursion shape},\ \text{transports},\ \text{nonlocal providers},\ \text{proof size},\ \text{runtime estimate}).
+\begin{aligned}
+(&\text{policy violations},\ \text{term size},\ \text{eliminations},\ \text{recursion shape},\\
+ &\text{transports},\ \text{nonlocal providers},\ \text{proof size},\ \text{runtime estimate}).
+\end{aligned}
 \]
 The first component is an admission constraint. Candidates are ranked lexicographically by a declared profile (small source by default), and a small Pareto frontier of behaviorally distinct candidates is exposed rather than the first result only. Diversity is counted over native terms modulo checked equivalence, not over printed strings; two candidates that agree on all observations are presented as distinct unless a checked equality merges them. ``Use every input'' is a preference, not a filter.
 
 \subsection{Resource limits and determinism}
 
-Three independent controls apply: logical work budgets (rule applications, unification steps, normalization steps, proof tasks, solver calls, candidate evaluations), wall-clock deadlines, and process-level limits (memory, output size, external process lifetime). Counters are monotone and charged even after rollback (Decision~\ref{dec:ledger}). Per-rule limits yield suspended branches; raising a proof budget never regenerates earlier terms. A deterministic mode fixes ordering and seeds so that a transcript replays exactly; a performance mode returns the first result from parallel workers and records which lane produced it\prov{\Ref{3},\Ref{4},\Ref{9}}.
+Three independent controls apply: logical work budgets (rule applications, unification steps, normalization steps, proof tasks, solver calls, candidate evaluations), wall-clock deadlines, and process-level limits (memory, output size, external process lifetime). Counters are monotone and charged even after rollback (Decision~\ref{dec:ledger}). Per-rule limits yield suspended branches; raising a proof budget never regenerates earlier terms. A deterministic mode fixes ordering and seeds so that a transcript replays exactly; a performance mode returns the first result from parallel workers and records which lane produced it\prov{\Pn{3},\Pn{4},\Pn{9}}.
 
-Parallelism is restricted to closed request slices: whole lanes, candidate verifications, and connected components of the dependency graph with an independence certificate (disjoint owned metavariables, disjoint synthetic obligations, unchanged shared rigid context). Workers exchange closed plans and certificates, never live metavariable contexts\prov{\Ref{1},\Ref{9}}.
+Parallelism is restricted to closed request slices: whole lanes, candidate verifications, and connected components of the dependency graph with an independence certificate (disjoint owned metavariables, disjoint synthetic obligations, unchanged shared rigid context). Workers exchange closed plans and certificates, never live metavariable contexts\prov{\Pn{1},\Pn{9}}.
