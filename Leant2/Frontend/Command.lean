@@ -105,6 +105,7 @@ def outcomeMessage (o : Outcome) : MetaM MessageData := do
   | .refutedAll n _ => return m!"{n} candidate(s) proposed, none passed the contract"
   | .negative .impossible (some cert) _ => return m!"provably uninhabited: {cert.program}"
   | .negative .impossible none _ => return m!"provably uninhabited"
+  | .negative .contractImpossible _ _ => return m!"provably no program satisfies the contract"
   | .negative .grammarExhausted _ _ => return m!"no term found within the search bounds"
   | .negative .budgetExhausted _ _ => return m!"budget exhausted"
   | .preflightError s => return m!"error: {s}"

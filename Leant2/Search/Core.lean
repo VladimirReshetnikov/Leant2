@@ -314,6 +314,20 @@ partial def partialRefute (cfg : SearchConfig) (t : Expr) : SearchM Bool := do
   let some inst := inst? | return false
   return (← kernelDecide t inst).1 == some false
 
+/-- The tactic part of the portfolio on a closed goal; messages the tactics
+log are discarded. -/
+def tacticProve (g : MVarId) : MetaM Bool := do
+  let savedMsgs := (← getThe Core.State).messages
+  let r ← Term.TermElabM.run' do
+    let stx ← `(tactic| first | rfl | decide | (simp) | omega)
+    -- heartbeat timeouts inside a tactic are runtime exceptions: a failed
+    -- attempt, not a failed query
+    tryCatchRuntimeEx
+      (do let gs ← Tactic.run g (Tactic.evalTactic stx); return gs.isEmpty)
+      (fun e => do if e.isInterrupt then throw e else return false)
+  modifyThe Core.State fun s => { s with messages := savedMsgs }
+  return r
+
 /-- Try to close a *closed* `Prop` goal (no metavariables, no locals) with a
 small tactic portfolio. Messages the tactics log are discarded. -/
 def proofPortfolio (cfg : SearchConfig) (g : MVarId) : SearchM Bool := do
@@ -349,15 +363,8 @@ def proofPortfolio (cfg : SearchConfig) (g : MVarId) : SearchM Bool := do
       return true
     | some false => return false
     | none => pure ()
-  let savedMsgs := (← getThe Core.State).messages
-  let r ← Term.TermElabM.run' do
-    let stx ← `(tactic| first | rfl | decide | (simp) | omega)
-    try
-      let gs ← Tactic.run g (Tactic.evalTactic stx)
-      return gs.isEmpty
-    catch _ => return false
-  modifyThe Core.State fun s => { s with messages := savedMsgs }
-  return r
+  tacticProve g
+
 
 /-- `forall R : Sort, ... -> R`: the shape of a Church-encoded datum, whose
 result is the quantified type itself. -/

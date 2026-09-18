@@ -51,7 +51,7 @@ def classify_ours(block):
         return "miss", False
     if "budget exhausted" in txt:
         return "budget", False
-    if "none passed" in txt:
+    if "none passed" in txt or "provably no program" in txt:
         return "rejected", False
     if "error" in txt.lower():
         return "error", False

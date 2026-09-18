@@ -104,7 +104,8 @@ def candidateCost (e : Expr) : Nat × Nat × Nat := Id.run do
   let mut i := 0
   while body.isLambda do
     let b := body.bindingBody!
-    if !b.hasLooseBVar 0 then unused := unused + 1
+    -- instance binders are evidence, not inputs: leaving one unused is not a defect
+    if !b.hasLooseBVar 0 && !body.bindingInfo!.isInstImplicit then unused := unused + 1
     body := b
     i := i + 1
   -- eliminators and size
@@ -248,6 +249,24 @@ def runQuery (q : Query) : MetaM Outcome :=
     | _ => false).isSome
   let deadline := start + q.budgetMs
   let remaining : MetaM Nat := do return deadline - (min deadline (← IO.monoMsNow))
+  -- 0. a contract no program can satisfy (`where False`, `... ∧ False`): its
+  -- negation is proved once, for every program, before any search
+  if let some c := q.contract then
+    let negTy ← withLocalDecl `f .default q.target fun f => do
+      mkForallFVars #[f] (mkApp (mkConst ``Not) (c.beta #[f]))
+    -- bounded by heartbeats: this is a quick check, not a lane
+    let proved ← withTheReader Core.Context (fun c => { c with maxHeartbeats := 20000 }) do
+      tryCatchRuntimeEx (do
+        let mv ← mkFreshExprMVar negTy
+        let ok ← tacticProve mv.mvarId!
+        let pf ← instantiateMVars mv
+        if !ok || pf.hasMVar then return false
+        match ← gate .standard pf negTy none with
+        | .ok _ => return true
+        | .error _ => return false)
+        (fun e => do if e.isInterrupt then throw e else return false)
+    if proved then
+      return .negative .contractImpossible none (← ledger.get)
   -- constructive depths; a later lane resumes at the first depth the earlier one did not finish
   let constructiveDepths := [2, 3, 4, 5, 6, 7, 9, 12]
   let completed ← IO.mkRef 0

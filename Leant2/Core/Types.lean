@@ -32,8 +32,10 @@ structure Ledger where
 
 /-- Why a search stopped without a verified answer. -/
 inductive NegativeKind where
-  /-- A kernel-checked proof of `T -> False` (or of the negated contract). -/
+  /-- A kernel-checked proof of `T -> False`. -/
   | impossible
+  /-- A kernel-checked proof that no program of the type satisfies the contract. -/
+  | contractImpossible
   /-- The configured finite grammar was exhausted; not an impossibility claim. -/
   | grammarExhausted
   /-- The budget ran out; resumable in principle. -/
