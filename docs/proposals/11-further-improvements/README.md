@@ -29,7 +29,7 @@ proposals.
   progress would be measured, and the questions for outside experts.
 - **Part IV, plan.** Dependencies, seven phases with gates, risks, and a
   consolidated table of where outside expertise would help: the question,
-  whom to ask, and what we would bring.
+  the projects and fields that study it, and what we would bring.
 
 Literature is cited from memory of the published record; check titles,
 venues and years before relying on them in print.

@@ -17,7 +17,7 @@ A contract is useful during the search only if it can reject a partial program. 
 
 \paragraph{Angelic recursion.} Burst evaluates a partial recursive program by letting recursive calls return whatever value makes the examples pass, records those assumptions, and later checks or repairs them; this removes the need for trace-complete examples at the price of a refinement loop whose termination argument is specific to their bottom-up setting~\cite{burst}.
 
-\paragraph{Example propagation.} \lam\textsuperscript{2} and Myth push examples through combinators and constructors by inversion rules written per combinator~\cite{lambda2,myth}; the type-theoretic reading by Frankle, Osera, Walker and Zdancewic treats examples as refinement types, so that propagation is type checking~\cite{frankle16}.
+\paragraph{Example propagation.} \lam\textsuperscript{2} and Myth push examples through combinators and constructors by inversion rules written per combinator~\cite{lambda2,myth}; a type-theoretic reading of example-directed synthesis treats examples as refinement types, so that propagation is type checking~\cite{frankle16}.
 
 \paragraph{Incremental normalization.} Normalization by evaluation with explicit closures makes sharing natural; memoizing it across edits of a term is, as far as we know, studied for incremental type checking in editors rather than for search.
 
@@ -56,4 +56,4 @@ For the kernel path this holds because reduction never inspected a hole. For Sta
 \item What is the cheapest sound way to obtain a fast evaluator that provably under-approximates the Lean kernel's conversion on a fragment? Would extracting the fragment's rules from the kernel's specification in Lean4Lean be realistic?
 \item For angelic recursion in a top-down search, is there a termination and completeness argument analogous to Burst's?
 \end{enumerate}
-Communities to ask: the Hazel group (hole closures and live evaluation); the authors of Smyth and Burst; Lean core and Lean4Lean developers for the kernel's reduction rules and their specification; researchers in normalization by evaluation.
+Related projects and fields: Hazel studies hole closures and live evaluation of incomplete programs; Smyth studies bidirectional evaluation for sketches; Burst studies angelic execution of recursive calls; Lean4Lean specifies the Lean kernel's reduction rules in Lean; normalization by evaluation studies efficient normalizers with neutral terms.

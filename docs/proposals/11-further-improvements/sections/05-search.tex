@@ -24,7 +24,7 @@ Three sub-problems are tangled together.
 
 \begin{itemize}
 \item Iterative deepening is asymptotically optimal among brute-force tree searches when the branching factor is large and nothing is known about costs~\cite{korf85}; its overhead is the factor $b/(b-1)$. It stops being a good choice exactly when passes are cut by a deadline rather than completed, which is our situation.
-\item For a randomized or restarted procedure with unknown run-time distribution, the universal restart schedule of Luby, Sinclair and Zuckerman is within a logarithmic factor of optimal~\cite{luby93}. Lanes and depths are such a portfolio.
+\item For a randomized or restarted procedure with unknown run-time distribution, the universal restart schedule is within a logarithmic factor of optimal~\cite{luby93}. Lanes and depths are such a portfolio.
 \item Enumerative synthesizers replace depth by a \emph{cost} from a probabilistic grammar and enumerate in cost order; the grammar can be learned offline (DeepCoder~\cite{deepcoder}) or during the search from partial successes (Probe's just-in-time learning~\cite{probe}).
 \item Choosing which hole to fill next is variable ordering in constraint satisfaction, where fail-first heuristics (smallest domain, most constrained) are standard and effective. Agda's Agsy orders subproblems by a similar principle~\cite{agsy}.
 \item Best-first search over proof states with rule priorities and a normalization phase is what Aesop implements for Lean, with white-box rule sets~\cite{aesop}. Canonical searches $\beta$-normal $\eta$-long terms of dependent type theory with its own term representation and heuristics for the order of metavariable refinement, and reports large gains from that order~\cite{canonical}.
@@ -54,4 +54,4 @@ Solved count at 1 s, 10 s and 60 s on the benchmark suite of E8; the ratio of no
 \item Does just-in-time cost learning stay sound for ranking, that is, can it change \emph{which} candidates are found within the budget in a way users would find arbitrary, and how do published systems control that?
 \item For wall-clock budgets, is there a known way to make results independent of machine speed other than fixing a node budget per lane and calibrating it at start-up?
 \end{enumerate}
-Communities to ask: the authors of Aesop (best-first search and metavariable coupling in Lean); the authors of Canonical (refinement order for dependent inhabitation); the groups behind Probe and EUSolver (cost-guided enumeration); the constraint-programming community for variable-ordering heuristics under dynamic domains.
+Related projects and fields: Aesop studies best-first proof search in Lean and the coupling of goals through metavariables; Canonical studies the order of metavariable refinement for inhabitation in dependent type theory; Probe and EUSolver study cost-guided and divide-and-conquer enumeration; constraint programming studies variable-ordering heuristics under dynamic domains.
