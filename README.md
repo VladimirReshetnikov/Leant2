@@ -63,7 +63,7 @@ each case once (Leant ran them per engine):
 ```bash
 python tools/run_recursive.py --budget 10000   # Leant test-recursive, 9 cases
 python tools/run_church.py --budget 10000      # Leant test-church behavior probes, 21 cases
-python tools/run_context.py --budget 10000     # Leant test-behavioral simplification + test-context production, 14 cases
+python tools/run_context.py --budget 10000     # Leant test-behavioral simplification + test-context production, products, selections, constructors: 67 cases
 ```
 
 The Church harness imports the specifications from Leant's vendored Djex

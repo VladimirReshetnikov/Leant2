@@ -90,6 +90,8 @@ def alternative (act : SearchM Bool) : SearchM Bool := do
     if ← act then return true
   catch e =>
     if isInterrupt e then throw e
+    if leant2.traceNodes.get (← getOptions) then
+      IO.println s!"[leant2]     alternative failed with: {← e.toMessageData.toString}"
   saved.restore
   return false
 
@@ -426,6 +428,20 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     checkDeadline
     g.withContext do
     let target ← instantiateMVars (← g.getType)
+    if leant2.traceNodes.get (← getOptions) then
+      IO.println s!"[leant2]     node {← ppExpr target} depth {depth} splits {splits} rest {rest.length}"
+    -- a proposition about open holes (the contract on a partial program) is
+    -- decided once the holes are filled: it yields to every other obligation
+    -- (class goals are not such propositions: an instance determines type holes)
+    let isResidual (t : Expr) : MetaM Bool := do
+      if !t.hasExprMVar then return false
+      unless ← isProp t do return false
+      return (← isClass? t).isNone
+    if !rest.isEmpty && (← isResidual target) then
+      let mut other := false
+      for r in rest do
+        unless ← isResidual (← instantiateMVars (← r.mvar.getType)) do other := true; break
+      if other then return ← search cfg leaf splits (rest ++ [goal])
     -- deferral: let sibling obligations determine type arguments and open types
     if !rest.isEmpty then
       let targetW ← whnfR target
@@ -484,7 +500,9 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     -- 2. invertible destructuring (does not consume depth or splits)
     for decl in locals do
       if let some ii ← inductiveOfLocal decl then
-        if isInvertible ii then
+        -- class instances are taken apart by projection (rule 6): `inst.out`
+        -- rather than `C.casesOn inst fun out => ...`
+        if isInvertible ii && !isClass (← getEnv) ii.name then
           if ← alternative (do
               let subgoals ← g.cases decl.fvarId
               search cfg leaf splits
@@ -530,6 +548,12 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             if ← isDefEq (← inferType t) target then
               g.assign t; cont []
             else return false) then return true
+      -- a universe-polymorphic unit fits any sort (`Type 1`, `Sort u`, `Prop`)
+      if ← alternative (do
+          let u ← mkConstWithFreshMVarLevels ``PUnit
+          if ← isDefEq (← inferType u) target then
+            g.assign u; cont []
+          else return false) then return true
     -- 6. projections of local structure values, applied as heads
     for decl in locals do
       let dty ← whnfR (← instantiateMVars decl.type)

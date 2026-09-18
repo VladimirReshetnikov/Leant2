@@ -255,7 +255,7 @@ def runQuery (q : Query) : MetaM Outcome :=
     let negTy ← withLocalDecl `f .default q.target fun f => do
       mkForallFVars #[f] (mkApp (mkConst ``Not) (c.beta #[f]))
     -- bounded by heartbeats: this is a quick check, not a lane
-    let proved ← withTheReader Core.Context (fun c => { c with maxHeartbeats := 20000 }) do
+    let proved ← withTheReader Core.Context (fun c => { c with maxHeartbeats := 20000 * 1000 }) do
       tryCatchRuntimeEx (do
         let mv ← mkFreshExprMVar negTy
         let ok ← tacticProve mv.mvarId!
