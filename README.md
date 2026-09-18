@@ -73,6 +73,9 @@ python tools/run_corpus.py --budget 10000      # Leant test-church signature cor
 python tools/run_session.py                    # Leant session provider-identity suite (blocks, :undo, rejected declarations)
 ```
 
+`python tools/run_all.py` builds everything and runs the baseline and all
+five harnesses, printing one summary table (about six minutes).
+
 All five passed in full on 2026-09-18 (recursive 9/9, Church probes 28/28
 scored plus 13 stretch cases Leant never accepted, context 90/90, corpus
 350/350, session 6/6) with a 10 s budget per query.
