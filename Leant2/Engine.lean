@@ -160,8 +160,9 @@ def runQuery (q : Query) : MetaM Outcome :=
   let residual ← match q.contract with
     | some c => mkResidual c q.target
     | none => pure #[]
+  let skip := ((leant2.skipRules.get (← getOptions)).splitOn ",").map (·.trim) |>.filter (· != "")
   let baseCfg : SearchConfig := { providers, typeFrontier := frontier, recursionFirst := q.contract.isSome,
-                                  contract := q.contract, residual }
+                                  contract := q.contract, residual, skip }
   let found ← IO.mkRef (#[] : Array Accepted)
   let seen ← IO.mkRef (#[] : Array Expr)
   let firstFoundAt ← IO.mkRef (none : Option Nat)

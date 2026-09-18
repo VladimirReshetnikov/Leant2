@@ -36,7 +36,11 @@ Departures and refinements:
   `xs R step seed`, so a polymorphic local is also applied at `T -> T` for
   the goal `T`. This is exactly the Church `reverse`/`foldl` shape and the
   only invented instantiation tried; a general frontier here multiplied the
-  search by an order of magnitude.
+  search by an order of magnitude. The rule applies only to recursive
+  eliminators, those with a step argument that threads the result type
+  (`A -> R -> R` of a list, `R -> R` of a numeral): trying it on Church
+  maybes and eithers made the `maybeEither` probe ten times slower for
+  nothing.
 - **Eliminator consumption.** A local of Church shape `forall R, ... -> R`
   is not applied again inside its own continuation arguments (tracked as a
   `consumed` list on each goal, propagated to every child). Nested folds over
@@ -90,7 +94,9 @@ built. What is built covers the whole corpus:
   by `instantiatePartial`); the kernel is merely stuck on a hole, and a
   conjunct reducing to `false` abandons the branch. The holes the last
   evaluation got stuck on are remembered; while all of them are still open,
-  re-evaluation is skipped. Refuted closed programs are memoized per query.
+  re-evaluation is skipped, and no evaluation happens at depth 0 (a leaf is
+  closed by an exact local and decided at the contract goal). Refuted closed
+  programs are memoized per query.
 - **Upfront refutation.** Before any search, `forall f, not (P f)` is tried
   with the tactic portfolio under a small heartbeat budget; success is the
   outcome "provably no program satisfies the contract".
@@ -110,7 +116,9 @@ accepted candidate (400 ms) is a deadline the search itself checks, so a
 pass stops rather than running to the lane deadline. Lane and depth timings,
 ledger counters and self times of the search steps print under
 `set_option leant2.trace true`; `leant2.traceNodes` prints every node,
-every failed alternative and every program checked.
+every failed alternative and every program checked; `leant2.skipRules`
+disables named rules (`7a,7b,9,9b,9c,residual`) for experiments, which is
+how the cost of each rule on a slow query is measured.
 
 ## Acceptance (Part II, "acceptance")
 
@@ -131,7 +139,6 @@ There is no learned or frequency-based ranking.
 ## Measured
 
 Everything in `docs/baseline/` and the harnesses in `tools/` (see the
-README). The slowest scored case is the Church `maybeEither` probe at about
-5 s; the partial operations Leant's ledger never accepted (`foldl1`,
-`maximumBy`, ...) are reported as stretch cases and remain unsolved within
-10 s.
+README). Every scored case also passes with the budget halved to 5 s; the
+partial operations Leant's ledger never accepted (`foldl1`, `maximumBy`,
+...) are reported as stretch cases and remain unsolved within 10 s.
