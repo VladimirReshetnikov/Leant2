@@ -126,7 +126,7 @@ def runQuery (q : Query) : MetaM Outcome :=
   let start ← IO.monoMsNow
   let frontier ← defaultTypeFrontier
   let providers ← mkProviders q.providers
-  let baseCfg : SearchConfig := { providers, typeFrontier := frontier }
+  let baseCfg : SearchConfig := { providers, typeFrontier := frontier, recursionFirst := q.contract.isSome }
   let found ← IO.mkRef (#[] : Array Accepted)
   let seen ← IO.mkRef (#[] : Array Expr)
   let firstFoundAt ← IO.mkRef (none : Option Nat)
@@ -150,7 +150,8 @@ def runQuery (q : Query) : MetaM Outcome :=
     charge fun l => { l with candidates := l.candidates + 1 }
     match ← gate q.profile progN target proof? with
     | .ok acc =>
-      let acc := { acc with classical := acc.classical || classicalLane }
+      -- classical only by evidence: the axiom inventory, not the lane
+      let _ := classicalLane
       found.modify (·.push acc)
       if (← firstFoundAt.get).isNone then firstFoundAt.set (some (← IO.monoMsNow))
       return (← found.get).size ≥ q.maxCandidates
