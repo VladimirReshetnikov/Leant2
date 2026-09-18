@@ -30,7 +30,7 @@ PRELUDE = [
     f"class {CLASS} (α : Type) where tag : Nat",
     f"structure {TOKEN} where payload : Nat",
     f"class {UNIVERSE_CLASS}.{{u}} (α : Type) : Type where evidence : ∀ β : Type u, True",
-    "universe u",
+    "universe u v",
     # test-context/run_polymorphic_selection.py and run_dictionary_selection.py
     "class SelectedPoly.Dictionary (α : Type) where tag : Nat",
     "structure SelectedPoly.Box (α : Type 1) where value : α",
@@ -197,6 +197,67 @@ def cases():
     for name, ty, pred in ctors:
         if name in ("ctor_method", "ctor_argument", "ctor_nested_context"):
             out.append((name.replace("ctor_", "strict_"), strict(ty), pred, "candidate"))
+    # --- test-context/run_scoped_selections.py: select either of two supplied
+    # dictionaries through a local rank-N callback or the class method
+    root = "∀ (α β : Type), [Ctx.C α] → [Ctx.C β] → "
+    callback = "(∀ (p : Type), [Ctx.C p] → Nat)"
+    for local in (False, True):
+        for selected in (0, 1):
+            op = ("local_" if local else "global_") + ("outer" if selected == 0 else "inner")
+            ty = root + (callback + " → " if local else "") + "Nat"
+            obs = []
+            for alpha, beta, first, second, offset in [("Nat", "Bool", 7, 11, 0), ("Nat", "Bool", 11, 7, 100),
+                                                       ("Bool", "Nat", 13, 17, 100), ("Bool", "Bool", 19, 23, 0)]:
+                argument = (" (fun (p : Type) [d : Ctx.C p] => @Ctx.C.out p d + " + str(offset) + ")") if local else ""
+                expected = (first if selected == 0 else second) + (offset if local else 0)
+                obs.append(f"(@{{f}} {alpha} {beta} (@Ctx.C.mk {alpha} {first}) (@Ctx.C.mk {beta} {second}){argument} = {expected})")
+            out.append(("scoped_" + op, ty, " ∧ ".join(obs), "candidate"))
+            if op in ("global_outer", "local_outer"):
+                out.append(("scoped_" + op + "_false", ty, "False", "none"))
+    # --- test-context/run_context_universes.py: contextual Type-universe queries
+    # (live predicates, i.e. without explicit universe vectors)
+    CP = "ContextProduction.Dictionary"
+
+    def universe_spec(label, universe, selected=False, shadowed=False, callback_universe=None):
+        variable = "α" if shadowed else "β"
+        domain = f"Type ({universe})" if " " in universe else f"Type {universe}"
+        if selected:
+            callback_domain = domain if callback_universe is None else f"Type {callback_universe}"
+            tail = f"∀ (γ : {domain}), (∀ (β : {callback_domain}), β → α) → γ → α"
+        else:
+            tail = f"(∀ ({variable} : {domain}), {variable} → {variable})"
+        source = f"∀ (α : Type), [{CP} α] → {tail}"
+        lifted = f"(ULift.{{{universe}}} Nat)"
+        conds = []
+        for value, tag in [(37, 7), (53, 11)]:
+            application = "@{f} Nat " + f"(@{CP}.mk Nat {tag})" + " " + lifted
+            if selected:
+                application += f" (fun _ _ => {value + tag}) (⟨{value}⟩ : {lifted})"
+                conds.append(application + f" = {value + tag}")
+            else:
+                application += f" (⟨{value}⟩ : {lifted})"
+                conds.append("(" + application + f").down = {value}")
+        return ("univ_" + label, source, " ∧ ".join("(" + c + ")" for c in conds))
+    univ = [
+        universe_spec("higher_universe", "1"),
+        universe_spec("named_universe", "u"),
+        universe_spec("selected_callback", "1", selected=True),
+        universe_spec("named_selected_callback", "u", selected=True),
+        universe_spec("shadowed_binder", "1", shadowed=True),
+        universe_spec("max_universes", "max u v"),
+        universe_spec("unequal_selection_domains", "1", selected=True, callback_universe="0"),
+    ]
+    for name, ty, pred in univ:
+        out.append((name, ty, pred, "candidate"))
+        out.append((name + "_false", ty, "False", "none"))
+    # --- test-church/nested_forall_probe.py: two forall introductions in one result
+    nested_ty = "{α : Type} → α → {β : Type} → β → β"
+    nested_pred = " ∧ ".join("(" + o + ")" for o in (
+        "@{f} Nat 17 Bool true = true", "@{f} Bool false Nat 23 = 23",
+        "@{f} Nat 99 Nat 7 = 7", "@{f} Unit () (List Nat) [2, 5] = [2, 5]"))
+    out += [("nested_forall_ordinary", nested_ty, None, "candidate"),
+            ("nested_forall", nested_ty, nested_pred, "candidate"),
+            ("nested_forall_false", nested_ty, "False", "none")]
     return out
 
 
