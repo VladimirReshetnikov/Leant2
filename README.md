@@ -26,9 +26,12 @@ tests, and the `leant2` REPL executable.
 - `Leant2/Search/Core.lean`: continuation-backtracking search over
   obligations with per-goal depth, deferral of type and open holes, the rule
   set (introduction, invertible destructuring, exact locals, instance
-  resolution, projections as heads, constructors, local application, forward
-  application, case splits, head- and demand-filtered providers, a proof
-  portfolio on closed propositions, classical splits).
+  resolution, projections as heads, constructors, local application, local
+  application at the accumulator type `T -> T`, forward application, case
+  splits, structural recursion from recursor metadata, head- and
+  demand-filtered providers, a proof portfolio on closed propositions,
+  classical splits). Behavioral contracts are decided by kernel reduction,
+  conjunct by conjunct, on partial programs as well (residual evaluation).
 - `Leant2/Accept/Gate.lean`: the acceptance gate: universe generalization,
   synchronous kernel check, axiom audit against a trust profile.
 - `Leant2/Engine.lean`: the adaptive lanes under one wall-clock budget
@@ -51,5 +54,22 @@ python tools/run_baseline.py --budget 10000
 ```
 
 The harness runs every transcript through the REPL, writes the outputs to
-`baseline-out/`, and prints per-fixture scores and a total.
+`baseline-out/`, and prints per-fixture scores and a total. Recorded runs
+are in `docs/baseline/`.
+
+Two further harnesses replay Leant's extended tiers through the same REPL,
+each case once (Leant ran them per engine):
+
+```bash
+python tools/run_recursive.py --budget 10000   # Leant test-recursive, 9 cases
+python tools/run_church.py --budget 10000      # Leant test-church behavior probes, 21 cases
+```
+
+The Church harness imports the specifications from Leant's vendored Djex
+directory (`C:\Leant\lib\Djex	est-church`), so every `:synth` carries the
+spec's exhaustive `check_<op> f = true` contract.
+
+Diagnostics: `set_option leant2.trace true` prints lane and depth timings with
+ledger counters, and `set_option leant2.traceNodes true` prints every program
+checked against the contract.
 
