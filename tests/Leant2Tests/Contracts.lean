@@ -17,7 +17,7 @@ def CList.dec {A : Type} (xs : CList A) : List A := xs (List A) List.cons []
 type formers are filled through introduction. -/
 #leant2_check f : (∀ A : Type, (Type 1 → A) → A) where @f Nat (fun _ => 37) = 37
 #leant2_check f : (∀ A : Type, (Prop → A) → A) where @f Nat (fun _ => 37) = 37
-#leant2_check f : (∀ A : Type, (∀ F : Type → Type, A) → (∀ F : Type, A) → A × A)
+#leant2_check f : (∀ A : Type, (∀ _F : Type → Type, A) → (∀ _F : Type, A) → A × A)
   where @f Nat (fun _ => 7) (fun _ => 9) = (7, 9)
 
 /-! A contract no program satisfies is refuted before any search. -/
