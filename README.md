@@ -20,6 +20,10 @@ in the source comments refer to it.
 
 ## Implementation status
 
+[docs/implementation-notes.md](docs/implementation-notes.md) records how the
+built engine relates to the proposal: what is implemented as designed, where
+it takes a simpler route, and what the measurements taught.
+
 Lean 4.34.0, core only (no Mathlib). `lake build` builds the library, the
 tests, and the `leant2` REPL executable.
 
