@@ -1,0 +1,69 @@
+\section{Roadmap}\label{sec:roadmap}
+
+\subsection{Dependencies}
+
+\begin{center}
+\begin{tikzpicture}[node distance=9mm and 12mm]
+\node[box] (e8) {E8 benchmarks};
+\node[box,right=of e8] (e4) {E4, A5 substrate\\and indexing};
+\node[box,right=of e4] (r3a) {R3 stage 1\\per-observation report};
+\node[box,below=of e8] (e1) {E1, E2 definitions\\and frontends};
+\node[box,below=of e4] (r1) {R1 states, costs,\\goal order};
+\node[box,below=of r3a] (r3b) {R3 stages 2--4\\hole closures, angelic calls};
+\node[box,below=of e1] (r7) {R7 retrieval};
+\node[box,below=of r1] (r2) {R2 carriers};
+\node[box,below=of r3b] (r5) {R5 recursion schemes};
+\node[box,below=of r7] (r6) {R6 program and proof};
+\node[box,below=of r2] (r4) {R4 indexed families};
+\node[box,below=of r5] (a12) {A1, A2 guards,\\Nat recursion};
+\draw[flow] (e8) -- (e4);
+\draw[flow] (e4) -- (r1);
+\draw[flow] (r3a) -- (r1);
+\draw[flow] (r3a) -- (r3b);
+\draw[flow] (r1) -- (r2);
+\draw[flow] (r1) -- (r7);
+\draw[flow] (r3b) -- (r2);
+\draw[flow] (r3b) -- (r5);
+\draw[flow] (r2) -- (r5);
+\draw[flow] (r2) -- (r4);
+\draw[flow] (r3a.east) -- ++(7mm,0) |- (a12.east);
+\draw[flow] (a12.south) -- ++(0,-5mm) -| (r6.south);
+\end{tikzpicture}
+\end{center}
+
+\subsection{Phases and gates}
+
+Every phase ends with the six harnesses at full score for 10 s and 5 s budgets, plus its own gate.
+
+\begin{longtable}{@{}L{14mm}L{62mm}L{72mm}@{}}
+\toprule
+Phase & Content & Gate\\
+\midrule
+\endhead
+P1 & E8 benchmark port; E1 compilable results; E4 profiling and per-local caching; R3 stage 1 (per-observation report) & benchmark baseline recorded (expected: most recursion and conditional entries fail); probe 6 binds cleanly; node cost under 1 ms on Church probes\\
+P2 & R1 steps 1--2 (first-class states, cost order); A5 indexing; A3 normal-form checks; E5 parallel lanes & identical candidate lists to the depth-first engine on the whole corpus; no repeated passes; uninhabited queries answered in lane time\\
+P3 & A1 guards; A2 \code{Nat} recursion and literals; E7 portfolio and bounded instantiation; E6 propositional decision procedure & probes 4, 9, 10; conditional and arithmetic benchmark entries; propositional queries certified both ways\\
+P4 & R3 stages 2--3; R1 steps 3--4 (learned costs, goal order by domain size) & differential agreement with the kernel on every generated closed program; solved count at 1 s improves on P2\\
+P5 & R2 carrier grammar, carrier refutation, observation-table proposals; R5 capability-based bodies and schemes; R4 index-generalizing induction & stretch cases; accumulator and tupling entries; probe 8; probe 11\\
+P6 & R6 program and proof together; R7 retrieval; R8 behavioral classes; E2 frontends; E3 receipts & quantified-contract suite; probes 14, 16; reference-solution rank reported for the whole suite\\
+P7 & R9 proposal interface with an optional model lane & measured accuracy of proposed carriers; results replayable without the model\\
+\bottomrule
+\end{longtable}
+
+P1 to P3 are engineering and adaptation and can be scheduled with confidence. P4 is mostly engineering with one validation risk (agreement with the kernel). P5 is where the research risk is concentrated: it should be preceded by the expert consultations of Section~\ref{sec:experts} and by paper prototypes on the thirteen stretch cases, and its gate should be read as a target, not a commitment.
+
+\subsection{Risks}
+
+\begin{longtable}{@{}L{46mm}L{50mm}L{52mm}@{}}
+\toprule
+Risk & Consequence & Mitigation\\
+\midrule
+\endhead
+Cost-ordered search changes which candidates are found first & baseline outcomes stay the same but transcripts change; ranking complaints & gate P2 on identical candidate lists before enabling costs; change costs only with the ranking benchmark in hand\\
+Custom evaluator disagrees with the kernel & unsound pruning, lost solutions & conservative fragment; differential testing on every generated program; kernel fallback\\
+Carrier enumeration slows solved cases & regression in time, not in score & carriers enter only after the plain fold fails at the current cost bound; carrier refutation before search\\
+Definition elaborator too slow for recursion candidates & P5 recursion unusable in 10 s & realize only candidates that pass the contract by interpretation\\
+Mathlib-scale index too large or slow to load & retrieval lane unusable interactively & environment-fingerprinted on-disk index; reachability pre-pass limits providers to tens\\
+Determinism lost under parallel lanes or learned costs & results not reproducible & rank after all lanes stop; learned costs are a pure function of the query's own search history\\
+\bottomrule
+\end{longtable}

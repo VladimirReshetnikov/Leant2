@@ -1,0 +1,58 @@
+\section{Constraints and classification}\label{sec:classification}
+
+\subsection{Constraints that stay}
+
+The owner's requirements and the decisions of the unified proposal are not reopened here.
+
+\begin{itemize}
+\item \textbf{One adaptive engine, no settings.} Every improvement must decide for itself when it applies. A technique that needs the user to choose a mode is out of scope; a technique that needs a tuning constant must come with a way to set the constant from the query.
+\item \textbf{The kernel is the only authority.} A candidate is published only after the exact program and the exact contract proof pass \code{addDeclCore} and the axiom audit. Heuristics, evaluators, learned models and external tools may propose and may prune; they never certify.
+\item \textbf{Pruning must be sound with respect to the contract.} A branch may be abandoned only when no completion of the partial program can satisfy the contract, or when the loss is an accepted incompleteness of a bounded search (depth, splits). The first kind needs an argument; Section~\ref{sec:evaluation} returns to this.
+\item \textbf{The baseline never regresses.} The six harnesses of Table~\ref{tab:scores} are the regression gate for every change, at 10 s and at 5 s.
+\item \textbf{Core-only by default.} The toolchain is Lean~4.34.0 without Mathlib. Mathlib, Aesop, Plausible and similar packages may become optional lanes, never requirements.
+\item \textbf{Determinism.} The same query in the same environment gives the same candidates in the same order. Parallelism and learned guidance have to preserve this, or make the nondeterminism invisible in the result.
+\end{itemize}
+
+\subsection{Three classes of work}
+
+\begin{description}
+\item[\cls{E} Engineering.] The algorithm is known and has been used in a comparable setting. The risk is effort and integration.
+\item[\cls{A} Adaptation.] The algorithm is known for simply typed or ML-like languages, or inside Lean for proofs rather than programs. It must be re-derived for dependent types, universe polymorphism, type classes, and a search whose state is a metavariable context. The risk is that the adaptation loses the property that made the original work.
+\item[\cls{R} Research.] We do not know of an algorithm that is optimal, or even clearly adequate, for the problem as it arises here. These are the places where time spent reading, experimenting and talking to specialists is likely to pay more than time spent coding.
+\end{description}
+
+\subsection{Work items}
+
+\begin{longtable}{@{}L{12mm}L{68mm}L{10mm}L{58mm}@{}}
+\toprule
+Id & Item & Class & Evidence that motivates it\\
+\midrule
+\endhead
+E1 & Emit results as compilable definitions & E & probe 6: \code{List.rec} fails in the code generator\\
+E2 & Frontends: term, tactic, code action, sketches with holes & E & only a REPL and \texttt{\#leant2} exist\\
+E3 & Receipts, replay and resumable search & E & unified proposal, not built\\
+E4 & Substrate cost: the unattributed 30\% & E & Table~\ref{tab:profile}\\
+E5 & Parallel lanes & E & lanes run one after another\\
+E6 & Decision procedure for intuitionistic propositional targets & E & negative results are bounded-search only\\
+E7 & Wider proof portfolio (\code{grind}, bounded instantiation) & E & quantified contracts rely on \code{simp}\\
+E8 & Benchmark suite beyond Leant & E & corpus saturated at 100\%\\
+\midrule
+A1 & Conditionals and guard abduction & A & probes 9, 10\\
+A2 & Recursion on \code{Nat}, literals and arithmetic components & A & probe 4\\
+A3 & Normal forms and symmetry reduction in enumeration & A & junk candidates in traces\\
+A4 & Parametricity-directed test inputs & A & contracts are user-written examples only\\
+A5 & Rule indexing with discrimination trees & A & every rule scans every local\\
+\midrule
+R1 & Search control with coupled goals under a wall-clock budget & R & one rule was 90\% of a search\\
+R2 & Carriers, accumulators and auxiliary state & R & 13 stretch cases; probe 11\\
+R3 & Evaluation of programs with holes & R & 45\% of time on contract queries\\
+R4 & Indexed families and the motive problem & R & probe 8\\
+R5 & General recursion from incomplete examples & R & probes 4, 11\\
+R6 & Contracts beyond decidable observations; program and proof together & R & portfolio is five tactics\\
+R7 & Component retrieval at library scale & R & probes 14, 16; twenty curated providers\\
+R8 & Ranking and candidate equivalence & R & three-key lexicographic ranking\\
+R9 & Learned guidance under a kernel gate & R & none today\\
+\bottomrule
+\end{longtable}
+
+The research items are not independent. R2 and R5 are the same problem seen from Church encodings and from recursors: both ask for a type that the specification does not mention. R3 is what makes R2 and R5 affordable, because a carrier is only worth trying if wrong ones are refuted early. R1 decides how much of any of the others fits in ten seconds. Section~\ref{sec:roadmap} orders the work accordingly.

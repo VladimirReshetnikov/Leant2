@@ -1,0 +1,46 @@
+\section{R4. Indexed families and the motive problem}\label{sec:dependent}
+
+\subsection{The problem}
+
+Leant2's reason to exist is Lean's type theory, and this is where it is weakest relative to its ambition. Probe 7 (head of a non-empty vector) works, because Lean's \code{cases} performs dependent elimination and unifies indices. Probe 8 does not:
+\begin{lstlisting}
+(A B : Type) -> (n : Nat) -> (A -> B) -> Vec A n -> Vec B n
+\end{lstlisting}
+The solution is an induction on the vector whose motive depends on the index, \code{fun n _ => Vec B n}. The engine's recursion rule calls \code{induction} with whatever motive Lean's tactic infers after the context has been fixed, never generalizes other hypotheses, and treats indexed families as out of scope. Four related capabilities are missing.
+
+\begin{description}
+\item[Motive inference.] Choosing the motive of a recursor application so that the branches type check and the result has the goal type. For non-indexed families with a constant motive this is trivial. In general it is higher-order unification: find $M$ with $M\ \vec\imath\ x \equiv G$.
+\item[Generalization.] Deciding which hypotheses to revert before induction. Reverting too little makes the induction hypothesis useless (it speaks about the wrong index or the wrong accumulator); reverting everything makes every branch a function and multiplies the search. This is the same problem as the carrier of Section~\ref{sec:carriers}.
+\item[Transport.] Goals of type \code{Vec A (n + 0)} when a term of type \code{Vec A n} is at hand. The term exists only after rewriting with a propositional equality, and the rewriting itself needs a motive.
+\item[Type-level computation.] Goals whose type is a function applied to a hole, \code{F ?n}, where progress needs unfolding \code{F} on a guessed constructor form of the hole.
+\end{description}
+
+\subsection{What is known}
+
+Higher-order unification is undecidable in general~\cite{huet75}; the pattern fragment is decidable with most general unifiers~\cite{miller91}, and practical elaborators extend it with postponement and pruning~\cite{abelpientka11}. Lean's elaborator solves the motive problem for \code{induction}, \code{cases}, \code{match} and the triangle rewrite notation by abstracting occurrences of the indices and the major premise in the goal, which is a heuristic: the ``motive is not type correct'' error is its failure mode and is a familiar obstacle for Lean users. Dependent pattern matching by unification of indices is well understood~\cite{cockx}.
+
+For \emph{search} in dependent type theories there are several tools and no consensus. Agsy searches Agda terms with case splitting and a notion of refinement order~\cite{agsy}; Mimer is its current successor in Agda. Czajka's \code{sauto} searches for inhabitants in the Calculus of Inductive Constructions with a focused, eager treatment of inversion and explicit limits on dependent elimination~\cite{sauto}. Canonical searches for $\beta$-normal, $\eta$-long inhabitants of a dependent type theory with its own representation and reports solving goals by structural recursion through recursors when the motive is determined by unification~\cite{canonical}. Idris has type-directed proof search with case splitting in the editor. All of them bound or avoid exactly the four capabilities above: none, to our knowledge, searches over motives or generalizations, and none handles transport other than by the user's rewriting.
+
+\subsection{Why it is hard}
+
+The space of motives is a function space over types. Even restricted to abstraction of sub-terms of the goal, a goal with $k$ occurrences of index expressions has $2^k$ candidate abstractions, most ill typed. Generalization multiplies by the subsets of the context. Transport makes the term language non-canonical: there are infinitely many proofs of an index equation and the kernel term contains them, so size-based enumeration and syntactic deduplication stop making sense, while proof irrelevance says all these terms are the same program. And every step relies on definitional unfolding, where the choice of transparency decides both whether unification succeeds and how long it takes; Lean automation in general has no principled answer to when to unfold.
+
+\subsection{Design to try first}
+
+\begin{enumerate}
+\item \textbf{Index-generalizing induction.} For an inductive family local \code{x : I ps is}, revert \code{x}, the index variables among \code{is}, and every hypothesis whose type mentions them; then apply the recursor with the motive Lean infers for the reverted goal. This is the \code{induction ... generalizing} discipline, applied automatically and only to index variables, which keeps the branching at one motive per local. Probe 8 becomes solvable: the branches are \code{Vec B 0} and \code{B -> Vec B n -> Vec B (n+1)} with the right hypothesis.
+\item \textbf{Motives from the carrier grammar.} For accumulating recursion, the generalized hypotheses are chosen by the carrier search of Section~\ref{sec:carriers}: a carrier $S \to T$ is ``revert the local of type $S$''. One mechanism then serves Church folds and recursors.
+\item \textbf{Transport as a proof obligation, not a term.} When unification fails only because two index expressions are not definitionally equal, create the goal $i = j$, send it to the arithmetic tier of the portfolio (\code{omega}, \code{simp_arith}, \code{grind}), and insert a cast on success. Count the cast as zero size for ranking and erase it for display. Bound the number of casts per candidate to two.
+\item \textbf{Constructor-form splitting of index holes.} When a goal type is stuck on a hole of an inductive type, split the hole into its constructor forms (narrowing), bounded by the split budget.
+\item \textbf{A differential benchmark against existing tools.} Run Canonical and \code{exact?} (and, outside Lean, \code{sauto} and Agda's \code{auto} on translated problems) on the dependent part of the benchmark suite. The point is to learn where each stops, not to compete.
+\end{enumerate}
+
+\subsection{Questions for experts}
+
+\begin{enumerate}
+\item Is there a complete and terminating enumeration of motives for a useful class, for instance motives that abstract a subset of the \emph{maximal} occurrences of index terms, and is that class closed under the generalizations needed for accumulators?
+\item How should a search treat propositional transports so that enumeration stays canonical? Is working in a setoid or with heterogeneous equality internally, and producing casts only at the end, known to work?
+\item What is the experience of Canonical and \code{sauto} with definitional unfolding during search: fixed transparency, on-demand unfolding when stuck, or normalization up front?
+\item For Lean specifically: can the elaborator's motive computation be called as a library with a failure that is cheap and informative, so that a search can try several abstractions?
+\end{enumerate}
+Communities to ask: Lean core developers (elaboration of \code{induction}, \code{match} and the triangle rewrite notation; transparency); the authors of Canonical and of \code{sauto}; the Agda developers for Agsy and Mimer; researchers in dependent pattern matching and higher-order unification.

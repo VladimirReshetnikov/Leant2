@@ -1,0 +1,40 @@
+\section{R7. Component retrieval at library scale}\label{sec:retrieval}
+
+\subsection{The problem}
+
+The engine knows twenty curated library functions and whatever the session declares. Probes 14 and 16 fail because \code{Nat.succ_pos} and \code{Nat.le_trans} are not among them. Lean core has tens of thousands of declarations; Mathlib has several hundred thousand. A synthesizer for ``Lean types that occur in practice'' has to find, among them, the handful that belong in the program, inside a search whose branching factor is already the limiting resource.
+
+The demand filter shows the shape of the difficulty. A provider whose conclusion is a constant-headed type is tried only on goals with that head, which is cheap and precise. A provider whose conclusion is a type variable, such as \code{List.foldr}, \code{Option.getD} or \code{id}, fits every goal; the engine admits it only when a local's type head occurs among its argument heads. That rule was enough for twenty functions. It will not be for twenty thousand.
+
+\subsection{What is known}
+
+\paragraph{Lookup in Lean.} \code{exact?} and \code{apply?} index the library's conclusions in a lazily built discrimination tree and try the matches, closing side goals with \code{solve_by_elim}. They find single lemma applications, not compositions. Loogle answers pattern queries over the same data. Premise selection for hammers ranks declarations by relevance to a goal with symbol-overlap heuristics or learned embeddings~\cite{leanhammer,leandojo}.
+
+\paragraph{Component-based synthesis.} SyPet models an API as a Petri net whose places are types and whose transitions are methods, and finds compositions as reachability paths, then fills arguments by SAT~\cite{sypet}. Hoogle+ extends this to polymorphic Haskell by \emph{type-guided abstraction refinement}: search over an abstraction of the types in which polymorphic components are approximated, check the concrete types of a found path, and refine the abstraction where the check fails~\cite{hoogleplus}. Both target tens of thousands of components and first-order or rank-1 types, without dependent types, universe levels or implicit instance arguments.
+
+\subsection{Why it is hard here}
+
+\begin{itemize}
+\item \textbf{Dependent and polymorphic conclusions.} A Lean lemma's conclusion mentions its arguments; ``types as places'' has no direct meaning when types contain terms. The abstraction must forget term indices in a way that is refinable.
+\item \textbf{Type classes.} Most library functions are generic over a structure (\code{[Add A]}, \code{[LE A]}, \code{[Monad m]}). A component is applicable only if instances resolve, and instance resolution is itself a search that is too slow to run per candidate per node.
+\item \textbf{Programs versus proofs.} Relevance signals learned on proof corpora rank lemmas. For data goals the relevant components are functions, and which function is relevant is determined by the contract's behavior rather than by symbols in the goal.
+\item \textbf{Cost of loading.} Importing Mathlib takes seconds and gigabytes before the first node is expanded. An index has to be built once and stored, keyed by the environment's fingerprint.
+\end{itemize}
+
+\subsection{Design to try first}
+
+\begin{enumerate}
+\item \textbf{Two retrieval modes.} For proposition-typed holes, call the existing lookup (\code{exact?}'s index, then the premise selector) with a time limit and take the top $k$ as providers for that hole only. This alone fixes probes 14 and 16 and costs nothing when no proposition-typed hole remains open after the ordinary rules.
+\item \textbf{A reachability pre-pass for data goals.} Build, once per environment, a graph whose nodes are type heads with arity (the abstraction: \code{List _}, \code{Option _}, \code{Nat}, a node for ``type variable'') and whose edges are functions from argument heads to result head. Given a query, compute the components that lie on some path from the heads available in the context to the head of the goal, within length three. Only those become providers. This is the first level of Hoogle+'s abstraction, without refinement; refinement is what the ordinary search does when it unifies.
+\item \textbf{Behavioral relevance.} When the contract has input--output observations, run each unary or binary candidate component of fitting type on the observed inputs. A component whose output equals the required output on all observations is the answer; one whose output is a prefix, a permutation or a sub-term of the required output gets a lower cost. This is a generic form of what \lam\textsuperscript{2} does by hand-written deduction rules and is cheap because evaluation of closed library functions can use compiled code under a trusted-evaluation profile, with the kernel confirming only the winner.
+\item \textbf{Instance-aware indexing.} Index class-generic components under the class as a precondition, and resolve instances once per (class, type) pair per query, memoized.
+\end{enumerate}
+
+\subsection{Questions for experts}
+
+\begin{enumerate}
+\item What is the right type abstraction for dependent, universe-polymorphic signatures so that abstract reachability is a useful over-approximation? Erasing all term arguments is sound but may connect everything to everything.
+\item Has type-guided abstraction refinement been tried with type classes, and how were instance constraints represented in the net?
+\item Can Lean's premise-selection interface be queried with a \emph{data} goal plus examples, and is there a corpus from which relevance for programs (rather than proofs) could be learned, for instance definitions in Mathlib and Std with their bodies erased?
+\end{enumerate}
+Communities to ask: the authors of Hoogle+ and SyPet; the developers of \code{exact?}, Loogle and the Lean premise-selection interface; the LeanDojo and Lean hammer groups.

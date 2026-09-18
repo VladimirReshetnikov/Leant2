@@ -26,6 +26,7 @@ suffixes (` (1)`) were removed; the contents of each package are unchanged.
 | `08-architecture-checked-prototypes/` | `Leant2_Architecture_and_Prototypes (1)/Leant2` | Leant2: architecture, algorithms, and checked prototypes | `Leant2_Architecture.tex` |
 | `09-native-dependent-design/` | `Leant2_Design` | Leant2: Native Dependent Program Synthesis in Lean (detailed architecture and algorithm proposal) | `article/Leant2.tex` |
 | `10-unified-proposal/` | (new) | Leant2: A Unified Architecture Proposal | `Leant2.tex` (sections under `sections/`) |
+| `11-further-improvements/` | (new) | Leant2: Design for Further Improvements | `Leant2-next.tex` (sections under `sections/`) |
 
 Each numbered directory keeps its own `README.md` with reproduction
 instructions. Relative paths inside those READMEs refer to the package root,
@@ -45,3 +46,15 @@ switches or settings, and a semantic acceptance baseline over Leant's
 `:synth` golden corpus (30 transcripts, 278 queries). It also records what to
 reuse from the sibling project Forge. It does not add new experimental
 evidence; the evidence sections cite the receipts in the nine packages.
+
+## The design for further improvements
+
+`11-further-improvements/Leant2-next.tex` (compiled: `Leant2-next.pdf`) was
+written after the first implementation passed the baseline and every replayed
+Leant suite. It starts from measurements: a probe of queries just outside the
+corpus and a profile of the search. It separates work with known solutions
+(engineering and adaptation items, each with a closing test) from nine open
+algorithmic problems where no optimal solution is known, and for each of those
+states what is known, the design to try first, and the questions to put to
+outside experts. It ends with a phased roadmap and a table of whom to ask
+what.

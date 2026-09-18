@@ -1,0 +1,65 @@
+\section{R2. Carriers, accumulators and auxiliary state}\label{sec:carriers}
+
+This is the problem we consider hardest and most valuable. It is the reason for all thirteen stretch failures and for probe 11, and it reappears in every recursion scheme.
+
+\subsection{The problem}
+
+A Church-encoded list is its own fold: \code{xs : (R : Type) -> (A -> R -> R) -> R -> R}. To use it the synthesizer must choose $R$. A recursor is the same with the motive in place of $R$. When the function to be synthesized \emph{is} a fold into its result type, $R$ is the goal type and unification finds it. Otherwise $R$ is a type that occurs nowhere in the query:
+
+\begin{center}\small
+\begin{tabular}{@{}L{30mm}L{52mm}L{66mm}@{}}
+\toprule
+Function & Carrier $R$ & Why\\
+\midrule
+\code{map}, \code{append}, \code{filter} & result type & plain fold\\
+\code{reverse}, \code{foldl} & $T \to T$ & left-to-right accumulation through a right fold\\
+\code{foldl1}, \code{reduce} with default & $\mathrm{Option}\,A \to A$, or $\mathrm{Option}\,A$ & the first element seeds the accumulator\\
+\code{maximum} & $\mathrm{Option}\,A$ & same, with a comparison\\
+\code{minMax} & $\mathrm{Option}\,(A \times A)$ & two running values\\
+\code{at} (index) & $\mathrm{Int} \to A$ & the index is consumed while folding\\
+\code{fib} & $\mathbb{N} \times \mathbb{N}$ & tupling\\
+tree flatten, efficiently & $\mathrm{List}\,A \to \mathrm{List}\,A$ & accumulator avoids quadratic append\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The engine solves the first two rows. The second row needed a dedicated rule (7a: instantiate a recursive eliminator at $T \to T$ for goal $T$), found by hand after reading a failing trace. A general frontier of candidate carriers was tried first and multiplied the search by an order of magnitude; restricting the rule to eliminators whose step threads the result type made one probe ten times faster. That history is the problem in miniature: each carrier shape is easy once named, and enumerating shapes blindly is unaffordable.
+
+The same problem has three other faces. \emph{Motive generalization}: a structurally recursive function with an accumulating parameter is a recursor whose motive is a function type, $\mathrm{motive} := \lambda\_.\ S \to T$. \emph{Strengthening}: a recursive function that returns more than is asked (a pair) and is projected afterwards. \emph{Helper invention}: a fold whose step calls an auxiliary function that must itself be synthesized. In all four the synthesizer must invent an object whose specification is not given.
+
+\subsection{What is known}
+
+\paragraph{Theory of folds.} Gibbons, Hutton and Altenkirch characterize exactly when a function $h$ on lists is a fold: when the kernel of $h$ is closed under \code{cons}, that is, $h\,xs = h\,ys$ implies $h\,(a{::}xs) = h\,(a{::}ys)$~\cite{whenfold}. When it is not, $h$ becomes a fold after pairing with auxiliary functions: this is \emph{tupling}~\cite{tupling}, and the third homomorphism theorem gives conditions under which a function that is both a left and a right fold is a homomorphism~\cite{thirdhom}. The smallest sufficient auxiliary information is, in automata terms, the Myhill--Nerode quotient of input lists under ``indistinguishable by $h$ after any further \code{cons}''. These results say a carrier \emph{exists} and what it must distinguish. They do not give a procedure to find a \emph{type and step function} from a handful of examples.
+
+\paragraph{Synthesis systems.} \lam\textsuperscript{2} fixes a set of combinators (\code{map}, \code{filter}, \code{foldl}, \code{foldr}, \code{recl}) and deduces examples for the combinator's function argument from examples for the whole; for folds the deduction is possible only when the examples are closed under taking tails, and the accumulator type is the result type~\cite{lambda2}. Myth, Smyth, Burst and Trio synthesize explicit recursion and avoid the carrier by not using folds; they need a function's own examples to be trace-complete (Myth), or replace recursive calls by angelic values and check them afterwards (Burst), or derive recursion from straight-line blocks (Trio)~\cite{myth,smyth,burst,trio}. None of them invents an accumulating parameter or a tuple unless the signature already has it. Synquid requires the user to write the auxiliary function's refinement type~\cite{synquid}. DreamCoder learns reusable abstractions across tasks, which is helper invention over a corpus rather than within one query~\cite{dreamcoder}. Inductive-theorem-proving research calls the proof-side twin of this problem generalization and lemma speculation and regards it as open.
+
+So, to our knowledge: the existence theory is classical, the enumeration of carriers is not addressed by synthesis systems, and the learning of a carrier from examples has no published algorithm for this setting.
+
+\subsection{Design to try first}
+
+\paragraph{A carrier grammar with costs.} For a goal type $T$, element type $A$ and the types $S_i$ of other locals:
+\[
+K \;::=\; T \;\mid\; S_i \to K \;\mid\; K \times K \;\mid\; \mathrm{Option}\,K \;\mid\; A \;\mid\; \mathrm{Bool} \;\mid\; \mathbb{N}
+\]
+bounded by size 3, enumerated in cost order under the search of Section~\ref{sec:search}. Rule 7a is the production $T \to T$. Each carrier adds a \emph{finishing} obligation $K \to T$ (apply to the seed, project, or supply a default for \code{none}), which is ordinary synthesis. The grammar is small; the cost is the subtree each carrier opens, which is why this design depends on the two ideas below and on R3.
+
+\paragraph{Refute a carrier before searching under it.} For a fixed carrier $K$, the unknowns are \code{step}, \code{init} and \code{finish}. The contract's observations give, for each input list, the required value of \code{finish (foldr step init xs)}. Two inputs that must produce different final results after the same suffix of \code{cons} operations must be mapped to different values of $K$. If the number of classes that the observations force exceeds the number of values of $K$ that can be built from the inputs at the search depth, $K$ is refuted without synthesizing anything. For finite carriers such as \code{Bool} this is a counting argument; for $T$ itself it is exactly the Gibbons--Hutton--Altenkirch test on the examples and explains in advance why \code{reverse} cannot be a plain fold into \code{List A} by a step of depth one. We believe this test is new as a pruning rule; whether it is strong enough to matter is an empirical question.
+
+\paragraph{Learn the carrier as an automaton.} Treat the observations as samples of a function on strings over $A$. Build the observation table of Angluin-style learning: rows are input prefixes (or suffixes, for right folds), columns are continuations, entries are required results. The distinct rows are the states a carrier must distinguish. The number of states and their structure suggest the carrier: one state per value of $T$ means a plain fold; states indexed by ``seen nothing'' versus a value of $A$ means $\mathrm{Option}\,A$; pairs of values mean a product. This gives a \emph{proposal} for $K$ derived from the data, to be confirmed by synthesis and the kernel. We have not found this in the synthesis literature and do not know how it behaves with the five to forty observations that contracts provide, or with polymorphic element types, where parametricity (A4) should reduce the alphabet to positions.
+
+\paragraph{Sketches as the escape hatch.} Until invention works, a user who knows the carrier can write \code{xs (Option A) ?step ?init} as a sketch (E2). The stretch cases become a benchmark with two tracks: carrier given, and carrier invented.
+
+\subsection{What would count as progress}
+
+The thirteen stretch cases and the accumulator entries of the ported suites (\code{fib}, \code{list_rev_tailcall}, \code{tree_flatten}, \code{maximum}, \code{index}), solved within 10 s without new hand-written carrier rules, and without slowing the solved Church probes by more than a factor of two.
+
+\subsection{Questions for experts}
+
+\begin{enumerate}
+\item Is there a constructive version of the fold characterization that, given finitely many input--output pairs, returns a minimal carrier \emph{as a type} from a fixed grammar, or proves none exists in the grammar?
+\item Is the automaton view sound for polymorphic functions, and what replaces the alphabet when elements are abstract? We expect positions and equalities between positions, by parametricity, but have no proof.
+\item In program calculation, tupling and accumulation are derived by fusion from a specification. Can fusion be run ``backwards'' from examples to propose the auxiliary function, and is there a complete strategy for a useful class (list homomorphisms, catamorphisms over polynomial functors)?
+\item For recursors, is there a known enumeration of motives that is complete for primitive recursion with parameters and avoids the explosion we saw on \code{Nat}?
+\item How do inductive theorem provers choose generalizations today, and do their heuristics (rippling, lemma speculation from failed proofs) transfer to choosing carriers from failed syntheses?
+\end{enumerate}
+Communities to ask: the algebra-of-programming and program-calculation community (folds, tupling, the third homomorphism theorem); the authors of \lam\textsuperscript{2}, Burst and Trio; the automata-learning community; the inductive theorem proving community (rippling, generalization, theory exploration).

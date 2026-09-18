@@ -1,0 +1,52 @@
+\input{preamble}
+\newcommand{\cls}[1]{\textsf{\small[#1]}}
+\newcommand{\WI}[1]{\textbf{#1}}
+\newcommand{\lam}{\ensuremath{\lambda}}
+
+\title{\textbf{Leant2: Design for Further Improvements}\\[6pt]
+\large Engineering plan, open algorithmic problems,\\
+and where outside expertise would help}
+\author{Prepared for Vladimir Reshetnikov}
+\date{September 18, 2026}
+\hypersetup{pdftitle={Leant2: Design for Further Improvements},pdfauthor={Leant2 project},pdfsubject={Improvement plan and open problems for the Lean-native synthesizer Leant2}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Leant2 now exists as a working \Lean{} program. It passes the owner's minimal baseline, the Leant \code{:synth} golden corpus (278 of 278 queries by outcome), and every other Leant suite that was replayed against it: the recursive scenarios, the Church behavior probes, the contextual and behavioral suites, the 350-signature Church corpus and the session suite. All of it also passes with the per-query budget halved. This document is about what comes next. It starts from measurements rather than from the earlier proposals: a probe of sixteen queries just outside the corpus shows exactly where the engine stops (recursion on natural numbers, conditionals, induction over indexed families, programs that combine two recursive results, library lemmas), and a profile of the search shows where its time goes.
+
+The document separates three kinds of work. \emph{Engineering} items have a known solution and only need to be built. \emph{Adaptation} items are solved in the literature for simply typed or ML-like languages and must be re-derived for Lean's dependent type theory and its kernel. \emph{Research} items are those where, to our knowledge, no optimal or even clearly adequate algorithm is known. Nine research problems are stated in full: search control under a wall-clock budget with coupled goals; invention of carriers, accumulators and auxiliary state for folds and recursors; evaluation of programs with holes; synthesis over indexed families and the motive problem; general recursion from incomplete examples; contracts beyond decidable observations and the co-synthesis of programs with inductive proofs; component retrieval at library scale; ranking and candidate equivalence; and learned guidance under a kernel gate. For each, the document gives the problem, why it is hard, what is known, the design we would try first, how we would measure progress, and the precise questions we would put to outside experts, together with the research communities whose published work bears on them.
+\end{abstract}
+
+\vspace{4pt}
+\textbf{Status.} This is a design document. Every number in Section~\ref{sec:evidence} was measured on the repository at commit \code{33cec8b} with Lean~4.34.0 on one Windows workstation. Nothing else in the document is measured: the designs in Parts~II and~III are proposals, not results. Literature is cited from memory of the published record; titles, venues and years should be checked before they are relied on in print.
+
+\clearpage
+\tableofcontents
+\clearpage
+
+\part{Where the engine stands}
+\input{sections/01-evidence}
+\input{sections/02-classification}
+
+\part{Work with known solutions}
+\input{sections/03-engineering}
+\input{sections/04-adaptation}
+
+\part{Open problems}
+\input{sections/05-search}
+\input{sections/06-carriers}
+\input{sections/07-evaluation}
+\input{sections/08-dependent}
+\input{sections/09-recursion}
+\input{sections/10-contracts}
+\input{sections/11-retrieval}
+\input{sections/12-ranking}
+
+\part{Plan}
+\input{sections/14-roadmap}
+\input{sections/15-experts}
+\input{sections/16-references}
+
+\end{document}

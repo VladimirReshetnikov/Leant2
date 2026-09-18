@@ -1,0 +1,46 @@
+\section{R6. Contracts beyond decidable observations}\label{sec:contracts}
+
+\subsection{The problem}
+
+Almost every contract in the corpus is a conjunction of closed decidable equations. Those are decided by evaluation and the proof is \code{of_decide_eq_true}. The interesting contracts are different:
+
+\begin{description}
+\item[Universal properties.] \code{forall xs, (f xs).length = xs.length}; \code{forall xs, f (f xs) = xs}; \code{forall xs, Sorted (f xs) and Perm xs (f xs)}.
+\item[Refinement-style signatures.] \code{(xs : List A) -> Subtype (fun ys => ys.length = xs.length)}, where the contract is in the type and the program must carry proofs.
+\item[Relational and metamorphic properties.] \code{f (xs ++ ys) = f xs ++ f ys}; agreement with a reference implementation on all inputs.
+\end{description}
+For these the engine has a five-tactic portfolio applied to the closed program. It proves the identity function length-preserving. It cannot prove that a synthesized recursive \code{map} is, because that proof is an induction whose statement mentions the just-synthesized recursor term, and no tactic in the portfolio performs induction.
+
+Two problems follow. \emph{Refutation}: wrong candidates must be rejected quickly, without a proof attempt. \emph{Certification}: the right candidate must be proved, automatically, within the budget.
+
+\subsection{What is known}
+
+\paragraph{Refutation.} Counterexample-guided inductive synthesis alternates a synthesizer that satisfies finitely many examples with a verifier that either proves the candidate or returns a new counterexample~\cite{cegis}. In Lean the verifier's cheap half is testing: \code{decide} on bounded domains, and property-based testing with generators and shrinking (the Plausible library). A counterexample is a closed instance of the contract and is kernel-checkable, which is the ``tests refute, proofs certify'' rule of the unified proposal.
+
+\paragraph{Certification.} Synquid checks refinement types with an SMT solver over decidable theories and relies on measures to make recursive functions' properties inductive by construction~\cite{synquid}. Leon and related tools verify synthesized recursive functions by unfolding plus SMT. In Lean the available automation is \code{simp}, \code{omega}, \code{grind}, \code{decide}, Aesop, hammers that call external provers with premise selection~\cite{leanhammer}, and neural provers. Automated induction (choosing the induction variable, generalizing, finding lemmas) remains a research area with specialised provers and no robust general solution.
+
+\paragraph{Correct by construction.} The alternative to proving after the fact is to synthesize program and proof together: the target is the subtype, the search builds a dependent pair, and the proof obligations of each branch are local (in the \code{cons} branch, prove the property from the induction hypothesis's property). This is how type-theoretic program extraction has always worked; as a \emph{search} strategy it makes every branch carry a proof goal with holes in it.
+
+\subsection{Why it is hard}
+
+Proof search for a property of a program with holes is not meaningful until the holes that the property depends on are filled; but waiting until the program is closed gives the prover a monolithic goal about a recursor term, the form automation handles worst. The local obligations of the correct-by-construction route are easy (often \code{simp} with the hypothesis) but there are many of them, each tactic call costs one to a hundred milliseconds, and the search makes thousands of nodes. The schedule that pays proof cost only on promising branches (``proof debt'' in the unified proposal) has no known optimal policy; it is a multi-armed bandit with correlated arms.
+
+\subsection{Design to try first}
+
+\begin{enumerate}
+\item \textbf{Bounded instantiation as a first-class refuter} (E7), extended with generators: for \code{forall x : tau, P x}, enumerate small values of \code{tau} by the engine's own type-directed enumeration (it is a synthesizer of inhabitants, after all), most-canonical first by A4. Cache the counterexamples found for one candidate and test them first on the next: this is CEGIS with the engine as its own example generator.
+\item \textbf{Program and proof together for subtype targets.} When the target is a subtype or the contract is a universally quantified property of the result, run the recursion rule on the \emph{pair}: the motive is the subtype, each branch must produce a value and a proof, and the proof goal is deferred (it is a proposition about open holes, so the existing rotation rule already sends it last) until the branch's value is closed. Then it goes to the portfolio with the induction hypothesis's property in context. The proof obligations are local and first-order in the typical cases (length, membership, ordering with \code{omega}).
+\item \textbf{Proof debt with a fixed exchange rate.} Charge proof attempts to the wall clock like any other step, but order them: never attempt a proof for a candidate that has not survived bounded instantiation; attempt local obligations before global ones; give each obligation a tier ladder (5 ms \code{rfl}/\code{decide}, 50 ms \code{simp}/\code{omega}, 500 ms \code{grind}) and climb it only when the rest of the search is idle or exhausted.
+\item \textbf{Inductive proofs of closed recursor terms} as the fallback: a small tactic that inducts on the recursor's major premise, unfolds the recursor's computation rule, and calls the portfolio with the hypothesis. It covers the properties whose proof follows the program's recursion, which is most of those a user states.
+\item \textbf{Report unproved survivors honestly.} A candidate that passes all tests and no proof is a distinct outcome (``unrefuted, not certified'') and must never be shown as verified; the unified proposal's result algebra already has the slot.
+\end{enumerate}
+
+\subsection{Questions for experts}
+
+\begin{enumerate}
+\item For the program-and-proof search, is there a known discipline for interleaving value holes and proof holes that avoids both premature proof attempts and late discovery that a value choice is unprovable? Refinement-type systems use liquid abstraction for this; is there an analogue without an SMT solver and with Lean's propositions?
+\item Which class of properties of structurally recursive programs is provable by ``induct along the program, simplify, close with arithmetic'', and can membership in the class be recognized syntactically so that the engine does not waste the budget outside it?
+\item What is the state of automated induction in Lean today (rippling-style tactics, lemma discovery, \code{grind} with induction, hammers), and which of it is usable as a library with a time limit?
+\item Is there a principled scheduling policy for proof debt, for example from the literature on anytime algorithms or bandits with switching costs?
+\end{enumerate}
+Communities to ask: the authors of Synquid and of refinement-type verifiers; the developers of \code{grind}, Aesop and the Lean hammer; the inductive theorem proving community; the property-based testing community for generator design in dependent types.

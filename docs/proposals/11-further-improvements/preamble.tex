@@ -1,0 +1,72 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,microtype}
+\usepackage[margin=25mm,headheight=15pt]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs,longtable,tabularx,array}
+\usepackage{xcolor,graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc}
+\usepackage{enumitem,listings,fancyhdr,needspace,xurl}
+\usepackage[colorlinks=true,linkcolor=blue!45!black,citecolor=green!35!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{bookmark}
+
+\definecolor{ink}{HTML}{172B3A}
+\definecolor{accent}{HTML}{235F7B}
+\definecolor{pale}{HTML}{F1F5F7}
+\definecolor{rulecol}{HTML}{BDCCD5}
+
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\Lean}{Lean~4}
+\newcommand{\E}{\mathcal{E}}
+\newcommand{\G}{\mathcal{G}}
+\newcommand{\Pol}{\Pi}
+\newcommand{\Bud}{\mathcal{B}}
+\newcommand{\Obs}{\mathcal{X}}
+\newcommand{\Comp}{\mathrm{Comp}}
+\newcommand{\Beh}{\mathrm{Beh}}
+\newcommand{\Sort}{\mathrm{Sort}}
+\newcommand{\Prop}{\mathrm{Prop}}
+\newcommand{\Nat}{\mathbb{N}}
+\newcommand{\Pn}[1]{P#1}
+\newcommand{\prov}[1]{\textsuperscript{\scriptsize[#1]}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\setlist{nosep,leftmargin=1.6em}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+\emergencystretch=4em
+\raggedbottom
+\widowpenalty=10000
+\clubpenalty=10000
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{ink}Leant2: design for further improvements}
+\fancyhead[R]{\small Engineering plan and open problems}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\lstdefinelanguage{LeanSketch}{
+  morekeywords={def,theorem,example,structure,inductive,where,match,with,fun,forall,let,in,by,exact,apply,intro,cases,induction,constructor,if,then,else,return,do,namespace,end,universe,termination_by,decreasing_by,noncomputable,partial,import,open,instance,class,abbrev,axiom,opaque,private,elab,syntax,macro,deriving},
+  sensitive=true,morecomment=[l]{--},morecomment=[s]{/-}{-/},morestring=[b]"
+}
+\lstset{language=LeanSketch,basicstyle=\ttfamily\footnotesize,keywordstyle=\bfseries\color{accent},commentstyle=\itshape\color{black!55},backgroundcolor=\color{pale},frame=single,rulecolor=\color{rulecol},breaklines=true,columns=fullflexible,keepspaces=true,showstringspaces=false,aboveskip=8pt,belowskip=8pt,xleftmargin=3pt,xrightmargin=3pt}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{invariant}[definition]{Invariant}
+\newtheorem{decision}[definition]{Decision}
+\theoremstyle{plain}
+\newtheorem{proposition}[definition]{Proposition}
+\newtheorem{theorem}[definition]{Theorem}
+\theoremstyle{remark}
+\newtheorem{remark}[definition]{Remark}
+
+\tikzset{box/.style={draw=accent,rounded corners=2pt,fill=pale,align=center,inner sep=5pt,font=\small},
+         flow/.style={-{Latex[length=2mm]},thick,draw=accent}}
+

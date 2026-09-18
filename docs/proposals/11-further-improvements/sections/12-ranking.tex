@@ -1,0 +1,61 @@
+\section{R8. Ranking and candidate equivalence}\label{sec:ranking}
+
+\subsection{The problem}
+
+A type usually has many inhabitants and a loose contract admits several behaviors. The engine returns up to twelve candidates sorted by three keys: number of unused explicit inputs, number of eliminators, term size; duplicates are removed by printed form. This produced sensible first candidates on the corpus after two corrections found by reading output (instance binders are not inputs; class instances are projected, not destructured). It is a heuristic with no definition of what it approximates. Concretely:
+
+\begin{itemize}
+\item For queries whose answer must invent a type former the list is twelve variations of one idea (\code{fun _ => Empty}, \code{fun _ => Unit}, \dots); eleven slots carry no information.
+\item When the contract under-determines the function, two behaviorally different candidates appear as siblings with nothing to say that they differ, or where.
+\item The grace period ends the search 400 ms after the first candidate. Whether the best candidate has been seen by then is not known.
+\end{itemize}
+
+\subsection{What is known}
+
+Synthesizers rank by size or by a probabilistic grammar learned from code~\cite{deepcoder,probe}; programming-by-example systems such as FlashFill rank with learned features because users give one or two examples and the intended program is rarely the smallest. Type-directed tools (Djinn, Agsy, \code{exact?}) return the first or the smallest. Parametricity gives exact equivalence tests for polymorphic first-order functions (A4). For general Lean terms, equivalence is undecidable, and definitional equality is both too fine (it separates extensionally equal functions) and occasionally expensive.
+
+We know of no published notion of \emph{what the right first answer is} for type-and-contract queries that could be optimized, nor of a study of what users of a proof assistant expect from such a tool.
+
+\subsection{Design to try first}
+
+\begin{enumerate}
+\item \textbf{Behavioral classes.} Group candidates by their values on a probe set: the contract's own inputs, the canonical parametric inputs of A4, and small values enumerated as in R6. Show one representative per class (the best by the present keys) with the count of merged candidates. Two classes that the contract does not separate are shown with a distinguishing input.
+\item \textbf{Relevance as a first-class key.} A candidate that ignores an input, returns a constant, or discards a recursive result is suspect in a way that is independent of size. Generalize ``unused inputs'' to \emph{information flow}: which inputs can influence the output, computed syntactically on the normal form. Rank by flow first.
+\item \textbf{An anytime stopping rule.} Replace the fixed grace period by: stop when the cost frontier of the search (R1) exceeds the cost of the best candidate by a margin, since no cheaper candidate can then appear. With a cost-ordered search this is exact for the cost model; the grace period remains as an upper bound.
+\item \textbf{A ranking benchmark.} For each benchmark problem record the reference solution and report its rank. This is the only way to tell whether a change to ranking is an improvement.
+\end{enumerate}
+
+\subsection{Questions for experts}
+
+\begin{enumerate}
+\item Is there a defensible formal objective for ranking inhabitants of a type, for example minimum description length under a grammar learned from Lean's library, and does it agree with user preference in studies from programming-by-example?
+\item For dependent types, which notion of candidate equivalence is both cheap and meaningful: definitional equality after normalization with proof irrelevance, or observational equality on generated inputs?
+\end{enumerate}
+Communities to ask: the programming-by-example community (ranking and user studies); researchers in parametricity and testing of polymorphic functions; human-factors researchers working with proof-assistant users.
+
+\section{R9. Learned guidance under a kernel gate}\label{sec:learning}
+
+\subsection{The problem}
+
+Every open problem above contains a guess that a statistical model might make better than an enumeration: the carrier type, the generalization, the helper's specification, the relevant library components, the rule order, the guard. Large language models write plausible Lean and are often right about exactly these creative steps, while being unreliable about details that a type checker and a contract catch immediately. The kernel gate makes the combination safe by construction: a model can only propose. The open questions are whether the combination is worth its cost inside a ten-second interactive budget, and how it coexists with the owner's constraints of determinism, no settings, and a core-only default.
+
+\subsection{What is known}
+
+Neural guidance of enumerative synthesis (DeepCoder~\cite{deepcoder} and successors) learns a distribution over components from the examples and reorders the search; library learning (DreamCoder~\cite{dreamcoder}) grows the component set across tasks. For Lean, retrieval-augmented provers and hammers~\cite{leandojo,leanhammer} show that premise selection transfers; whole-proof and step-level neural provers have improved quickly. We do not know of work on neural guidance for \emph{program} synthesis in a dependently typed language with a contract, nor of measurements of latency-bounded use.
+
+\subsection{Design to try first}
+
+\begin{enumerate}
+\item \textbf{One interface, several sources.} Define a proposal interface: given the query, the partial program and a named decision point (carrier, generalization, helper type, component set, guard), return an ordered list of well-formed Lean terms or types. The enumerative grammars of R2 and R7 are the default implementation. A model is another implementation. Everything downstream (type checking, residual evaluation, the gate) is unchanged.
+\item \textbf{Proposals only reorder.} A learned source may change the order in which alternatives are tried, never the set, so completeness up to the bound and the meaning of a negative result are preserved.
+\item \textbf{Offline and optional.} The default build has no model. An optional lane may call a local model with a fixed seed and temperature zero; its proposals are recorded in the receipt (E3) so that a result can be replayed without the model.
+\item \textbf{Start where the payoff is largest.} Carrier and helper proposals (R2, R5): one call per query, outside the inner loop, with the largest reduction of search space per call.
+\end{enumerate}
+
+\subsection{Questions for experts}
+
+\begin{enumerate}
+\item What accuracy do current models reach at proposing the accumulator or auxiliary function for textbook recursive programs when given only the type and examples? A small study on the E8 suite would answer it.
+\item Is there a way to make a model's contribution deterministic and auditable enough for a tool whose output is cited in proofs of correctness, beyond recording proposals in receipts?
+\end{enumerate}
+Communities to ask: the LeanDojo and Lean hammer groups; the neurosymbolic program synthesis community.

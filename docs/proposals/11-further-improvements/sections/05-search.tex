@@ -1,0 +1,57 @@
+\section{R1. Search control with coupled goals under a wall-clock budget}\label{sec:search}
+
+\subsection{The problem}
+
+Given a query and ten seconds, in what order should partial programs be expanded? The engine answers with a fixed rule order, a fixed goal order modified by three deferral limits, depth-first search and iterative deepening on depth. Section~\ref{sec:profile} shows what this costs: one rule opened 90\% of a search tree and nothing in the engine could know it; a depth-4 pass ran for 4.7 s without a candidate while the depth-5 pass found one in 0.5 s; and a cut pass is repeated from the start by the next lane.
+
+Three sub-problems are tangled together.
+
+\begin{description}
+\item[Node order.] Which open partial program to expand next. Depth-first order is forced today by the representation: the only saved states are those on the current path.
+\item[Goal order.] Within a partial program, which hole to fill next. Holes share metavariables, so the order changes the branching factor of the others by orders of magnitude. The deferral rules are hand-written answers to four recurring situations (type holes, instance goals, holes of unknown type, the contract).
+\item[Budget split.] How to divide wall-clock time between lanes and between depths, when the time a pass needs is not known in advance.
+\end{description}
+
+\subsection{Why it is hard here}
+
+\paragraph{Coupled goals.} In first-order proof search without shared variables, subgoals are independent and an AND/OR tree can be searched best-first with memoized subgoals. With shared metavariables the subgoals of one node are a constraint problem: solving one instantiates the others. Aesop meets the same difficulty in best-first proof search for Lean and handles it by copying goals that share metavariables, so that each assignment lives in its own branch, at the price of duplicated work and a more complicated tree~\cite{aesop}. Leant2 sidesteps the difficulty by keeping all unfinished goals in the continuation, which makes depth-first search correct and makes any other order expensive. We do not know of a search organization that has both properties: independent treatment of goals that really are independent, and correct joint treatment of those that are not, without either copying or sequentializing.
+
+\paragraph{No cost signal.} Weighted enumeration needs a cost per production. Depth is a poor proxy: the accumulator rule and an exact local both cost one unit. A good cost is the expected size of the subtree a rule opens times the probability that the solution is inside, neither of which is known before the search.
+
+\paragraph{Wall clock, not node count.} Node cost varies by a factor of a hundred between a type-only query and a contract query with forty observations. Budgets in nodes do not transfer; budgets in time make the search non-reproducible across machines unless the cut points are made irrelevant to the result.
+
+\subsection{What is known}
+
+\begin{itemize}
+\item Iterative deepening is asymptotically optimal among brute-force tree searches when the branching factor is large and nothing is known about costs~\cite{korf85}; its overhead is the factor $b/(b-1)$. It stops being a good choice exactly when passes are cut by a deadline rather than completed, which is our situation.
+\item For a randomized or restarted procedure with unknown run-time distribution, the universal restart schedule of Luby, Sinclair and Zuckerman is within a logarithmic factor of optimal~\cite{luby93}. Lanes and depths are such a portfolio.
+\item Enumerative synthesizers replace depth by a \emph{cost} from a probabilistic grammar and enumerate in cost order; the grammar can be learned offline (DeepCoder~\cite{deepcoder}) or during the search from partial successes (Probe's just-in-time learning~\cite{probe}).
+\item Choosing which hole to fill next is variable ordering in constraint satisfaction, where fail-first heuristics (smallest domain, most constrained) are standard and effective. Agda's Agsy orders subproblems by a similar principle~\cite{agsy}.
+\item Best-first search over proof states with rule priorities and a normalization phase is what Aesop implements for Lean, with white-box rule sets~\cite{aesop}. Canonical searches $\beta$-normal $\eta$-long terms of dependent type theory with its own term representation and heuristics for the order of metavariable refinement, and reports large gains from that order~\cite{canonical}.
+\end{itemize}
+
+\subsection{Design to try first}
+
+\paragraph{Step 1: make states first-class.} A search state is a \code{Meta.SavedState}, a goal list and a cost. Saved states are cheap (Table~\ref{tab:profile}: 1\% of time), because the metavariable context is a persistent structure. Keep a priority queue of states instead of a call stack. Depth-first search is the special case of a LIFO queue, so nothing is lost and the baseline can be re-verified before any policy changes.
+
+\paragraph{Step 2: cost instead of depth.} Give every rule application a cost, initially hand-set from the measurements (exact local 0, constructor 1, application of a local 1, provider 2, case split 3, recursion 4, accumulator instantiation 5), and expand in order of cost-so-far plus a lower bound on the cost to close the remaining goals (one unit per open non-leaf goal). This is A* with an admissible but weak heuristic, and it subsumes iterative deepening without repeated passes.
+
+\paragraph{Step 3: learn costs within the query.} Following Probe, when a partial program survives more observations of the contract than its siblings, lower the cost of the rules that built it for the rest of the query. The residual evaluator of Section~\ref{sec:evaluation} provides the signal (how many conjuncts, or how many observations inside one conjunct, are already true). This is where the two problems meet.
+
+\paragraph{Step 4: goal order by estimated domain size.} Replace the three deferral limits by one rule: fill next the hole with the fewest applicable rule instances, computed from the index of A5, with ties broken toward holes whose assignment would instantiate the most other goal types. Instance goals and type holes then fall out as special cases rather than as separate policies.
+
+\paragraph{Step 5: a bottom-up companion.} For contracts with input--output observations, enumerate small closed terms over the locals of each observation environment bottom-up, keeping one term per observational-equivalence class~\cite{transit,escher}, and offer them to the top-down search as additional exact candidates for holes of ground type. This is how Burst supplies the components of a recursive body~\cite{burst}.
+
+\subsection{What would count as progress}
+
+Solved count at 1 s, 10 s and 60 s on the benchmark suite of E8; the ratio of nodes expanded to nodes on the solution path; and variance of the result under a $\pm 30\%$ change of machine speed, which has to be zero for the candidate list and small for time.
+
+\subsection{Questions for experts}
+
+\begin{enumerate}
+\item Is there a principled search organization for goals that share metavariables that is neither Aesop's copying nor our sequentialization? In particular, can independence be detected cheaply (no shared unassigned metavariables after instantiation) and exploited by memoizing solved independent subgoals across branches?
+\item What is the right admissible heuristic for the cost to close a goal in a dependent type theory, where closing one goal can close others by unification?
+\item Does just-in-time cost learning stay sound for ranking, that is, can it change \emph{which} candidates are found within the budget in a way users would find arbitrary, and how do published systems control that?
+\item For wall-clock budgets, is there a known way to make results independent of machine speed other than fixing a node budget per lane and calibrating it at start-up?
+\end{enumerate}
+Communities to ask: the authors of Aesop (best-first search and metavariable coupling in Lean); the authors of Canonical (refinement order for dependent inhabitation); the groups behind Probe and EUSolver (cost-guided enumeration); the constraint-programming community for variable-ordering heuristics under dynamic domains.

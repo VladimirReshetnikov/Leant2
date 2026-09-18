@@ -1,0 +1,59 @@
+\section{R3. Evaluation of programs with holes}\label{sec:evaluation}
+
+\subsection{The problem}
+
+A contract is useful during the search only if it can reject a partial program. The engine substitutes the partial program into each conjunct of the contract and asks the kernel for the weak head normal form of \code{decide (C p)}. The kernel reduces until it needs the value of a hole and stops. If the result is \code{false} the branch is dead; if it is stuck the search goes on. This costs 45\% of the time on contract queries and is the only source of pruning power the engine has. Four things are wrong with it.
+
+\begin{enumerate}
+\item \textbf{Nothing is reused.} Every evaluation starts from the definition of the contract. A fold over forty inputs is re-reduced from the first input at every node, although only one hole changed since the parent.
+\item \textbf{All or nothing.} The evaluator reports refuted or stuck. It does not say which observations already hold, which the cost learning of R1 and the guard abduction of A1 both need, nor which hole it was stuck on in a form the search can use to choose the next goal.
+\item \textbf{No backward information.} Evaluation runs forward from inputs. The literature's strongest pruning runs backward: from the required output of the whole, derive required outputs of the holes.
+\item \textbf{Recursion blocks it.} In a partial recursive body the recursive call is a call to the partial program itself and is stuck immediately, so nothing is learned until the body is complete.
+\end{enumerate}
+
+\subsection{What is known}
+
+\paragraph{Holes as values.} Hazelnut Live gives an operational semantics in which evaluation proceeds around holes and produces results containing \emph{hole closures}: a hole together with the environment in which it was reached~\cite{hazel}. Smyth builds synthesis on it: \emph{live bidirectional evaluation} evaluates a sketch to a result with hole closures, then \emph{unevaluates} the required output against that result to obtain example constraints on each hole, in the hole's own environment~\cite{smyth}. This is exactly items 2 and 3 above, for a simply typed ML core with algebraic data types and first-order examples.
+
+\paragraph{Angelic recursion.} Burst evaluates a partial recursive program by letting recursive calls return whatever value makes the examples pass, records those assumptions, and later checks or repairs them; this removes the need for trace-complete examples at the price of a refinement loop whose termination argument is specific to their bottom-up setting~\cite{burst}.
+
+\paragraph{Example propagation.} \lam\textsuperscript{2} and Myth push examples through combinators and constructors by inversion rules written per combinator~\cite{lambda2,myth}; the type-theoretic reading by Frankle, Osera, Walker and Zdancewic treats examples as refinement types, so that propagation is type checking~\cite{frankle16}.
+
+\paragraph{Incremental normalization.} Normalization by evaluation with explicit closures makes sharing natural; memoizing it across edits of a term is, as far as we know, studied for incremental type checking in editors rather than for search.
+
+\subsection{Why it is hard here}
+
+\paragraph{The evaluator of record is the Lean kernel.} A refutation must agree with what the kernel will later say about the closed program, or pruning loses solutions. Using the kernel itself guarantees that. A custom evaluator for speed and for hole closures has to be proved, or at least tested exhaustively, to be conservative: it may report ``stuck'' where the kernel would decide, never the reverse. Lean's reduction includes definitional unfolding with reducibility hints, structure eta, recursor reduction on literals, quotient and projection rules, and proof irrelevance; a faithful reimplementation is a large surface.
+
+\paragraph{Observations are propositions, not pairs.} Unevaluation in Smyth starts from an example $f\,v = w$. A Lean contract is any proposition: a conjunction of equations is typical, but so are \code{check f = true} where \code{check} folds over forty inputs and compares with \code{==}, and quantified statements. Backward propagation has to go through the contract's own structure (\code{List.all}, \texttt{\&\&}, \code{BEq} instances, \code{decide}) before it reaches an equation on a value of $f$. Each of those needs an inversion rule or a generic treatment.
+
+\paragraph{Higher-order and Church-encoded inputs.} When the inputs are functions (every Church probe), the ``required output'' of a hole is a function, and examples on it arise only through the applications the rest of the program performs. Smyth's unevaluation is first-order.
+
+\paragraph{Dependent types.} A hole's environment may bind types and proofs; two hole closures for the same hole can have different types. Example constraints must be typed per closure.
+
+\subsection{Design to try first}
+
+\paragraph{Stage 1: a richer report from the kernel path, no new evaluator.} Decompose the contract further than its top-level conjuncts: recognize \code{List.all xs p = true}, \texttt{(a \&\& b) = true} and \code{decide P = true} and split them into independent observations at query time, each with its own precomputed decider. The evaluator then reports a bit vector (true, false, stuck) per observation. This gives R1 its signal and A1 its satisfied sets, keeps the kernel as evaluator, and makes each evaluation smaller. The ``stuck on these holes'' memo that exists today becomes per observation, so an assignment re-evaluates only the observations blocked on that hole.
+
+\paragraph{Stage 2: a conservative hole-closure evaluator for a fragment.} Implement call-by-need evaluation with environments for the fragment the engine actually generates (lambda, application, constructors, recursors with constant motive, projections, literals with the arithmetic the kernel accelerates), over Lean \code{Expr} with holes as neutral terms that record their environment. Fall back to the kernel outside the fragment. Validate by differential testing against \code{Kernel.whnf} on every closed program the harnesses generate (about $10^5$ per full run), requiring agreement on decided cases.
+
+\paragraph{Stage 3: unevaluation for first-order observations.} For observations of the form $f\,\vec v = w$ with $w$ of a first-order data type, push $w$ backward through constructors and case analysis to hole closures, as in Smyth, and use the resulting examples in two ways: to refute (no term at this depth can produce that value from this environment) and to order goals (fill the hole with the most constrained examples first, which is Step 4 of Section~\ref{sec:search}).
+
+\paragraph{Stage 4: angelic recursive calls.} In the body of a structural recursion the induction hypothesis is a local variable. Evaluate with it bound to an oracle that answers from the contract's observations when the argument is one of the observed inputs (or a sub-term of one), and is stuck otherwise. For trace-complete contracts this is Myth's method; for others it degrades to today's behavior rather than to unsoundness, since a stuck call refutes nothing.
+
+\subsection{Soundness conditions}
+
+\begin{invariant}[Conservative refutation]
+If the evaluator reports an observation \code{false} for a partial program $p$, then for every completion $p'$ of $p$ the kernel decides that observation \code{false} for $p'$.
+\end{invariant}
+For the kernel path this holds because reduction never inspected a hole. For Stage 2 it must be established for the fragment. For Stage 4 it holds only if the oracle's answers are consequences of the contract: an oracle answer taken from an observation $f\,v = w$ is the value every accepted $f$ must return at $v$, so a branch refuted under it is refuted for every program that satisfies the contract, which is the set we care about. This argument fails for contracts that do not determine $f\,v$ uniquely, and the implementation has to check that the observation it uses is an equation with a closed right-hand side.
+
+\subsection{Questions for experts}
+
+\begin{enumerate}
+\item Has live bidirectional evaluation been extended to higher-order examples or to dependent types? If not, where does it break first?
+\item Is there a published incremental or memoized normalizer whose invalidation is driven by hole assignment, suitable for a backtracking search in which assignments are undone?
+\item What is the cheapest sound way to obtain a fast evaluator that provably under-approximates the Lean kernel's conversion on a fragment? Would extracting the fragment's rules from the kernel's specification in Lean4Lean be realistic?
+\item For angelic recursion in a top-down search, is there a termination and completeness argument analogous to Burst's?
+\end{enumerate}
+Communities to ask: the Hazel group (hole closures and live evaluation); the authors of Smyth and Burst; Lean core and Lean4Lean developers for the kernel's reduction rules and their specification; researchers in normalization by evaluation.

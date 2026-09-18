@@ -1,0 +1,26 @@
+\section{Where outside expertise would help}\label{sec:experts}
+
+The questions of Part~III are collected here in the order in which answers would change the plan most. For each we state what we would bring to the conversation, because a specialist's time is best spent on a small, concrete artifact rather than on a description.
+
+\begin{longtable}{@{}L{8mm}L{50mm}L{44mm}L{44mm}@{}}
+\toprule
+\# & Question & Whom to ask & What we bring\\
+\midrule
+\endhead
+1 & Given finitely many input--output pairs of a list function, compute a minimal fold carrier from a type grammar, or show none exists (R2) & program-calculation researchers (folds, tupling, third homomorphism theorem); automata-learning researchers & the thirteen stretch cases with their observation tables; the fold-closure test worked out on \code{reverse}, \code{foldl1}, \code{maximum}\\
+2 & Search organization for goals that share metavariables, other than copying or sequentializing (R1) & authors of Aesop; authors of Canonical & traces showing goal-order sensitivity; the deferral rules and the cases each was written for\\
+3 & Live bidirectional evaluation for higher-order examples and dependent types; a conservative fast evaluator relative to the Lean kernel (R3) & the Hazel group; authors of Smyth; Lean4Lean and Lean core developers & profile data; the per-observation decomposition; a corpus of $10^5$ generated closed programs for differential testing\\
+4 & Enumerating motives and generalizations; canonical treatment of transports in search (R4) & Lean core developers; authors of Canonical and \code{sauto}; Agda developers; unification researchers & probe 8 and ten further indexed-family problems with the motives written out\\
+5 & Evaluating and realizing capability-based recursive bodies; angelic execution in top-down search (R5) & Lean core developers for recursion compilation; authors of Burst and Trio & the capability design; measurements of definition-elaboration cost per candidate\\
+6 & Interleaving value holes and proof holes; the class of properties provable by induction along the program; state of automated induction in Lean (R6) & authors of Synquid; developers of \code{grind}, Aesop and the Lean hammer; inductive-theorem-proving researchers & the quantified-contract suite with hand proofs classified by the automation they need\\
+7 & Type abstraction for reachability over dependent, class-polymorphic libraries; relevance for programs rather than proofs (R7) & authors of Hoogle+ and SyPet; developers of \code{exact?}, Loogle and Lean premise selection & the head-level reachability graph of Lean core with its connectivity statistics\\
+8 & A formal objective for ranking inhabitants; what proof-assistant users expect (R8) & programming-by-example researchers; human-factors researchers & the ranking benchmark with reference ranks under the current keys\\
+9 & Accuracy of model-proposed carriers and helpers; auditability (R9) & LeanDojo and Lean hammer groups; neurosymbolic synthesis researchers & the E8 suite as an evaluation set\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Names.} The published work cited in this document identifies the people: for Aesop, Jannis Limperg and Asta Halkj\ae r From; for Canonical, Chase Norman and Jeremy Avigad; for \code{sauto}, \L ukasz Czajka; for Synquid, Probe and Hoogle+, Nadia Polikarpova and co-authors; for Myth, Peter-Michael Osera and Steve Zdancewic; for Smyth and Hazel, Justin Lubin, Ravi Chugh and Cyrus Omar; for Burst, Anders Miltner and co-authors with Isil Dillig and Swarat Chaudhuri; for \lam\textsuperscript{2}, John Feser; for the theory of folds, Jeremy Gibbons and Graham Hutton, and Zhenjiang Hu for tupling; for parametric testing, Jean-Philippe Bernardy and Koen Claessen; for Lean's kernel specification, Mario Carneiro; for Lean's recursion compilation and measure guessing, Joachim Breitner; for \code{grind} and the elaborator, Leonardo de Moura and the Lean FRO. The Lean Zulip chat is the natural first venue for questions 2, 4, 5 and 6.
+
+\paragraph{Order of contact.} Question 1 first, because it decides whether R2 is a research project or an engineering one, and everything in P5 waits on it. Questions 2 and 3 next, because they shape the P2 and P4 rewrites of the search core and the evaluator, which are expensive to redo. The others can wait for their phases.
+
+\paragraph{What we do not need help with.} Parts~I and~II. The items there are understood, their tests are written down, and the measurements of Section~\ref{sec:evidence} say in which order to do them.

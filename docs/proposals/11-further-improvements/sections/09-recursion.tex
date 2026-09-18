@@ -1,0 +1,49 @@
+\section{R5. General recursion from incomplete examples}\label{sec:recursion}
+
+\subsection{The problem}
+
+The engine has one recursion scheme: the recursor of an index-free recursive inductive type other than \code{Nat}, with a constant motive, at the outermost level, with the induction hypotheses as the only recursive calls. It solves tree size, list length, list map and the Leant recursive scenarios. It cannot express, and so cannot find:
+
+\begin{itemize}
+\item recursion on \code{Nat} (item A2), on two arguments at once (\code{zip}, \code{merge}), or on a derived measure (\code{gcd}, division, binary search);
+\item recursive calls on sub-sub-terms (Fibonacci, \code{pairs}), which need course-of-values recursion;
+\item accumulating parameters and tupled results (Section~\ref{sec:carriers});
+\item mutual and nested inductive types, for which Lean generates recursors that are awkward to use directly;
+\item helper functions: probe 11 (in-order flatten) is \code{flatten l ++ [a] ++ flatten r}; with \code{append} available as a provider the difficulty is depth, since the body has two recursive results combined by two applications inside a constructor context, and the search tree at that depth is large under a fixed rule order.
+\end{itemize}
+
+\subsection{What is known}
+
+\paragraph{Schemes and termination.} Lean accepts recursive definitions by structural recursion (compiled to \code{brecOn}, which is course-of-values) and by well-founded recursion with a termination measure; recent Lean versions guess lexicographic measures automatically for many definitions. Termination analysis by size-change~\cite{sizechange} and by lexicographic orders is mature. So \emph{checking} a candidate recursive definition is solved by handing it to Lean's definition elaborator; the cost is tens of milliseconds per candidate, far above a kernel check.
+
+\paragraph{Synthesis.} Myth synthesizes recursive functions by treating the function's own examples as its specification for recursive calls, which requires trace-complete examples~\cite{myth}. Escher, \lam\textsuperscript{2} and Smyth have variants of the same requirement~\cite{escher,lambda2,smyth}. Burst removes it with angelic execution and a refinement loop~\cite{burst}; Trio synthesizes straight-line ``blocks'' from examples and then folds them into a recursive definition~\cite{trio}. Synquid proves termination through a user-supplied measure in the refinement type~\cite{synquid}. None targets a language where the definition must also pass a kernel as a term built from recursors.
+
+\subsection{Why it is hard here}
+
+\paragraph{Two representations.} The object the kernel certifies is a recursor term (or a \code{WellFounded.fix} term with a proof). The object a search wants to enumerate is a recursive equation with calls to a named function. Translating every candidate through Lean's definition elaborator is too slow for the inner loop; enumerating recursor terms directly makes course-of-values and multi-argument recursion unnatural.
+
+\paragraph{Contracts are rarely trace-complete.} A user who writes \code{f [1,2,3] = 6} seldom adds \code{f [2,3] = 5} and \code{f [3] = 3}. Without them a partial recursive body cannot be evaluated (R3), so recursion is searched blind until the body closes. The engine survives today because the bodies are tiny.
+
+\paragraph{The scheme is a carrier.} Choosing the argument to recurse on, the measure, the accumulators and the tupling is the carrier problem again, with termination as an extra constraint.
+
+\subsection{Design to try first}
+
+\begin{enumerate}
+\item \textbf{A capability-based body language.} Keep the unified proposal's principle: recursion is admitted only through typed \emph{recursive-call capabilities}. Generalize the single capability ``the induction hypothesis of this constructor argument'' to a capability $\mathit{rec} : (y : \tau) \to y \prec x \to \sigma$, a function that may be called on any argument provably smaller than the current one in a chosen order $\prec$. For structural orders the proof is a constructor path found syntactically; for measures it is an arithmetic goal for \code{omega}. The search enumerates bodies against this capability; the \emph{realization} step, once per closed candidate that passes the contract by evaluation, compiles the body to \code{brecOn} or \code{WellFounded.fix} through Lean's definition elaborator and kernel-checks it. Evaluation during search uses a direct interpreter for the capability (unfold the body on smaller arguments, with fuel), which is sound for refutation because the realized term is definitionally or provably equal to that unfolding.
+\item \textbf{A small, ordered scheme grammar.} Structural on one argument; structural on one argument with one accumulator (from the carrier grammar); simultaneous structural on two arguments; course-of-values of depth two; measure \code{sizeOf} or length of one argument. Enumerate in that order under the cost search of R1.
+\item \textbf{Trace completion by the evaluator.} Stage 4 of Section~\ref{sec:evaluation}: recursive calls on observed inputs are answered from the contract. Add Burst's idea in its simplest form: when a call is on an unobserved input, record the value that would make the observation true as an \emph{assumption} and continue; a closed candidate is accepted only after all assumptions are discharged by actually evaluating the candidate, which the closed-program check does anyway. Assumptions then only \emph{order} the search; they never prune, so soundness does not depend on them.
+\item \textbf{Helpers from failed searches.} When a body search fails at depth $d$ with a hole whose examples (from unevaluation) are consistent, promote the hole to a separate synthesis problem with those examples as its contract. This is how probe 11 would find \code{append} if it were not a provider. It is bounded by allowing one helper per query.
+\end{enumerate}
+
+\subsection{What would count as progress}
+
+The recursion entries of the ported suites at 10 s, reported separately for trace-complete and trace-incomplete contracts; probe 4 and probe 11; no change in the scores of Table~\ref{tab:scores}.
+
+\subsection{Questions for experts}
+
+\begin{enumerate}
+\item Is the search-time interpreter of a capability-based body guaranteed to agree with the realized \code{brecOn} or \code{WellFounded.fix} term up to the kernel's conversion, or only propositionally? For well-founded recursion Lean's terms do not reduce well in the kernel; what is the recommended way to evaluate them (equation lemmas, \code{decide} with \code{Nat.rec} fuel, compiled evaluation under a trusted-code profile)?
+\item Does angelic execution compose with top-down type-directed search, and what is lost relative to Burst's bottom-up setting?
+\item Is there a canonical small basis of recursion schemes that covers the functions in standard introductory corpora, with measured coverage?
+\end{enumerate}
+Communities to ask: Lean core developers responsible for structural and well-founded recursion and measure guessing; the authors of Burst, Trio, Myth and Synquid; the termination-analysis community.

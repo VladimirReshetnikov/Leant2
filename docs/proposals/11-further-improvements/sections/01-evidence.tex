@@ -1,0 +1,99 @@
+\section{Evidence}\label{sec:evidence}
+
+This section records what was measured. Everything later in the document is argued from it.
+
+\subsection{What passes}
+
+Table~\ref{tab:scores} lists the acceptance harnesses in \code{tools/}. Each replays a Leant suite through the Leant2 REPL. Leant ran most of them once per engine (Djinn, Exference, Both); Leant2 has one adaptive engine and no settings, so each case runs once. A case is scored by outcome category, not by transcript text.
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{@{}L{48mm}L{62mm}rr@{}}
+\toprule
+Harness & Source in Leant & Score & Wall time\\
+\midrule
+\code{run_baseline.py} & \code{test/synth-*.txt}, 30 transcripts & 278/278 & 109 s\\
+\code{run_recursive.py} & \code{test-recursive} & 9/9 & 5 s\\
+\code{run_church.py} & \code{test-church} behavior probes (core, extended, partial) & 28/28 & 162 s\\
+\code{run_context.py} & \code{test-behavioral}, \code{test-context}, nested forall & 95/95 & 8 s\\
+\code{run_corpus.py} & \code{test-church} signature corpus & 350/350 & 11 s\\
+\code{run_session.py} & session provider identity & 6/6 & 19 s\\
+\bottomrule
+\end{tabular}
+\caption{Acceptance harnesses at commit \code{33cec8b}, 10 s budget per query. The same scores hold with a 5 s budget. The Church wall time is dominated by thirteen unscored stretch cases that each run to the budget.}\label{tab:scores}
+\end{table}
+
+After the last round of work the slowest scored case takes 2.0 s (Church \code{foldl}); the next slowest take 1.1 s and 0.7 s. Most contract queries finish in the 400 ms grace period that follows the first accepted candidate.
+
+\subsection{What does not pass}
+
+Two groups of cases fail.
+
+\paragraph{Stretch cases.} Thirteen of the nineteen partial Church operations (\code{foldl1}, \code{foldr1}, \code{reduce}, \code{maximum}, \code{maximumBy}, \code{minMax}, \code{at} and their variants) are not solved within 10 s, and four that were retried are not solved within 60 s either. Leant's own behavior ledger records every one of them as failed or unresolved in all engines, so this is parity, not regression. Their reference solutions need a fold whose carrier holds more than the result: an optional first element, a pair of running extremes, or an index together with a continuation.
+
+\paragraph{A probe just outside the corpus.} Sixteen small queries were written to find the edge of the engine (Table~\ref{tab:probe}). They are ordinary first exercises in the program-synthesis literature. Seven fail, and one succeeds with an error.
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{@{}rL{60mm}L{26mm}L{52mm}@{}}
+\toprule
+\# & Query & Outcome & Reason\\
+\midrule
+1 & reverse a \code{List}, two examples & found, 0.4 s & library provider \code{List.reverse}\\
+2 & append two lists & found & provider\\
+3 & double a \code{Nat} & found & \code{Nat.add a a}\\
+4 & $2^n$ on \code{Nat}, three examples & \textbf{rejected} & no recursion on \code{Nat}; 3675 programs refuted\\
+5 & length of a list & found & provider\\
+6 & sum of a \code{List Nat} & found, \textbf{error} & \code{List.rec} candidate; binding it fails in the code generator\\
+7 & head of \code{Vec A (n+1)} & found & dependent case analysis works\\
+8 & map over \code{Vec A n} & \textbf{not found} & induction with an index-dependent motive\\
+9 & maximum of two \code{Nat} & \textbf{rejected} & no conditionals or comparisons\\
+10 & drop zeros from a \code{List Nat} & \textbf{rejected} & conditional inside a fold\\
+11 & in-order flatten of a binary tree & \textbf{rejected} & combines two recursive results; depth\\
+12 & quantified length-preservation contract & found & identity; proved by \code{simp}\\
+13 & $\exists n, P\,n$ from $P\,3$ & found & witness from a local\\
+14 & an element of \code{Fin (n+1)} & \textbf{timeout} & needs a library lemma ($0 < n+1$)\\
+15 & symmetry of equality & found & \\
+16 & transitivity of $\le$ on \code{Nat} & \textbf{not found} & library lemma, no retrieval\\
+\bottomrule
+\end{tabular}
+\caption{Edge probe, 6 s budget. ``Rejected'' means programs of the type were proposed and every one failed the contract.}\label{tab:probe}
+\end{table}
+
+\subsection{Where the time goes}\label{sec:profile}
+
+The lane trace (\code{set_option leant2.trace true}) reports self times of the search steps. On the slowest query before the last optimization, the Church \code{maybeEither} probe (5.4 s, 2858 search nodes), the breakdown was:
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{@{}L{70mm}rr@{}}
+\toprule
+Step & Time & Share\\
+\midrule
+Residual evaluation of the contract on partial programs & 2.4 s & 45\%\\
+\quad of which kernel reduction & 1.8 s & \\
+\quad of which substituting delayed assignments & 0.4 s & \\
+Deciding the contract on closed programs & 0.7 s & 13\%\\
+Forward-application preparation (rule 7b) & 0.2 s & 4\%\\
+Unification in exact-local and apply steps & 0.2 s & 4\%\\
+Save and restore of the metavariable context & 0.07 s & 1\%\\
+Everything else instrumented & 0.2 s & 4\%\\
+\textbf{Not attributed by any timer} & \textbf{1.7 s} & \textbf{30\%}\\
+\bottomrule
+\end{tabular}
+\caption{Self times on one contract-heavy query. Roughly 1.9 ms per search node.}\label{tab:profile}
+\end{table}
+
+Three facts from this profile matter later.
+
+\begin{enumerate}
+\item \textbf{One rule was 90\% of the search.} Disabling the accumulator-instantiation rule (7a) alone took the query from 5.4 s to 0.5 s. The rule was then restricted to recursive eliminators. Rule cost is dominated by the subtree a rule opens, not by the rule's own time, and we have no model that predicts it.
+\item \textbf{Evaluation dominates per-node cost} whenever a contract is present, even after three optimizations (deciders synthesized once per query, kernel instead of meta-level reduction, skipping re-evaluation while it is stuck on the same holes).
+\item \textbf{A third of the time is unexplained.} Save and restore are cheap, so the usual suspect is cleared. The remainder is spread over many small monadic operations per node.
+\end{enumerate}
+
+\subsection{What the search is}
+
+For the rest of the document it helps to state the search precisely. A state is a Lean metavariable context together with an ordered list of open goals, each carrying a remaining depth, a deferral count and a set of consumed eliminators. A step takes the first goal, tries an ordered list of about fifteen rules, and for each alternative saves the context, applies the rule, and continues with the rule's subgoals prepended to the remaining goals. Failure restores the context. The order of goals is changed by deferral rules. The whole tree is searched depth first with iterative deepening on the depth bound, under lane deadlines, and the first accepted candidate starts a 400 ms grace period. There is no memoization across branches, no cost model beyond depth, and no learning within or across queries.
+
+This design was chosen because goals share metavariables: assigning a hole in one goal changes the type of another, so goals cannot be solved independently. Carrying all unfinished obligations in the continuation makes backtracking correct by construction. Its price is that the search order is fixed by the rule order and the goal order, and every improvement in Part~III has to live with that or replace it.

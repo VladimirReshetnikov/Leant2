@@ -1,0 +1,48 @@
+\section{Adaptation items}\label{sec:adaptation}
+
+These are solved problems in other settings. For each we say what carries over and what does not.
+
+\subsection{A1. Conditionals and guard abduction}
+
+\paragraph{Gap.} The engine cannot produce \code{if a <= b then b else a}. It has no comparison components and no rule that introduces a Boolean or decidable test. Probes 9 and 10 fail for this reason alone.
+
+\paragraph{What is known.} Enumerative synthesizers separate \emph{terms} from \emph{conditions}: find terms that are each correct on some examples, then learn a decision tree of guards that routes every example to a correct term (the divide-and-conquer strategy of EUSolver~\cite{eusolver}). Type-directed synthesizers abduce the guard instead: Synquid generates a branch, asks a solver for the weakest condition under which it satisfies the refinement type, and synthesizes a guard that implies it~\cite{synquid}. Example-directed tools split on a scrutinee when the examples disagree about the result~\cite{myth}.
+
+\paragraph{Adaptation.} The engine already evaluates the contract on partial programs. Extend the residual evaluator to report, for a closed branch candidate $t$, the \emph{set of observations} it satisfies, instead of only refuting at the first failure. Then:
+\begin{enumerate}
+\item collect branch candidates whose satisfied sets cover all observations;
+\item enumerate guards from a small grammar over the locals (decidable comparisons of locals of the same type, Boolean-valued locals and their applications, \code{isEmpty}-style tests obtained from constructors);
+\item evaluate each guard on each observation's inputs, and build the smallest decision tree that separates the satisfied sets;
+\item emit \code{if g then t1 else t2} (or \code{match}), and let the ordinary closed-program check certify it.
+\end{enumerate}
+The part that does not carry over is identifying ``the inputs of an observation''. In a SyGuS problem an example is an input--output pair. Here a contract is an arbitrary proposition mentioning $f$, and one conjunct may call $f$ several times, or under a fold. The adaptation needs an instrumented evaluation that records the argument tuples with which $f$'s body is entered, per conjunct, so that guards are evaluated in the right environments. For recursive programs those environments include the recursive calls, which ties this item to R3 and R5.
+
+\paragraph{Closing test.} Probes 9 and 10; the \code{max}, \code{min}, \code{filter}, \code{insert-sorted} and \code{compare} entries of the ported benchmarks.
+
+\subsection{A2. Recursion on natural numbers, literals and arithmetic}
+
+\paragraph{Gap.} Structural recursion excludes \code{Nat} because nested induction on natural-number hypotheses exploded the search, and the only numeric components are \code{Nat.add}, \code{Nat.succ} and \code{Nat.zero}. Probe 4 ($2^n$) therefore has no program in the grammar.
+
+\paragraph{Adaptation.} Three separable changes. (i) Allow \code{Nat.rec} at the outermost level, and only there, exactly as for other inductives, when a contract is present; the explosion came from nested use. (ii) Treat numeric literals as components with a cost that grows with the literal, restricted to literals that occur in the contract plus 0, 1 and 2; this is the standard constant-seeding heuristic of enumerative synthesis. (iii) Add \code{Nat.mul}, \code{Nat.sub}, \code{Nat.pred} and the decidable comparisons as curated components behind the demand filter. None of this is new; the adaptation is making the residual evaluator efficient on \code{Nat.rec} terms, where kernel reduction of literals uses the GMP acceleration only for closed numerals and falls back to unary reduction when a hole is nearby.
+
+\paragraph{Closing test.} Probe 4, factorial, Fibonacci with a pair accumulator (which needs R2), sum to $n$, and the \code{nat_*} entries of the Myth suite.
+
+\subsection{A3. Normal forms and symmetry reduction}
+
+\paragraph{Gap.} The traces show the same program reached along several paths and many programs that differ only by $\beta\eta$ or by a trivial identity (\code{fun a x => x} as a fold step is the identity fold). Closed programs are memoized after refutation, but partial programs are not, and nothing prevents generating the redundant ones.
+
+\paragraph{What is known.} Proof search in focused calculi enumerates only $\beta$-normal $\eta$-long forms, which removes all $\beta\eta$-duplicates by construction; this is the basis of inhabitation tools from Djinn onward and of the recent Canonical solver for Lean~\cite{canonical}. Bottom-up synthesizers prune by observational equivalence: two terms with equal values on all examples are interchangeable, so only one is kept~\cite{transit,escher}.
+
+\paragraph{Adaptation.} The engine's rules already build $\eta$-long forms (introduction is forced and exclusive) and never build a $\beta$-redex except through forward application (rule 7b), which should be restricted to results that are then destructured. What is missing is a check that an \emph{exact-local} rule is not used where an $\eta$-expanded application would produce the same term, and symmetry reduction for commutative components. Observational equivalence carries over only for closed subterms of ground type whose free variables are all bound by the observations, which is the minority in a top-down search; its proper home is the bottom-up component of Section~\ref{sec:search}.
+
+\subsection{A4. Parametricity-directed test inputs}
+
+\paragraph{Idea.} A polymorphic function cannot inspect its type argument. For \code{f : (A : Type) -> List A -> List A}, the free theorem~\cite{wadler89} says $f$ commutes with \code{map}; hence $f$ is determined by its behavior on lists of distinct elements, for instance on \code{[0,1,...,n-1]} at type \code{Nat}. Bernardy, Jansson and Claessen turned this into a method for choosing a single monomorphic instance that is as good as testing all instances~\cite{bernardy10}.
+
+\paragraph{Use in Leant2.} Three uses, in increasing ambition. (i) \emph{Deduplicate} accepted candidates: two candidates of a polymorphic type are equal as functions up to a size bound if they agree on the canonical inputs, so ranking can show one representative per behavior and say how many were merged. (ii) \emph{Explain} candidates: print each candidate's action on the canonical input (\code{[0,1,2] |-> [2,1,0]}), which is more readable than the term. (iii) \emph{Warn} about under-specified contracts: if accepted candidates disagree on a canonical input, show the input as a question to the user. The adaptation work is computing the canonical instance for Lean types with type classes, where parametricity holds only relative to the class laws, and for dependent types, where the free theorem is more delicate. For plain polymorphic first-order signatures, which is most of the corpus, the published construction applies directly.
+
+\subsection{A5. Rule indexing}
+
+Each rule scans all locals and all providers and asks the unifier whether they fit. Lean's \code{DiscrTree} and \code{LazyDiscrTree} index terms by their rigid head structure and answer ``which entries could unify with this goal'' in time proportional to the goal, not the index; \code{exact?} and \code{simp} are built on them, and Aesop uses them to select rules~\cite{aesop}. Index providers by conclusion once per query, and index locals incrementally as they are introduced (the index is persistent, so it backtracks with the state for free). Two things do not carry over: conclusions that are a bare type variable match every goal, so the demand filter stays; and the index does not see through reducible definitions unless keys are normalized the way \code{simp} normalizes them, which has to match what the unifier will later accept.
+
+\paragraph{Closing test.} With two thousand session declarations in scope, time per node grows by less than 10\% over the empty session.

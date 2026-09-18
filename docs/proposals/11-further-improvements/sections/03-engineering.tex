@@ -1,0 +1,75 @@
+\section{Engineering items}\label{sec:engineering}
+
+Each item names the defect, the design, and the test that closes it.
+
+\subsection{E1. Results as compilable definitions}
+
+\paragraph{Defect.} The REPL binds every candidate as \code{it1}, \code{it2}, \dots{} with \code{addAndCompile}. A candidate built from a recursor, such as the list sum
+\begin{lstlisting}
+fun a => List.rec Nat.zero (fun head tail tail_ih => head.add tail_ih) a
+\end{lstlisting}
+is accepted by the kernel and then rejected by the code generator (``does not support recursor \code{List.rec}''). The user sees a correct answer followed by three errors, and cannot evaluate the result.
+
+\paragraph{Design.} Separate the certified term from the published definition.
+\begin{enumerate}
+\item The certified object stays the kernel term. Bind it with \code{addDecl} only, so that binding cannot fail after acceptance.
+\item Produce a \emph{presentation}: translate each recursor application with a constant motive into a structurally recursive \code{def} with pattern matching, elaborate that definition with Lean's own equation compiler, and prove it equal to the certified term by \code{rfl} (or by induction when \code{rfl} fails). When the proof succeeds, attach the compiled definition with \code{@[implemented_by]} or publish it in place of the recursor term; when it fails, publish the kernel term as \code{noncomputable} and say so.
+\item The same translation gives the text shown to the user: a \code{match} is what a Lean programmer expects to read, and \code{casesOn} terms in the output become \code{match} expressions too.
+\end{enumerate}
+The translation is mechanical for constant motives and non-indexed families, which is all the engine produces today. Non-constant motives (Section~\ref{sec:dependent}) need the translation to generalize over the motive's extra arguments; Lean's structural-recursion elaborator already does the reverse direction and its source is the specification.
+
+\paragraph{Closing test.} Probe 6 binds without error and \texttt{\#eval it1 [1,2,3]} prints 6; every recursive candidate in \code{run_recursive.py} is printed as a \code{match}.
+
+\subsection{E2. Frontends}
+
+Today there are two entry points: the REPL and the command \texttt{\#leant2}. The engine entry \code{runQuery} already takes a closed type, an optional contract, a profile and a provider list, so the frontends are thin.
+
+\begin{description}
+\item[Term elaborator] \texttt{synth\%} elaborates to the first-ranked candidate for the expected type, with the local context as providers. It must postpone until the expected type has no metavariables, and it must fail rather than guess when the budget ends.
+\item[Tactic] \code{leant2} closes a goal whose target is data or a proposition, reporting the term through \code{Try this}. It competes with \code{exact?}; its advantage is construction (case analysis, recursion, contracts) rather than lookup.
+\item[Sketches] A definition body with holes, \code{def f xs := List.foldr ?step ?init xs}, plus a \code{where} contract, is a query whose root program is partially given. The search state already represents exactly this, so the work is in elaborating the sketch with \code{?}-holes into the initial goal list. Sketches are also how a user passes a carrier hint without a setting.
+\item[Code action] In the editor, offer ``synthesize body'' on a \code{sorry} whose enclosing declaration has \code{example}-style tests below it; collect the tests as the contract.
+\item[Library API] A documented \code{Leant2.synthesize : Query -> MetaM Outcome} with the result algebra, for use from other metaprograms, including Forge.
+\end{description}
+
+\paragraph{Closing test.} Each frontend has a test file under \code{tests/}; the sketch frontend re-solves the thirteen stretch cases when given the reference carrier, which also measures how much of their difficulty is carrier invention alone.
+
+\subsection{E3. Receipts, replay and resumable search}
+
+The unified proposal specifies a receipt for every accepted candidate (query, environment fingerprint, program, proof, axioms, ledger) and a replay command that re-checks a receipt without search. Neither is built. Build them as specified; the gate already has every field. Resumability is the new part: a \code{budgetExhausted} outcome should carry enough to continue. With iterative deepening the resumable state is small, namely the lane, the depth, and the path of alternative indices of the node that was being expanded when the deadline hit. Replaying that path re-creates the metavariable context deterministically, which is cheaper and more robust than serializing it.
+
+\paragraph{Closing test.} A query cut at 2 s and resumed twice finds the same candidates in the same order as one run at 6 s.
+
+\subsection{E4. Substrate cost}
+
+Thirty percent of the time on contract queries is not attributed to any step (Table~\ref{tab:profile}). The plan is measurement first.
+\begin{enumerate}
+\item Build the executable with a sampling profiler attached (on Windows, ETW; on Linux, \code{perf}) and read the C call stacks of the Lean runtime. This distinguishes allocation, reference counting, persistent-map operations and \code{instantiateMVars} traversals without guessing.
+\item Remove repeated work per node that is already visible in the source: the local context is scanned by six rules, each recomputing \code{whnf} of every local's type; goal types are instantiated at entry, in the rotation check, and again in the residual scan; \code{instantiatePartial} rebuilds the whole program at every evaluation. Compute per-local facts once when a local is introduced, and keep them in the goal record.
+\item Replace linear scans by indexes (item A5).
+\end{enumerate}
+\paragraph{Closing test.} Unattributed time under 10\%; node cost under 1 ms on the Church probes.
+
+\subsection{E5. Parallel lanes}
+
+The constructive, refutation and classical lanes are independent searches over the same frozen environment. Lean can run \code{MetaM} computations in tasks when each has its own state; the lanes share only the ledger and the first-found signal, which are already \code{IO.Ref}s. Run lanes as tasks with a common deadline and cancel the others when one reports. Determinism is kept by ranking after all lanes have stopped and by fixing a priority between lanes when more than one succeeds.
+
+Or-parallelism inside a lane (the alternatives at the root, or the carriers of Section~\ref{sec:carriers}) follows the same pattern and matters more once carrier enumeration exists. The limit is memory, since each task holds its own caches.
+
+\paragraph{Closing test.} Uninhabited and classical queries in the baseline finish in the time of their own lane rather than after the constructive lane's share.
+
+\subsection{E6. A decision procedure for propositional targets}
+
+For a target in the implicational-conjunctive-disjunctive fragment over propositional atoms, intuitionistic provability is decidable, and contraction-free calculi in the style of Dyckhoff's LJT terminate without loop checking~\cite{dyckhoff92}. The unified proposal already specifies a reification and a focused calculus for this fragment. Building it gives three things the bounded search cannot: a definite ``not intuitionistically provable'' with a finite Kripke countermodel as evidence, a definite answer for classical provability (by a SAT check on the same reification), and therefore a principled decision to enter the classical lane instead of the present test for the presence of \code{Prop}. The procedure is PSPACE-complete in general~\cite{statman79} but the instances are tiny.
+
+\paragraph{Closing test.} Every propositional query in \code{synth-basic} and \code{synth-manual} is answered by the procedure with a certificate, positive or negative, in under 50 ms.
+
+\subsection{E7. A wider proof portfolio}
+
+Closed non-decidable conjuncts go to \code{first | rfl | decide | simp | omega}. The toolchain also ships \code{grind} and \code{try?}, and the unified proposal asks for a proof-service adapter with typed replies and per-tier budgets. Build the adapter, order the tiers by measured cost, add \code{grind} and \code{simp_arith}, and add bounded instantiation: for a contract $\forall x : \tau,\ P\,x$ with $\tau$ finite or with a small-scope hypothesis, test $P$ on the first $k$ values before any proof attempt, so that a wrong candidate is refuted by evaluation and only survivors reach the prover. The refutation is sound; the proof is still required for acceptance.
+
+\paragraph{Closing test.} A suite of twenty quantified contracts over lists and naturals (length preservation, idempotence, involution) where wrong candidates are refuted by instantiation in under 5 ms each.
+
+\subsection{E8. Benchmarks beyond Leant}
+
+The Leant corpus is saturated. Progress on Part~III needs problems that fail today and have published baselines. Port, with their examples as contracts: the benchmark sets of Myth~\cite{myth}, \lam\textsuperscript{2}~\cite{lambda2}, Smyth~\cite{smyth}, Burst~\cite{burst} and Trio~\cite{trio} (lists, naturals, trees, booleans; about fifty problems each with heavy overlap), the type-only problems used to evaluate Agda's and Coq's inhabitation tools~\cite{agsy,sauto}, and a Lean-specific set made by erasing the bodies of small definitions in core \code{List}, \code{Option} and \code{Nat} and using their simp lemmas as contracts. Record solved count, time to first candidate, and rank of the reference solution. The thirteen stretch cases and the seven failing probes of Table~\ref{tab:probe} are the first entries.
