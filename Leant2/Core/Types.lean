@@ -61,4 +61,9 @@ inductive Outcome where
   | preflightError (msg : String)
   deriving Inhabited
 
+register_option leant2.trace : Bool := {
+  defValue := false
+  descr := "leant2: print lane timings and depth progress"
+}
+
 end Leant2

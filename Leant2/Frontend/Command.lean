@@ -58,6 +58,19 @@ def sessionConstants : CoreM (Array Name) := do
     -- session bindings `it1`, `it2`, ... are results, not providers
     if let .str .anonymous s := n then
       if s.startsWith "it" && (s.drop 2).all Char.isDigit && s.length > 2 then continue
+    -- compiler- and `deriving`-generated auxiliaries are noise as providers
+    if isAuxRecursor env n || isNoConfusion env n || isRecCore env n || isCasesOnRecursor env n then continue
+    if let .str _ s := n then
+      if s ∈ ["noConfusionType", "sizeOf", "injEq", "inj", "sizeOf_spec", "ctorIdx", "ctorElim",
+              "brecOn", "binductionOn", "below", "ibelow", "recOn", "casesOn", "ofNat", "toCtorIdx"] then continue
+      if s.startsWith "match_" || s.startsWith "proof_" || s.startsWith "_" || s.startsWith "instDecidableEq" then continue
+    -- instances of decision/printing classes are never term heads (`synthInstance?`
+    -- finds them when needed); other instances stay, since an open class goal
+    -- (`Choice ?a ?b`) is solved by applying the instance and unifying
+    if (← isInstance n) then
+      if let some cls := ci.type.getForallBody.getAppFn.constName? then
+        if cls ∈ [``DecidableEq, ``Decidable, ``BEq, ``Repr, ``Hashable, ``Ord, ``ToString,
+                  ``SizeOf, ``Nonempty, ``Inhabited, ``LawfulBEq] then continue
     match ci with
     | .axiomInfo _ | .defnInfo _ | .thmInfo _ | .opaqueInfo _ | .ctorInfo _ => out := out.push n
     | _ => pure ()
