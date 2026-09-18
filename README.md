@@ -68,7 +68,7 @@ each case once (Leant ran them per engine):
 ```bash
 python tools/run_recursive.py --budget 10000   # Leant test-recursive, 9 cases
 python tools/run_church.py --budget 10000      # Leant test-church behavior probes, 21 cases
-python tools/run_context.py --budget 10000     # Leant test-behavioral simplification + test-context production, products, selections, constructors, universes: 90 cases
+python tools/run_context.py --budget 10000     # Leant test-behavioral simplification + test-context production, products, selections, constructors, universes, scheduling: 95 cases
 python tools/run_corpus.py --budget 10000      # Leant test-church signature corpus, 350 type-only queries
 python tools/run_session.py                    # Leant session provider-identity suite (blocks, :undo, rejected declarations)
 ```
@@ -77,7 +77,7 @@ python tools/run_session.py                    # Leant session provider-identity
 five harnesses, printing one summary table (about six minutes).
 
 All five passed in full on 2026-09-18 (recursive 9/9, Church probes 28/28
-scored plus 13 stretch cases Leant never accepted, context 90/90, corpus
+scored plus 13 stretch cases Leant never accepted, context 95/95, corpus
 350/350, session 6/6) with a 10 s budget per query.
 
 The Church harness imports the specifications from Leant's vendored Djex

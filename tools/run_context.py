@@ -41,6 +41,8 @@ PRELUDE = [
     "inductive SelectionProbe.Box (α : Type 1) where | mk : α → SelectionProbe.Box α",
     # test-context/run_constructors.py and run_strict_implicit.py
     "class Ctx.C (α : Type) where out : Nat",
+    # test-behavioral/run_provider_scheduling.py
+    "def Scheduling.value : Nat := 37",
 ]
 
 
@@ -258,6 +260,14 @@ def cases():
     out += [("nested_forall_ordinary", nested_ty, None, "candidate"),
             ("nested_forall", nested_ty, nested_pred, "candidate"),
             ("nested_forall_false", nested_ty, "False", "none")]
+    # --- test-behavioral/run_provider_scheduling.py: a session provider, and
+    # projections selected by the contract
+    POLY3 = "∀ A : Type, A → A → A"
+    out += [("sched_provider", "Nat → Nat", "{f} 0 = 37 ∧ {f} 1 = 37 ∧ {f} 9 = 37", "candidate"),
+            ("sched_left", POLY3, "{f} Nat 37 53 = 37 ∧ {f} Bool false true = false", "candidate"),
+            ("sched_right", POLY3, "{f} Nat 37 53 = 53 ∧ {f} Bool false true = true", "candidate"),
+            ("sched_reject_empty", POLY3, "False", "none"),
+            ("sched_reject_provider", "Nat → Nat", "False", "none")]
     return out
 
 
