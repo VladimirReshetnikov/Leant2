@@ -171,8 +171,14 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     let target ← instantiateMVars (← g.getType)
     -- deferral: let sibling obligations determine type arguments and open types
     if !rest.isEmpty then
-      let isSortGoal ← match ← whnfR target with | .sort _ => pure true | _ => pure false
-      let limit := if isSortGoal then 2 else 1
+      let targetW ← whnfR target
+      -- a type former (`Type → Type`) is a type hole too
+      let isSortGoal ← forallTelescopeReducing targetW fun _ b => do return (← whnfR b).isSort
+      let mvarHeaded := targetW.getAppFn.isMVar
+      -- limits: a hole typed by a bare metavariable waits longest (its type hole must
+      -- come first); a type hole waits for rigid-headed siblings (instances) that
+      -- can determine it; a rigid-headed open goal waits once.
+      let limit := if mvarHeaded then 3 else if isSortGoal then 2 else 1
       if goal.deferred < limit && (isSortGoal || target.hasExprMVar) then
         return ← search cfg leaf splits (rest ++ [{ goal with deferred := goal.deferred + 1 }])
     charge fun l => { l with ruleApplications := l.ruleApplications + 1 }
@@ -205,6 +211,13 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     if targetW.isAppOfArity ``Eq 3 then
       if ← alternative (do g.refl; cont []) then return true
     let targetIsSort ← isTypeSort target
+    -- 3b. closed class goals: Lean's own instance resolution (canonical instance mode)
+    if !target.hasExprMVar then
+      if (← isClass? target).isSome then
+        if ← alternative (do
+            match ← synthInstance? target with
+            | some inst => g.assign inst; cont []
+            | none => return false) then return true
     -- 4. exact locals
     for decl in locals do
       if ← alternative (do
@@ -258,6 +271,30 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
         let dty ← whnf (← instantiateMVars decl.type)
         unless dty.isForall do continue
         if ← applyHead decl.toExpr then return true
+      -- 7b. bounded forward application: when every argument of a local function is
+      -- an exact local, name the result so that it can be destructured or projected
+      -- (`match f x with | (a, s) => ...`). Costs one depth unit.
+      for decl in locals do
+        let dty ← whnf (← instantiateMVars decl.type)
+        unless dty.isForall do continue
+        if ← alternative (do
+            let (args, _, resTy) ← forallMetaTelescopeReducing dty
+            if args.isEmpty || args.size > 3 then return false
+            for a in args do
+              let aty ← instantiateMVars (← inferType a)
+              let mut filled := false
+              for l in locals do
+                if l.fvarId == decl.fvarId then continue
+                if ← isDefEq (← inferType l.toExpr) aty then
+                  if ← isDefEq a l.toExpr then filled := true; break
+              unless filled do return false
+            let resTy ← instantiateMVars resTy
+            -- only results that can be taken apart are worth naming
+            let some (.inductInfo _) := (← getEnv).find? (← whnfR resTy).getAppFn.constName! | return false
+            let val ← instantiateMVars (mkAppN decl.toExpr args)
+            let g' ← g.assert (← mkFreshUserName `h) resTy val
+            let (_, g'') ← g'.intro1P
+            search cfg leaf splits ({ mvar := g'', depth := d } :: rest)) then return true
       -- 9. providers, head-filtered: a constant-headed conclusion must match the
       -- target head; a variable-headed provider needs a local demanding one of its
       -- argument heads
@@ -275,10 +312,48 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
         | none =>
           if !p.always && !p.argHeads.isEmpty && !p.argHeads.any localHeads.contains then continue
         if ← applyHead (← mkConstWithFreshMVarLevels p.name) then return true
+      -- 9b. forward application of argument-less providers whose result is a
+      -- structure (`box {a} [Choice a] : a × Unit`): name the result so that its
+      -- projections become heads. Instance arguments are scheduled first.
+      for p in provs do
+        let some h := p.head | continue
+        unless isStructure (← getEnv) h do continue
+        if ← alternative (do
+            let c ← mkConstWithFreshMVarLevels p.name
+            let cty ← inferType c
+            let (args, binfos, resTy) ← forallMetaTelescopeReducing cty
+            if args.isEmpty || binfos.any (·.isExplicit) then return false
+            let val := mkAppN c args
+            let resTy ← instantiateMVars resTy
+            let g' ← g.assert (← mkFreshUserName `h) resTy val
+            let (_, g'') ← g'.intro1P
+            let mut instGoals : List Goal := []
+            let mut otherGoals : List Goal := []
+            for a in args do
+              let aty ← instantiateMVars (← inferType a)
+              let goal : Goal := { mvar := a.mvarId!, depth := d, deferred := 3 }
+              if (← isClass? aty).isSome then instGoals := instGoals ++ [goal]
+              else otherGoals := otherGoals ++ [goal]
+            search cfg leaf splits (instGoals ++ otherGoals ++ [{ mvar := g'', depth := d }] ++ rest))
+          then return true
       -- 10. proof portfolio on closed propositions
       if cfg.proofPortfolio then
         if ← alternative (do if ← proofPortfolio g then cont [] else return false) then
           return true
+      -- 11. classical case split on a Prop variable, tried last: `cases (Classical.em p)`
+      if cfg.classical && splits > 0 then
+        for decl in locals do
+          let dty ← instantiateMVars decl.type
+          unless dty.isProp do continue
+          if ← alternative (do
+              let em ← mkAppM ``Classical.em #[decl.toExpr]
+              let ty ← inferType em
+              let g' ← g.assert (← mkFreshUserName `h) ty em
+              let (h, g'') ← g'.intro1P
+              let subgoals ← g''.cases h
+              search cfg leaf (splits - 1)
+                (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d }) ++ rest)) then
+            return true
     return false
 
 end Leant2

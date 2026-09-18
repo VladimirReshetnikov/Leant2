@@ -53,7 +53,8 @@ def sessionConstants : CoreM (Array Name) := do
   let env ← getEnv
   let mut out := #[]
   for (n, ci) in env.constants.map₂.toList do
-    if n.isInternal then continue
+    -- private declarations are ordinary session providers; other internal names are not
+    if n.isInternal && !isPrivateName n then continue
     -- session bindings `it1`, `it2`, ... are results, not providers
     if let .str .anonymous s := n then
       if s.startsWith "it" && (s.drop 2).all Char.isDigit && s.length > 2 then continue

@@ -141,7 +141,7 @@ def runQuery (q : Query) : MetaM Outcome :=
   if (← found.get).isEmpty && q.contract.isNone then refutationLane (q.budgetMs / 8) [4, 6]
   -- 3. deeper constructive search
   if (← found.get).isEmpty && (← refuted.get).isNone then
-    lane ledger (q.budgetMs * 3 / 10) fun ctx => enumerateGrace ctx baseCfg goalTy (accept q.target false) [7, 9]
+    lane ledger (q.budgetMs * 3 / 10) fun ctx => enumerateGrace ctx baseCfg goalTy (accept q.target false) [7, 9, 12]
   -- 4. classical lane, on the query and on its Prop instantiation
   if (← found.get).isEmpty && (← refuted.get).isNone then
     lane ledger (q.budgetMs * 3 / 10) fun ctx => do
