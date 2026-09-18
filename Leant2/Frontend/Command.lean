@@ -104,7 +104,7 @@ def outcomeMessage (o : Outcome) : MetaM MessageData := do
       md := md ++ m!"\n  it{i}  {c.program}{tag}{axs}"
       i := i + 1
     return md
-  | .refutedAll n _ => return m!"{n} candidate(s) proposed, none passed the contract"
+  | .refutedAll n _ => return m!"{n} program(s) of the type proposed, none passed the contract"
   | .negative .impossible (some cert) _ => return m!"provably uninhabited: {cert.program}"
   | .negative .impossible none _ => return m!"provably uninhabited"
   | .negative .contractImpossible _ _ => return m!"provably no program satisfies the contract"

@@ -97,6 +97,11 @@ built. What is built covers the whole corpus:
   re-evaluation is skipped, and no evaluation happens at depth 0 (a leaf is
   closed by an exact local and decided at the contract goal). Refuted closed
   programs are memoized per query.
+- **Outcome when the type is inhabited but the contract rejects.** Closed
+  programs that fail their contract are counted as rejections, so such a
+  query reports "N program(s) of the type proposed, none passed the
+  contract" (the result algebra's rejected category) rather than an
+  exhausted search.
 - **Upfront refutation.** Before any search, `forall f, not (P f)` is tried
   with the tactic portfolio under a small heartbeat budget; success is the
   outcome "provably no program satisfies the contract".

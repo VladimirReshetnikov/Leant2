@@ -306,8 +306,11 @@ def runQuery (q : Query) : MetaM Outcome :=
   let l ← ledger.get
   if !cands.isEmpty then return .verified (← rankCandidates cands) l
   if let some cert ← refuted.get then return .negative .impossible (some cert) l
-  if (← rejectedCount.get) > 0 && q.contract.isSome then
-    return .refutedAll (← rejectedCount.get) l
+  -- programs of the right type existed but none passed the contract (gate
+  -- rejections and contract refutations of closed programs)
+  -- (both are charged to the ledger's `rejected` counter)
+  if l.rejected > 0 && q.contract.isSome then
+    return .refutedAll l.rejected l
   return .negative (if ← timedOut.get then .budgetExhausted else .grammarExhausted) none l
 
 end Leant2

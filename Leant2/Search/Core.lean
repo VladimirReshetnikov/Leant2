@@ -361,7 +361,10 @@ def proofPortfolio (cfg : SearchConfig) (g : MVarId) : SearchM Bool := do
         if !p.hasExprMVar && t == (contract.beta #[p]) then
           if (← (← read).refutedPrograms.get).contains p then return false
           match ← evalResidual cfg p with
-          | .refuted => (← read).refutedPrograms.modify (·.insert p); return false
+          | .refuted =>
+            -- a closed program of the right type that fails its contract
+            charge fun l => { l with rejected := l.rejected + 1 }
+            (← read).refutedPrograms.modify (·.insert p); return false
           | .proved pf => g.assign pf; return true
           | .stuck => pure ()
   -- fast path: a decidable closed proposition is decided by reduction; `false`
@@ -376,7 +379,9 @@ def proofPortfolio (cfg : SearchConfig) (g : MVarId) : SearchM Bool := do
         (mkApp2 (mkConst ``Eq.refl [Level.succ .zero]) (mkConst ``Bool) (mkConst ``Bool.true))
       g.assign pf
       return true
-    | some false => return false
+    | some false =>
+      if cfg.contract.isSome then charge fun l => { l with rejected := l.rejected + 1 }
+      return false
     | none => pure ()
   tacticProve g
 
