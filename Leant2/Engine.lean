@@ -276,9 +276,16 @@ def runQuery (q : Query) : MetaM Outcome :=
   -- constructive depths; a later lane resumes at the first depth the earlier one did not finish
   let constructiveDepths := [2, 3, 4, 5, 6, 7, 9, 12]
   let completed ← IO.mkRef 0
-  -- 1. cheap constructive pass (a larger share when no classical lane will run)
-  lane ledger refutedPrograms graceRef timedOut (if needsClassical then q.budgetMs * 3 / 20 else q.budgetMs * 3 / 10) (name := "constructive") fun ctx =>
-    enumerateGrace ctx baseCfg goalTy (accept q.target false) (constructiveDepths.take 4) completed
+  -- 1. cheap constructive pass (a larger share when no classical lane will run).
+  -- Under a contract without classical lanes nothing else would run between
+  -- the cheap and the deeper pass, so a single pass takes the whole budget
+  -- rather than cutting a depth and redoing it.
+  let singlePass := !needsClassical && q.contract.isSome
+  lane ledger refutedPrograms graceRef timedOut
+      (if singlePass then q.budgetMs else if needsClassical then q.budgetMs * 3 / 20 else q.budgetMs * 3 / 10)
+      (name := "constructive") fun ctx =>
+    enumerateGrace ctx baseCfg goalTy (accept q.target false)
+      (if singlePass then constructiveDepths else constructiveDepths.take 4) completed
   -- 2. cheap refutation pass, only for type-only queries
   if (← nothingYet) && q.contract.isNone then refutationLane (q.budgetMs / 10) [4, 6]
   -- 3. cheap classical pass (shallow first: classical splits branch quickly)
