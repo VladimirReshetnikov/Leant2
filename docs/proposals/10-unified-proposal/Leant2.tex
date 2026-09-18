@@ -1,0 +1,141 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,microtype}
+\usepackage[margin=25mm,headheight=15pt]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs,longtable,tabularx,array}
+\usepackage{xcolor,graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc}
+\usepackage{enumitem,listings,fancyhdr,needspace,xurl}
+\usepackage[colorlinks=true,linkcolor=blue!45!black,citecolor=green!35!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{bookmark}
+
+\definecolor{ink}{HTML}{172B3A}
+\definecolor{accent}{HTML}{235F7B}
+\definecolor{pale}{HTML}{F1F5F7}
+\definecolor{rulecol}{HTML}{BDCCD5}
+
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\Lean}{Lean~4}
+\newcommand{\E}{\mathcal{E}}
+\newcommand{\G}{\mathcal{G}}
+\newcommand{\Pol}{\Pi}
+\newcommand{\Bud}{\mathcal{B}}
+\newcommand{\Obs}{\mathcal{X}}
+\newcommand{\Comp}{\mathrm{Comp}}
+\newcommand{\Beh}{\mathrm{Beh}}
+\newcommand{\Sort}{\mathrm{Sort}}
+\newcommand{\Prop}{\mathrm{Prop}}
+\newcommand{\Nat}{\mathbb{N}}
+\newcommand{\Ref}[1]{P#1}
+\newcommand{\prov}[1]{\textsuperscript{\scriptsize[#1]}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\setlist{nosep,leftmargin=1.6em}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+\emergencystretch=2em
+\raggedbottom
+\widowpenalty=10000
+\clubpenalty=10000
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{ink}Leant2: unified architecture proposal}
+\fancyhead[R]{\small Synthesis of nine design proposals}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\lstdefinelanguage{LeanSketch}{
+  morekeywords={def,theorem,example,structure,inductive,where,match,with,fun,forall,let,in,by,exact,apply,intro,cases,induction,constructor,if,then,else,return,do,namespace,end,universe,termination_by,decreasing_by,noncomputable,partial,import,open,instance,class,abbrev,axiom,opaque,private,elab,syntax,macro,deriving},
+  sensitive=true,morecomment=[l]{--},morecomment=[s]{/-}{-/},morestring=[b]"
+}
+\lstset{language=LeanSketch,basicstyle=\ttfamily\small,keywordstyle=\bfseries\color{accent},commentstyle=\itshape\color{black!55},backgroundcolor=\color{pale},frame=single,rulecolor=\color{rulecol},breaklines=true,columns=fullflexible,keepspaces=true,showstringspaces=false,aboveskip=8pt,belowskip=8pt,xleftmargin=3pt,xrightmargin=3pt}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{invariant}[definition]{Invariant}
+\newtheorem{decision}[definition]{Decision}
+\theoremstyle{plain}
+\newtheorem{proposition}[definition]{Proposition}
+\newtheorem{theorem}[definition]{Theorem}
+\theoremstyle{remark}
+\newtheorem{remark}[definition]{Remark}
+
+\tikzset{box/.style={draw=accent,rounded corners=2pt,fill=pale,align=center,inner sep=5pt,font=\small},
+         flow/.style={-{Latex[length=2mm]},thick,draw=accent}}
+
+\title{\textbf{Leant2: A Unified Architecture Proposal}\\[6pt]
+\large Lean-native synthesis of programs and their contracts,\\
+consolidated from nine independent design proposals}
+\author{Prepared for Vladimir Reshetnikov}
+\date{September 17, 2026}
+\hypersetup{pdftitle={Leant2: A Unified Architecture Proposal},pdfauthor={Leant2 project},pdfsubject={Unified architecture and algorithm proposal for a Lean-native successor to Leant and Djex}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Nine independently prepared design proposals for Leant2, a Lean-native successor to the Haskell synthesizers Leant and Djex, were written against the same repository snapshots and the same Lean~4.34.0 toolchain. They agree on more than they disagree. This document consolidates them into one proposal. Its architectural core is the consensus of all nine: exact Lean expressions as the only semantic authority; a transactional search whose unit of backtracking is a partial program together with \emph{all} of its unfinished obligations; recursion admitted only through typed schemas with explicit recursive-call capabilities; behavioral information with graded authority, where tests refute, proofs certify, and only proof-producing analyses may prune; and one acceptance gate that kernel-checks the exact program and the exact contract before anything is published. Where the proposals differ, this document selects the best-developed treatment and records its origin.
+
+Two requirements come from the project owner rather than from the proposals. First, Leant2 has a single adaptive engine: no engine switches and, for now, no user-facing settings. Second, the minimal acceptance baseline is the existing Leant \code{:synth} golden corpus, thirty transcripts with 278 queries, read semantically: Leant2 must match or exceed every recorded outcome, but may return better candidates in a different order. Nothing here adds new experimental evidence; the evidence sections cite the nine packages and the sibling project Forge, whose kernel-checked certificate checkers and orchestration frontend Leant2 should reuse.
+\end{abstract}
+
+\vspace{4pt}
+\textbf{Status.} This is a design specification. The nine source proposals each contain a small remotely compiled Lean prototype; collectively they demonstrate the continuation-backtracking core, dependent witness selection, dictionary identity, finite counterexample-guided synthesis, and hand-supplied certified recursion. They do not demonstrate automatic recursion discovery, library indexing, scheduling, or the acceptance gate. Section~\ref{sec:evidence} states exactly what has and has not been shown.
+
+\clearpage
+\tableofcontents
+\clearpage
+
+\input{sections/01-scope-baseline}
+\input{sections/02-decisions-problem}
+\input{sections/03-state-search}
+\input{sections/04-construction}
+\input{sections/05-recursion}
+\input{sections/06-behavior}
+\input{sections/07-acceptance-deployment}
+\input{sections/08-evidence-evaluation-roadmap}
+
+\appendix
+\input{sections/09-appendices}
+
+\clearpage
+\section*{References}
+\addcontentsline{toc}{section}{References}
+\begin{thebibliography}{99}\small
+\bibitem{leant-repo} V.~Reshetnikov et al. \emph{Leant: a Djex-based synthesis REPL for Lean~4}. Repository snapshot \code{6bf05ad78c467989e68290f2d08bbed40802d485}, September 14, 2026. Files consulted: \code{README.md}, \code{docs/synth-internals.md}, \code{docs/behavioral-synthesis.md}, \code{docs/SYNTHESIS_PROPOSAL.md}, \code{src/Leant/Synth/Fragment.hs}, \code{test/synth-*.txt}, \code{test/synth-*.golden}, \code{test/run-tests.sh}, \code{test-church/behavior-ledger.md}, \code{test-recursive/README.md}, \code{test-behavioral/README.md}, \code{test-context/global-methods/README.md}.
+\bibitem{djex-repo} V.~Reshetnikov et al. \emph{Djex}. Standalone snapshot \code{e8778f4ebd63e1f9b9b410fa4de8d14a8a04c9e5}; submodule revision pinned by Leant \code{e237e8667190aff38faaa590ce5b12afbffac452}. Files consulted: \code{README.md}, \code{docs/architecture.md}, \code{docs/rank-n.md}, \code{docs/source-typed-evidence-graph.md}.
+\bibitem{rewrite} Leant project. \emph{Rewriting Leant and Djex in Lean~4: Feasibility, Architectural Consequences, Tradeoffs, and Recommended End State}. \code{docs/Leant_Djex_Lean4_Rewrite_Analysis/}, August 2026.
+\bibitem{forge} V.~Reshetnikov et al. \emph{Forge: a certificate-producing proof-planning layer above Lean's \code{grind}}. Repository snapshot \code{44d191e}. Files consulted: \code{README.md}, \code{lean/Forge/Frontend.lean}, \code{lean/Forge/Checker/}, \code{lean/Forge/Design/Contracts.lean}, \code{docs/IDEAS-FROM-LEANT-DJEX.md}, \code{docs/STATUS.md}.
+\bibitem{p1} Proposal 01, \emph{Leant2: A Lean-Native Architecture for Proof-Carrying Program Synthesis}, \code{docs/proposals/01-lean-native-synthesis-architecture/}.
+\bibitem{p2} Proposal 02, \emph{Leant2: A Lean-Native Architecture for Type- and Specification-Directed Synthesis}, \code{docs/proposals/02-architecture-checked-experiments/}.
+\bibitem{p3} Proposal 03, \emph{Leant2: Lean-Native Synthesis of Programs and Their Contracts}, \code{docs/proposals/03-programs-and-contracts/}.
+\bibitem{p4} Proposal 04, \emph{Leant2: Native Dependent Program Synthesis in Lean}, \code{docs/proposals/04-native-dependent-synthesis/}.
+\bibitem{p5} Proposal 05, \emph{Leant2: Native Dependent-Type and Behavioral Program Synthesis in Lean}, \code{docs/proposals/05-dependent-behavioral-synthesis/}.
+\bibitem{p6} Proposal 06, \emph{Leant2: Lean-Native Program Synthesis with Dependent Types and Behavioral Contracts}, \code{docs/proposals/06-algorithms-checked-pilot/}.
+\bibitem{p7} Proposal 07, \emph{Leant2: Lean-Native Program Synthesis from Types and Behavioral Specifications}, \code{docs/proposals/07-architecture-prototypes/}.
+\bibitem{p8} Proposal 08, \emph{Leant2: Lean-Native, Contract-Directed Program Synthesis}, \code{docs/proposals/08-architecture-checked-prototypes/}.
+\bibitem{p9} Proposal 09, \emph{Leant2: Native Dependent Program Synthesis in Lean} (design), \code{docs/proposals/09-native-dependent-design/}.
+\bibitem{leanref} Lean development team. \emph{The Lean Language Reference}, version 4.34.0: The Type System; Universes; Inductive Types; Recursive Definitions; Instance Synthesis; Elaboration and Compilation; Validating a Lean Proof; the \code{grind} tactic.
+\bibitem{metaprog} Lean community. \emph{Metaprogramming in Lean~4}, chapter on \code{MetaM}.
+\bibitem{aesop} J.~Limperg and A.~Halkjær From. \emph{Aesop: White-Box Best-First Proof Search for Lean}. CPP 2023.
+\bibitem{canonical} C.~Norman and J.~Avigad. \emph{Canonical for Automated Theorem Proving in Lean}. arXiv:2504.06239, 2025.
+\bibitem{synquid} N.~Polikarpova, I.~Kuraj, A.~Solar-Lezama. \emph{Program Synthesis from Polymorphic Refinement Types}. PLDI 2016.
+\bibitem{tygar} Z.~Guo, M.~James, D.~Justo, J.~Zhou, Z.~Wang, R.~Jhala, N.~Polikarpova. \emph{Program Synthesis by Type-Guided Abstraction Refinement}. POPL 2020.
+\bibitem{myth} P.-M.~Osera and S.~Zdancewic. \emph{Type-and-Example-Directed Program Synthesis}. PLDI 2015.
+\bibitem{smyth} J.~Lubin, N.~Collins, C.~Omar, R.~Chugh. \emph{Program Sketching with Live Bidirectional Evaluation}. ICFP 2020.
+\bibitem{scrybe} N.~Mulleners, J.~Jeuring, B.~Heeren. \emph{Program Synthesis Using Example Propagation}. PADL 2023.
+\bibitem{resyn} T.~Knoth, D.~Wang, N.~Polikarpova, J.~Hoffmann. \emph{Resource-Guided Program Synthesis}. PLDI 2019.
+\bibitem{leansmt} A.~Mohamed et al. \emph{Lean-SMT: An SMT tactic for discharging proof goals in Lean}.
+\bibitem{lean4lean} M.~Carneiro. \emph{Lean4Lean: Verifying a Typechecker for Lean, in Lean}.
+\bibitem{dyckhoff} R.~Dyckhoff. \emph{Contraction-Free Sequent Calculi for Intuitionistic Logic}. JSL 57(3), 1992.
+\bibitem{axle} Axiom Math. \emph{AXLE check tool documentation}. \url{https://axle.axiommath.ai/v1/docs/tools/check/}.
+\end{thebibliography}
+
+\end{document}

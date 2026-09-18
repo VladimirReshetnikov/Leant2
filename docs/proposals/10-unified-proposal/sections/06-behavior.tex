@@ -1,0 +1,65 @@
+\section{Behavioral constraints}\label{sec:behavior}
+
+Behavioral information enters search from three directions: the type constrains shape, the contract propagates backward into holes, and observations and counterexamples constrain choices. None replaces the final proof\prov{\Ref{3},\Ref{9}}.
+
+\subsection{Contract decomposition}
+
+A \emph{contract decomposer} takes the elaborated contract $\Phi$ and a construction step and returns local obligations together with a \emph{reconstruction term} proving that they imply the original. Each extracted view is tagged \emph{necessary}, \emph{sufficient}, or \emph{equivalent}, and the original $\Phi$ stays authoritative\prov{\Ref{2},\Ref{6},\Ref{8},\Ref{9}}. The initial library of decomposition rules is:
+\begin{itemize}
+\item lambda introduction: a pointwise $\forall x, \mathrm{Post}(x, f\,x)$ becomes $\mathrm{Post}(x, ?r)$ for the body hole (Proposition~\ref{prop:pointwise});
+\item constructor application: a record invariant becomes projection equations on the fields;
+\item decidable conditional: the postcondition splits under the guard and its negation;
+\item provider application: a registered theorem $\forall a,\ P(a) \to Q(g(a))$ turns the demanded $Q$ into the \emph{sufficient} obligation $P(a)$ on the argument. Sufficiency does not license deleting arguments that fail $P$; they remain in another lane unless a necessity theorem exists;
+\item conjunctions, constructor-aligned relations, and registered pre/postconditions.
+\end{itemize}
+Multi-call laws stay as higher-order obligations; an opaque higher-order provider stops propagation with a symbolic residual.
+
+\subsection{Typed observations and residual evaluation}
+
+An observation is a typed substitution into the input telescope, precondition proofs, an exact output observation, and an evidence policy. Dependent outputs are checked at their induced type; \code{Fin n} values carry their bound; dependent pairs generate the first field before instantiating the second's type; polymorphic functions are tested at several concrete types with distinct dictionary payloads. The default evaluator never runs effects; \code{IO} is never executed as a test; a timeout is unknown, never false\prov{\Ref{3},\Ref{6},\Ref{7}}.
+
+Partial programs are evaluated \emph{residually}: evaluation proceeds until a hole and yields a typed residual (known constructors, closures, suspended applications, conditionals, named holes with observed arguments). A residual is a constraint on a particular use of the hole; multiple observed calls of one hole constrain one shared function, recorded in a hole-observation table keyed by hole and argument tuple so that $h(0) = 0$ and $h(0) = 1$ are recognized as inconsistent. Recursive-call outputs under a sketch are symbolic and never support hard pruning alone\prov{\Ref{2},\Ref{6},\Ref{7}}.
+
+\subsection{Proof services}\label{sec:proof-services}
+
+Proof obligations are discharged by a portfolio behind one adapter, in cost order: conversion and \code{rfl}; local assumptions; constructor proofs; \code{decide} by ordinary kernel reduction; curated \code{simp} with an explicit lemma set; \code{omega}; Forge's certificate checkers for cone, Farkas, affine-witness, recurrence, and conserved-invariant obligations \cite{forge}; \code{grind}; Aesop with query-specific rules; optional pinned Mathlib procedures. Induction is a deliberate schema choice coordinated with the recursion plan, not a generic proof step\prov{\Ref{1},\Ref{3},\Ref{5},\Ref{6},\Ref{9}}.
+
+The adapter's contract is Forge's: save the full state before the worker, restore on any failure including resource limits, and on success instantiate the proof term and reject it if it contains \code{sorry}, mentions a free variable outside the goal's context, does not type-check against the original goal, or depends on an axiom outside the policy. A reply is one of \code{Proof} (with any permitted assignment patch, in joint mode), \code{Refutation}, \code{ReducedGoal} with a reconstruction proof, \code{Unsupported}, or \code{Unknown} with the budget consumed. A bare Boolean is not an adequate interface; a failed proof never falsifies a candidate; a result obtained under a branch guard discharges only guarded obligations\prov{\Ref{2},\Ref{3},\Ref{7}}. \code{native_decide} is not used for proofs; native evaluation may rank or propose but never certifies\prov{\Ref{8},\Ref{9}}.
+
+Proof debt is scheduled: obligations carry cost and readiness, index and arithmetic obligations wake on relevant assignments, and heavy tactics are delayed until the computational holes they mention are assigned or exposed as witness choices\prov{\Ref{1},\Ref{5}}.
+
+\subsection{Certified counterexample-guided refinement}\label{sec:cegis}
+
+\begin{definition}[Verifier]
+$\mathrm{verify}(t, \Phi) \in \{\mathrm{Proof}(p),\ \mathrm{Counterexample}(c),\ \mathrm{Unknown}(r),\ \mathrm{Failure}(e)\}$, where $c$ is a value of the actual input type with proofs of its preconditions and a checked violation. A counterexample enters the bank only after replay in Lean's exact interpretation; a solver model is a proposal until decoded and replayed; an evaluator timeout adds nothing\prov{\Ref{1},\Ref{4},\Ref{5},\Ref{8}}.
+\end{definition}
+
+The loop: choose the next candidate consistent with the bank; try to prove $\Phi(t)$; on unknown, schedule a counterexample search and keep the candidate in the unresolved queue at a larger proof tier; on a certified counterexample, add it to the bank, repartition the observation buckets, and wake suspended work; publish only through the acceptance gate. ``Failure of one is not success of the other'': a proof attempt and a counterexample search for the same candidate run as separate resumable tasks\prov{\Ref{6},\Ref{7},\Ref{9}}.
+
+\begin{proposition}[Progress of finite counterexample search]
+With $N$ candidates in a finite grammar, permanently retained valid counterexamples, and bank-consistent selection, at most $N$ rejections occur; unknown verdicts do not count as rejections\prov{\Ref{3},\Ref{8}}.
+\end{proposition}
+
+Finite domains are promoted to universal statements by an untrusted enumerator that proposes a literal and a kernel \code{decide} that proves the universal statement, decoupling synthesis time from proof size; the finite promotion theorem $(\forall x, x \in L) \wedge (\forall x \in L, R(x)) \Rightarrow \forall x, R(x)$ is checked once\prov{\Ref{6},\Ref{9}}. Two prototypes implemented finite Boolean CEGIS in Lean with the universal correctness proved by ordinary \code{decide}; one implemented a proof-carrying certifier \code{certify : Affine -> Option {c // Spec c.eval}} whose acceptance object is a Lean proof rather than a Boolean\prov{\Ref{7},\Ref{8},\Ref{9}}.
+
+\subsection{Reversible observational buckets}
+
+Candidates are grouped by their observation vector $\mathrm{obs}_\Obs(t) = (t(x_1), \dots, t(x_m))$. A bucket holds an active representative \emph{and} its members or their regeneration recipes; a new observation splits buckets and reactivates members; a second liveness rule rotates parked members even without new observations, since a parked candidate may have a shorter proof. Permanent merging is unsound: the Boolean pair (constant true, identity) agrees on \code{true} and differs on \code{false}, and three separate finite experiments showed that permanent deduplication on the initial bank loses the correct program (identity versus reverse; $x$ versus $y$ on $(0,0)$). Observational agreement is provisional and never a cache equivalence\prov{\Ref{1},\Ref{2},\Ref{3},\Ref{5},\Ref{9}}.
+
+\subsection{Certified pruning}\label{sec:pruning}
+
+\begin{proposition}[Sound sketch pruning]\label{prop:prune}
+Let $P$ be a partial program with completions $\Comp(P)$ and let $A(P)$ be an abstract summary with $\{\Beh(t) : t \in \Comp(P)\} \subseteq \gamma(A(P))$. If some valid input $\rho_0$ has a defined observation for every completion, and a checked necessary condition $K$ on that observation satisfies $\gamma(A(P)) \cap K = \varnothing$, then no completion of $P$ satisfies $\Phi$\prov{\Ref{3},\Ref{5},\Ref{6},\Ref{8},\Ref{9}}.
+\end{proposition}
+
+A domain plugin implements Forge's \code{CertificateSpec} shape: a typed reification, an interpretation into Lean, a soundness theorem for its transfer rules, and refusal cases. Its replies are \code{Unsupported}, \code{RankingHint} (no logical authority), \code{NecessaryConstraint} with proof, \code{Counterexample} with validity evidence, or \code{NoCompletion} with a certificate and its exact grammar scope. Missing transfer rules yield top, never bottom; an under-approximation may produce witnesses but may never justify pruning; grammar identity is part of every certificate's applicability. Initial domains are list lengths and sizes, affine and linear arithmetic (Forge's checkers), constructor tags, bounded machine integers, and small multisets. One proposal proved the length-abstraction necessity and sufficiency for its fold grammar; another proved an exact five-list separator family for affine folds and generated twenty-seven universal contracts from it\prov{\Ref{3},\Ref{4},\Ref{5},\Ref{7}}.
+
+External solvers have three distinct uses, each with its own validation: proposing sketch choices, proposing counterexample inputs, and proving theory obligations by a reconstructed certificate. \code{unsat} on an under-approximate encoding excludes only that encoding. Typed SMT sketches encode dependent holes either \emph{branch-expanded} (each witness alternative owns a specialized child grammar) or \emph{native-first} (the solver picks the witness and Lean generates the residual); untyped multiplexers are not used\prov{\Ref{2},\Ref{5},\Ref{6}}.
+
+\section{Caching and equivalence}\label{sec:caching}
+
+Three equivalences are kept apart: structural identity, checked semantic equality, and finite observational agreement\prov{\Ref{8}}.
+
+Cache keys include the environment epoch and provider policy, the canonical dependent context preserving \code{let} values and instance identities, the target, the residual contract, the transparency setting, universe parameters, the assignment state of shared metavariables, the grammar identity, domain versions, and the observation-bank version; never a pretty-printed type. Positive entries are closed term templates over a canonical telescope, reinstantiated through an explicit context embedding and rechecked. Negative entries must state whether they are a semantic refutation, a bounded-grammar exhaustion with its bound and provider set, or an operational miss; a failure at fuel twenty says nothing about fuel one hundred; a timeout is never cached as uninhabitability\prov{\Ref{1},\Ref{2},\Ref{4},\Ref{5},\Ref{7},\Ref{9}}.
+
+Nogoods store the smallest justified dependency slice, tagged with request, contract, instance selections, epoch, and grammar scope; a budget exhaustion is a penalty, not a nogood. Definitional-equality comparisons must not mutate branch unknowns. E-graphs are permitted only over a reified typed fragment with proof-carrying edges; proof irrelevance merges proofs, never dictionaries. Library learning stores successful closed subterms as checked helper schemas, with leakage rules for evaluation\prov{\Ref{1},\Ref{2},\Ref{3}}.

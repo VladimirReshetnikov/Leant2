@@ -1,0 +1,81 @@
+\section{The acceptance gate}\label{sec:acceptance}
+
+\subsection{Pipeline}
+
+The gate is the only constructor of an accepted result. It runs, in a fresh native state\prov{all}:
+\begin{enumerate}
+\item \textbf{Restore the origin.} Check the environment epoch and the origin record; reject stale generations. Reconstruct the exact type and contract from the frozen query, never from the candidate's inferred type.
+\item \textbf{Close.} Instantiate all expression and level metavariables; reject any remaining hole, dangling free variable, loose bound variable, or unresolved elaboration obligation. Close the program and the proof over the original telescope, preserving \code{let} values; generalize only permitted universes and locals.
+\item \textbf{Bundle.} Collect auxiliary declarations in dependency order; check that no declaration references a provisional self-reference and that every helper body is present. The published theorem refers to the published definition by its exact generated name.
+\item \textbf{Kernel-check.} Add the bundle through the ordinary checked declaration path in a scratch environment, with \code{debug.skipKernelTC} pinned to \code{false} in the options passed, and with a positive signal that the kernel task completed rather than mere presence of the constant (Section~\ref{sec:forge}). Check the program at the frozen $T$ and the proof at $\Phi$ applied to \emph{that} program, retained even when $\Phi$ ignores its argument.
+\item \textbf{Audit.} Compute the transitive axiom closure of the proof and the transitive runtime-dependency closure of the program separately; enforce the profile (Section~\ref{sec:profiles}), rejecting \code{sorryAx}, unapproved axioms, \code{implemented_by} and \code{extern} outside the runtime policy, \code{partial} and \code{unsafe} dependencies, and any use of the withheld reference implementation. Policies are over the dependency graph, not over strings.
+\item \textbf{Compile.} When the execution policy requires it, compile the exact program and record the outcome; a kernel-accepted term that fails code generation is not \code{compiled}.
+\item \textbf{Replay the source.} Delaborate the result in the pinned presentation context, re-elaborate the source against the frozen signature, and compare meaning with the accepted expression; on mismatch report a ``newly checked source variant'' rather than the original. Text is never the authority: implicit arguments, notation, and instance drift change on re-elaboration.
+\item \textbf{Publish atomically} with a receipt. Nothing is published on any failure.
+\end{enumerate}
+
+\begin{theorem}[Conditional acceptance soundness]\label{thm:soundness}
+Assume the validation environment is the recorded one, the kernel and the imported environment are correct, and the gate accepts only closed instances of the frozen contract. Then every published \code{verified} result satisfies the two judgments of Definition~\ref{def:answer} relative to the displayed premises and the allowed axioms. No search step, heuristic, index, solver, or proof service occurs as a premise. This is an architectural implication, not a formal verification of the gate\prov{all}.
+\end{theorem}
+
+\begin{invariant}[Inference is not acceptance]
+Success of \code{inferType}, \code{isDefEq}, \code{Meta.check}, or a tactic's ``no goals'' is never acceptance. Forge's test workers demonstrate each failure: a goal assigned \code{True.intro} without a type check, a proof mentioning a phantom local, an admitted theorem, and a \code{Classical.choice} proof under a constructive policy \cite{forge}.
+\end{invariant}
+
+\subsection{Receipts}
+
+A receipt records the request identity; toolchain, import, and environment identities; provider and policy selections and the retrieval tiers used; the accepted declarations and the contract type; the axiom closure of the proof and the runtime-dependency closure of the program; the flags \code{kernelChecked}, \code{compiled}, \code{evaluatedOnExamples}; the source-replay outcome; search bounds and the incompleteness ledger; and the accounting of rejections, inapplicabilities, and infrastructure failures. Hashes are identity checks, not semantic equivalence. Remote-checker receipts, such as the AXLE transcriptions in the nine packages, are operational evidence and are never confused with local kernel artifacts\prov{\Ref{3},\Ref{7},\Ref{8}}.
+
+\subsection{Isolation}
+
+In-process private constructors protect against mistakes, not against hostile metaprograms. The strict deployment profile runs the gate in a separate process with the same kernel against the project snapshot, receiving only the serialized bundle and never executing proposed tactic code. Untrusted extensions (learned proposers, external solvers, plugin metaprograms) run in a sandboxed proposal worker with a restricted publication interface. An independent checker such as Lean4Lean \cite{lean4lean} is an optional higher-assurance route, reported only when performed\prov{\Ref{3},\Ref{6},\Ref{9}}.
+
+\section{Frontends and deployment}\label{sec:deployment}
+
+\subsection{Entry points}
+
+All entry points build the same frozen query and share the gate\prov{\Ref{3},\Ref{6},\Ref{9}}:
+\begin{itemize}
+\item a tactic, \code{by leant2}, which fills the current goal; when the goal is data, it may be combined with a contract as a subtype or with a separately supplied \code{satisfying} clause;
+\item a command, \code{#synth T satisfying fun f => P using [providers]}, for exploration without registering declarations;
+\item a declaration command, \code{synth_def name : T satisfying fun f => P}, which publishes the implementation and its correctness theorem atomically, at command-elaboration level so that recursive declaration bundles and the compiler are available;
+\item a batch API used by the worker and by test harnesses.
+\end{itemize}
+Unknown names in a contract are errors, not auto-bound implicits. The proposed syntax is a design sketch; none of the nine prototypes implements it.
+
+\subsection{Compatibility REPL for the baseline}\label{sec:repl}
+
+To run the baseline corpus, Leant2 ships a small REPL adapter that accepts Leant's transcript syntax: session declarations, \code{:synth T}, \code{:synth f : T where P}, \code{:reset}, \code{:quit}, and \code{#eval}/\code{#check}. Every \code{:set} line is accepted and ignored (Decision~\ref{dec:single-engine}). The adapter is an adapter, not a second elaborator: it feeds declarations to a session environment, bumps the epoch on \code{:reset}, and submits each query to the batch API. Its output is a new golden format that prints outcomes and accepted candidates with their axiom labels, and the baseline harness compares outcomes by Definition~\ref{def:baseline} rather than by text. Leant's session-binding convention (\code{it1}, \code{it2}, \ldots) is preserved so that transcripts such as \code{synth-manual}, which evaluate \code{it2} after a query, replay.
+
+\subsection{Worker and controller}
+
+The core is a Lean library compiled with the project's own toolchain; a globally compiled executable must not load incompatible \code{.olean} files. A lightweight controller, also in Lean, owns sessions, progress, cancellation, and durable requests; a replaceable project-local worker owns the environment, local contexts, metavariables, caches, and search state, and is launched under the project's Lake configuration. Heavy solver calls and untrusted runtime evaluation go to subordinate processes. Protocol messages carry a version, the query identity, the epoch, and a cancellation token; replies carry request and frame identifiers so that a stale reply cannot satisfy a newer obligation. Durable state is source commands, the origin record, and plans; never pointers or metavariable identifiers. There is no Haskell component\prov{\Ref{1},\Ref{2},\Ref{6},\Ref{7},\Ref{9}}.
+
+The narrow, version-sensitive adapter over Lean's metaprogramming API (\code{Meta.saveState}/\code{restore}, \code{MVarId.intro1P}, \code{MVarId.apply}, \code{MVarId.cases}, \code{MVarId.induction}, \code{mkConstWithFreshMVarLevels}, \code{whnf}, \code{Meta.check}, \code{addDecl}, \code{collectAxioms}) is isolated in one module with toolchain-pinned regression tests for success, failure, rollback, and interruption of each operation. The nine prototypes exercised exactly this surface on Lean~4.34.0\prov{\Ref{1},\Ref{4},\Ref{6},\Ref{9}}.
+
+\subsection{Proposed module layout}
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}lY@{}}
+\toprule
+Module & Responsibility \\
+\midrule
+\code{Leant2.Frontend} & tactic, commands, REPL adapter; builds frozen queries \\
+\code{Leant2.Core.Origin} & origin record, epochs, policies, result algebra \\
+\code{Leant2.Core.Plan} & serializable search plan, replay, cross-process packaging \\
+\code{Leant2.Native} & the version-sensitive adapter and transaction combinators \\
+\code{Leant2.Search} & obligation graph, cursor frames, scheduler, ledger \\
+\code{Leant2.Rules} & introductions, spines, projections, constructors, transport \\
+\code{Leant2.Elim} & dependent elimination and motive construction \\
+\code{Leant2.Index} & provider index, tiers, component recipes, demand graph \\
+\code{Leant2.Recursion} & schemas, capabilities, motives, carriers, lowering \\
+\code{Leant2.Contract} & decomposer, observations, residual evaluation, buckets \\
+\code{Leant2.Proof} & proof-service adapter; Forge checkers, \code{grind}, Aesop \\
+\code{Leant2.Domain} & certified abstract domains and solver bridges \\
+\code{Leant2.Accept} & the gate, audits, source replay, receipts \\
+\code{Leant2.Worker} & controller, worker, isolation \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Core modules depend only on Lean and its standard library. Mathlib-backed proof methods, Forge's Mathlib-dependent checkers, SMT adapters, and learned ranking live in optional packages pinned separately\prov{\Ref{8}}.

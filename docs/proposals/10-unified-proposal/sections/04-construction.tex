@@ -1,0 +1,96 @@
+\section{Native construction}\label{sec:construction}
+
+The construction calculus is bidirectional. Checking $\Gamma \vdash e \Leftarrow T$ drives introductions from the expected type; inference $\Gamma \vdash n \Rightarrow T$ extends heads (locals, constants, projections) by spines and drives eliminations. Rules are labeled as \emph{checked transformation}, \emph{grammar-preserving normalization}, or \emph{heuristic proposal}, and a fairness lane retains the alternatives that aggressive focusing drops\prov{\Ref{3},\Ref{6},\Ref{9}}.
+
+\subsection{Introductions}
+
+For a target that weak-head-normalizes to $\prod_{x:A} B(x)$, introduce a fresh local preserving binder information (explicit, implicit, strict-implicit, instance-implicit). Introduction is existence-preserving for every binder kind, including type parameters, indices, and instance arguments, so it is the default focusing policy for function targets. It does not yield the smallest term: an existing function of the target type must also be considered, so a cheap \emph{exact-term lane} runs before eta-expansion, but a cheap inhabitant never suppresses contract-sensitive alternatives\prov{\Ref{3},\Ref{4},\Ref{5}}.
+
+For an inductive target, enumerate all constructors rather than committing to the first; freshen the constructor's universe levels, instantiate parameters, and unify the result with the target in one transaction. An index equation that is inconsistent rejects the constructor; one that is merely blocked keeps it and records a delayed constraint. In dependent pairs and subtypes, the data field remains a choice point until every dependent field and the contract are satisfied; proof irrelevance may deduplicate proofs of a fixed proposition, never data\prov{\Ref{1},\Ref{6}}.
+
+\subsection{Application spines}\label{sec:spines}
+
+\begin{definition}[Spine expansion]
+For a head $c : \prod_{a_1:A_1}\cdots\prod_{a_k:A_k(\vec a_{<k})}\,R(\vec a)$: freshen the universe parameters of this occurrence; for each admissible prefix length $j \le k$, in a fresh transaction, create owned holes $?a_1,\dots,?a_j$ in telescope order with exact binder information, and unify the residual type $\prod_{a_{j+1}}\cdots R$ with the target; keep the full argument vector so that later arguments can constrain earlier ones; classify each hole by role; discharge determined instance and proof arguments cheaply; suspend blocked constraints with dependency stamps; and yield the application together with its whole coupled continuation\prov{\Ref{2},\Ref{3},\Ref{6},\Ref{8},\Ref{9}}.
+\end{definition}
+
+Partial applications are admitted because a useful application length changes after reduction or when a type variable is instantiated by a function type. Repeated use of one head is allowed. The prototypes build this on \code{MVarId.apply} with \code{newGoals := .all} (original argument order, which forces witness-first backtracking to be tested) and \code{approx := false}; the design treats \code{apply} as a first adapter and differential-tests any optimized spine planner against it\prov{\Ref{2},\Ref{3},\Ref{6}}.
+
+Local providers keep their exact free-variable identities and universes; only global constants are freshened per occurrence. Named universe parameters of the query are rigid; fresh level metavariables of library constants are flexible; there is no implicit universe lifting and no lowering of a polymorphic query to \code{Type 0}\prov{\Ref{1},\Ref{2},\Ref{4}}.
+
+\subsection{Known-major projections}
+
+Applying \code{Sigma.snd} to an unknown pair leaves an unknown family and an unknown major premise. Instead, projections are first-class search actions over \emph{known} locals: enumerate \code{Expr.proj} over local structure values using structure metadata, infer the exact dependent type, and match. This fixed a real regression ($p : \Sigma_n \mathrm{Fin}(n+1) \vdash \mathrm{Fin}(p.1 + 1)$) generically, and projection-first ordering also fixed a heartbeat exhaustion caused by constructor growth before projections in another prototype\prov{\Ref{1},\Ref{5}}.
+
+\subsection{Polymorphic and higher-rank instantiation}\label{sec:polymorphism}
+
+Higher-rank arguments are Pi-typed argument holes and are constructed by introduction; there is no rank-N approximation. Type-valued holes are filled by a staged \emph{type-invention ladder}\prov{\Ref{1},\Ref{2},\Ref{6},\Ref{9}}:
+\begin{enumerate}
+\item types forced by unification with the rigid target;
+\item expected-type-directed construction of polymorphic arguments (introduce the binder rather than enumerate monotypes);
+\item a bounded, cost-ordered \emph{type frontier}: types in the telescope, output, and contract; types of locals and of provider domains; small products, sums, sigma and function types over those; registered carrier templates;
+\item quantified types and accumulator carriers, with a separate size cost.
+\end{enumerate}
+Pool exhaustion is a missed instantiation, not impossibility. Stuck higher-order equations are postponed, then bounded-instantiated with small lambda, projection, and application templates, each rechecked by Lean; there is no general higher-order unification. The Church and rank-N fixtures of the baseline are the primary regression set for this ladder.
+
+\subsection{Instances and dictionary identity}\label{sec:instances}
+
+Two modes must not interfere. In \emph{canonical instance mode}, instance obligations are Lean's own resolution, delayed until their input parameters are known and woken on assignment. In \emph{explicit dictionary mode}, a dictionary is data: local instances are named providers, the actual dictionary expression is stored at each method occurrence, and search may backtrack over dictionary choices. Two dictionaries of the same class type are never interchangeable without a proved equivalence; only \code{Prop}-valued classes enjoy proof irrelevance. Cache keys and candidate identity include dictionary payloads. The fixture in which the second of two \code{Inhabited Nat} values must be selected because the contract says so is a permanent regression\prov{\Ref{1},\Ref{3},\Ref{5},\Ref{6},\Ref{8}}. Leant2 never manufactures global instances.
+
+\subsection{Normalization and equality}
+
+Normalization is controlled work: memoized weak-head normalization, a small transparency ladder with per-operation budgets, escalation on failure, and charges that survive rollback. Definitional equality is an operation, not a canonicalizer: there are no pretty-printed normal-form cache keys. The order for an index mismatch such as $\mathrm{Vec}\,A\,(n+m)$ against $\mathrm{Vec}\,A\,(m+n)$ is cheap definitional equality, then registered proof-producing normalizers, then a bounded equality proof $q : n+m = m+n$ followed by an explicit transport along the equality recursor with a Lean-checked motive; never a raw cast, and never index erasure\prov{\Ref{3},\Ref{4},\Ref{6},\Ref{8}}.
+
+\subsection{The constructive propositional lane and classical candidates}\label{sec:classical}
+
+Leant's baseline includes propositional goals proved constructively (\code{synth-basic}, \code{synth-manual}, \code{synth-prove}) and, with \code{synth-classical on}, classically. It reports \code{forall p : Prop, p or not p} as ``provably uninhabited'' because Djinn's LJT search found no derivation. Leant2 reproduces this capability with two lanes and one rule.
+
+The \emph{constructive propositional lane} reifies the propositional fragment of a goal (connectives $\to,\wedge,\vee,\neg,\leftrightarrow,\bot,\top$ over atoms that are opaque Lean propositions or types), runs a terminating focused calculus over it, and returns either a Lean proof term or a checkable certificate that no derivation exists in that fragment. The certificate is a finite Kripke countermodel, checked by recomputing forcing, as in Forge's extension round \cite{forge}. The result is \code{fragmentUnderivable}, with the fragment named, and it is never promoted to \code{impossible}\prov{\Ref{1},\Ref{4},\Ref{6},\Ref{8}}.
+
+The \emph{classical lane} adds \code{Classical.em}, \code{Classical.byContradiction}, and \code{Decidable.em} as explicit providers. It is enabled by the \emph{standard} profile and scheduled after the constructive lane has returned a certificate, so that constructive candidates are found first and classical ones are labeled by their axiom inventory. For the baseline this yields the classical candidates of \code{synth-manual} and, for \code{forall p : Prop, p or not p}, both a fragment certificate and a labeled classical candidate.
+
+\section{Dependent elimination}\label{sec:elimination}
+
+Case analysis is a motive-construction problem, delegated to Lean's own machinery behind a wrapper that returns the branch goals, the old-to-new local mapping, and any transport obligations\prov{\Ref{3},\Ref{4},\Ref{6},\Ref{8},\Ref{9}}.
+
+\begin{enumerate}
+\item Compute the dependency closure of the scrutinee $x : I\,\vec p\,\vec i$: every later local whose type or value mentions $x$, its indices, or a selected dependent.
+\item Generalize the closure into the motive, preserving order; inspect the real eliminator and its result-sort restriction; build the motive over the indices and the scrutinee.
+\item Instantiate each constructor branch with its fields and index equations; reintroduce the dependent context with transformed types; record the branch-to-parent substitution.
+\item Discharge impossible constructor and index combinations only by checked evidence: unification contradiction, no-confusion, or a proved local contradiction. Record for each removed branch whether it was removed by kernel-checked contradiction, by a trusted exact-fragment theorem, or by heuristic omission; only the first two support coverage claims.
+\item Reconstruct the eliminator application.
+\end{enumerate}
+
+Scrutinee selection prefers locals that occur in target indices, that a discriminating contract or observation demands, or that block reduction. Split history is tracked by discriminant identity, so repeated splitting of a recursive input is recognized as bounded unrolling and not as recursion. Elimination restrictions are enforced natively: \code{False} eliminates anywhere; \code{Nonempty A} is not an executable \code{A}; \code{Exists} is not a computational pair; quotients require a respect proof through their registered lift. Decidable conditionals require an admitted \code{Decidable} instance and a checked link between the condition and the branch facts\prov{\Ref{2},\Ref{4},\Ref{7}}.
+
+Every prototype that eliminated an indexed family with \code{cases} picked up \code{propext}; the receipts report it, and the strict profile treats it as a policy decision rather than hiding it.
+
+\section{Library composition and carrier invention}\label{sec:library}
+
+\subsection{The provider index}
+
+A persistent index is built at import over declaration types: identity, universe parameters, telescope, weak-head result shape, argument heads, constructor or projection role, computational-versus-proof classification, and registered specification lemmas. The index is a discrimination tree over normalized result heads with mandatory wildcard and reducible-head buckets; it may over-return but never silently under-returns, and an intentionally narrowed query is never negative evidence\prov{\Ref{4},\Ref{5},\Ref{8},\Ref{9}}.
+
+Retrieval widens in tiers, each recorded in the result: locals and local dictionaries; the goal's own constructors and projections; explicitly requested providers; registered project components and tagged \emph{synthesis lemmas}; nearby namespaces and imports; a budgeted broad scan. A fixed cap such as fifty providers is a heuristic, never ``exhaustive''\prov{\Ref{1},\Ref{9}}.
+
+\subsection{Component recipes and the join}
+
+A component is a recipe $(\Delta \vdash e : \sigma,\ \text{contract lemmas},\ \text{cost},\ \text{provenance})$ with $\Delta$ the dependency-closed telescope. Reuse under $\Gamma$ requires a telescope substitution $\rho : \Delta \to \Gamma$ applied uniformly to $e$, $\sigma$, and the contracts, followed by a native recheck. Forward synthesis stores cheap components in a typed shared DAG; backward synthesis demands result types; a \emph{join} matches demanded premises against stored components and propagates assignments across the whole application\prov{\Ref{6},\Ref{7}}.
+
+A \emph{demand graph} from target holes and observations yields, per demand, a \emph{candidate context slice}: the locals mentioned in the type, contract, and constraints plus a bounded predecessor closure. The slice is searched first and the full context second; slice solutions are transported by explicit weakening and rechecked. This is the direct response to Leant's indexing diagnostic, in which a handler found standalone is missed in the full context\prov{\Ref{7},\Ref{8}}.
+
+\subsection{Providers with contracts}
+
+A provider is an exact term plus useful theorems: the declaration, its universe telescope and binder structure, result-head keys, instance dependencies, a use policy, and \emph{specification entries} naming theorems $\forall x,\ P(x) \to Q(x, g(x))$ that relate the operation to its inputs and outputs. Entries are checked at registration and never trusted as annotations; a summary must name its justifying theorem and instantiate it at the same occurrence. Multiple specifications per provider are selected by the demanded observation (length, order, multiset). Provider exclusion follows declaration dependencies, not namespace blacklists, so a withheld reference implementation cannot be retrieved through an alias\prov{\Ref{3},\Ref{5},\Ref{8},\Ref{9}}.
+
+Parametricity is a ranking heuristic and a template source, never a pruning axiom: Lean's axioms admit nonparametric functions\prov{\Ref{2},\Ref{5}}.
+
+\subsection{Carrier invention}\label{sec:carriers}
+
+When an eliminator or fold is applied and the continuation still consumes an argument after the traversal, the carrier is not the result type. The engine tries, in increasing structural cost, the carrier grammar
+\[
+C ::= R \;\mid\; I \to C \;\mid\; C_1 \times C_2 \;\mid\; \mathrm{Option}\,C \;\mid\; \Sigma d{:}D,\, C(d),
+\]
+seeded by demanded types, with three demand rules: \emph{parameter postponement} (a parameter consumed after the traversal becomes the domain of a function-valued carrier), \emph{result pairing} (two demanded summaries become a product), and \emph{accumulator generalization} (a changing argument becomes an accumulator). Generalization is \emph{behavioral}: it includes arguments whose values change across calls, not only those the type depends on. The worked trace shared by four proposals is defaulted indexing, \code{List A -> Nat -> Option A}, as \code{foldr} with carrier $\Nat \to \mathrm{Option}\,A$, $z(i) = \mathrm{none}$, $s(x,r)(0) = \mathrm{some}\,x$, $s(x,r)(k+1) = r(k)$; one proposal checked a hand-supplied instance of it, none discovered it automatically\prov{\Ref{1},\Ref{4},\Ref{5},\Ref{7},\Ref{8},\Ref{9}}.
+
+Base and step are attempted jointly with the outer continuation; failures are memoized only under the full context, motive, and bound. Typed anti-unification of repeated residual obligations proposes shared helper types and let-bound helper holes solved under the intersection of scopes\prov{\Ref{1},\Ref{2},\Ref{8}}.

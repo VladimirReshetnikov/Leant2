@@ -1,0 +1,180 @@
+\section{Provenance ledger}\label{app:provenance}
+
+Each row names an idea adopted in this document, the proposals that develop it most fully, and the alternatives that were not adopted. ``All'' means every proposal contains the idea in some form.
+
+\begin{center}\small
+\begin{longtable}{@{}L{4.4cm}L{2.2cm}Y@{}}
+\toprule
+Idea & Adopted from & Alternatives and notes \\
+\midrule
+\endfirsthead
+\toprule
+Idea & Adopted from & Alternatives and notes \\
+\midrule
+\endhead
+Exact \code{Expr} as semantic authority; three representations & all; \Ref{3}, \Ref{5}, \Ref{8}, \Ref{9} & The earlier rewrite study's neutral IR was rejected by all nine. \Ref{1} keeps only replay plans serializable; \Ref{6} names the pair ``search plan / constraint state''. \\
+Whole-continuation backtracking & all & \Ref{2} adds the commit criterion; \Ref{3} names the continuation ownership invariant; \Ref{1} contrasts with Aesop safe rules. \\
+Separate program and proof judgments & \Ref{2}, \Ref{3}, \Ref{5}, \Ref{8} & \Ref{4} uses a subtype in experiments and separates in the interface; \Ref{9} packs with \code{PSigma} when needed. \\
+Pointwise packaging & \Ref{1}, \Ref{3}, \Ref{9} & Registered as a checked transformation, not syntactic. \\
+Four constraint kinds & \Ref{1}, \Ref{7} & \Ref{1} names hard contract, example, preference; \Ref{7} adds construction restriction and operational objective. \\
+Result algebra & \Ref{4}, \Ref{6}, \Ref{8}, \Ref{9} & Merged from taxonomies of 5 (\Ref{1}) to 9 (\Ref{4}, \Ref{9}) constructors; \code{fragmentUnderivable} from \Ref{5}; three flags from \Ref{9}. \\
+Trust profiles & \Ref{1}, \Ref{3}, \Ref{6}, \Ref{9} & Names vary; all separate proof axioms from runtime dependencies. \\
+Origin record and epochs & \Ref{9}; \Ref{1}, \Ref{6}, \Ref{7} & ``Environment generation'' (\Ref{1}, \Ref{3}), ``epoch'' (\Ref{6}, \Ref{7}). \\
+Obligation graph with roles, coupled clusters & \Ref{3}, \Ref{6}, \Ref{7}, \Ref{8} & \Ref{7} makes constructor application a hyperedge; \Ref{8} states four invariants. \\
+Branch ownership & \Ref{6}, \Ref{7}, \Ref{8} & \Ref{1} calls it the ownership barrier. \\
+Three blocked states & \Ref{2}, \Ref{6} & \\
+Joint versus frozen proof modes & \Ref{1}, \Ref{2}, \Ref{7} & \Ref{2}'s proof-service firewall; \Ref{4}'s candidate identity on reopening. \\
+Lane portfolio with reserved reference lane & \Ref{1}, \Ref{2}, \Ref{7}, \Ref{9} & \Ref{5} fixes 1 in 8 quanta; \Ref{9} the diagonal tuple schedule and FIFO stream. \\
+Pressure and priority formulas & \Ref{5}, \Ref{6}; \Ref{1} & Weights are placeholders to be tuned at G1. \\
+Cost vector and Pareto frontier & \Ref{2}, \Ref{3}, \Ref{6}, \Ref{8} & \\
+Cursor frames & \Ref{6}, \Ref{8} & \\
+Bidirectional focusing, rule labels & \Ref{3}, \Ref{6}, \Ref{9} & \\
+Spine prefixes & \Ref{2}, \Ref{3}, \Ref{6}, \Ref{8}, \Ref{9} & \\
+Known-major projections & \Ref{1}; \Ref{5} & \Ref{5}'s projection-first ordering after a heartbeat failure. \\
+Type-invention ladder & \Ref{1}, \Ref{2}, \Ref{6}, \Ref{9} & \\
+Dictionary identity, two instance modes & \Ref{1}, \Ref{3}, \Ref{5}, \Ref{6}, \Ref{8} & \\
+Constructive lane with Kripke certificate & \Ref{1}, \Ref{4}, \Ref{6}, \Ref{8}; Forge & Forge's extension round built the checker. \\
+Dependent elimination with provenance of removed branches & \Ref{3}, \Ref{4}, \Ref{6}, \Ref{8}, \Ref{9} & \Ref{4} records kernel / exact-fragment / heuristic removal. \\
+Equality repair and transport & \Ref{3}, \Ref{4}, \Ref{8} & \\
+Provider index, tiers & \Ref{4}, \Ref{5}, \Ref{8}, \Ref{9} & \Ref{1}'s synthesis lemmas; \Ref{9}'s 50-provider cap remark. \\
+Component recipes and the join & \Ref{6}, \Ref{7} & \Ref{7}'s context slices. \\
+Providers with contract lemmas & \Ref{3}, \Ref{5}, \Ref{8}, \Ref{9} & \\
+Carrier grammar and demand rules & \Ref{8}; \Ref{1}, \Ref{4}, \Ref{5}, \Ref{7}, \Ref{9} & \Ref{5} adds behavioral generalization. \\
+Recursion routes and schemas & \Ref{2}, \Ref{3}, \Ref{4}, \Ref{5}, \Ref{8}, \Ref{9} & \Ref{4}'s recursion descriptor; \Ref{9}'s \code{RecSketch}. \\
+Recursive-call capabilities & all & \Ref{2}'s failed run as motivation. \\
+Motive by dependency-closed generalization; failure-directed generalization & \Ref{2}, \Ref{6} & \\
+Proof-carrying motives & all & ``Certificate algebras'' (\Ref{5}), ``refinement motives'' (\Ref{1}), ``packed motives'' (\Ref{3}), ``certified motive'' (\Ref{8}). \\
+Accumulator invariants as sub-synthesis & \Ref{2}, \Ref{3}, \Ref{4}, \Ref{6}, \Ref{8}, \Ref{9} & \\
+Measure grammar & \Ref{1}, \Ref{3}, \Ref{5}, \Ref{8} & \\
+Two products per recursion plan & \Ref{4}, \Ref{6}, \Ref{8}, \Ref{9} & \Ref{6}'s lowering algorithm from the plan. \\
+Contract decomposer with reconstruction terms & \Ref{2}, \Ref{6}, \Ref{8}, \Ref{9} & \Ref{2}'s necessary / sufficient / equivalent tags. \\
+Typed observations, residual evaluation, hole consistency table & \Ref{2}, \Ref{3}, \Ref{6}, \Ref{7} & \\
+Proof-service portfolio and adapter & \Ref{1}, \Ref{3}, \Ref{5}, \Ref{6}, \Ref{9}; Forge & Forge's frontend is the reference implementation of the adapter. \\
+Certified CEGIS with unknown branch & \Ref{1}, \Ref{4}, \Ref{5}, \Ref{6}, \Ref{7}, \Ref{8}, \Ref{9} & \Ref{8}'s finite bound; \Ref{7}'s proof-carrying certifier. \\
+Reversible observational buckets & \Ref{1}, \Ref{2}, \Ref{3}, \Ref{5}, \Ref{9} & Three independent ablations show permanent merging loses solutions. \\
+Sound sketch pruning and domain plugin protocol & \Ref{3}, \Ref{5}, \Ref{6}, \Ref{8}, \Ref{9}; Forge & \Ref{4}'s exact affine separator family; \Ref{3}'s \code{DomainReply}. \\
+SMT with three uses; typed sketches & \Ref{2}, \Ref{5}, \Ref{6} & \Ref{5}'s branch-expanded versus native-first encodings. \\
+Cache keys and qualified negative entries & \Ref{1}, \Ref{2}, \Ref{4}, \Ref{5}, \Ref{7}, \Ref{9} & \\
+Acceptance gate pipeline & all & Order and steps merged; \Ref{8}'s exact-statement matching and source re-elaboration; \Ref{2}'s declaration bundle. \\
+\code{skipKernelTC} and async \code{addDecl} pitfalls & Forge & Not present in any of the nine proposals. \\
+Receipts & \Ref{3}, \Ref{7}, \Ref{8} & \\
+Isolation profiles & \Ref{3}, \Ref{6}, \Ref{9} & \\
+Frontends and worker/controller & \Ref{1}, \Ref{2}, \Ref{6}, \Ref{7}, \Ref{9} & \Ref{9} puts recursive bundles at command level. \\
+Compatibility REPL & this document & Required by Decisions~\ref{dec:single-engine} and~\ref{dec:baseline}. \\
+Evaluation corpus, leakage rules, adversarial suite & \Ref{2}, \Ref{4}, \Ref{5}, \Ref{6}, \Ref{7}, \Ref{8}, \Ref{9} & \\
+Gated roadmap & all & Reordered so that the baseline release precedes recursion discovery. \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+Ideas present in the proposals and \emph{not} adopted: a monolithic \code{Subtype} answer type (\Ref{4}'s experiments); persistent native metavariable states across sessions (rejected by \Ref{6}); permanent observational quotienting outside known finite complete domains (rejected by all); a dedicated learned ranker in the first release (deferred by all); a Haskell-hosted solver process as part of the semantic engine (rejected by all).
+
+\section{The baseline corpus}\label{app:corpus}
+
+Counts per transcript in \code{C:\textbackslash Leant\textbackslash test} at revision \code{6bf05ad}. ``Queries'' is the number of \code{:synth} lines; ``where'' the number with a behavioral assertion; ``cand.'' the number of queries whose golden shows at least one candidate; ``uninh.'' the ``provably uninhabited'' verdicts; ``ctrl'' the negative controls (bounded miss, none passed, preflight error).
+
+\begin{center}\small
+\begin{longtable}{@{}lrrrrrY@{}}
+\toprule
+Transcript & queries & where & cand. & uninh. & ctrl & Features exercised \\
+\midrule
+\endfirsthead
+\toprule
+Transcript & queries & where & cand. & uninh. & ctrl & Features exercised \\
+\midrule
+\endhead
+synth-basic & 8 & 0 & 7 & 1 & 0 & products, sums, S/K combinators, Peirce (classical), propositional \\
+synth-behavior & 13 & 12 & 9 & 0 & 4 & assertions; \code{where False}; ill-typed and unknown-name controls; verification-window controls \\
+synth-both-frontier & 1 & 0 & 1 & 0 & 0 & engine interleaving (ignored) \\
+synth-church-layered-providers & 6 & 0 & 6 & 0 & 0 & Church encodings via session providers \\
+synth-church-providers & 6 & 0 & 6 & 0 & 0 & Church encodings via providers \\
+synth-church-rankn & 69 & 0 & 69 & 0 & 0 & nested polymorphic callbacks, \code{Type 1} families, strict implicits, seeded compositions \\
+synth-church & 9 & 0 & 9 & 0 & 0 & Church numerals, pairs, lists \\
+synth-djinn-providers & 11 & 0 & 11 & 0 & 0 & session axioms as providers \\
+synth-five-binder-rankn & 6 & 0 & 6 & 0 & 0 & five-binder rank-N \\
+synth-inductives & 13 & 0 & 11 & 2 & 0 & \code{Bool}, \code{Ordering}, \code{Option}, \code{Except}, \code{Decidable}, session inductives and structures \\
+synth-instance-implicit & 4 & 0 & 4 & 0 & 0 & instance-implicit binders \\
+synth-library & 7 & 0 & 7 & 0 & 0 & \code{List.map}, \code{foldr}, \code{foldl}, \code{flatten}, \code{append}, \code{replicate} \\
+synth-manual & 31 & 0 & 31 & 0 & 0 & the manual's tour: state passing, CPS, \code{Option} bind, \code{Decidable} combinators, classical logic, session \code{opaque}s \\
+synth-parametric-rankn & 9 & 0 & 9 & 0 & 0 & parametric rank-N \\
+synth-prove & 5 & 0 & 4 & 1 & 0 & \code{:synth} inside \code{:prove}; \code{forall p, p or not p} reported uninhabited (fragment) \\
+synth-provider-argument-rankn & 2 & 0 & 2 & 0 & 0 & rank-N provider arguments \\
+synth-provider-bound-context-head & 3 & 0 & 3 & 0 & 0 & bound context heads \\
+synth-provider-constraint-closure & 6 & 0 & 6 & 0 & 0 & instance-constraint closure \\
+synth-provider-contextual-assignment & 9 & 0 & 6 & 0 & 3 & contextual assignment; three bounded misses under restricted settings \\
+synth-provider-higher-kind-assignment & 12 & 0 & 12 & 0 & 0 & higher-kinded provider assignment \\
+synth-provider-implicit-visible-result & 8 & 0 & 8 & 0 & 0 & implicit arguments with visible results \\
+synth-provider-metadata-fitting & 2 & 0 & 2 & 0 & 0 & provider metadata \\
+synth-provider-refutation-fallback & 5 & 0 & 4 & 1 & 0 & refutation retained while providers run; empty inductive \\
+synth-provider-structural-assignment & 6 & 0 & 6 & 0 & 0 & structural provider assignment \\
+synth-quantified-provider & 9 & 0 & 9 & 0 & 0 & quantified providers \\
+synth-quartic-rankn & 3 & 0 & 3 & 0 & 0 & quartic rank-N \\
+synth-query-closed-rankn & 3 & 0 & 3 & 0 & 0 & closed polytypes at local providers \\
+synth-quintic-rankn & 2 & 0 & 2 & 0 & 0 & quintic rank-N \\
+synth-recursive-rankn & 4 & 0 & 4 & 0 & 0 & recursive inductive families at \code{Type 1} \\
+synth-six-binder-rankn & 6 & 0 & 6 & 0 & 0 & six-binder rank-N \\
+\midrule
+Total & 278 & 12 & 266 & 5 & 7 & \\
+\bottomrule
+\end{longtable}
+\end{center}
+
+The five ``provably uninhabited'' queries are \code{forall a b : Type, a -> b}; \code{forall a b : Type, Option a -> b}; \code{forall a b : Type, Pair a b -> Empty}; an empty session inductive under a provider whose instance does not apply; and \code{forall p : Prop, p or not p}. The first four admit a Lean refutation by instantiating with \code{Unit} and \code{Empty}, and by \code{cases} on the empty inductive; the fifth admits only a fragment certificate under the constructive lane, and a labeled classical candidate under the standard profile.
+
+\section{Interface sketches}\label{app:interfaces}
+
+The following declarations fix the shape of the main interfaces. They are design sketches consistent with the prototypes' tested API surface, not compiled code.
+
+\begin{lstlisting}
+-- Roles guide scheduling; they never affect typing.
+inductive Role | program | typeArg | universe | instance | indexEq | contract | termination | invariant | reconstruction
+
+structure Obligation where
+  goal     : MVarId
+  role     : Role
+  residual : Option Expr          -- residual contract on this hole
+  deps     : Array MVarId         -- metavariables whose assignment may change this obligation
+
+inductive StepResult
+  | progress  (changed : Array MVarId) (new : Array Obligation)
+  | solved    (term : Expr) (manifest : Dependencies)
+  | blocked   (on : Array MVarId) (reason : String)
+  | yielded   (cursor : Cursor) (charged : Work)
+  | rejected  (kind : RejectKind) (cert : Option Checked)
+  | unsupported (feature : String)
+  | interrupted (reason : Interrupt)
+
+structure Lane where
+  name : Name
+  step : Origin -> Task -> Quantum -> WorkerM StepResult
+
+inductive ProofReply
+  | proof (p : Expr) (patch : Option AssignmentPatch)   -- patch only in joint mode
+  | refutation (q : Expr)
+  | reduced (goal : MVarId) (reconstruct : Expr)
+  | unsupported
+  | unknown (spent : Work)
+
+inductive DomainReply
+  | unsupported
+  | rankingHint (score : Int)                                 -- no logical authority
+  | necessaryConstraint (c : Expr) (necessity : Expr)
+  | counterexample (input : Expr) (valid : Expr) (violation : Expr)
+  | noCompletion (cert : Checked) (scope : GrammarId)
+
+-- Only Leant2.Accept can construct this.
+structure Accepted where
+  private mk ::
+  program   : Expr
+  proof     : Expr
+  receipt   : Receipt
+\end{lstlisting}
+
+The Forge contract adopted for every certified domain checker is:
+
+\begin{lstlisting}
+structure CertificateSpec (Problem Certificate : Type) where
+  denotes : Problem -> Prop
+  check   : Problem -> Certificate -> Bool
+  sound   : forall (p : Problem) (c : Certificate), check p c = true -> denotes p
+\end{lstlisting}

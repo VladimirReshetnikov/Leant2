@@ -1,0 +1,81 @@
+\section{Objective, baseline, and sources}\label{sec:scope}
+
+\subsection{What Leant2 is}
+
+Leant and Djex generate implementations for a subset of Lean type signatures, optionally under behavioral constraints. Both are implemented in Haskell, both search over a Haskell-shaped approximation of Lean types, and Djex must remain compatible with its Haskell frontend. Leant2 is the successor that removes all three limitations: it is implemented in Lean, it has only a Lean frontend, and it is designed for Lean types together with behavioral constraints. It cannot decide inhabitation of arbitrary Lean types, and no proposal claims that it can. The target is a large fraction of the types that occur in practice, with every positive answer checked by Lean's kernel.
+
+Three constraints on this document come from the project owner and override anything in the nine source proposals.
+
+\begin{decision}[Single adaptive engine]\label{dec:single-engine}
+Leant2 has one engine. There are no engine switches of the kind Leant exposes (\code{synth-engine djinn | exference | both}), and no user-facing settings are implemented at first. Budgets, lane weights, verification windows, and candidate counts are internal parameters of an adaptive scheduler (Section~\ref{sec:scheduling}), derived from the query and from search progress, not from the user. Configuration may be added later behind the same engine, but no acceptance criterion in this document depends on it.
+\end{decision}
+
+\begin{decision}[Semantic baseline]\label{dec:baseline}
+Leant2 must pass every \code{:synth} test in the Leant repository, read semantically: for each recorded query it must match or exceed the recorded outcome. It may return more candidates, better candidates, and candidates in a different order. Section~\ref{sec:baseline} makes this precise.
+\end{decision}
+
+\begin{decision}[Reuse of Forge]\label{dec:forge}
+Forge is a sibling project with kernel-checked certificate checkers, an orchestration frontend with full rollback and proof-term auditing, and a written review of the Leant/Djex verification boundary. Leant2 may freely borrow Lean code and ideas from it, and this document does so explicitly (Section~\ref{sec:forge}).
+\end{decision}
+
+\subsection{How this document was produced}\label{sec:method}
+
+The nine proposals are numbered \Ref{1} to \Ref{9} in the order of their directories under \code{docs/proposals/}. Each is a 32-to-45-page article with a small Lean~4.34.0 prototype checked remotely through the AXLE service, transcribed receipts, and helper scripts. All nine inspected the same Leant revision \code{6bf05ad} and one of two Djex revisions (\code{e8778f4}, the standalone head, or \code{e237e86}, the submodule pinned by Leant); three of them note that the two must not be conflated.
+
+The consolidation rule is simple. An idea present in most proposals is adopted as core and stated once in its clearest form. Where proposals differ in the treatment of one subsystem, the best-developed version is adopted and the alternatives are recorded in Appendix~\ref{app:provenance}. Ideas are marked with their origin as \prov{\Ref{n}} on first use so that the more detailed discussion in the source can be consulted; a marker lists only the proposals that develop the idea most fully, not every proposal that mentions it. Nothing in this document is new evidence. Where the proposals' prototypes have shown something, Section~\ref{sec:evidence} says which one and how.
+
+Names are unified as follows. What the proposals call the \emph{obligation graph}, \emph{goal forest}, \emph{hole graph}, or \emph{coupled continuation} is called the \emph{obligation graph} here. What they call \emph{recipes}, \emph{search plans}, \emph{construction plans}, or the \emph{control language} is called the \emph{search plan}. What they call \emph{acceptance}, \emph{admission}, \emph{publication}, \emph{finalization}, or the \emph{candidate gate} is called the \emph{acceptance gate}. Their result taxonomies, which range from five to nine constructors, are merged into the single result algebra of Section~\ref{sec:results}.
+
+\subsection{The baseline: Leant's \code{:synth} corpus}\label{sec:baseline}
+
+The Leant repository carries thirty golden-transcript fixtures \code{test/synth-*.txt}, each piped into \code{leant --plain} and diffed against \code{test/synth-*.golden} by \code{test/run-tests.sh}. Together they contain 278 \code{:synth} queries. Of these, 266 produce at least one displayed candidate, five produce the verdict ``provably uninhabited'', and seven are deliberate negative controls: three ``no term found within the search bounds'' under restricted provider settings, two ``none passed both Lean verification and the supplied assertion'', one assertion that fails type checking, and one assertion mentioning an unknown name. Twelve queries carry a behavioral assertion in the form \code{:synth f : T where P}. Appendix~\ref{app:corpus} tabulates the fixtures.
+
+The transcripts also contain session declarations (\code{inductive}, \code{structure}, \code{class}, \code{instance}, \code{axiom}, \code{opaque}, \code{def}, \code{abbrev}, \code{universe}), \code{:reset}, and 170 \code{:set} lines that switch engines and adjust steps, windows, verification counts, classical mode, library use, and provider discovery. The recorded outputs include exact candidate spellings, ranking order, truncation notes, and engine-specific telemetry.
+
+The goldens cannot be matched textually by a different engine, and Decision~\ref{dec:single-engine} removes the settings they exercise. The baseline is therefore defined on outcomes, not on text.
+
+\begin{definition}[Baseline corpus]\label{def:corpus}
+The baseline corpus is the set of \code{:synth} queries in \code{test/synth-*.txt} at Leant revision \code{6bf05ad}, each taken together with the session declarations that precede it in its transcript, and each labeled with the outcome recorded in the corresponding golden file. Every \code{:set} line is ignored. The recorded outcome of a query is one of: \emph{positive} (at least one displayed candidate), \emph{uninhabited} (``provably uninhabited''), \emph{bounded miss} (``no term found within the search bounds''), \emph{rejected} (candidates proposed, none passed), or \emph{preflight error} (assertion rejected before search).
+\end{definition}
+
+\begin{definition}[Baseline acceptance]\label{def:baseline}
+Leant2 passes the baseline when, for every query in the baseline corpus, run under Leant2's default policy with no per-query configuration and within a fixed per-query wall-clock budget:
+\begin{enumerate}
+\item \textbf{Positive.} Leant2 returns at least one \emph{accepted} candidate: kernel-checked at the exact requested type in the exact session context and, for a \code{where} query, with a kernel-checked proof of the assertion for that exact candidate. The candidate need not be the recorded one, and the order of candidates is unconstrained.
+\item \textbf{Uninhabited.} Leant2 returns a \emph{refutation} (a kernel-checked proof of $T \to \mathrm{False}$ in the session context) or a \emph{certified fragment non-derivability} (Section~\ref{sec:results}). For four of the five recorded cases a refutation exists and is preferred; the fifth, \code{forall p : Prop, p or not p}, is classically provable and must not be reported as refuted.
+\item \textbf{Bounded miss, rejected.} Leant2 returns either an accepted candidate (this exceeds the recorded outcome and is allowed) or a qualified negative. It must not return an unaccepted candidate as a success.
+\item \textbf{Preflight error.} Leant2 rejects the query before search with a diagnostic of the same category (ill-typed assertion; unknown name).
+\end{enumerate}
+The set of accepted candidates is a superset in strength of Leant's: any candidate Leant2 displays has passed the acceptance gate of Section~\ref{sec:acceptance}, which is stricter than Leant's re-elaboration.
+\end{definition}
+
+Three consequences follow. First, the five \code{synth-church-rankn}-style fixtures with 69 rank-N and Church-encoding queries are part of the baseline; they exercise nested polymorphic callbacks, universe-polymorphic families, strict-implicit binders, and seeded Church compositions, and are the hardest part of the corpus for a native engine that does not inherit Djex's rank-N machinery. Second, the \code{synth-library} fixture requires library composition (\code{List.map}, \code{List.foldr}, \code{List.flatten}, \code{List.replicate}) from the standard environment, so the provider index of Section~\ref{sec:library} is on the baseline path, not a later milestone. Third, the classical candidates in \code{synth-manual} (Peirce's law, double-negation elimination, and the like, produced with \code{synth-classical on}) count as positive outcomes; Leant2 must be able to offer \code{Classical.em}-based candidates, labeled as classical, when constructive search returns a certified fragment non-derivability (Section~\ref{sec:classical}).
+
+The baseline is a floor. Leant's further suites also drive \code{:synth}: the Church behavior ledger (160 cells, 94 with historical acceptance), \code{test-recursive} (eight recursive-data behavioral scenarios with independent Lean replay), \code{test-behavioral} (bounded simplification and combined decision controls), and \code{test-context} (global class-projection discovery). These form the \emph{extended tier} of Section~\ref{sec:evaluation}: Leant2 should reach them after the baseline, and their historically accepted cells are regression targets, not gates for the first release.
+
+\subsection{What the predecessors established}\label{sec:predecessors}
+
+The proposals read the same sources and reach the same conclusions about them.
+
+\textbf{Leant's representation boundary.} Leant elaborates queries in Lean and rechecks every candidate in Lean, but its search runs in Djex over a serialized fragment (\code{src/Leant/Synth/Fragment.hs}). The serializer retains structural connectives and selected polymorphic applications but treats term-indexed applications as opaque and describes recursion by bounded templates. This is the boundary Leant2 removes\prov{all}.
+
+\textbf{Djex's two traditions.} Djinn is a checked propositional prover based on Dyckhoff's contraction-free calculus LJT; it terminates and can report that no derivation exists in its fragment. Exference is a ranked best-first search with class-evidence resolution and resource controls. Djex's shared infrastructure enforces source ownership, scoped evidence, and independent checking. Leant2 keeps those disciplines without the Haskell compatibility surface\prov{\Ref{6},\Ref{8}}.
+
+\textbf{Behavioral assertions.} At the inspected revision, Leant checks a named assertion against each exact candidate by \code{decide}, then its negation, then bounded \code{simp} at both polarities; it distinguishes passed, falsified, and inconclusive, and never treats proof failure as a counterexample. Search produces type inhabitants first and filters afterwards. Every proposal moves the assertion into the search state so that it constrains witnesses before a candidate exists, while retaining the three-way distinction\prov{all}.
+
+\textbf{The indexing gap.} Leant's current diagnostics locate the remaining integer-indexing failure in bounded composition: a function-valued fold and the integer case step are each found in isolation and missed in composition within the original limits. This motivates the demand-directed component reuse and carrier invention of Section~\ref{sec:library}. No proposal claims to have solved that fixture\prov{\Ref{1},\Ref{6},\Ref{7},\Ref{9}}.
+
+\textbf{The earlier rewrite study.} The Leant repository's own rewrite analysis recommends Lean-hosted semantics, project-matched worker processes, exact source identities, and a kernel validation boundary; those are adopted. It also recommends a pure, neutral search representation with native metavariables confined to preparation and lowering. All nine proposals depart from that point: a neutral representation restricted enough to be easy to search recreates the loss of dependency information the successor is meant to remove. Leant2 searches over native, branch-local dependent constraints, and keeps a serializable plan only for replay, caching, and cross-process transfer (Section~\ref{sec:representations})\prov{\Ref{1},\Ref{6},\Ref{9}}.
+
+\subsection{What to take from Forge}\label{sec:forge}
+
+Forge \cite{forge} is a certificate-producing proof-planning layer above \code{grind}. It pins the same toolchain as the nine proposals, Lean~4.34.0 with Mathlib \code{1cf325a0}, and has reached a state none of the Leant2 prototypes has: compiled Lean with proved soundness theorems and a measured comparison. Four parts transfer directly.
+
+\begin{enumerate}
+\item \textbf{The orchestration frontend} (\code{lean/Forge/Frontend.lean}). The \code{forge} tactic runs a fixed list of workers, saves the full tactic state before each, restores it on any failure including resource limits, and on apparent success does not take the worker's word: it instantiates the proof term and rejects it if it contains \code{sorry}, mentions a free variable outside the goal's context, fails to type-check against the \emph{original} goal, or depends on an axiom outside the policy, computed with \code{collectAxioms} over the constants the term uses. It then emits a replay record. This is exactly the proof-service contract of Section~\ref{sec:proof-services} and the audit half of the acceptance gate of Section~\ref{sec:acceptance}; Leant2 should start from this code rather than rewrite it.
+\item \textbf{Certificate checkers with proved soundness} (\code{lean/Forge/Checker/}). Cone, Farkas, affine-witness, polynomial-recurrence, and conserved-invariant checkers, each with a soundness theorem and an axiom audit that fails the build if a theorem uses an axiom outside \code{propext} and \code{Quot.sound}. The design contract \code{CertificateSpec} (a decoding \code{denotes}, a decidable \code{check}, and a proof \code{sound}) is the shape every proposal wants for its ``certified domain plugin'' (Section~\ref{sec:pruning}). Leant2's behavioral lane should register these checkers as proof services for arithmetic obligations on day one.
+\item \textbf{Two soundness pitfalls} documented in \code{docs/IDEAS-FROM-LEANT-DJEX.md} and verified against Lean~4.34.0. \code{Kernel.Environment.addDecl} skips the kernel when \code{debug.skipKernelTC} is set in the options the caller passes, so an acceptance step must pin that option off rather than merely not set it. \code{Lean.addDecl} in \code{CoreM} commits preliminary constant information immediately and, under \code{Elab.async}, defers the kernel check to a task, so observing that a declaration is present observes nothing. Acceptance must wait for a positive signal that the checker ran. Section~\ref{sec:acceptance} adopts both as invariants.
+\item \textbf{A checkable fragment refutation.} Forge's extension round supplies finite Kripke countermodels for intuitionistic propositional logic whose checker recomputes forcing from scratch. This is the object every proposal asks for when it says that LJT non-derivability must not be promoted to a Lean refutation: a certificate that \emph{there is no derivation in the named fragment}, distinct from a proof of $\neg T$. Leant2's constructive propositional lane should produce this certificate (Section~\ref{sec:classical}).
+\end{enumerate}
+
+Forge's status lattice, with its rule that pruning must state its approximation polarity, coincides with the graded-authority principle of Section~\ref{sec:behavior}. Its Python search components are research code and are not reused; only the Lean checkers and the frontend are.

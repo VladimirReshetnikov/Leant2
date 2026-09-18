@@ -1,0 +1,74 @@
+\section{Recursion}\label{sec:recursion}
+
+Recursion is the area where the nine proposals agree most closely on design and have demonstrated the least. Every recursive definition in every prototype was hand-supplied; the tactics filled branch bodies. This section states the consensus design and marks its unimplemented parts.
+
+\subsection{Routes, in order}
+
+Given a target whose telescope contains an inductive argument, the recursion lane tries, in order\prov{\Ref{2},\Ref{3},\Ref{4},\Ref{5},\Ref{8},\Ref{9}}:
+\begin{enumerate}
+\item a permitted library combinator with a matching specification entry (\code{map}, \code{foldr}, \code{foldl}, option combinators, registered recursors);
+\item a nonrecursive eliminator or fold already in the local context, including Church-encoded values with function-valued carriers (Section~\ref{sec:carriers});
+\item a \emph{structural schema} generated from the recursor metadata of the input type;
+\item a strengthened or accumulator-generalized structural schema;
+\item a well-founded schema over an explicit measure.
+\end{enumerate}
+Mutual recursion is a jointly synthesized strongly connected component over a tagged sum with a shared termination argument; nested inductives use their actual recursors; both are later extensions\prov{\Ref{3},\Ref{8}}.
+
+\subsection{Schemas and capabilities}
+
+\begin{definition}[Recursion schema]
+A schema records the function telescope, the decreasing argument, the result family (motive) $M(\vec i, x)$, one branch per constructor with its fields and index equations, the set of \emph{recursive-call capabilities} available in each branch, the termination obligations, and the lowering plan\prov{\Ref{4},\Ref{7},\Ref{9}}.
+\end{definition}
+
+\begin{invariant}[Recursive calls are capabilities]\label{inv:capabilities}
+A branch never contains an unrestricted local $f : \forall x, T(x)$. A recursive call is available only as $\mathrm{rec} : \prod_{y:D}\,\prec(y,x) \to M(y)$, where the decrease evidence is a constructor field for structural recursion or an obligation $\mu(y) < \mu(x)$ for well-founded recursion. The obligation is synthesized or the call is rejected; the program is never rejected because a measure failed\prov{all}.
+\end{invariant}
+
+The failed first run of one prototype, in which unfiltered implementation-detail locals exposed the provisional definition and Lean rejected the resulting cycles, is the empirical reason for this invariant. The acceptance gate additionally audits the dependency graph of the declaration bundle for provisional self-reference\prov{\Ref{2}}.
+
+\subsection{Motive construction}
+
+\begin{definition}[Motive by dependency-closed generalization]
+Choose the discriminant $z : D(\vec p, \vec i)$. Partition the surrounding variables into fixed parameters and generalized arguments, closed under dependence and under behavioral change (arguments whose values differ between the call and the recursive call). The candidate motive is
+\[
+M(\vec i, z) = \prod \Delta(\vec i, z).\; R'(\vec i, z, \Delta),
+\]
+checked by Lean at the recursor's sort. The schema instantiates the recursor, exposes the method holes and induction hypotheses, translates the residual contract per branch, and requires a checked \emph{final specialization} back to the original target\prov{\Ref{2},\Ref{5},\Ref{6},\Ref{9}}.
+\end{definition}
+
+Motives are tried on a complexity ladder: the direct result family; generalize the dependent arguments; small subsets of the changing arguments; accumulator and invariant templates. The worked examples common to the proposals are \code{Vec.map} with $M(n, xs) = \mathrm{Vec}\,\beta\,n$, \code{Vec.zip} with $M(n, xs) = \mathrm{Vec}\,\beta\,n \to \mathrm{Vec}\,(\alpha\times\beta)\,n$, vector lookup with $M(n, xs) = \mathrm{Fin}\,n \to \alpha$, and accumulator reversal with the motive quantified over the accumulator. Motive-subset search is exponential in the number of changing arguments; the mitigation is the ladder plus \emph{failure-directed generalization}: classify why an induction hypothesis cannot be applied and compute the smallest dependency-closed telescope extension that repairs it\prov{\Ref{2},\Ref{6}}.
+
+\subsection{Proof-carrying motives}\label{sec:certified-motive}
+
+The central idea for program-and-proof co-synthesis appears in all nine proposals under different names (certificate algebras, refinement motives, certified recursion, packed motives): strengthen the motive so that the induction hypothesis carries correctness\prov{all}.
+
+\begin{proposition}[Certificate-algebra composition]\label{prop:algebra}
+Let $C(x) = \{y : B(x) \,//\, R(x, y)\}$. A native recursor application with motive $C$ and checked method terms yields $\prod_{x:D} C(x)$, hence an output satisfying $R$ for every input. For function-valued outputs the motive is $C(x) = \prod_{a:S}\{y : B(x,a) \,//\, R(x,a,y)\}$. The list instance is the checked theorem
+\[
+R([], z) \;\wedge\; \big(\forall x\,xs\,v,\ R(xs, v) \to R(x{::}xs, s(x,v))\big) \;\Rightarrow\; \forall xs,\ R(xs, \mathrm{foldr}\ s\ z\ xs).
+\]
+\end{proposition}
+
+Each recursive branch receives the smaller output \emph{and} its local specification, so a contract failure backtracks into the branch choice rather than rejecting a finished term. The alternative route, synthesize then prove by induction on the checked equations, is kept as a portfolio alternative and is preferred when the contract is not pointwise. Two proposals checked hand-written instances (\code{certifiedMap} with a functional \code{MapRel}; \code{certifiedAppend}; \code{indexFold} with its universal correctness)\prov{\Ref{1},\Ref{5},\Ref{8}}.
+
+\subsection{Accumulator invariants}
+
+When a helper with an accumulator is needed, the invariant is a bounded synthesis subproblem, never an assumption. The grammar is built from the public relation, the accumulator variable, the available operations and their registered algebraic summaries, and known unit elements; each candidate yields initiation, preservation, and finalization obligations proved by the proof portfolio. The example shared by six proposals is $\mathrm{go}(xs, acc) = \mathrm{reverse}(xs) \mathbin{+\!\!+} acc$ for accumulator reversal; two of them proved the invariant by hand for the fold selected by a finite experiment, and none synthesized it\prov{\Ref{2},\Ref{3},\Ref{4},\Ref{6},\Ref{8},\Ref{9}}.
+
+\subsection{Termination}
+
+The well-founded schema is $F(x) = \mathrm{step}(x, \lambda y\,(h : y \prec x).\,F(y))$. Measures come from a finite grammar: natural-number arguments, registered size functions, structural sizes, bounded differences such as $n - i$ with truncated-subtraction semantics handled honestly, lexicographic tuples, and user-supplied relations. Each proposed call yields $\mu(y) < \mu(x)$ as an ordinary obligation; a schema is registered only after Lean's termination elaboration accepts it. Fuel is legal only when it is part of the interface or proved sufficient\prov{\Ref{1},\Ref{3},\Ref{5},\Ref{8}}.
+
+\subsection{The kernel/compiler boundary}\label{sec:lowering}
+
+Four prototypes independently produced an axiom-free recursor term that the code generator rejected (``code generator does not support recursor \code{T.rec} yet''). The consequence is a design rule\prov{\Ref{4},\Ref{6},\Ref{8},\Ref{9}}:
+
+\begin{invariant}[Two products per recursion plan]\label{inv:lowering}
+A recursion schema produces a logical reconstruction, used for proof, and an executable definition, lowered from the plan through the equation compiler with pattern equations and, when needed, \code{termination_by} and decrease proofs. If the two differ, the engine proves a correspondence theorem $\forall t,\ f_{\mathrm{eq}}(t) = f_{\mathrm{rec}}(t)$ and checks both, or proves the contract directly for the executable definition. The receipt records \code{kernelChecked} and \code{compiled} separately.
+\end{invariant}
+
+Lowering recovers the major argument, patterns, branch locals, capabilities, and generalized arguments from the plan, not from printed recursor text, and elaborates the result in a staging environment that contains only approved dependencies\prov{\Ref{6}}. The recursion-schema grammar tags each construction as genuine recursor, bounded unrolling, or nonrecursive, so that repeated case splits are not mistaken for recursion\prov{\Ref{5}}.
+
+\subsection{Status}
+
+Demonstrated: filling branch bodies inside hand-supplied structural skeletons on indexed vectors and lists; hand-written proof-carrying motives and their universal correctness theorems; the code-generator boundary. Not demonstrated: automatic schema generation, motive generalization, carrier discovery, invariant synthesis, measure synthesis, lowering. This is the gate that the roadmap of Section~\ref{sec:roadmap} treats as the decisive capability milestone\prov{\Ref{8}}.

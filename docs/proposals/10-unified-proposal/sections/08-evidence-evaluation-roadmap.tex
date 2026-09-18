@@ -1,0 +1,82 @@
+\section{Evidence available today}\label{sec:evidence}
+
+Every one of the nine packages compiled its Lean sources remotely through the AXLE service on Lean~4.34.0, with \code{import Lean} only, \code{ignore_imports=false}, and \code{theorems_only=false}, invoked from Wolfram Language. No package had a local Lean toolchain; no package ran an independent checker; every receipt is a transcribed summary of the service response, not a raw capture. Whole-file service times of roughly 1.2 to 2.1 seconds are elaboration latencies and say nothing about synthesis cost. Table~\ref{tab:evidence} summarizes the prototypes.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}lL{2.6cm}L{4.6cm}Y@{}}
+\toprule
+P & Tactic / files & Synthesized (auto) & Hand-supplied and notable \\
+\midrule
+1 & \code{leant2_core} & 21 examples, 4 controls; 24/25 axiom-free & \code{certifiedMap}, \code{affineFold}; Python bucket and 81-sketch CEGIS \\
+2 & \code{leant2_core} & 12 declarations; 10 axiom-free & branch bodies in \code{vectorMap} skeleton; \code{ReverseCertificate}; 471-term Python CEGIS \\
+3 & \code{micro_synth} & 15 declarations; all axiom-free & 2 elimination skeletons; 3,873-term Python CEGIS with length abstraction; handwritten certificates \\
+4 & \code{leant2_core} & 14 definitions; 19/20 axiom-free & \code{vecMap} template; 27 affine contracts generated and checked with Mathlib; 4 negative-control files \\
+5 & \code{leant2_mini} & 11 definitions; 13/14 axiom-free & \code{vectorReplicate} branches; \code{certifiedAppend}; \code{prefixCannotComplete}; 1,875-term Python lab \\
+6 & \code{leant2_pilot} & 14 declarations; all axiom-free & \code{Vec.map}, \code{Vec.zip}, \code{reverseAux}; \code{safePruneAt}; recursor codegen probe \\
+7 & \code{solve} & 13 declarations; 19/20 axiom-free & \code{vecMap} skeleton; affine CEGIS in Lean with proof-carrying certifier \\
+8 & \code{leant2_core} & 11 definitions; 12/13 axiom-free & Boolean CEGIS in Lean (208 trees, all 16 tables); \code{CertifiedFold} with \code{indexFold} \\
+9 & \code{leant2_demo} & 24 audits; 23 axiom-free & \code{listMap} with supplied spine; Boolean CEGIS in Lean (9,168 trees) \\
+\bottomrule
+\end{tabularx}
+\caption{Prototype evidence in the nine packages. ``Axiom-free'' counts printed empty inventories; the remainder use \code{propext}, and in two certificate files also \code{Quot.sound}. No inventory contains \code{sorryAx}.}
+\label{tab:evidence}
+\end{table}
+
+Collectively the prototypes demonstrate:
+\begin{itemize}
+\item the continuation-backtracking core of Decision~\ref{dec:continuation}, with witness-first regressions such as $\{n \,//\, n = 1\}$, $\{f \,//\, f\ 11\ 29 = 29\}$, and $\{c : \mathrm{Choice} \,//\, \mathrm{Good}\ c\}$ that no first-answer-then-prove pipeline passes;
+\item dependent application, dependent pairs, indexed vector head and tail by \code{cases}, transport along a hypothesis, higher-rank arguments, independent universe parameters, strict-implicit binders;
+\item dictionary identity: selecting the second of two same-typed dictionaries because the contract says so;
+\item finite counterexample-guided synthesis inside Lean with universal correctness by \code{decide}, and a proof-carrying certifier;
+\item hand-written proof-carrying motives and their universal correctness theorems;
+\item the kernel/compiler boundary, observed four times;
+\item that the checking service's \code{okay} flag is insufficient: a custom axiom and a \code{sorry} both returned \code{okay=true} and were caught only by the failed-declaration report and the axiom audit.
+\end{itemize}
+
+They do not demonstrate: automatic recursion, motive, carrier, or invariant discovery; a provider index or any library composition beyond explicitly named providers; scheduling, fairness, or resource accounting beyond depth fuel; caching; serialization of plans; the acceptance gate as a separate component; any run of the Leant baseline corpus; any comparison with Leant or Djex; the original integer-indexing and two-universe fixtures. Every proposal says so.
+
+\section{Evaluation plan}\label{sec:evaluation}
+
+\subsection{Tiers}
+
+\begin{enumerate}
+\item \textbf{Baseline tier.} The corpus of Definition~\ref{def:corpus}, judged by Definition~\ref{def:baseline}. This is the release gate for the first usable Leant2 (G3 below). It is run through the compatibility REPL of Section~\ref{sec:repl} in deterministic mode, and its results are recorded as a new golden set that lists outcomes, accepted candidates, and axiom labels.
+\item \textbf{Extended tier.} Leant's Church behavior ledger (the 94 historically accepted cells are regression targets), \code{test-recursive}, \code{test-behavioral}, and \code{test-context}, each re-expressed as batch requests with the same session declarations and with independent Lean replay of every accepted candidate.
+\item \textbf{New corpus.} A versioned corpus of exact requests, not type strings: type, context, universes, contract, imports, admitted implementation components and proof-only components, permitted axioms, profile, and any supplied sketch. Strata: polymorphic and higher-order plumbing; dependent pairs and records; indexed inductives and transport; local dictionary identity; library composition; structural recursion; accumulator algorithms; well-founded algorithms; behavioral contracts (finite examples and universal laws separately); impossible and adversarial requests in a separate denominator. Held-out families, not held-out rows. Three assistance levels: no sketch, supplied recursion skeleton, supplied invariant sketch\prov{\Ref{4},\Ref{6},\Ref{9}}.
+\end{enumerate}
+
+\subsection{Leakage and controls}
+
+The reference implementation, its aliases, its equation lemmas, and any oracle are excluded from the provider inventory by transitive dependency audit; the search worker and the reference oracle run in separate processes; library reuse, composition, and new recursion are reported separately. A permanent adversarial acceptance suite includes: a proof about a different term; two \code{Inhabited Nat} dictionaries with different payloads; \code{Vec a n} offered for \code{Vec a m}; scope escape; a candidate that passes every current example and fails the next; a verifier timeout; an invalid decrease; a kernel-accepted but uncompilable term; a hidden reference implementation; an unapproved axiom; a printer that changes an implicit argument; a worker death mid-request; a stale cache after \code{:reset}; a callback assigning an ambient metavariable; a falsely strengthened goal\prov{\Ref{2},\Ref{5},\Ref{7},\Ref{8}}.
+
+\subsection{Metrics and ablations}
+
+Metrics are reported as distributions with censored timeouts: fraction of requests with a verified implementation under budget; time to first typed, tested, and verified candidate; charged work by kind; kernel and replay cost; peak memory; candidate and proof size; axiom and runtime-dependency profile; counterexample replays; reactivated bucket members; and the failure category distribution. Ablations disable one mechanism at a time: continuation backtracking (replaced by first-answer commitment), known-major projections, proof-first ordering, result-head indexing, context slices, contract propagation (replaced by post-filtering), proof-carrying motives, carrier discovery, certified pruning, reversible buckets, the reference lane, and the adaptive lane weights (replaced by fixed Leant-like windows)\prov{\Ref{1},\Ref{2},\Ref{4},\Ref{5}}.
+
+A comparison with Leant and Djex is meaningful only on the shared fragment with pinned repositories, toolchains, and limits; the baseline corpus is that fragment, and the comparison is per-query outcome and time, not an aggregate percentage.
+
+\section{Roadmap}\label{sec:roadmap}
+
+Gates are evidence, not dates. Each gate names its exit criteria; nothing in a later gate is a prerequisite of the baseline.
+
+\begin{description}[style=nextline]
+\item[G0 Trusted path.] Origin record, epochs, the native adapter with rollback and interruption tests, the acceptance gate with Forge's audit, receipts, source replay. Exit: malformed, admitted, scope-escaped, wrong-target, stale-epoch, and forbidden-axiom proposals are refused; a false contract is refused; a closed accepted result replays in a fresh module without synthesis tactics.
+\item[G1 Native core.] Obligation graph, cursor frames, atomic attempts, introductions, spines with prefixes, known-major projections, constructors, exact locals, dictionary modes, the constructive propositional lane with its certificate, the classical lane, transport. Exit: the witness-first regressions; independent universes; strict implicits; two dictionaries with different payloads; \code{synth-basic}, \code{synth-manual}, \code{synth-inductives}, \code{synth-prove}, and \code{synth-instance-implicit} pass the baseline criterion.
+\item[G2 Composition.] Provider index with tiers, component recipes and the join, demand graph and context slices, the adaptive scheduler with the reserved reference lane, caches with epoch invalidation, the type-invention ladder. Exit: \code{synth-library}, all \code{synth-provider-*}, \code{synth-djinn-providers}, \code{synth-quantified-provider}, and all rank-N and Church fixtures pass; no starvation under the fairness test; cache invalidation after \code{:reset}.
+\item[G3 Baseline release.] Contract propagation, typed observations, joint and frozen proof modes, the proof portfolio including Forge's checkers, certified CEGIS, reversible buckets, the compatibility REPL. Exit: \textbf{the full baseline of Definition~\ref{def:baseline} passes in deterministic mode}, including \code{synth-behavior}; the adversarial acceptance suite passes; per-query time is reported against Leant's under equal wall-clock budgets.
+\item[G4 Dependent recursion.] Structural schemas from recursor metadata, capabilities, dependency-closed and behavioral motive generalization, proof-carrying motives, lowering through the equation compiler with the correspondence route. Exit: map, append, length, zip, index-safe access, and filter with relational contracts, with no handwritten skeleton; the two-products invariant on every recursive result.
+\item[G5 Certified behavior and carriers.] Contract decomposer with reconstruction terms, certified domain plugins on the \code{CertificateSpec} shape, function-valued carrier discovery, accumulator invariant synthesis, measure synthesis, well-founded schemas. Exit: defaulted indexing discovered without a sketch (the predecessors' open fixture); accumulator reversal with a synthesized invariant; a bare solver verdict fails certification; the extended tier reaches its historically accepted cells.
+\item[G6 Scale.] Persistent indexes, plan serialization and worker restart, parallel lanes with independence certificates, mutual and nested recursion, effect adapters, optional SMT and learned ranking, project-scale evaluation on the new corpus.
+\end{description}
+
+\section{Risks}\label{sec:risks}
+
+\begin{itemize}
+\item \textbf{State coupling.} The cost of \code{saveState}/\code{restore} per attempt, heartbeat accounting across branches, and memory of retained frontiers are unmeasured. Mitigation: cursor frames, the two memory profiles, profiling at G1 before the scheduler is tuned\prov{\Ref{5},\Ref{9}}.
+\item \textbf{Rank-N coverage.} Leant inherits Djex's rank-N and Church machinery; Leant2 replaces it with native introduction plus the type-invention ladder. The 69-query Church fixture is the test, and it sits in G2, before the baseline release.
+\item \textbf{Recursion discovery.} Motive generalization and carrier invention are described as bounded ladders without cost data. They are deferred to G4 and G5 so that the baseline does not depend on them.
+\item \textbf{Proof bottlenecks.} Universal contracts need proofs the portfolio may not find. Mitigation: proof-carrying motives, Forge's checkers for arithmetic, the unresolved queue with growing budgets, and honest \code{typedOnly} and \code{testedOnly} outcomes.
+\item \textbf{Evidence provenance.} All current evidence is remote and transcribed. The first local action of G0 is to replay the nine prototype files under a local Lean~4.34.0 toolchain and record raw receipts.
+\item \textbf{Scope creep.} The proposals together describe more than any team can build; the gates above are ordered so that a usable, baseline-passing Leant2 exists at G3 with recursion, carriers, and scale still open.
+\end{itemize}
