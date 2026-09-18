@@ -8,6 +8,7 @@ commit it was produced from and the per-query budget.
 | Date | Commit | Budget | Score |
 | --- | --- | --- | --- |
 | 2026-09-17 | `f197fe0` | 10 s/query | 278/278 |
+| 2026-09-17 | `56c307d` | 10 s/query | 278/278 (ranked candidates) |
 
 The `.log` file lists per-fixture scores and any failures; the `summary.json`
 file lists every query with its golden and observed categories.

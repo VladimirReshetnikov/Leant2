@@ -1,0 +1,1948 @@
+[
+ {
+  "fixture": "synth-basic",
+  "query": ":synth (A × (B ⊕ C) → (A × B) ⊕ (A × C))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-basic",
+  "query": ":synth ((A → B → C) → (A → B) → A → C)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-basic",
+  "query": ":synth (((A → B) → A) → A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-basic",
+  "query": ":synth (∀ a b : Type, a → b)",
+  "golden": "uninhab",
+  "ours": "uninhab",
+  "ok": true
+ },
+ {
+  "fixture": "synth-basic",
+  "query": ":synth (a → a → a)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-basic",
+  "query": ":synth (Nat → Nat)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-basic",
+  "query": ":synth (∀ p q : Prop, (p ↔ q) → ¬p → ¬q)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-basic",
+  "query": ":synth (((A → B) → A) → (A → A))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth f : (∀ A : Type, A → A → A) where f Nat 11 29 = 29 ∧ f Bool true false = false",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth f : (∀ A : Type, A → A → A) where f Nat 11 29 = 29 ∧ f Bool true false = false",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth f : (∀ A : Type, A → A → A) where f Nat 11 29 = 29 ∧ f Bool true false = false",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth f : (∀ A : Type, A → A) where False",
+  "golden": "rejected",
+  "ours": "budget",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth f : Nat → Nat where f true = false",
+  "golden": "preflight",
+  "ours": "error",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth f : Nat → Nat where Unknown.predicate f",
+  "golden": "preflight",
+  "ours": "error",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth f : (∀ A : Type, A → A) where f Nat 7 = 7",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth (∀ A : Type, A → A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth twoResults : (∀ A : Type, A → A → A) where True",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth bothResults : (∀ A : Type, A → A → A) where True",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth limited : (∀ A : Type, A → A → A) where limited Nat 11 29 = 29 ∧ limited Bool true false = false",
+  "golden": "rejected",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth later : (∀ A : Type, A → A → A) where later Nat 11 29 = 29 ∧ later Bool true false = false",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-behavior",
+  "query": ":synth recovery : (∀ A : Type, A → A) where recovery Nat 7 = 7",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-both-frontier",
+  "query": ":synth (Demo.A1 → Demo.A2 → Demo.A3 → Demo.A4 → Demo.A5 → Demo.A6 → Demo.A7 → Demo.Good → Demo.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-layered-providers",
+  "query": ":synth (ChurchLayered.G2 (∀ a : Type, a → a) (∀ a : Type, a → a → a))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-layered-providers",
+  "query": ":synth (ChurchLayered.G3 (∀ a : Type, a → a) (∀ a : Type, a → a → a) (∀ a : Type, a → a))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-layered-providers",
+  "query": ":synth (ChurchLayered.G2 (∀ a : Type, a → a) (∀ a : Type, a → a → a))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-layered-providers",
+  "query": ":synth (ChurchLayered.G3 (∀ a : Type, a → a) (∀ a : Type, a → a → a) (∀ a : Type, a → a))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-layered-providers",
+  "query": ":synth (ChurchLayered.G2 (∀ a : Type, a → a) (∀ a : Type, a → a → a))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-layered-providers",
+  "query": ":synth (ChurchLayered.G3 (∀ a : Type, a → a) (∀ a : Type, a → a → a) (∀ a : Type, a → a))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-providers",
+  "query": ":synth ChurchProviders8.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-providers",
+  "query": ":synth ChurchProviders12.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-providers",
+  "query": ":synth ChurchProviders8.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-providers",
+  "query": ":synth ChurchProviders12.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-providers",
+  "query": ":synth ChurchProviders8.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-providers",
+  "query": ":synth ChurchProviders12.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (F : Type → Type → Type → Type → Type → Type → Type → Type → Type) (A B C D E G H I : Type), (∀ a b c d e f g h : Type, F a b c d e f g h) → F I H G E D C B A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (F : Type → Type → Type → Type → Type → Type → Type → Type → Type → Type → Type → Type → Type) (A B C D E G H I J K L M : Type), (∀ a b c d e f g h i j k l : Type, F a b c d e f g h i j k l) → F M L K J I H G E D C B A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ a : Type 1, a → F a) → F (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1 → Type 1, (∀ a b : Type 1, a → b → F a b) → F (∀ a : Type, a → a) (∀ b : Type, b → b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (F : Type 1 → Type 1) (A : Type), (∀ a : Type 1, a → F a) → F (∀ B : Type, A → B → B))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ {a : Type 1}, a → F a) → F (∀ {b : Type}, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (Unit → ∀ a : Type 1, a → F a) → F (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (Unit → ∀ {a : Type 1}, a → F a) → F (∀ {b : Type}, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ R : Type, ((∀ {A : Type}, ((∀ {B : Type}, B → B) → A) → A) → R) → R)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ R : Type, (((∀ {A : Type}, A → A) → (∀ {B : Type}, B → B)) → R) → R)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ a b c : Type _, (a → b) → (c → b) → (∀ r : Type _, (a → r) → (c → r) → r) → b)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ A : Type, ((∀ B : Type, ((∀ C : Type, ((∀ D : Type, D → D) → C) → C) → B) → B) → A) → A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ {A : Type}, ((∀ {B : Type}, ((∀ {C : Type}, ((∀ {D : Type}, D → D) → C) → C) → B) → B) → A) → A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (F : Type 1 → Type 1) (G H K : Type → Type), (∀ a : Type 1, a → F a) → (∀ a : Type, G a → H a) → (∀ a : Type, H a → K a) → F (∀ a : Type, G a → K a))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ a : Type 1, a → F a) → F (∀ b : Type, b → F (∀ c : Type, c → c)))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ a : Type 1, a → F a) → F (∀ b : Type, b → F (∀ c : Type, b → c → b)))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a : Type 1, a → Seed → ∀ b : Type 1, b → G a b) → G (∀ a : Type, a → a) (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a : Type 1, a → Seed → ∀ b : Type 1, b → G a b) → G (∀ {a : Type}, a → a) (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed : Type) (G : Type 1 → Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a b : Type 1, a → b → Seed → ∀ c : Type 1, c → G a b c) → G (∀ a : Type, a → a) (∀ b : Type, b → b → b) (∀ c : Type, c → c))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed X : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a : Type 1, a → Seed → ∀ b : Type 1, b → G a b) → G (∀ c : Type, X → c → c) (∀ d : Type, d → d))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed X : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ {a : Type 1}, a → Seed → ∀ {b : Type 1}, b → G a b) → G (∀ c : Type, X → c → c) (∀ d : Type, d → d))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed X : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a : Type 1, a → Seed → ∀ b : Type 1, b → G a b) → G (∀ {c : Type}, X → c → c) (∀ {d : Type}, d → d))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed X : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ {a : Type 1}, a → Seed → ∀ {b : Type 1}, b → G a b) → G (∀ {c : Type}, X → c → c) (∀ {d : Type}, d → d))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (F : Type → Type → Type → Type → Type → Type → Type → Type → Type) (A B C D E G H I : Type), (∀ a b c d e f g h : Type, F a b c d e f g h) → F I H G E D C B A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (F : Type → Type → Type → Type → Type → Type → Type → Type → Type → Type → Type → Type → Type) (A B C D E G H I J K L M : Type), (∀ a b c d e f g h i j k l : Type, F a b c d e f g h i j k l) → F M L K J I H G E D C B A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ a : Type 1, a → F a) → F (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1 → Type 1, (∀ a b : Type 1, a → b → F a b) → F (∀ a : Type, a → a) (∀ b : Type, b → b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (F : Type 1 → Type 1) (A : Type), (∀ a : Type 1, a → F a) → F (∀ B : Type, A → B → B))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ {a : Type 1}, a → F a) → F (∀ {b : Type}, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (Unit → ∀ a : Type 1, a → F a) → F (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (Unit → ∀ {a : Type 1}, a → F a) → F (∀ {b : Type}, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ R : Type, ((∀ {A : Type}, ((∀ {B : Type}, B → B) → A) → A) → R) → R)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ R : Type, (((∀ {A : Type}, A → A) → (∀ {B : Type}, B → B)) → R) → R)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ a b c : Type _, (a → b) → (c → b) → (∀ r : Type _, (a → r) → (c → r) → r) → b)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ A : Type, ((∀ B : Type, ((∀ C : Type, ((∀ D : Type, D → D) → C) → C) → B) → B) → A) → A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ {A : Type}, ((∀ {B : Type}, ((∀ {C : Type}, ((∀ {D : Type}, D → D) → C) → C) → B) → B) → A) → A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (F : Type 1 → Type 1) (G H K : Type → Type), (∀ a : Type 1, a → F a) → (∀ a : Type, G a → H a) → (∀ a : Type, H a → K a) → F (∀ a : Type, G a → K a))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ a : Type 1, a → F a) → F (∀ b : Type, b → F (∀ c : Type, c → c)))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ a : Type 1, a → F a) → F (∀ b : Type, b → F (∀ c : Type, b → c → b)))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a : Type 1, a → Seed → ∀ b : Type 1, b → G a b) → G (∀ a : Type, a → a) (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a : Type 1, a → Seed → ∀ b : Type 1, b → G a b) → G (∀ {a : Type}, a → a) (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed : Type) (G : Type 1 → Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a b : Type 1, a → b → Seed → ∀ c : Type 1, c → G a b c) → G (∀ a : Type, a → a) (∀ b : Type, b → b → b) (∀ c : Type, c → c))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed X : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a : Type 1, a → Seed → ∀ b : Type 1, b → G a b) → G (∀ c : Type, X → c → c) (∀ d : Type, d → d))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed X : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ {a : Type 1}, a → Seed → ∀ {b : Type 1}, b → G a b) → G (∀ c : Type, X → c → c) (∀ d : Type, d → d))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed X : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a : Type 1, a → Seed → ∀ b : Type 1, b → G a b) → G (∀ {c : Type}, X → c → c) (∀ {d : Type}, d → d))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed X : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ {a : Type 1}, a → Seed → ∀ {b : Type 1}, b → G a b) → G (∀ {c : Type}, X → c → c) (∀ {d : Type}, d → d))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (F : Type → Type → Type → Type → Type → Type → Type → Type → Type) (A B C D E G H I : Type), (∀ a b c d e f g h : Type, F a b c d e f g h) → F I H G E D C B A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (F : Type → Type → Type → Type → Type → Type → Type → Type → Type → Type → Type → Type → Type) (A B C D E G H I J K L M : Type), (∀ a b c d e f g h i j k l : Type, F a b c d e f g h i j k l) → F M L K J I H G E D C B A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ a : Type 1, a → F a) → F (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1 → Type 1, (∀ a b : Type 1, a → b → F a b) → F (∀ a : Type, a → a) (∀ b : Type, b → b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (F : Type 1 → Type 1) (A : Type), (∀ a : Type 1, a → F a) → F (∀ B : Type, A → B → B))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ {a : Type 1}, a → F a) → F (∀ {b : Type}, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (Unit → ∀ a : Type 1, a → F a) → F (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (Unit → ∀ {a : Type 1}, a → F a) → F (∀ {b : Type}, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ R : Type, ((∀ {A : Type}, ((∀ {B : Type}, B → B) → A) → A) → R) → R)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ R : Type, (((∀ {A : Type}, A → A) → (∀ {B : Type}, B → B)) → R) → R)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ a b c : Type _, (a → b) → (c → b) → (∀ r : Type _, (a → r) → (c → r) → r) → b)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ A : Type, ((∀ B : Type, ((∀ C : Type, ((∀ D : Type, D → D) → C) → C) → B) → B) → A) → A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ {A : Type}, ((∀ {B : Type}, ((∀ {C : Type}, ((∀ {D : Type}, D → D) → C) → C) → B) → B) → A) → A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (F : Type 1 → Type 1) (G H K : Type → Type), (∀ a : Type 1, a → F a) → (∀ a : Type, G a → H a) → (∀ a : Type, H a → K a) → F (∀ a : Type, G a → K a))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ a : Type 1, a → F a) → F (∀ b : Type, b → F (∀ c : Type, c → c)))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ a : Type 1, a → F a) → F (∀ b : Type, b → F (∀ c : Type, b → c → b)))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a : Type 1, a → Seed → ∀ b : Type 1, b → G a b) → G (∀ a : Type, a → a) (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a : Type 1, a → Seed → ∀ b : Type 1, b → G a b) → G (∀ {a : Type}, a → a) (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed : Type) (G : Type 1 → Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a b : Type 1, a → b → Seed → ∀ c : Type 1, c → G a b c) → G (∀ a : Type, a → a) (∀ b : Type, b → b → b) (∀ c : Type, c → c))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed X : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a : Type 1, a → Seed → ∀ b : Type 1, b → G a b) → G (∀ c : Type, X → c → c) (∀ d : Type, d → d))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed X : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ {a : Type 1}, a → Seed → ∀ {b : Type 1}, b → G a b) → G (∀ c : Type, X → c → c) (∀ d : Type, d → d))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed X : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ a : Type 1, a → Seed → ∀ b : Type 1, b → G a b) → G (∀ {c : Type}, X → c → c) (∀ {d : Type}, d → d))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church-rankn",
+  "query": ":synth (∀ (Seed X : Type) (G : Type 1 → Type 1 → Type 1), Seed → (Seed → ∀ {a : Type 1}, a → Seed → ∀ {b : Type 1}, b → G a b) → G (∀ {c : Type}, X → c → c) (∀ {d : Type}, d → d))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church",
+  "query": ":synth Church.Bool",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church",
+  "query": ":synth (∀ a b : Type _, Church.Pair a b → a)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church",
+  "query": ":synth (∀ a : Type _, Church.List a → Church.Maybe (Church.Pair a (Church.List a)))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church",
+  "query": ":synth (∀ a b : Type _, (a → b) → Church.List a → Church.List b)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church",
+  "query": ":synth (∀ a b : Type _, Church.List (Church.Pair a b) → Church.Pair (Church.List a) (Church.List b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church",
+  "query": ":synth (∀ a : Type _, Church.List (Church.List a) → Church.List a)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church",
+  "query": ":synth (∀ a : Type _, Church.List a → Church.List (Church.List a))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church",
+  "query": ":synth (∀ a : Type _, a → Church.List a → a)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-church",
+  "query": ":synth (∀ F : Type 1 → Type 1, (∀ a : Type 1, F a) → F (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-djinn-providers",
+  "query": ":synth Demo.Seed",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-djinn-providers",
+  "query": ":synth (Demo.Seed → Demo.Seed)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-djinn-providers",
+  "query": ":synth (Nat → Demo.SealedBox Nat)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-djinn-providers",
+  "query": ":synth (Demo.Seed → Demo.SealedBox Demo.Seed)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-djinn-providers",
+  "query": ":synth ((∀ x : Type, x → x) → Demo.SealedBox (∀ x : Type, x → x))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-djinn-providers",
+  "query": ":synth (Demo.Input Demo.Index → Demo.Output Demo.Index)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-djinn-providers",
+  "query": ":synth (Demo.Input Demo.Index → Demo.Output Demo.Index)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-djinn-providers",
+  "query": ":synth (Demo.Seed → Demo.SealedBox Demo.Seed)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-djinn-providers",
+  "query": ":synth (Nat → Demo.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-djinn-providers",
+  "query": ":synth (Nat → Demo.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-djinn-providers",
+  "query": ":synth (Nat → Demo.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-five-binder-rankn",
+  "query": ":synth FiveBinder.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-five-binder-rankn",
+  "query": ":synth (∀ A B C D E : Type, (∀ a b c d e : Type, FiveBinder.Five a b c d e) → FiveBinder.Five E D C B A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-five-binder-rankn",
+  "query": ":synth FiveBinder.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-five-binder-rankn",
+  "query": ":synth (∀ A B C D E : Type, (∀ a b c d e : Type, FiveBinder.Five a b c d e) → FiveBinder.Five E D C B A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-five-binder-rankn",
+  "query": ":synth FiveBinder.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-five-binder-rankn",
+  "query": ":synth (∀ A B C D E : Type, (∀ a b c d e : Type, FiveBinder.Five a b c d e) → FiveBinder.Five E D C B A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth Bool",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth Ordering",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth (∀ a : Type, Option a → a ⊕ Unit)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth (∀ a b : Type, a → b → a × Option b)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth (∀ a : Type, Option (Option a) → Option a)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth (∀ e a b : Type, Except e a → (a → b) → Except e b)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth (∀ p : Prop, Decidable p → Decidable (¬ p))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth (∀ a b : Type, Option a → b)",
+  "golden": "uninhab",
+  "ours": "uninhab",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth Traffic",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth (∀ a b : Type, a → b → Pair a b)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth (∀ a b : Type, Pair a b → a)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth (∀ a b : Type, Pair a b → Empty)",
+  "golden": "uninhab",
+  "ours": "uninhab",
+  "ok": true
+ },
+ {
+  "fixture": "synth-inductives",
+  "query": ":synth (∀ a : Type, (Bool → a) → a)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-instance-implicit",
+  "query": ":synth (∀ (A : Type) [Demo.C A], A → A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-instance-implicit",
+  "query": ":synth (∀ (A R : Type) [Demo.C A], (∀ (a : Type) [Demo.C a], a → R) → A → R)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-instance-implicit",
+  "query": ":synth (∀ (A R : Type) [Demo.C A], (∀ (a : Type) [Demo.C a], a → R) → A → R)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-instance-implicit",
+  "query": ":synth (∀ (A R : Type) [Demo.C A], (∀ (a : Type) [Demo.C a], a → R) → A → R)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-library",
+  "query": ":synth ((a → b) → List a → List b)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-library",
+  "query": ":synth ((a → b → b) → b → List a → b)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-library",
+  "query": ":synth (List (List a) → List a)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-library",
+  "query": ":synth (List a → List a → List a)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-library",
+  "query": ":synth (∀ a : Type, a → List a)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-library",
+  "query": ":synth ((List a → b) → a → b)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-library",
+  "query": ":synth ((a → b) → List a → List b)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth ((a → b → c) → b → a → c)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth ((b → c) → (a → b) → a → c)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth ((A × B → C) → A → B → C)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth ((A → B → C) → A × B → C)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (((A × B) × C) → A × (B × C))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (a → a → a)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p q : Prop, ¬(p ∨ q) ↔ ¬p ∧ ¬q)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p q : Prop, p ∧ (p ∨ q) ↔ p)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p q : Prop, (p ↔ q) → (q ↔ p))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p q : Prop, ¬(p ∧ q) ↔ (p → ¬q))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p : Prop, (p ↔ ¬p) → False)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth ((S → A) → (A → S → B) → S → B)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth ((S → A × S) → (A → S → B × S) → S → B × S)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth ((A → R) → R) → (A → (B → R) → R) → (B → R) → R",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ a b : Type, Option a → (a → Option b) → Option b)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth ((∀ p : Prop, p → p) → Q → Q)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p q : Prop, (∀ r : Prop, (p → q → r) → r) → p ∧ q)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth ((∀ a : Type 1, Wrap a) → Wrap (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ (F : Type 1 → Type), (∀ a : Type 1, F a) → F (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p q : Prop, Decidable p → Decidable q → Decidable (p ∧ q))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p q : Prop, Decidable p → Decidable q → Decidable (p → q))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (Nat → a → List a)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p : Prop, ¬¬¬p → ¬p)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p q : Prop, (p → q) → ¬q → ¬p)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p q : Prop, ((p → q) → p) → p)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p : Prop, ¬¬p → p)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p q : Prop, ¬(¬p ∧ ¬q) → p ∨ q)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p : Prop, ¬p ∨ ¬¬p)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth (∀ p q : Prop, (p → q) ∨ (q → p))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth ((∀ n : Nat, P n) ∧ Q → Q ∧ (∀ n : Nat, P n))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-manual",
+  "query": ":synth ((A → B → C) → (A → B) → A → C)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-parametric-rankn",
+  "query": ":synth ((∀ a : Type 1, Option a) → Option (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-parametric-rankn",
+  "query": ":synth ((∀ a b : Type 1, Demo.Phantom2 a b) → Demo.Phantom2 (∀ x : Type, x → x) (∀ y : Type, y → y))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-parametric-rankn",
+  "query": ":synth ((∀ a : Type 1, Demo.Guard a) → Demo.Guard (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-parametric-rankn",
+  "query": ":synth Demo.Secret",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-parametric-rankn",
+  "query": ":synth (Unit → Demo.Secret)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-parametric-rankn",
+  "query": ":synth ((∀ a : Type 1, Option a) → Option (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-parametric-rankn",
+  "query": ":synth ((∀ a b : Type 1, Demo.Phantom2 a b) → Demo.Phantom2 (∀ x : Type, x → x) (∀ y : Type, y → y))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-parametric-rankn",
+  "query": ":synth ((∀ a : Type 1, Demo.Guard a) → Demo.Guard (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-parametric-rankn",
+  "query": ":synth (Demo.Tag (Demo.termByType Unit))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-prove",
+  "query": ":synth",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-prove",
+  "query": ":synth",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-prove",
+  "query": ":synth (∀ a b : Type, Option a → Option b → Option (a × b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-prove",
+  "query": ":synth (∀ p : Prop, p ∨ ¬ p)",
+  "golden": "uninhab",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-prove",
+  "query": ":synth (∀ p : Prop, p ∨ ¬ p)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-argument-rankn",
+  "query": ":synth ProviderLambda.Result",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-argument-rankn",
+  "query": ":synth ProviderLambda.Result",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-bound-context-head",
+  "query": ":synth BoundContextHead.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-bound-context-head",
+  "query": ":synth BoundContextHead.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-bound-context-head",
+  "query": ":synth BoundContextHead.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-constraint-closure",
+  "query": ":synth ClosureGood.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-constraint-closure",
+  "query": ":synth ClosureGood.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-constraint-closure",
+  "query": ":synth ClosureSubgoal.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-constraint-closure",
+  "query": ":synth ClosureSubgoal.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-constraint-closure",
+  "query": ":synth ClosureControl.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-constraint-closure",
+  "query": ":synth ClosureControl.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-contextual-assignment",
+  "query": ":synth ContextualOnly.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-contextual-assignment",
+  "query": ":synth ContextualOnly.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-contextual-assignment",
+  "query": ":synth ContextualOnly.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-contextual-assignment",
+  "query": ":synth HigherContext.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-contextual-assignment",
+  "query": ":synth HigherContext.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-contextual-assignment",
+  "query": ":synth HigherContext.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-contextual-assignment",
+  "query": ":synth DependentContext.Token",
+  "golden": "miss",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-contextual-assignment",
+  "query": ":synth DependentContext.Token",
+  "golden": "miss",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-contextual-assignment",
+  "query": ":synth DependentContext.Token",
+  "golden": "miss",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-higher-kind-assignment",
+  "query": ":synth (Higher.Wrap Bool → Higher.Pair Nat Bool → Higher.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-higher-kind-assignment",
+  "query": ":synth Higher.VacuousToken",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-higher-kind-assignment",
+  "query": ":synth Higher.MultiVacuousToken",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-higher-kind-assignment",
+  "query": ":synth Higher.AlternativeToken",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-higher-kind-assignment",
+  "query": ":synth (Higher.Wrap Bool → Higher.Pair Nat Bool → Higher.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-higher-kind-assignment",
+  "query": ":synth Higher.VacuousToken",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-higher-kind-assignment",
+  "query": ":synth Higher.MultiVacuousToken",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-higher-kind-assignment",
+  "query": ":synth Higher.AlternativeToken",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-higher-kind-assignment",
+  "query": ":synth (Higher.Wrap Bool → Higher.Pair Nat Bool → Higher.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-higher-kind-assignment",
+  "query": ":synth Higher.VacuousToken",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-higher-kind-assignment",
+  "query": ":synth Higher.MultiVacuousToken",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-higher-kind-assignment",
+  "query": ":synth Higher.AlternativeToken",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-implicit-visible-result",
+  "query": ":synth ImplicitVisible.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-implicit-visible-result",
+  "query": ":synth ImplicitVisible.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-implicit-visible-result",
+  "query": ":synth ∀ (P : Prop), P → ImplicitVisible.Source → ImplicitVisible.Result",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-implicit-visible-result",
+  "query": ":synth ImplicitVisible.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-implicit-visible-result",
+  "query": ":synth ∀ (P : Prop), P → ImplicitVisible.Source → ImplicitVisible.Result",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-implicit-visible-result",
+  "query": ":synth DomainCollision.Box (∀ {P : Prop} (A : Type), (P → A) → DomainCollision.Result)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-implicit-visible-result",
+  "query": ":synth DomainCollision.Box (∀ {P : Prop} (A : Type), (P → A) → DomainCollision.Result)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-implicit-visible-result",
+  "query": ":synth DomainCollision.Box (∀ {P : Prop} (A : Type), (P → A) → DomainCollision.Result)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-metadata-fitting",
+  "query": ":synth MetadataFitting.Marker (∀ (A : Type), A → A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-metadata-fitting",
+  "query": ":synth MetadataFitting.Marker (∀ (A : Type), A → A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-refutation-fallback",
+  "query": ":synth RefutationDjinn.Void",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-refutation-fallback",
+  "query": ":synth RefutationExference.Void",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-refutation-fallback",
+  "query": ":synth RefutationBoth.Void",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-refutation-fallback",
+  "query": ":synth (((RefutationClassical.P → RefutationClassical.Q) → RefutationClassical.P) → RefutationClassical.P)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-refutation-fallback",
+  "query": ":synth RefutationControl.Void",
+  "golden": "uninhab",
+  "ours": "uninhab",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-structural-assignment",
+  "query": ":synth StructuralDirect.Goal",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-structural-assignment",
+  "query": ":synth StructuralContext.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-structural-assignment",
+  "query": ":synth StructuralDirect.Goal",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-structural-assignment",
+  "query": ":synth StructuralContext.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-structural-assignment",
+  "query": ":synth StructuralDirect.Goal",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-provider-structural-assignment",
+  "query": ":synth StructuralContext.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quantified-provider",
+  "query": ":synth Gap.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quantified-provider",
+  "query": ":synth Gap.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quantified-provider",
+  "query": ":synth Gap.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quantified-provider",
+  "query": ":synth ((∀ x : Type, x → x) → Demo.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quantified-provider",
+  "query": ":synth ((∀ x : Type, x → x) → Demo.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quantified-provider",
+  "query": ":synth ((∀ x : Type, x → x) → Demo.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quantified-provider",
+  "query": ":synth ((∀ x : Type, x → x) → ({a : Type 1} → Demo.Token) → Demo.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quantified-provider",
+  "query": ":synth ((∀ x : Type, x → x) → ({a : Type 1} → Demo.Token) → Demo.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quantified-provider",
+  "query": ":synth ((∀ x : Type, x → x) → ({a : Type 1} → Demo.Token) → Demo.Token)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quartic-rankn",
+  "query": ":synth (∀ Q R Z M : Type, (∀ A B C D E : Type, Q) → (∀ A B C D E : Type, R) → (∀ A B C D E : Type, Z) → (∀ A B C D E : Type, M) → (∀ V W X Y U : Type, Q) × (∀ V W X Y U : Type, R) × (∀ V W X Y U : Type, Z) × (∀ V W X Y U : Type, M) × (∀ E : Type, E → E) × (∀ F : Type, F → F) × (∀ G : Type, G → G) × (∀ H : Type, H → H))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quartic-rankn",
+  "query": ":synth (∀ Q R Z M : Type, (∀ A B C D E : Type, Q) → (∀ A B C D E : Type, R) → (∀ A B C D E : Type, Z) → (∀ A B C D E : Type, M) → (∀ V W X Y U : Type, Q) × (∀ V W X Y U : Type, R) × (∀ V W X Y U : Type, Z) × (∀ V W X Y U : Type, M) × (∀ E : Type, E → E) × (∀ F : Type, F → F) × (∀ G : Type, G → G) × (∀ H : Type, H → H))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quartic-rankn",
+  "query": ":synth (∀ Q R Z M : Type, (∀ A B C D E : Type, Q) → (∀ A B C D E : Type, R) → (∀ A B C D E : Type, Z) → (∀ A B C D E : Type, M) → (∀ V W X Y U : Type, Q) × (∀ V W X Y U : Type, R) × (∀ V W X Y U : Type, Z) × (∀ V W X Y U : Type, M) × (∀ E : Type, E → E) × (∀ F : Type, F → F) × (∀ G : Type, G → G) × (∀ H : Type, H → H))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-query-closed-rankn",
+  "query": ":synth ((∀ a : Type, (a → QueryClosed.Token) → a → QueryClosed.Indexed a) → (QueryClosed.Mono → QueryClosed.Token) → QueryClosed.Mono → QueryClosed.Indexed QueryClosed.Mono)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-query-closed-rankn",
+  "query": ":synth ((∀ a : Type, (a → QueryClosed.Token) → a → QueryClosed.Indexed a) → (QueryClosed.Mono → QueryClosed.Token) → QueryClosed.Mono → QueryClosed.Indexed QueryClosed.Mono)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-query-closed-rankn",
+  "query": ":synth ((∀ a : Type, (a → QueryClosed.Token) → a → QueryClosed.Indexed a) → (QueryClosed.Mono → QueryClosed.Token) → QueryClosed.Mono → QueryClosed.Indexed QueryClosed.Mono)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quintic-rankn",
+  "query": ":synth (QuinticRankN.Wide → QuinticRankN.Wide × QuinticRankN.Wide × QuinticRankN.Wide × QuinticRankN.Wide × (∀ I : Type, I → I) × (∀ J : Type, J → J) × (∀ K : Type, K → K) × (∀ L : Type, L → L) × (∀ N : Type, N → N) × QuinticRankN.Wide)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-quintic-rankn",
+  "query": ":synth (QuinticRankN.Wide → (∀ I : Type, I → I) × (∀ J : Type, J → J) × (∀ K : Type, K → K) × (∀ L : Type, L → L) × QuinticRankN.Wide × QuinticRankN.Wide × QuinticRankN.Wide × QuinticRankN.Wide × QuinticRankN.Wide × QuinticRankN.Wide × (∀ N : Type, N → N))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-recursive-rankn",
+  "query": ":synth ((∀ a : Type 1, Demo.RecBox a) → Demo.RecBox (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-recursive-rankn",
+  "query": ":synth ((∀ a : Type 1, Demo.RecBox a) → Demo.RecBox (∀ b : Type, b → b))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-recursive-rankn",
+  "query": ":synth ((∀ a : Type 1, Demo.Outer a → Demo.Seed) → (∀ x : Type, x) → Demo.Outer (∀ y : Type, y))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-recursive-rankn",
+  "query": ":synth (Demo.Headed (∀ x : Type, x → x) → (∀ x : Type, x → x))",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-six-binder-rankn",
+  "query": ":synth SixBinder.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-six-binder-rankn",
+  "query": ":synth (∀ A B C D E F : Type, (∀ a b c d e f : Type, SixBinder.Six a b c d e f) → SixBinder.Six F E D C B A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-six-binder-rankn",
+  "query": ":synth SixBinder.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-six-binder-rankn",
+  "query": ":synth (∀ A B C D E F : Type, (∀ a b c d e f : Type, SixBinder.Six a b c d e f) → SixBinder.Six F E D C B A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-six-binder-rankn",
+  "query": ":synth SixBinder.Token",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ },
+ {
+  "fixture": "synth-six-binder-rankn",
+  "query": ":synth (∀ A B C D E F : Type, (∀ a b c d e f : Type, SixBinder.Six a b c d e f) → SixBinder.Six F E D C B A)",
+  "golden": "positive",
+  "ours": "positive",
+  "ok": true
+ }
+]
