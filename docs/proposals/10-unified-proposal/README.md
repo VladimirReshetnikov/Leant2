@@ -2,7 +2,7 @@
 
 `Leant2.tex` consolidates the nine independent proposals in the sibling
 directories `01-` to `09-` into one design. `Leant2.pdf` is the compiled
-article (about 106 pages).
+article (about 100 pages).
 
 Part I (architecture) keeps the consensus of all nine as its core (exact Lean
 expressions as semantic authority; whole-continuation backtracking; recursion
