@@ -34,11 +34,12 @@ which is now the numbered directory itself.
 ## The unified proposal
 
 `10-unified-proposal/Leant2.tex` (compiled: `Leant2.pdf`) is a new article
-that consolidates the nine proposals. It keeps the ideas that recur across
+that consolidates the nine proposals. Part I keeps the ideas that recur across
 most proposals as the architectural core, selects the best-developed treatment
 of each subsystem where the proposals differ, and records which proposal each
 idea comes from so the original, more detailed discussion can be consulted
-(Appendix A is the provenance ledger). It adds two owner requirements that the
+(Appendix A is the provenance ledger). Part II gives the algorithms as
+pseudocode merged from the best-specified proposals, with worked traces. It adds two owner requirements that the
 nine proposals do not contain: a single adaptive engine with no engine
 switches or settings, and a semantic acceptance baseline over Leant's
 `:synth` golden corpus (30 transcripts, 278 queries). It also records what to

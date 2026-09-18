@@ -1,0 +1,422 @@
+\section{Algorithms: construction search}\label{alg:search}
+
+Sections~\ref{sec:obligation-graph}--\ref{sec:instances} fix \emph{what} the construction engine maintains and \emph{why}. This section fixes \emph{how}: the concrete procedures, in the order a worker executes them, with the data-structure operations they perform and two exact traces. Every procedure is a merge of the nine proposals' versions; where they disagree, the best-specified version is taken and the alternatives are named. Pseudocode is Lean-like; \code{transaction} always means the atomic attempt of Section~\ref{sec:transactions}, and \code{ledger.charge} is never refunded (Decision~\ref{dec:ledger}).
+
+\subsection{The main loop over the obligation graph}\label{alg:loop}
+
+\subsubsection{The reference recursion and what all nine prototypes ran}
+
+Every prototype is an instance of one recursive skeleton: pop an obligation, try each alternative inside a snapshot, and recurse on \code{children ++ rest}, so that the head goal's solution is tentative until every remaining obligation succeeds\prov{all}. The proposals differ only in rule order, in the \code{apply} configuration, and in how exceptions are classified:
+\begin{itemize}
+\item rule order: \Pn{1}: intro, locals and projections, providers and constructors and \code{Eq.refl}, cases; \Pn{2}: refl, exact local, intro, constructors, local spines, cases; \Pn{3}: exact local, intro, constructors and providers, local spines; \Pn{4}: intro, refl, locals, providers, constructors; \Pn{5}: intro, refl, locals, projections, constructors, cases; \Pn{6}, \Pn{8}, \Pn{9}: refl, intro, locals, (providers), constructors, cases; \Pn{7}: intro, refl, locals, constructors, cases on non-recursive non-indexed locals;
+\item \code{apply} configuration: \Pn{2}, \Pn{5}, \Pn{6}, \Pn{7}, \Pn{9} pass \code{newGoals := .all}; \Pn{1} adds \code{synthAssignedInstances := false}; \Pn{3} passes \code{newGoals := .all, approx := false, synthAssignedInstances := false, allowSynthFailures := true}; \Pn{4} and \Pn{8} use the default configuration, whose \code{nonDependentFirst} order schedules a proof field before the witness it constrains (proof-first, see Section~\ref{alg:interleave});
+\item interruption: \Pn{1} rethrows \code{Exception.internal}, \Pn{3} rethrows \code{isInterrupt}, \Pn{5} rethrows \code{isInterrupt || isMaxHeartbeat}; \Pn{2}, \Pn{4}, \Pn{6}, \Pn{7}, \Pn{8}, \Pn{9} catch everything and say so is wrong for production;
+\item bounds: \Pn{3} and \Pn{8} iterate the fuel bound upward (1..24 and 1..17) from the original saved state; \Pn{1}, \Pn{2}, \Pn{5}, \Pn{7} add a separate case-split bound; \Pn{3} additionally requires the root to contain no metavariables before reporting success.
+\end{itemize}
+
+\subsubsection{Cursor frames: the resumable production loop}
+
+The production engine keeps the semantics of the recursion but replaces the host call stack by explicit frames so that a branch can be suspended after a bounded quantum, resumed, serialized as a plan suffix, and scheduled fairly\prov{\Pn{2},\Pn{6},\Pn{8}}. A frame is exactly the data the recursive version keeps implicitly\prov{\Pn{8}}:
+
+\begin{lstlisting}
+structure Frame where
+  focus     : HoleId        -- obligation being refined
+  siblings  : List HoleId   -- rest of the coupled continuation
+  saved     : Snapshot      -- Meta/Elab state before the current alternative
+  family    : RuleFamily    -- exact|intro|ctor|proj|spine|elim|proof|recur
+  cursor    : RuleCursor    -- resumable: next alternative of family for focus
+  allowance : Cost          -- remaining charged work for this frame
+
+def advance (fr : Frame) (q : Quantum) : WorkerM StepResult := do
+  fr.saved.restore              -- undo the previous alternative entirely
+  ledger.charge q               -- monotone; survives rollback
+  match <- fr.cursor.next q with
+  | .exhausted =>
+      -- parent frame restores ITS snapshot and advances its own cursor
+      return .pop fr
+  | .yielded cursor' =>
+      -- out of budget: keep the continuation, resume after a fair turn
+      return .suspend { fr with cursor := cursor' }
+  | .alt a =>
+    match <- transaction (runRule a fr.focus) with
+    | .progress children =>
+        let H <- (children ++ fr.siblings).filterM fun h =>
+                   return !(<- h.isAssigned)
+        if H.isEmpty then
+          return .candidate (<- instantiateRoot)   -- goes to the gate
+        let h := selectGoal H                      -- Section alg:select
+        return .push { focus := h, siblings := H.erase h,
+                       saved := <- saveState, family := firstFamily h,
+                       cursor := start h, allowance := split fr.allowance }
+    | .solved => -- as progress []
+    | .blocked deps =>
+        park fr.focus on deps
+        if all siblings parked then return .suspend fr
+        else return .push (frame for the next unparked sibling)
+    | .rejected cert => record cert; loop      -- next alternative
+    | .unsupported k => return .handoff (k, fr) -- another lane owns k
+    | .interrupted   => throw interrupted       -- never "rule failed"
+\end{lstlisting}
+
+The frame stack is the branch's plan suffix $\rho$ (Definition~\ref{def:branch}): replaying the \code{alt} choices of the stack against the origin regenerates the branch with fresh identifiers. \Pn{2}'s portfolio loop (\code{successors}, \code{yielded}, \code{candidate}, \code{checkedPrune}, \code{failedAttempt}, \code{interrupted}) and \Pn{8}'s (\code{partialPlan}, \code{completeTerm}, \code{checkedCounterexample}, \code{verified}, \code{suspended}, \code{finished}) are the same event algebra seen from the scheduler; the merged form above is \Pn{8}'s frame with \Pn{2}'s outcome names.
+
+\begin{invariant}[Restore discipline]
+A frame restores its own snapshot before every alternative, not after a failure. A successful child leaves its state installed until the child is popped; a popped child's parent restores. Mixing ``restore on failure'' and ``child owns the successor state'' is the source of stale assignments and is forbidden\prov{\Pn{8}}. The \code{rollback_probe} regression of \Pn{9} (assign a hole by \code{isDefEq}, restore, check the hole is again unassigned) is the unit test for this invariant.
+\end{invariant}
+
+\subsubsection{Goal selection}\label{alg:select}
+
+The prototypes take the leftmost unassigned goal; the production selector is\prov{\Pn{2},\Pn{3},\Pn{4},\Pn{6},\Pn{8}}:
+
+\begin{lstlisting}
+def selectGoal (H : List HoleId) : HoleId :=
+  -- wake-ups reclassify blocked holes before selection
+  let ready    := H.filter fun h => (blockedOn h).isEmpty
+  -- coupled clusters (SCCs of D) are scheduled as units
+  let clusters := stronglyConnected D ready
+  let c        := argmax (fun c => pressure c + age c) clusters
+  -- proof-first when a cheap proof field can determine a data field
+  match c.find? (fun h => h.role = .proof && determinesDataHole h) with
+  | some h => h
+  | none   => argmax pressure c             -- witness-first fallback
+\end{lstlisting}
+
+\code{pressure} is the score of Section~\ref{sec:scheduling}; \Pn{6}'s form ($w_1\,$information gain $+\,w_2\,$dependents $-\,w_3\,$cost) and \Pn{4}'s ``most constrained eligible goal subject to dependency barriers'' are the two inputs merged there. Readiness is ``the variables the chosen rule needs are sufficiently instantiated'', not ``no metavariable remains in the type''\prov{\Pn{8}}. A cyclic dependency is never diagnosed as inconsistency: the cluster is branched over as a unit until a constructor or type choice breaks the cycle\prov{\Pn{2},\Pn{8}}. Scores are written to the trace so that a composition failure can be attributed to scheduling rather than hidden behind ``no term found''\prov{\Pn{2}}.
+
+\subsubsection{Rule outcomes, the three blocked states, and wake-ups}
+
+\code{runRule} returns exactly one of \code{progress}, \code{solved}, \code{blocked(deps)}, \code{rejected(cert?)}, \code{unsupported(feature)}, \code{yielded(cursor, charged)}, \code{interrupted}\prov{\Pn{2},\Pn{9}}. The three non-failure, non-success states are kept distinct because the scheduler treats them differently\prov{\Pn{2}}: \code{blockedOnAssignments(deps)} is parked and woken by an assignment to any of \code{deps}; \code{unsupportedByLane(feature, k)} is routed with its continuation \code{k} to another lane; \code{yieldedForBudget(k, charged)} is resumed after a fair turn or a raised bound. None enters a negative cache.
+
+Delayed constraints carry dependency stamps\prov{\Pn{4},\Pn{5},\Pn{6},\Pn{8},\Pn{9}}:
+
+\begin{lstlisting}
+structure Delayed where
+  c     : Constraint   -- flex-rigid eq | instance goal | index eq | contract
+  deps  : MVarIdSet    -- metavariables whose assignment can change c
+  stamp : Version      -- assignment version at which c was last examined
+
+def onAssign (m : MVarId) : WorkerM Unit := do
+  for d in delayed do
+    if m in d.deps && d.stamp < version m then requeue d  -- exactly these
+  -- wake-up events: a flex-rigid equation became a pattern; an instance
+  -- goal's input parameters became ground; a contract reduced after
+  -- substitution; recursor(?x, ..) = y with ?x now a constructor
+\end{lstlisting}
+
+A constraint is re-examined only when a dependency changed; \Pn{5} states the requirement (``retry after a relevant metavariable assignment, not after every unrelated step'') and \Pn{6} names the four wake-up events used above.
+
+\subsubsection{Interleaving proof and data obligations}\label{alg:interleave}
+
+Proof obligations and data obligations live in the same frame stack; what differs is whether a proof rule may assign data holes\prov{\Pn{1},\Pn{2},\Pn{4}}.
+
+\begin{lstlisting}
+def runProofRule (h : HoleId) (svc : ProofService) : WorkerM RuleOutcome := do
+  match mode h with
+  | .joint =>
+      -- inside the branch transaction: assignments are a branch choice
+      let (reply, patch) <- svc.run h.goal
+      checkOwnership patch    -- only branch-owned metavariables
+      checkExecutable patch   -- a proof may not pick a noncomputable witness
+      return .progress patch.newObligations   -- subject to the commit criterion
+  | .frozen =>
+      -- the candidate is closed; the service may not assign anything
+      let closed <- closeOverTelescope h.candidate
+      match <- svc.run (spec closed) with
+      | .proved p  => return .solved
+      | .refuted q => return .rejected (some q)   -- exactly this identity
+      | .unknown r => return .yielded (retryLarger h) r.charged
+\end{lstlisting}
+
+In the prototypes, \code{MVarId.refl} on a goal $?m = n + 1$ is a joint-mode rule: \code{isDefEq} assigns $?m$. \Pn{2} calls this ``proof search may choose data inadvertently'' and requires that it be a charged, transactional branch choice; that is exactly what running it under \code{advance} gives.
+
+\subsection{Introductions}\label{alg:intro}
+
+\begin{lstlisting}
+def introRule (g : HoleId) : WorkerM RuleOutcome := g.withContext do
+  let T <- whnfBudgeted (<- g.getType)   -- expose only the outer Pi; charged
+  unless T.isForall do return .rejected none
+  let (x, g') <- g.intro1P               -- keeps binder name and binderInfo
+  return .progress [g']                  -- x is rigid w.r.t. earlier holes
+\end{lstlisting}
+
+\code{intro1P} preserves explicit, implicit, strict-implicit, and instance-implicit binders; the fresh local's identity, not its printed name, enters the state\prov{\Pn{1},\Pn{2},\Pn{3},\Pn{8},\Pn{9}}. A universe or type parameter of the query introduced this way is rigid: the search may not specialize it to \code{Nat} to make an example executable\prov{\Pn{3}}. Introduction is existence-preserving, so the focused lane applies it eagerly; it is not size-preserving, so the exact lane below runs first when the profile rewards direct reuse\prov{\Pn{3},\Pn{4},\Pn{5},\Pn{9}}.
+
+\subsubsection{Exact-local lane and projections}
+
+\begin{lstlisting}
+def exactLane (g : HoleId) : WorkerM (List Alternative) := g.withContext do
+  let mut alts := []
+  for d in (<- getLCtx) do
+    -- P2's initial run admitted these and produced self-reference cycles
+    if d.isImplementationDetail then continue
+    alts := alts ++ [transaction do
+      unless <- isDefEq (<- inferType d.toExpr) (<- g.getType) do
+        return .rejected none
+      g.assign d.toExpr; return .solved]
+    -- known-major projections over a local structure value (alg:proj)
+    let S <- whnf (<- inferType d.toExpr)
+    if let .const sName _ := S.getAppFn then
+      if let some info := getStructureInfo? (<- getEnv) sName then
+        for i in [:info.fieldNames.size] do
+          alts := alts ++ [spineAlternative g (Expr.proj sName i d.toExpr)]
+  return alts
+\end{lstlisting}
+
+\Pn{3}'s prototype runs this lane before introduction (``exact local terms are tried before expanding applications'') and \Pn{2}'s runs it before introduction too; the others introduce first. The design merges them: exact lane, then introduction, with the caveat of Section~\ref{sec:spines} that a cheap inhabitant never suppresses contract-sensitive alternatives, because the continuation, not the lane order, decides acceptance\prov{\Pn{3},\Pn{5}}.
+
+\subsubsection{Constructor application for inductive targets}
+
+\begin{lstlisting}
+def ctorRule (g : HoleId) : WorkerM (List Alternative) := g.withContext do
+  let T <- whnf (<- g.getType)
+  let .const I _ := T.getAppFn | return []
+  let .inductInfo info <- getConstInfo I | return []
+  -- ALL constructors are alternatives, never only the first
+  return info.ctors.map fun c => transaction do
+    let c' <- mkConstWithFreshMVarLevels c   -- fresh levels per occurrence
+    -- open the telescope; params are unified away by the result match
+    match <- spineUnify c' T with
+    | .mismatch   => return .rejected none  -- rigid index clash: 0 vs n + 1
+    | .blocked cs => delay cs; yield fields -- index eq blocked: keep c
+    | .progress   => yield fields           -- unassigned args, telescope order
+\end{lstlisting}
+
+Rejecting a constructor requires an inconsistent index equation; a blocked one keeps the constructor and records a delayed constraint, or is reported as a bounded omission, never as impossibility\prov{\Pn{3},\Pn{6},\Pn{9}}. Fields are the constructor's actual telescope in order, including inherited and proof fields; a data field remains a choice point until every dependent field and the contract are satisfied\prov{\Pn{1},\Pn{3}}. In the prototypes this rule is literally \code{goal.apply (<- mkConstWithFreshMVarLevels ctor)} with the constructors read from \code{InductiveVal.ctors}\prov{\Pn{1},\Pn{2},\Pn{5},\Pn{6},\Pn{7},\Pn{8},\Pn{9}}.
+
+\subsection{Spine expansion}\label{alg:spine}
+
+This is the central algorithm. Six proposals give pseudocode (\Pn{2} \code{planApplication}, \Pn{3} \code{applyHead}, \Pn{6} \code{expandApplication}, \Pn{7} \code{expandHead}, \Pn{8} \code{applyHead}, \Pn{9} Algorithm~2 \textsc{Spines}); \Pn{9}'s prefix-by-prefix loop is the most explicit and is taken as the spine, with \Pn{6}'s per-prefix restore, \Pn{3}'s cheap discharge step, and \Pn{7}'s classification of the unification result merged in.
+
+\begin{lstlisting}
+def spines (g : HoleId) (h : Head) (b : Nat) : WorkerM Unit := g.withContext do
+  -- 1. freshen: globals get fresh level metavariables per occurrence;
+  --    locals keep their exact fvar identity and universes
+  let h' <- match h with
+    | .global c   => mkConstWithFreshMVarLevels c
+    | .local  d   => pure d.toExpr
+    | .proj s i d => pure (Expr.proj s i d.toExpr)
+  let mut e := h'
+  let mut U <- inferType h'
+  let mut args : Array HoleId := #[]
+  let base <- saveState
+  for j in [0:b+1] do                 -- admissible prefix lengths 0..b
+    base.restore
+    -- 2. this prefix: residual type against the target, own transaction
+    match <- transaction (unifyClassified U (<- g.getType)) with
+    | .mismatch    => pure ()                    -- rigid clash: next prefix
+    | .speculative => exploration.offer (e, args) -- approx: exploratory lane
+    | .progress | .blocked cs =>
+        -- 3. roles from binderInfo and sort:
+        --    term | type | instance | proof | index | level
+        let roles := args.map classify
+        -- 4. discharge determined arguments cheaply
+        let mut kids := []
+        for a in args do
+          if <- a.isAssigned then continue       -- fixed by result unification
+          match roles a with
+          | .instance =>
+              if inputParamsGround a then tryOnce (synthInstance a)
+              else delay a
+          | .proof =>
+              -- bounded refl / assumption / decide; else it is a child
+              unless cheapClose a do kids := kids ++ [a]
+          | _ => kids := kids ++ [a]
+        delayAll cs                              -- with dependency stamps
+        -- 5. yield the application with its WHOLE coupled continuation
+        yieldAlternative g e kids
+    -- 6. extend by one binder, reducing U only enough to expose it
+    U <- whnfCoreUntilPi U
+    let .forallE _ dom body bi := U | break
+    let a <- mkFreshHole dom g.lctx bi     -- exact domain, binderInfo, owned
+    args := args.push a
+    e := mkApp e (mkMVar a)
+    U := body.instantiate1 (mkMVar a)
+\end{lstlisting}
+
+Steps and their justification:
+\begin{enumerate}
+\item \emph{Freshen per occurrence.} Two occurrences of one global do not share level assignments merely because they print alike; a single occurrence shares its assignments across its whole spine; locals are never freshened, since freshening a local dictionary or universe turns a fixed choice into a new one\prov{\Pn{1},\Pn{3},\Pn{4},\Pn{5},\Pn{6}}.
+\item \emph{Prefixes.} Partial applications are admitted because the useful arity changes after reduction or when a type variable is instantiated to a function type, and because a partially applied head may be the demanded higher-order argument\prov{\Pn{6},\Pn{8},\Pn{9}}. Repeated use of one head is allowed ($f(f(x))$)\prov{\Pn{8}}.
+\item \emph{Telescope order with binder info.} Later argument types are instantiated with the actual earlier holes; there is no ``types first, then values'' split, because $x$ may constrain $A$ and the result may constrain $B$ in $\prod_{A}\prod_{x:A}\prod_{B:A\to\Sort}\prod_{k:\prod_a B a} B\,x$\prov{\Pn{3},\Pn{4}}.
+\item \emph{Classification of the unification outcome.} \code{unifyClassified} runs \code{isDefEq} transactionally and reports \code{progress} (assigned, nothing postponed), \code{blocked} (postponed flex-rigid equations, stuck instance goals, or a level constraint waiting on assignment), \code{speculative} (solved only by first-order approximation of a higher-order equation), \code{mismatch} (rigid head or constructor clash), or \code{unknown} on a budget exception, which is never negative evidence\prov{\Pn{3},\Pn{5},\Pn{7},\Pn{9}}. The fast lane accepts \code{progress} and \code{blocked}; the exploration lane also takes \code{speculative}\prov{\Pn{6}}.
+\item \emph{Cheap discharge.} Instance arguments whose input parameters are ground are synthesized once; proof arguments are tried with a bounded reflexivity/assumption/decision step; anything else becomes a child in the continuation. Determined arguments (assigned by step~4) never become goals\prov{\Pn{3},\Pn{4},\Pn{8}}.
+\item \emph{Yield with the continuation.} The alternative carries \code{kids}, and \code{advance} prepends them to the siblings; there is no path by which an argument is ``solved independently''\prov{\Pn{2},\Pn{6}}.
+\end{enumerate}
+
+\subsubsection{What the prototypes did and what the production version adds}
+
+The prototypes are the first adapter: \code{MVarId.apply} already opens the telescope, matches the residual type at every arity, creates argument metavariables with the binder's context, and processes instance arguments\prov{\Pn{1},\Pn{2},\Pn{3},\Pn{6},\Pn{8}}. With \code{newGoals := .all} the returned goals are the unassigned arguments in telescope order, so the witness of a dependent pair precedes its proof and witness-first backtracking is exercised\prov{\Pn{6}}; with \code{approx := false} no first-order approximation is silently committed, and with \code{synthAssignedInstances := false} an instance argument already fixed by unification is not re-synthesized and possibly replaced\prov{\Pn{1},\Pn{3}}. \Pn{3}'s \code{allowSynthFailures := true} turns a failed instance synthesis into a retained instance goal instead of an exception. The production version adds, over \code{apply}: resumable prefix enumeration with per-prefix restore; explicit argument provenance (assigned by unification versus searched); the outcome classification of step~4; delayed constraints with stamps instead of \code{apply}'s postponed list; the cheap-discharge pass; local-versus-global freshening; and a differential test of any optimized planner against \code{apply} on a dedicated corpus, because neither an \code{apply} failure nor a timeout is evidence that the request is impossible\prov{\Pn{2},\Pn{6},\Pn{9}}.
+
+\subsection{Known-major projections}\label{alg:proj}
+
+Applying the polymorphic constant \code{Sigma.snd} to an unknown pair leaves the family and the major premise unknown; the result-directed unifier need not reconstruct the pair\prov{\Pn{1}}. Projections are therefore enumerated only over \emph{known} locals, as in \code{exactLane} above: read \code{getStructureInfo?} for the local's weak-head type, form \code{Expr.proj S i d}, infer its exact dependent type (the field type instantiated at \code{d}, beta-reduced), and run it through \code{spines} as a head\prov{\Pn{1},\Pn{5}}. Repeated projections are explored at increasing cost, never as an eager closure over recursive structures\prov{\Pn{1}}.
+
+Evidence: \Pn{1}'s expanded prototype initially missed $p : \Sigma_{n:\Nat}\mathrm{Fin}(n+1) \vdash \mathrm{Fin}(p.1+1)$; adding exactly this rule made it pass, and the term is \code{p.2}, whose inferred type $(\lambda n.\,\mathrm{Fin}(n+1))\,p.1$ is definitionally $\mathrm{Fin}(p.1+1)$. \Pn{5}'s first prototype ordered constructors before projections and, on the two-dictionary witness $\{n:\Nat \mid n = \mathrm{second.value}\}$, grew \code{Nat.succ} chains until the heartbeat limit; moving projections before constructor expansion (the order in \code{solve} of \Pn{5}'s \code{NativeCore.lean}) made the file compile. \Pn{7} and \Pn{9} solve \code{(s : Sigma B) -> B s.1} through the local-spine rule instead, since \code{apply s.2} is not needed when the search reaches \code{Sigma.snd} through the pair's own eliminator; the projection rule is the cheaper, generic route.
+
+\subsection{Type invention and higher-rank instantiation}\label{alg:types}
+
+\subsubsection{The staged ladder}
+
+A type-valued hole (role \code{type}, sort $\Sort\,?u$) is attempted in stages of increasing cost, and only after the cheaper stage has been exhausted for the current bound\prov{\Pn{1},\Pn{2},\Pn{6},\Pn{8},\Pn{9}}:
+
+\begin{lstlisting}
+def typeHole (a : HoleId) (level : Nat) : WorkerM (List Alternative) := do
+  -- stage 0: forced by unification with the rigid target or later args
+  if <- a.isAssigned then return []
+  -- stage 1: the hole's own type is a Pi: introduce, do not enumerate
+  if (<- whnf (<- a.getType)).isForall then return [introRule a]
+  -- stage 2: bounded, cost-ordered type frontier
+  let seeds := typesIn origin.telescope ++ subtypesOf origin.target
+            ++ typesIn origin.contract ++ (<- localTypes)
+            ++ providerDomains (retrieved a) ++ rigidTypeVarsInScope a
+  let frontier := closeUnder seeds level    -- grammar below, size <= level
+  let mut alts := []
+  for C in frontier do
+    alts := alts ++ [transaction do
+      let u <- mkFreshLevelMVar
+      -- Lean checks the sort; u is solved by the level unifier
+      unless <- isDefEq (<- inferType C) (mkSort u) do return .rejected none
+      unless <- isDefEq (mkMVar a) C do return .rejected none
+      return .solved]
+  -- stage 3: quantified types and accumulator carriers, separate size cost
+  if level >= carrierLevel then alts := alts ++ carrierAlternatives a level
+  return alts
+\end{lstlisting}
+
+The frontier grammar at level $\ell$ is
+\[
+ \tau ::= s \;\mid\; \tau_1 \to \tau_2 \;\mid\; \tau_1 \times \tau_2 \;\mid\; \tau_1 \oplus \tau_2 \;\mid\; \Sigma x{:}\tau_1.\,\tau_2 \;\mid\; \mathrm{Option}\,\tau \;\mid\; F\,\vec\tau \;\mid\; \prod x{:}\tau_1.\,\tau_2,
+\]
+with $s$ a seed, $F$ an admitted type constructor, the last production admitted only at stage~3, and $\mathrm{size}(\tau)\le\ell$\prov{\Pn{1},\Pn{2},\Pn{4},\Pn{9}}. A type proposed under a binder may mention the binder and may not escape it\prov{\Pn{4},\Pn{8}}. Every candidate is checked by Lean at the expected sort; the level $u$ is a fresh metavariable solved by Lean's level unifier, and named universe parameters of the query are never assigned\prov{\Pn{1},\Pn{3},\Pn{4},\Pn{6}}. Exhausting the frontier at level $\ell$ is a missed instantiation, not impossibility\prov{\Pn{6}}. \Pn{4} additionally allows an arithmetic adapter or a bounded expression grammar to propose \emph{term} indices for index-valued holes under the same ownership rules.
+
+Stage~1 is why no rank restriction exists: for an argument of type $\prod_{\alpha:\mathrm{Type}\,u}\alpha\to\alpha$, \code{introRule} opens $\alpha$ and $x:\alpha$ as rigid locals and the exact lane closes the body with $x$; the callback is constructed inside its private scope and $\alpha$ cannot escape into a hole created outside it\prov{\Pn{2},\Pn{3},\Pn{5},\Pn{8}}. All nine prototypes ran a rank-2 fixture this way (\code{higherRank}, \code{rankTwo}, \code{usePolymorphic}, \code{rankN}, \code{microRankN}, \code{polymorphicArgument}); \Pn{3}, \Pn{5}, \Pn{7}, \Pn{9} also ran a two-universe variant with independent \code{Type u} and \code{Type v} callbacks, which is a representative fixture and not the original two-universe Church regression of Leant\prov{\Pn{1},\Pn{5}}.
+
+\subsubsection{Bounded higher-order instantiation for flexible heads}
+
+A stuck equation $?F\,a_1\cdots a_n \doteq t$ that is not a pattern is first delayed; if its dependencies are all assigned and it is still stuck, the exploration lane instantiates $?F$ from a bounded template family, each instantiation being an alternative rechecked by \code{isDefEq}\prov{\Pn{3},\Pn{5},\Pn{7},\Pn{8}}:
+
+\begin{lstlisting}
+def flexTemplates (F : HoleId) (n : Nat) (t : Expr) (depth : Nat) :=
+  projections n            -- fun x1 .. xn => xi
+  ++ constants t           -- fun x1 .. xn => c, c a rigid subterm of t
+  ++ imitations t n depth  -- fun x1 .. xn => C (?G1 x1..xn) .. (?Gk x1..xn)
+                           --   with C the rigid head of t
+  ++ localApps n depth     -- fun x1 .. xn => xi (?G x1..xn)
+\end{lstlisting}
+
+There is no general higher-order unification; the templates are Lean expressions and Lean decides each one. \Pn{7} restricts the first implementation to a pattern-oriented policy plus delay, and places imitation/projection in a separate expensive lane; \Pn{3} and \Pn{5} name the same template set. A timed-out or stuck attempt is \code{unknown}, never a negative cache entry\prov{\Pn{3},\Pn{7},\Pn{9}}.
+
+\subsubsection{Universe policy}
+
+Levels are expressions, not kinds: retain maxima and parameters, let Lean generate and solve level constraints, and never lower a polymorphic query to \code{Type 0} and present the result as a solution of the original\prov{\Pn{1},\Pn{4}}. \code{Prop} is impredicative, \code{Type} is predicative and non-cumulative, so a polymorphic function type quantified over \code{Type u} is not itself an instantiation for a hole of sort \code{Type u}; \Pn{9}'s \code{universeNegative} control asserts exactly that failure. A lift is a typed construction, never a numeric relaxation\prov{\Pn{3}}. No fixed list of levels appears in the semantic kernel; a bounded list may appear only in the heuristic instantiation lane\prov{\Pn{3}}.
+
+\subsection{Instance and dictionary handling}\label{alg:instances}
+
+\begin{lstlisting}
+def instanceArg (a : HoleId) : WorkerM RuleOutcome := do
+  match origin.instanceMode with
+  | .canonical =>                       -- Lean's own resolution
+      if !(<- inputParamsGround a) then
+        return .blocked (inputParamMVars a)   -- woken on assignment
+      match <- transaction (synthInstance? (<- a.getType)) with
+      | some inst => a.assign inst; return .solved
+      | none      => return .rejected none  -- none under frozen local instances
+  | .explicitDictionary =>              -- a dictionary is data: a choice
+      let cands := (<- localDictionaries (<- a.getType))
+                ++ providerDictionaries (<- a.getType)
+      return .alternatives (cands.map fun d => transaction do
+        a.assign d
+        recordDictionary a d   -- payload enters identity and cache key
+        return .solved)
+\end{lstlisting}
+
+The two modes never interfere: canonical mode follows the local-instance set, priorities, output-parameter behavior, and postponement of Lean's synthesizer, delayed until input parameters are known and woken by \code{onAssign}\prov{\Pn{1},\Pn{2},\Pn{3},\Pn{6}}; explicit mode enumerates dictionaries as ordinary providers, backtracks over them, stores the exact dictionary expression at each method occurrence, and emits it in the term even where a pretty-printer would omit it\prov{\Pn{1},\Pn{5},\Pn{6},\Pn{8}}. Two dictionaries of one class type are never interchanged without a proved equivalence; only \code{Prop}-valued classes enjoy proof irrelevance; \code{Decidable} is data\prov{\Pn{5},\Pn{6}}. No prototype implemented canonical-mode search; \Pn{7}'s \code{fromInstance} and \Pn{8}'s \code{preserveDictionary} extract a field from a supplied instance by structural search, and the fixture in which the second of two same-typed dictionaries must be chosen because the contract says so ran in \Pn{1} (default 11 versus 29), \Pn{3} (\code{microDictionaryChoice}), \Pn{5} (\code{chooseDictionary}), and \Pn{9} (\code{exactDictionary})\prov{\Pn{1},\Pn{3},\Pn{5},\Pn{9}}. Leant2 never manufactures a global instance to solve a local hole\prov{\Pn{7}}.
+
+\subsection{Worked traces}\label{alg:traces}
+
+\subsubsection{Witness-first backtracking through the continuation}
+
+The query is \Pn{9}'s \code{chooseSecond},
+\[
+ \{\,f : \forall A{:}\mathrm{Type},\ A \to A \to A \ \mid\ f\,\Nat\,11\,29 = 29\,\},
+\]
+run by \Pn{9}'s \code{search} (order: refl, intro, local spines, constructors, cases; \code{newGoals := .all}; fuel 80). The same query with $f:\Nat\to\Nat\to\Nat$ ran in \Pn{3} (\code{microChooseSecond}) with the same outcome, and the $A\to A\to A$ form is the motivating example of \Pn{1}. Each line is one \code{advance}; indentation is the frame stack.
+
+\begin{lstlisting}
+g0 : {f // f Nat 11 29 = 29}                        ctx: empty
+  refl g0                -> mismatch (not an Eq)
+  whnf: Subtype _, no Pi -> intro inapplicable
+  locals: none
+  ctor Subtype.mk.{?u}   -> ?u := 2, ?alpha := (forall A, A -> A -> A),
+                            ?p := fun f => f Nat 11 29 = 29
+                            goals (.all, telescope order):
+                              [?val, ?prop : ?val Nat 11 29 = 29]
+  ?val : forall A : Type, A -> A -> A               siblings [?prop]
+    refl ?val            -> mismatch
+    intro1P              -> A : Type, ?b1 : A -> A -> A
+      intro1P            -> a : A,    ?b2 : A -> A
+        intro1P          -> b : A,    ?b3 : A       siblings [?prop]
+          refl ?b3       -> mismatch
+          local A : Type -> mismatch (Type vs A)           restore
+          local a : A    -> progress []; ?b3 := a; ?val := fun A a b => a
+          ?prop : (fun A a b => a) Nat 11 29 = 29   ctx: empty (from g0)
+            refl ?prop   -> whnf lhs = 11; isDefEq 11 29 fails   restore
+            intro        -> inapplicable
+            locals: none (A, a, b are not in ?prop's context)
+            ctor Eq.refl -> ?x := 11; 11 =?= 29 fails            restore
+            cases: no locals -> frame exhausted, pop
+          restore frame(?b3).saved
+            -- undoes ?b3 := a and the delayed assignment of ?val
+          local b : A    -> progress []; ?b3 := b; ?val := fun A a b => b
+          ?prop : (fun A a b => b) Nat 11 29 = 29
+            refl ?prop   -> whnf lhs = 29; isDefEq 29 29;
+                            ?prop := Eq.refl 29; solved
+          siblings empty -> candidate
+result:  Subtype.mk (fun A a b => b) (Eq.refl 29)
+checked: #eval chooseSecond.val Nat 11 29 = 29
+         theorem chooseSecond_all A a b : chooseSecond.val A a b = b := rfl
+\end{lstlisting}
+
+The decisive step is the restore of \code{frame(?b3).saved}: because \code{?prop} was in \code{?b3}'s continuation, the failure of \code{11 = 29} unwinds the witness rather than being reported as an unrelated impossible subproblem. Under \code{nonDependentFirst} (\Pn{4}, \Pn{8}) the same query is scheduled proof-first: \code{?prop} comes first, \code{refl} must solve $?val\,\Nat\,11\,29 \doteq 29$, which is a non-pattern flex-rigid equation, so it is delayed; the witness is then searched and the delayed equation is woken at each assignment of \code{?val}. Both orders are legitimate; the selector of Section~\ref{alg:select} prefers proof-first when the proof field is a pattern equation that determines the data hole directly (as in $\{n:\Nat \mid n = 1\}$, where \code{refl} assigns $?n := 1$ in \Pn{4}'s \code{chooseOne} and \Pn{8}'s \code{double}) and falls back to witness-first otherwise\prov{\Pn{4},\Pn{6},\Pn{8}}.
+
+\subsubsection{Spine expansion with a dependent provider}
+
+The query is \Pn{3}'s \code{microIndexed}: context $A : \mathrm{Type}\,u,\ n : \Nat,\ x : A,\ xs : \mathrm{IndexedVec}\,A\,n$, target $\mathrm{IndexedVec}\,A\,(n+1)$, with the provider
+\[
+ \mathrm{cons} : \{n : \Nat\} \to A \to \mathrm{IndexedVec}\,A\,n \to \mathrm{IndexedVec}\,A\,(n+1).
+\]
+\Pn{3}'s order is exact lane, intro, constructors and providers, local spines; fuel iterates upward from 1.
+
+\begin{lstlisting}
+g0 : IndexedVec A (n + 1)
+  exact lane: A : Type u -> isDefEq (Type u) (IndexedVec A (n+1)) fails
+              n : Nat    -> fails
+              x : A      -> fails
+              xs : IndexedVec A n
+                         -> isDefEq: n =?= n + 1, both rigid -> mismatch
+  whnf: not a Pi         -> intro inapplicable
+  ctor IndexedVec.nil.{?u}
+     result IndexedVec ?A 0; ?u := u, ?A := A; 0 =?= n + 1
+     -> Nat.zero vs Nat.succ n: rigid mismatch; rejected; restore
+  ctor IndexedVec.cons.{?u}
+     spine prefix 4 (apply picks the saturating prefix):
+       args [?A : Type ?u, ?n : Nat, ?head : ?A, ?tail : IndexedVec ?A ?n]
+       residual IndexedVec ?A (?n + 1) =?= IndexedVec A (n + 1)
+       -> ?u := u, ?A := A, ?n + 1 =?= n + 1 -> ?n := n        (progress)
+       roles: ?A type (determined), ?n index (determined),
+              ?head term, ?tail term
+       children (.all, unassigned, telescope order):
+         [?head : A, ?tail : IndexedVec A n]
+    ?head : A                                       siblings [?tail]
+      exact lane: A fails; n fails; x : A -> isDefEq A A; ?head := x
+    ?tail : IndexedVec A n                          siblings []
+      exact lane: A, n, x fail; xs : IndexedVec A n -> ?tail := xs
+    siblings empty; root has no metavariables -> candidate at fuel 3
+result: @IndexedVec.cons.{u} A n x xs
+\end{lstlisting}
+
+Three features of Section~\ref{alg:spine} are visible: the level \code{?u} and the implicit index \code{?n} are determined by result unification and never become goals (provenance: assigned by unification); \code{nil} is rejected by a rigid constructor clash without any argument search; and \code{?tail}'s type mentions the determined \code{?n}, so choosing a different vector would have re-constrained the index. The designed-but-not-run extension is \Pn{4}'s
+\[
+ \mathrm{get} : (n : \Nat) \to \mathrm{Vec}\,A\,n \to \mathrm{Fin}\,n \to A
+\]
+at target $A$ with locals $v : \mathrm{Vec}\,A\,3$ and $i : \mathrm{Fin}\,3$: the residual $A \doteq A$ is \code{progress} at prefix~3 with \code{?n} still unassigned, so \code{?n} is classified as an index hole and parked; choosing $v$ for the vector argument assigns \code{?n := 3} through \code{isDefEq}, \code{onAssign} wakes the parked hole, and the \code{Fin ?n} argument is now demanded at \code{Fin 3}, which the exact lane closes with $i$. A backend that synthesized ``some vector'' and ``some bounded natural'' separately would have to repair the mismatch afterwards, which is what native spine expansion exists to avoid\prov{\Pn{4}}.

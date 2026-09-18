@@ -1,6 +1,6 @@
 \section{Native construction}\label{sec:construction}
 
-The construction calculus is bidirectional. Checking $\Gamma \vdash e \Leftarrow T$ drives introductions from the expected type; inference $\Gamma \vdash n \Rightarrow T$ extends heads (locals, constants, projections) by spines and drives eliminations. Rules are labeled as \emph{checked transformation}, \emph{grammar-preserving normalization}, or \emph{heuristic proposal}, and a fairness lane retains the alternatives that aggressive focusing drops\prov{\Pn{3},\Pn{6},\Pn{9}}.
+This section fixes the rules; the search procedures that apply them, with pseudocode and traces, are in Section~\ref{alg:search}, and dependent elimination, retrieval, and carriers are in Section~\ref{alg:elim}. The construction calculus is bidirectional. Checking $\Gamma \vdash e \Leftarrow T$ drives introductions from the expected type; inference $\Gamma \vdash n \Rightarrow T$ extends heads (locals, constants, projections) by spines and drives eliminations. Rules are labeled as \emph{checked transformation}, \emph{grammar-preserving normalization}, or \emph{heuristic proposal}, and a fairness lane retains the alternatives that aggressive focusing drops\prov{\Pn{3},\Pn{6},\Pn{9}}.
 
 \subsection{Introductions}
 

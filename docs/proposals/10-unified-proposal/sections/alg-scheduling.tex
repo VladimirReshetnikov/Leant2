@@ -1,0 +1,354 @@
+\section{Algorithms: scheduling, caching, and completeness}\label{alg:scheduling}
+
+Section~\ref{sec:scheduling} fixes the lane portfolio, the pressure and priority formulas, the reserved reference share, and the three resource controls; Section~\ref{sec:caching} fixes what a cache key contains. This section supplies the procedures behind those design statements: the task record and the outer loop, the wake-up index over the obligation graph of Section~\ref{sec:obligation-graph}, the two scheduling layers and the diagonal schedule, the cost-indexed reference enumerator, cost-vector ranking, the verification queue, cache lookup and storage, the non-refundable ledger of Decision~\ref{dec:ledger}, and the precise statements about the search that the engine commits to. Where the nine proposals give different pseudocode for the same step, the most fully specified version is taken and the alternatives are named in one sentence.
+
+\subsection{Tasks, cursors, and the step interface}
+
+\begin{definition}[Task]\label{def:task}
+A \emph{task} is the unit the scheduler dispatches. Merging the job record of \Pn{5}, the cursor frame of \Pn{8}, and the tier tuple of \Pn{9}\prov{\Pn{5},\Pn{8},\Pn{9}}, it contains:
+\begin{itemize}
+\item \emph{origin}: the query generation and the branch identifier that owns its metavariables (Invariant~\ref{inv:ownership});
+\item \emph{lane}: which lane policy produced it (Section~\ref{sec:scheduling});
+\item \emph{cursor frame}: the focused obligation, its remaining sibling obligations under the same substitution, a saved branch state or a replay plan that reconstructs it, the rule family in use, the index of the next untried alternative, and the remaining cost allowance of this frame;
+\item \emph{tier}: the tuple $(i,s,r,v)$ of lane number, expression-cost bound, recursion-scheme bound, and verification allowance level under which the task is admitted;
+\item \emph{priority components}: charged cost $g$, the estimates $\hat h$ and $\hat p$, duplication and relevance features, and an age counter;
+\item \emph{spent}: the work already charged to this task, broken down by counter (Section~\ref{alg:ledger}).
+\end{itemize}
+A task never stores a closure over a live metavariable context; a cold task stores a replay plan and is rematerialized from the nearest checkpoint\prov{\Pn{1},\Pn{5},\Pn{9}}.
+\end{definition}
+
+Every lane implements the bounded step of Section~\ref{sec:scheduling}. The result algebra merges the outcome lists of \Pn{2}, \Pn{4}, \Pn{7}, \Pn{8}, and \Pn{9}; the three distinct meanings of ``blocked'' from \Pn{2} are kept as three constructors because the scheduler treats them differently\prov{\Pn{2},\Pn{4},\Pn{7},\Pn{8},\Pn{9}}:
+\begin{lstlisting}
+step : Origin -> Task -> Quantum -> WorkerM StepResult
+
+StepResult :=
+  | successors   (children : Array Task)          -- new frames, same origin
+  | yielded      (cursor : Task) (work : Charge)   -- allowance used up, resumable
+  | candidate    (t : Candidate) (obligations : Array Obligation)
+  | checkedPrune (cert : Checked)                  -- exact completion set is empty
+  | blockedOn    (deps : Array MVarId) (cursor : Task)
+  | unsupported  (feature : String) (cursor : Task)
+  | exhausted    (scope : GrammarFrontier) (cert : Option Checked)
+  | failed       (reason : Diagnostic)             -- this alternative only
+  | interrupted  (reason : Interrupt) (resumable : Option Task)
+\end{lstlisting}
+A \code{successors} result is the only way a task creates children, and a \code{candidate} is not a success: it enters the verification queue of Section~\ref{alg:verification} and only the acceptance gate (Section~\ref{sec:acceptance}) can turn it into an outcome. \Pn{1}'s \code{Yield/Blocked/Finished} and \Pn{4}'s \code{alternative/suspended/exhausted/unsupported} are coarser partitions of the same set.
+
+\subsection{The outer loop}\label{alg:outer}
+
+The outer loop is \Pn{2}'s \code{solve} with \Pn{8}'s event dispatch and \Pn{5}'s explicit job records\prov{\Pn{2},\Pn{5},\Pn{8}}. Its two invariants are that every step runs inside a transaction (Section~\ref{sec:transactions}) and that the charge for a step is recorded before the transaction can roll back.
+\begin{lstlisting}
+solve(query):
+  Q      := prepareAndFreeze(query)               -- immutable; Section 3
+  ledger := newLedger(Q)                          -- monotone; never restored
+  lanes  := initialLanes(Q)                       -- weights from query shape
+  queues := forEach lane: (heuristicQueue, fifoStream)
+  unresolved := emptyVerificationQueue()
+  enqueue(queues, rootTasks(Q))
+  while not ledger.deadlineReached() and (hasWork(queues) or hasWork(unresolved)):
+    lane := nextLane(lanes, ledger)               -- weighted round-robin, Alg. below
+    task := if lane = verification then unresolved.pop()
+            else pickWithinLane(queues[lane])     -- best-first or reserved FIFO
+    charge := ledger.beginNonrefundable(task)
+    outcome := runTransaction(task.frame.state, fun s => step(Q.origin, task, quantum(lane)))
+    charge.finish(outcome.work)                   -- charged even if s was restored
+    match outcome with
+    | successors cs      => forEach c in cs: enqueue(queues[c.lane], c)
+    | yielded c w        => requeue(queues[lane], age(c))
+    | candidate t obs    => unresolved.push(newVerificationTask(t, obs, v := 0))
+    | checkedPrune cert  => closeExactBranch(task, cert); ledger.recordPrune(cert)
+    | blockedOn deps c   => park(c, deps)                -- indexed wake-up, Alg. wake
+    | unsupported f c    => reroute(c, lanesSupporting(f)) or ledger.recordUnsupported(f)
+    | exhausted sc cert  => ledger.recordScope(lane, sc, cert)
+    | failed r           => ledger.recordLocalFailure(task, r); learnNogood?(task, r)
+    | interrupted r res  => if r.isCancellation then return stopWithUnknown(ledger)
+                            else if res.isSome then requeue(queues[lane], res.get)
+    adaptWeights(lanes, lane, outcome)
+    drainAcceptances(unresolved, Q, ledger)       -- verified candidates to the gate
+  return outcomes(ledger, unresolved, queues)     -- result algebra: never a bare failure
+\end{lstlisting}
+The quantum is not ``one candidate'': it bounds syntactic expansions, native reduction and unification steps, proof-search fuel, and heartbeats together, so that provider retrieval, motive enumeration, and proof calls cannot monopolize the request inside a supposedly single step\prov{\Pn{2},\Pn{6},\Pn{8}}. A native primitive that cannot be suspended internally (an arbitrary tactic invocation) runs under a per-attempt limit; on timeout its checkpoint is restored and the attempt is either retired or re-enqueued at a larger allowance in a later tier, and the retried work is charged again\prov{\Pn{5},\Pn{9}}. \Pn{1}'s \code{Rule.expand(branch, obligation, quantum)} and \Pn{4}'s \code{Rule.prepare}/\code{Rule.step} pair are the same interface with the frame split out; the frame representation of \Pn{8} is retained because it makes the sibling list and the next alternative explicit, which the depth-first prototypes of \Pn{2}, \Pn{3}, \Pn{6}, and \Pn{7} keep only on the host call stack.
+
+\subsection{Obligation selection, assignment versions, and wake-ups}\label{alg:wake}
+
+Within a branch, the next obligation is the ready obligation with the highest pressure (Section~\ref{sec:scheduling}), corrected by age. An obligation is \emph{ready} when the variables its chosen rule needs are sufficiently instantiated, not when every metavariable in its type has disappeared\prov{\Pn{8}}. The scheduler maintains, per branch, a watcher index from each unresolved metavariable to the obligations whose target, telescope, contract, or residual mentions it (\Pn{4}), an assignment version per metavariable (\Pn{6}), and the strongly connected components of the dependency graph (\Pn{2}, \Pn{6}, \Pn{8})\prov{\Pn{2},\Pn{4},\Pn{6},\Pn{8}}.
+\begin{lstlisting}
+selectObligation(branch):
+  ready := [h | h in branch.pending, isReady(h), not parked(h)]
+  clusters := sccs(branch.dependencyGraph restricted to ready)
+  -- a coupled cluster is scheduled as one unit until a choice breaks the cycle
+  score(C) := max_{h in C} (pressure(h) + alpha * age(h))
+  return argmax_{C in clusters} score(C)
+
+onAssign(branch, m : MVarId, value):
+  branch.version[m] += 1
+  for h in branch.watchers[m]:                    -- exactly the affected obligations
+    reclassify(h)      -- flex-rigid became pattern? instance params known? contract reduces?
+    if parked(h) and all deps of h now assigned or reclassified: unpark(h)
+  for m' in freshMVarsIn(value): branch.watchers[m'] := obligations mentioning m'
+\end{lstlisting}
+Re-running every blocked solver after every assignment defeats dependency tracking; reclassification touches only the watcher set of the assigned metavariable\prov{\Pn{1},\Pn{4}}. A cyclic dependency is not diagnosed as inconsistency: the cluster is branched over as a unit, typically by choosing a constructor or a polymorphic instantiation first\prov{\Pn{8}}. The aging term $\alpha\cdot\mathrm{age}(h)$ grows by one unit each time the branch is stepped and $h$ is not selected; it prevents ``informative first'' from starving a hard but necessary obligation\prov{\Pn{3}}. Proof-first ordering (a cheap proof field that determines a data field is selected before the data field) is a consequence of the pressure formula, since such a field has a high \code{dependentUses} count\prov{\Pn{5},\Pn{7},\Pn{8}}.
+
+\subsection{Two layers: heuristic best-first and the fair reference layer}\label{alg:layers}
+
+Section~\ref{sec:scheduling} states that fairness is structural. Concretely, the scheduler runs deterministic weighted round-robin over lane families with best-first order inside a lane, reserves a fixed share of charged work for the reference lane and for the verification queue, and complements each tier's heuristic queue with a FIFO stream\prov{\Pn{2},\Pn{5},\Pn{7},\Pn{8},\Pn{9}}. Lane-level fairness is measured in charged work, not in queue entries, so a lane that generates many internal plans cannot dilute another lane's share\prov{\Pn{8}}.
+\begin{lstlisting}
+-- credits are charged work units; weights w[L] sum to 1 over enabled lanes
+nextLane(lanes, ledger):
+  for L in lanes: credit[L] += w[L] * quantumSize
+  runnable := [L | L in lanes, hasWork(L)]
+  L := argmax_{L in runnable} credit[L]  (deterministic tie: lane number)
+  credit[L] -= quantumSize
+  return L
+
+pickWithinLane(queue L):
+  -- every reserveEvery-th pick from a lane comes from its FIFO stream
+  if L.picks mod reserveEvery = 0 then task := L.fifo.popFront()
+  else task := L.heuristic.popMin(s)              -- priority s(j) of the architecture section
+  L.picks += 1
+  return task
+\end{lstlisting}
+The reserved shares are engineering defaults: one quantum in eight for the reference lane (\Pn{5}), one in eight for the verification queue, and no theoretical claim depends on either ratio\prov{\Pn{5}}. The FIFO stream is \Pn{9}'s device for making the fairness claim honest within a tier; the alternative in \Pn{9} is to bound the number of heuristic overtakes per task, which gives the same guarantee with a different constant.
+
+\paragraph{Adaptive lane weights.} Initial weights come from the query shape (Section~\ref{sec:adaptive}). The progress rule is\prov{\Pn{2},\Pn{4}}:
+\begin{lstlisting}
+adaptWeights(lanes, L, outcome):
+  if outcome in {successors, candidate, checkedPrune}: idle[L] := 0
+  else idle[L] += 1
+  if idle[L] >= k:                          -- k quanta with nothing to show
+    w[L] := max(w[L] / 2, reserve[L]); idle[L] := 0
+    renormalize(w) over lanes with w > reserve
+  -- reserve[reference] > 0 and reserve[verification] > 0 always
+\end{lstlisting}
+Halving is subject to the reserve, so no enabled unfinished lane is ever starved; \Pn{4} states the same requirement as ``weighted round-robin that revisits every enabled unfinished lane.''
+
+\paragraph{The diagonal schedule.} The reference lane admits tasks by tier $(i,s,r,v)$ and visits tiers in increasing $i+s+r+v$ with deterministic tie-breaking (\Pn{9}); \Pn{4} states the same schedule as a joint increase of construction and proof bounds so that an expensive proof of a small program is not postponed forever behind larger programs with trivial obligations, and \Pn{1}'s Algorithm~7 is the special case with a single bound $k$\prov{\Pn{1},\Pn{4},\Pn{9}}.
+\begin{lstlisting}
+referenceLane.step(Q, task, quantum):
+  (i, s, r, v) := task.tier
+  if task.cursor = none:                     -- open the tier's finite grammar
+    task.cursor := N(Q.telescope, Q.target, s, r)      -- Section alg:enumerator
+  match task.cursor.next(quantum) with
+  | some term  => recheck(term); return candidate(term, obligations(term)) with v
+  | exhausted  => ledger.recordScope(reference, tier := (i,s,r,v))
+                  enqueue nextTiers(i, s, r, v)          -- all tuples of sum+1 not yet opened
+                  return exhausted((i,s,r,v), none)
+  | yielded c  => return yielded(c)
+\end{lstlisting}
+Queue caps are operational. When a fast lane drops a state because a queue is full, the drop is recorded as an incompleteness event with the lane, tier, and reason, or the state is spilled as a compact replay recipe; a dropped state is never a refutation\prov{\Pn{2},\Pn{7}}.
+
+\paragraph{How budgets and deadlines are derived (design).} Decision~\ref{dec:single-engine} leaves no per-query knobs, so the envelope is derived, and the proposals are consistent on the shape of the derivation but supply no measured constants; what follows is the design and is marked as such. The logical budget is not a fixed number: it is the union of the tiers the diagonal schedule has opened, and it grows while the run continues\prov{\Pn{4},\Pn{9}}. The wall-clock deadline for an interactive request is computed at preparation time from the query shape (telescope length, number of obligations after preparation, presence of a contract, and whether recursion is admitted) and is reported in the receipt together with the actual charges, not a configured maximum\prov{\Pn{3}}. The stopping rule of an interactive run is: stop after the first certified result once no queued task in the currently open tiers has a scalarized cost below the accepted candidate's cost, so that ``best under this schedule'' is literally true; otherwise continue until the deadline or exhaustion\prov{\Pn{4},\Pn{8}}. An audit run has no early stop; it records every deliberate restriction and terminates only by the envelope (Section~\ref{alg:guarantees}). Both wall-clock and reproducible work budgets are reported because they answer different questions\prov{\Pn{2}}.
+
+\subsection{The cost-indexed reference enumerator}\label{alg:enumerator}
+
+The reference lane's grammar is \Pn{2}'s Appendix~B enumerator $N(\G,T,s)$, which constructs normal forms at exact cost $s$ under a fixed finite type/index grammar and provider inventory at the current widening level\prov{\Pn{2}}. \Pn{1} and \Pn{4} give the same construction as ``a finite grammar at every cost bound'' with explicit charges; \Pn{6} lists the same bounded dimensions (constructors, binder-type complexity, universe-expression complexity, spine-prefix choices, recursion schemes, proof fuel)\prov{\Pn{1},\Pn{4},\Pn{6}}.
+\begin{lstlisting}
+-- N(Gamma, T, s, r): admitted terms of type T in context Gamma at cost exactly s,
+-- with recursion-scheme bound r. Every yielded term is rechecked natively.
+N(Gamma, T, s, r):
+  if s = 0: return empty
+  T' := whnfBounded(T)
+  if T' is (x : A) -> B and etaNormalPolicy requires intro:
+    yield fun x => e   for e in N(Gamma, x:A, B, s - 1, r)     -- lambda costs 1
+  for head in inventory(Gamma) ordered deterministically:      -- locals, ctors, providers
+    (Delta, Tres) := telescopeOf(head)
+    for prefix in admittedSpinePrefixes(Delta):                  -- partial applications
+      if unifyResult(Tres[prefix], T') fails: continue           -- transactional
+      c0 := headCost(head)
+      for partition (s_1..s_n) of (s - c0) over the n explicit args of prefix:
+        yield head a_1 .. a_n  for (a_1..a_n) in argsSeq(Gamma, Delta, prefix, [s_1..s_n])
+  for plan in casePlans(Gamma, T', s, r) ++ recursionPlans(Gamma, T', s, r):
+    yield plan.body  for plan.body in N(Gamma + plan.hypotheses, T', s - plan.cost, r - plan.schemes)
+  for lit in literalsOfSize(T', s): yield lit                    -- size-encoded literals
+
+-- transactional sequential argument generator: earlier arguments change the
+-- types of later ones, and a later failure resumes the earlier generator
+argsSeq(Gamma, Delta, prefix, costs):
+  gen(k, state):
+    if k > n: yield state.args; return
+    for a_k in N(Gamma, Delta_k[state.args], costs[k], r) under saveState:
+      if assignArg(state, k, a_k) fails: restore; continue
+      gen(k + 1, state)
+      restore
+  gen(1, emptyState)
+\end{lstlisting}
+The design rules that make each level finite are: a lambda consumes one unit; an application consumes its head cost and distributes the remainder over its arguments by a finite partition; constructor and case plans use analogous finite partitions; literals are enumerated by an explicit size encoding (bit length), never ``any natural number at unit cost''; a recursion scheme that invents auxiliary parameters pays for their description size; a chosen eta-normal convention avoids counting equivalent lambda expansions repeatedly; and recursion enters as a finite set of priced plans whose branch bodies are enumerated under the plan's capabilities (Section~\ref{alg:recursion})\prov{\Pn{1},\Pn{2},\Pn{4}}. The apparent product over argument choices is implemented as a sequential generator inside one transaction, because an earlier argument changes the types of later ones\prov{\Pn{2}}.
+
+The enumerator is fair because at fixed $(s,r)$ and a fixed inventory it is finite, its cursor yields after every quantum (it is an explicit cursor, not a lazy stream), and the diagonal schedule opens every tier; combined with the verification queue it dovetails construction and checking allowances\prov{\Pn{2},\Pn{3},\Pn{9}}. Every claimed exhaustion result states exactly which dimensions were fixed: syntax sizes, literal sizes, type/motive sizes, provider set, recursion bound, and proof regime\prov{\Pn{2}}.
+
+\subsection{Cost vectors, profiles, and the Pareto frontier}\label{alg:cost}
+
+The cost vector of Section~\ref{sec:ranking} is used in three places: as the scalarized queue priority $g(j)$ of a task, as the ordering of accepted results under a profile, and as the basis of the Pareto frontier shown to the user\prov{\Pn{2},\Pn{3},\Pn{6},\Pn{7},\Pn{8}}.
+\begin{lstlisting}
+-- c(t) = (violations, size, elims, recShape, transports, nonlocal, proofSize, runtime)
+scalar(c, profile) :=
+  if c.violations > 0 then +infinity                -- admission constraint, not a penalty
+  else sum_k profile.weight[k] * c[k]                -- profile: smallSource | fastRuntime | fewDeps
+
+frontier.insert(t):
+  if exists u in frontier with checkedEquivalent(u, t): merge evidence; return
+  if exists u in frontier with dominates(u, t): return
+  frontier := [u | u in frontier, not dominates(t, u)] ++ [t]
+  if |frontier| > cap: drop the element with the worst scalar(., profile) among
+                       those that are observationally indistinct from a kept one
+\end{lstlisting}
+\code{dominates(u, t)} is componentwise $\le$ with at least one strict component on the vector without the violations entry. Diversity is counted over native terms modulo checked equivalence, never over printed strings: two spellings of one candidate earn one slot, and two candidates that agree on all current observations remain distinct until a checked equality merges them\prov{\Pn{9}}. The profile changes ranking only; the correctness predicate is unchanged\prov{\Pn{2}}. ``Use every input'' is a soft feature that applies only when the contract cannot disambiguate\prov{\Pn{2},\Pn{9}}.
+
+\begin{decision}[When ``minimal'' may be said]
+A result is labeled \emph{minimal} only when the ledger records that every tier with scalar cost below the result's cost under the declared profile has been exhausted by the reference lane and every candidate in those tiers has been exactly rejected or checked-equivalent to the result. Otherwise the label is ``lowest cost found under this schedule''\prov{\Pn{6},\Pn{8},\Pn{9}}.
+\end{decision}
+
+\subsection{Verification scheduling}\label{alg:verification}
+
+Candidate generation and verification are two unbounded searches; a scheduler that fairly enumerates programs but discards each after one fixed failed proof attempt is not relatively complete for certified synthesis\prov{\Pn{7}}. The verification queue therefore holds \emph{verification tasks} with their own allowance level $v$, separate proof and counterexample tasks per candidate, and wake-up indexing by lemma and by example bank\prov{\Pn{7},\Pn{8},\Pn{9}}.
+\begin{lstlisting}
+newVerificationTask(t, obligations, v):
+  return { candidate := t, proofTask := (obligations, allowance(v)),
+           cexTask := (t, exampleBank.version), level := v }
+
+verification.step(task, quantum):
+  -- counterexample search first: it is cheap and can eliminate many waiters
+  match cexTask.run(quantum) with
+  | counterexample x cert => exampleBank.addChecked(x, cert)   -- wakes all waiters
+                             return refutedCandidate(t, cert)
+  | none | inconclusive   => ()
+  match proofTask.run(quantum) with
+  | proved p              => return toAcceptanceGate(t, p)
+  | disproved q           => return refutedCandidate(t, q)
+  | reduced goal' recon   => proofTask := (goal', allowance(v)); requeue
+  | unknown reason        => task.level := v + 1
+                             requeue at the tier (i, s, r, v + 1)   -- never dropped
+
+onNewCounterexample(x):                       -- wake-up, not restart
+  for task in unresolved: if evaluates(task.candidate, x) violates: retire(task, x)
+onNewLemma(l):
+  for task in unresolved: if mentionsHead(task.proofTask.goal, l.head): reprioritize(task)
+\end{lstlisting}
+Quotas have the following meaning\prov{\Pn{8}}: a \emph{successful-result quota} (how many verified candidates the frontend wants) is not a \emph{raw-candidate quota}. A rejected candidate does not shrink the candidate window, the search continues while the work budget remains, and reaching a user-visible cap produces \code{budgetExhausted} with the reason \code{candidateBudget}, keeping the distinction between an algorithmic impossibility and a resource policy\prov{\Pn{7},\Pn{8}}. Duplicates and rejected candidates still consume work and do not authorize a refill loop\prov{\Pn{8}}. An independent proof (one that cannot assign a data hole) may run in parallel; a proof that may determine a data hole stays inside the branch transaction (Section~\ref{sec:joint-frozen})\prov{\Pn{7}}.
+
+\subsection{Memoization and equivalence}\label{alg:cache}
+
+Section~\ref{sec:caching} lists the key fields. The procedures are\prov{\Pn{1},\Pn{2},\Pn{4},\Pn{5},\Pn{7},\Pn{8},\Pn{9}}:
+\begin{lstlisting}
+structure CacheKey where
+  envEpoch        : EnvironmentId        -- imports, instances, provider registrations
+  providerPolicy  : PolicyId
+  telescope       : CanonicalTelescope   -- dependency order; keeps let-values, instances
+  target          : ClosedExpr
+  contract        : Option ClosedExpr
+  transparency    : TransparencyMode
+  universes       : UniverseConstraints
+  assignments     : AssignmentDigest     -- reachable shared-metavariable state
+  grammar         : GrammarId            -- lane, tier bounds, recursion policy
+  domainVersions  : Array (Name x Nat)
+  observationGen  : Nat                  -- example-bank generation (behavioral keys only)
+
+inductive NegativeScope where
+  | refutation   (q : Checked)                       -- semantic: no completion exists
+  | exhausted    (grammar : GrammarId) (tier : Tier)  -- bounded: this grammar, this bound
+  | operational  (method : Name) (budget : Charge)    -- a miss; suppresses only identical retries
+
+lookup(key, ctx):
+  for entry in index[hash(key)]:                       -- hash is an index, not authority
+    if not exactlyEqual(entry.key, key): continue
+    match entry with
+    | positive tmpl => (e, p) := instantiate(tmpl, freshMVars, freshUniverses)
+                       emb := contextEmbedding(tmpl.telescope, ctx)   -- explicit, checked
+                       if check(emb(e) : key.target) and check(emb(p) : contract): return hit(e, p)
+    | negative sc   => if sc covers the requested grammar and tier: return miss(sc)
+  return none
+
+store(key, result):
+  match result with
+  | solved (e, p)     => index.add(key, positive(abstractOverTelescope(e, p, key.telescope)))
+  | refuted q         => index.add(key, negative(refutation q))
+  | exhaustedTier tr  => index.add(key, negative(exhausted(key.grammar, tr)))
+  | timeout m budget  => index.add(key, negative(operational(m, budget)))   -- short-lived
+\end{lstlisting}
+A positive entry is a closed template with explicit parameters, never a bare expression with old local identifiers; it is instantiated and rechecked in the destination context through the embedding\prov{\Pn{1},\Pn{2},\Pn{4}}. A negative entry at fuel twenty does not suppress a search at fuel one hundred, a failure with one provider set does not exclude another, and a timeout is never stored as uninhabitability\prov{\Pn{2},\Pn{3},\Pn{4}}. Open components (with residual constraints) are cached within one query only; persistent storage of raw metavariable states is not done\prov{\Pn{6}}. Environment epochs are persistent revisions: a change to an import, local instance, component registration, or semantic option invalidates the affected keys selectively\prov{\Pn{9}}.
+
+\paragraph{Nogoods and conflict learning.} Within one request, a branch that fails because a specific constructor choice and a specific index assignment imply a checked contradiction records that small assignment set as a nogood, tagged with request, contract, instance selections, epoch, and grammar scope. The slice stored is the smallest justified one: the dependency support of the contradiction, not the whole branch. A proof tactic's failure or a budget exhaustion has no such logical status and may only lower priority under the same budget\prov{\Pn{4},\Pn{9}}.
+\begin{lstlisting}
+learnNogood?(task, reason):
+  match reason with
+  | contradiction cert deps => nogoods.add({ assignments := supportOf(cert, deps),
+                                             scope := (Q.id, contract, instances, epoch, grammar) })
+  | _                       => penalize(task)     -- not a clause
+checkNogoods(branch): reject a frame whose assignment set extends a stored nogood in scope
+\end{lstlisting}
+
+\paragraph{The three equivalences.} Structural identity (same representation modulo justified renaming) is used to avoid repeated work. Checked semantic equality (a native definitional check with explicit transparency and rollback, or a proved propositional equality with a transported contract) may justify replacing a candidate. Finite observational agreement, $e\sim_X e'$ iff $\mathrm{obs}_X(e)=\mathrm{obs}_X(e')$, is used for ranking and batching only\prov{\Pn{3},\Pn{4},\Pn{8},\Pn{9}}. The observational bucket procedure is:
+\begin{lstlisting}
+bucket(X, e): key := obsSignature(X, e)
+  buckets[key].representative := best by scalar cost
+  buckets[key].hidden += [recipeOf(e)]            -- recoverable, never deleted
+refineBuckets(X'):                                -- after a new checked counterexample
+  for b in buckets: split b by obsSignature(X', .) over representative ++ hidden;
+                    resume deferred members that become the best in their new bucket
+\end{lstlisting}
+Permanent quotienting requires a checked equivalence strong enough for every future use, or an exact truth table over a known finite complete domain with compositional semantics; if memory pressure forces deletion the loss is recorded in the ledger\prov{\Pn{2},\Pn{3},\Pn{8},\Pn{9}}. Definitional-equality comparisons never mutate another branch's unknowns, and unification successes are never unioned globally as state-independent equalities\prov{\Pn{3},\Pn{5}}. Equality saturation is restricted to a reified, well-typed first-order or monomorphic fragment in which each edge carries a proof and a common type in a common scope; heterogeneous equalities and transports through dependent parents are explicit; the original candidate is retained for execution-policy comparison and the optimized candidate's property is rechecked rather than borrowed\prov{\Pn{2},\Pn{3},\Pn{8},\Pn{9}}. Proof irrelevance merges proofs of one proposition when the axiom policy agrees; it never merges dictionaries or data records\prov{\Pn{2},\Pn{3}}.
+
+\paragraph{Library learning.} A successful closed subterm (a fold step, a dictionary transformation, a small dependent adapter) is abstracted over its dependency telescope in order, stored as a helper schema $(\Delta\vdash e:\sigma,\ \text{contract lemmas},\ \text{cost},\ \text{provenance})$, and reused under $\G$ by finding $\rho:\Delta\to\G$, instantiating $e$, $\sigma$, and every lemma through the same $\rho$, and native-checking the result\prov{\Pn{1},\Pn{6}}. Every learned helper is checked as an ordinary declaration; in evaluation, fragments learned from a test problem never enter other runs unless the protocol permits online learning\prov{\Pn{1}}.
+
+\subsection{Resource accounting}\label{alg:ledger}
+
+The ledger of Decision~\ref{dec:ledger} lives outside every branch snapshot and is written before a transaction can restore state\prov{\Pn{2},\Pn{4},\Pn{5},\Pn{7},\Pn{9}}.
+\begin{lstlisting}
+structure Ledger where
+  -- logical work, monotone: never decremented by rollback
+  ruleApplications, unificationSteps, normalizationSteps, proofTasks,
+  solverCalls, candidateEvaluations, duplicateCandidates, cancellationsCharged : Nat
+  synthesisWork, proofWork : Nat              -- counted separately (P9)
+  perLane : Lane -> WorkVector
+  -- operational controls, independent of the logical counters
+  deadline : WallClock; memoryCeiling : Bytes; processLimits : Limits
+  -- evidence
+  incompleteness : Array IncompletenessEvent  -- caps, drops, unsupported, unproved prunes,
+                                              -- finite carrier frontier, retrieval cutoff
+  scopes : Array (Lane x GrammarFrontier x Option Checked)
+\end{lstlisting}
+Three independent controls apply: the logical work budget (per counter), the wall-clock deadline, and process-level limits on memory, output size, and external process lifetime; heartbeats alone do not account for compilation, IO, or external solvers\prov{\Pn{3},\Pn{9}}. Per-rule limits produce a \code{yielded} or \code{unsupported} frame, never a refutation; raising a proof budget re-enqueues verification tasks without regenerating terms, and raising a cost bound reuses validated indexes and templates without reusing stale branch-local metavariables\prov{\Pn{3}}. Hard memory exhaustion is an infrastructure outcome (\code{infrastructure} in Section~\ref{sec:results}), not a completed negative search\prov{\Pn{3}}.
+
+\paragraph{Interruption propagation.} Outcomes are typed: \code{failed} is local and triggers rollback; \code{interrupted} with a cancellation, out-of-memory, or global-budget reason unwinds to the controller, which retires or resets the worker, closes owned solver inputs, terminates the owned process tree, and waits for cleanup before reusing a channel; a delayed solver reply carries request and frame identities so it cannot satisfy a newer obligation\prov{\Pn{3},\Pn{7},\Pn{9}}. A cancellation is never interpreted as exhaustion\prov{\Pn{4}}.
+
+\paragraph{Modes.} Deterministic mode fixes provider ordering, tie-breaking, generation seeds, and the logical schedule, so that a transcript replays exactly; wall-clock deadlines may still vary and the receipt says so. Performance mode returns the first verified result from parallel workers and records which lane and branch produced it; final ordering can still be made deterministic by cost and a stable candidate key\prov{\Pn{3},\Pn{4},\Pn{8}}. Parallel workers share only immutable environment snapshots and validated closed cache entries. A worker receives a closed request slice (a whole lane, a candidate verification, or a connected component of the dependency graph) and returns a closed proposal or a replay plan that the owner rechecks and installs transactionally. A component may run in parallel only with an \emph{independence certificate}: disjoint owned metavariable sets, disjoint synthetic obligations, and an unchanged shared rigid context; when either task introduces a new dependency the components are merged or the conflicting step is serialized\prov{\Pn{1},\Pn{4},\Pn{5},\Pn{9}}. Cold branches are evicted to compact action traces and rebuilt from the nearest checkpoint; the working set of materialized snapshots is bounded and the reconstruction cost is measured against the memory saved\prov{\Pn{1},\Pn{5},\Pn{6}}.
+
+\subsection{What the search guarantees}\label{alg:guarantees}
+
+Soundness of accepted results (Theorem~\ref{thm:soundness}) does not depend on anything in this section. The statements below concern discovery and termination; each is stated with the hypotheses its source proposal attaches, and the unified engine commits to exactly one of them.
+
+\begin{definition}[Finite effective search envelope\prov{\Pn{4}}]\label{def:envelope}
+An envelope consists of a finite provider inventory; a finite term, type, literal, motive, measure, and proof grammar at each declared tier; a finite bound on rule depth or expanded states; and a terminating, resource-limited implementation of every primitive action. A timeout is an unknown result, not a decision.
+\end{definition}
+
+\begin{proposition}[Termination of a bounded run\prov{\Pn{4}}]
+A search confined to a finite effective envelope terminates, provided the scheduler does not reschedule the same unfinished action indefinitely without consuming a finite request resource.
+\end{proposition}
+The ledger provides the second hypothesis: every dispatch charges a monotone counter (Section~\ref{alg:ledger}). A queue cap preserves termination but invalidates an exhaustion or minimality claim, which is why drops are recorded\prov{\Pn{4}}.
+
+\begin{proposition}[Relative bounded-search coverage\prov{\Pn{3}}]
+Fix an environment, a finite branching rule grammar, a finite cost bound, strictly positive cost for every generative step, terminating administrative steps, and a terminating applicability and checking procedure for each bounded alternative. If the scheduler eventually visits every alternative within the bound and removes branches only with sound no-completion certificates, then every successful leaf in that bounded search graph is eventually visited.
+\end{proposition}
+
+\begin{theorem}[Completeness of a finite certified layer\prov{\Pn{8}}]
+Let a layer be a finite effectively enumerable collection of scoped construction plans, a terminating reconstruction procedure, and a total verification procedure that exactly decides the requested property for every reconstructed candidate, with pruning that preserves every satisfying plan. Exhaustive exploration returns a satisfying candidate whenever one exists in the layer, and if it completes without one, no candidate in the layer satisfies the property.
+\end{theorem}
+Only this statement licenses \code{grammarExhausted} as a negative artifact, and only for the exact layer it names (Decision~\ref{dec:negatives}); \Pn{6}'s finite-fragment completeness proposition is the same statement with focusing listed as an existence-preserving transformation\prov{\Pn{6},\Pn{8}}.
+
+\begin{theorem}[Conditional relative completeness by dovetailing\prov{\Pn{1},\Pn{4},\Pn{5},\Pn{7},\Pn{9}}]\label{thm:dovetail}
+Fix a frozen query, an admitted environment, and effective grammars of programs and contract proofs with finitely many plans per tier. Assume (i) a pair $(e,p)$ satisfying the query has a finite derivation in these grammars; (ii) each step of that derivation is eventually executed with sufficient primitive resource limits; (iii) the schedule fairly increases construction bounds and verification allowances together; (iv) the reference lane prunes only with a checked impossibility certificate or a success-preserving replacement by a retained admitted recipe of strictly smaller rank; and (v) no permanent resource cap discards the successful derivation. Then an unbounded run eventually offers a certified result, assuming the acceptance gate terminates on that pair.
+\end{theorem}
+\begin{proof}
+The derivation has finite syntax sizes, rule count, provider selections, and a finite resource need for each successful primitive computation, so some tier $(i,s,r,v)$ contains all of them. The diagonal schedule opens that tier after finitely many quanta because every tier receives the reserved share, and the FIFO stream visits the derivation within the tier after finitely many picks. By (iv) no derivation of a valid pair has been removed, and each replacement chain is finite by strict rank decrease, so a successful representative remains. The verification queue reaches allowance $v$ for that candidate by (iii); the checks complete by (ii), and the gate accepts.
+\end{proof}
+Hypothesis (iii) is the substantive one: enumerating programs fairly while giving each a fixed proof timeout does not satisfy it, and neither does a fixed unification timeout on a type instantiation\prov{\Pn{4}}. \Pn{5} states the same theorem for ``replayable'' plans, \Pn{7} adds the ranked-replacement clause (iv), \Pn{9} states it as ``fair relative discovery'' with dovetailed validation, and \Pn{1} as ``conditional eventual discovery''; the wording above takes \Pn{4}'s hypotheses with \Pn{7}'s pruning clause because it is the most explicit about proof budgets.
+
+\begin{remark}[Fairness is not completeness\prov{\Pn{6}}]
+The scheduler guarantees that each live lane and each admitted tier receives infinitely many quanta in an unbounded run. This ensures that a reachable finite successful path is not starved, given sufficient budgets. It does not ensure that the path is generated by an incomplete application matcher, that Lean's unifier proposes the needed higher-order instantiation, or that the path survives heuristic pruning. A fair search that retains only the best eight components per key is incomplete if a ninth is needed; a proof-producing prune can justify removing a branch, a beam width cannot, and the two belong in different parts of the ledger.
+\end{remark}
+
+\begin{decision}[The single commitment]\label{dec:commitment}
+The engine commits to Theorem~\ref{thm:dovetail} for the reference lane's declared grammar together with the verification queue, and to Termination for every audit run; it commits to nothing stronger. All other lanes are heuristic accelerators whose drops, caps, retrieval cutoffs, and unproved prunes are recorded as incompleteness events. A negative outcome is \code{impossible} only with a Lean proof, \code{fragmentUnderivable} only with a fragment certificate and its stated logic, \code{grammarExhausted} only under the finite-certified-layer theorem for the exact layer, and otherwise \code{budgetExhausted} with a resumable state (Section~\ref{sec:results}). The completeness information is attached to the exact route that produced the negative result, and a capable positive lane gains no right to report non-inhabitation because a different lane is complete for a smaller language\prov{\Pn{2},\Pn{4},\Pn{6},\Pn{8},\Pn{9}}.
+\end{decision}
+
+The finite experiments in the proposals bear on this section only narrowly: the finite CEGIS runs of \Pn{2}, \Pn{3}, \Pn{8}, and \Pn{9} demonstrate the observational-bucket loss that Section~\ref{alg:cache} prevents, \Pn{5}'s prototype exhibited the projection-before-constructor priority failure that the pressure ordering addresses, and no proposal measured the reserved shares, the halving constant $k$, or the derived deadline; those remain tunable engineering defaults reported in every receipt\prov{\Pn{2},\Pn{3},\Pn{5},\Pn{8},\Pn{9}}.

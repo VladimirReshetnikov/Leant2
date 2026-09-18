@@ -1,6 +1,6 @@
 \section{Principal decisions}\label{sec:decisions}
 
-The following decisions are held by all nine proposals. Each is stated once here; later sections give the mechanisms.
+The following decisions are held by all nine proposals. Each is stated once here; the rest of Part~I gives the mechanisms and Part~II the algorithms.
 
 \begin{decision}[Exact Lean expressions are the only semantic authority]\label{dec:exact}
 Targets, contexts, candidates, universe levels, instance dictionaries, and behavioral propositions are Lean \code{Expr}, \code{Level}, and local declarations in an identified environment. There is no second type language in which term indices, proof dependencies, or universes become approximations. Indexes, abstract domains, and solver encodings exist, but each is a lossy accelerator with an explicit reconstruction boundary: it proposes, and native unification and the kernel decide\prov{all}.

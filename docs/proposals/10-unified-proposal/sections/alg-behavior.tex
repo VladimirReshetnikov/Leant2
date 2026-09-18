@@ -1,0 +1,463 @@
+\section{Algorithms: contracts, counterexamples, and certified pruning}\label{alg:behavior}
+
+Section~\ref{sec:behavior} fixes what behavioral information is allowed to do: tests refute, proofs certify, and only proof-producing analyses prune (Decision~\ref{dec:graded}). This section gives the procedures. Every algorithm below operates on the frozen contract $\Phi$ of Section~\ref{sec:joint-frozen}; none of them replaces it. Provenance marks name the proposals whose text or code supplied each step; where the proposals differ, the better-specified version is used and the alternative is named.
+
+\subsection{Contract decomposition and backward propagation}
+
+A \emph{contract decomposer} receives the elaborated property and one construction step and returns local obligations plus a \emph{reconstruction term} showing that those obligations imply the original\prov{\Pn{9}}. Every returned view carries one of three tags\prov{\Pn{2},\Pn{8}}: \emph{necessary} (a violation rejects; passing proves nothing), \emph{sufficient} (solving it proves $\Phi$ through the supplied implication; failing to solve it proves nothing), or \emph{equivalent} (both). \Pn{8} names the same three outputs \code{sufficientObligations}, \code{necessaryConstraint}, and \code{heuristicHint}; the unified rule set adopts the tags and keeps the hint as a fourth, authority-free reply.
+
+\begin{lstlisting}
+decompose(Phi, step, ctx) -> list of (obligation, tag) + reconstruction
+  -- Phi is the exact contract on the term being built at this node.
+  match step:
+  | Lambda x, body hole ?r, Phi = forall x, Post(x, f x):
+      return [(Post(x, ?r) under ctx,x, equivalent)]
+      reconstruction: fun x => proofOf(Post(x, ?r))        -- prop:pointwise
+  | Constructor K with field holes ?f1..?fn:
+      substitute K ?f1..?fn into Phi; simplify by projection
+      equations and registered constructor lemmas;
+      for a dependent field, instantiate later field contracts
+      with the ACTUAL earlier fields, never with fresh abstractions
+      return field obligations tagged as the lemma proves them
+      (equivalent when the constructor equations are iff; else sufficient)
+  | If c then ?a else ?b, with Decidable c:
+      return [(c -> Phi(?a), equivalent), (not c -> Phi(?b), equivalent)]
+      reconstruction: dite-elimination combining both branch proofs
+  | Provider application g ?h with registered theorem
+        thm : forall a, P(a) -> Q(a, g a):
+      if Q(a, g a) implies Phi(g a) by a checked bridge B:
+        return [(P(?h), sufficient)]
+        reconstruction: fun p => B (thm ?h p)
+      else return [(Phi(g ?h), equivalent)]  -- no propagation, no loss
+  | Match on x with branches for constructors K_i:
+      route Phi under the branch equation x = K_i fields_i;
+      each branch obligation is equivalent under its path assumption
+  | Conjunction Phi1 /\ Phi2:
+      return [(Phi1, equivalent), (Phi2, equivalent)] on the SAME term
+      reconstruction: And.intro
+  | Recursive call through a capability (alg:recursion):
+      use only the induction hypothesis or the verified recursive
+      summary at that smaller argument; nothing else
+  | anything else (multi-call laws, opaque higher-order providers):
+      return [(Phi, equivalent)] with a symbolic residual; no decomposition
+\end{lstlisting}
+
+Three consequences are stated once and enforced by the tags. First, a \emph{sufficient} provider rule may not delete arguments failing $P$: the theorem need not characterize every way of proving $Q(g(h))$, so an audit lane must retain a route that does not depend on the contract library\prov{\Pn{4},\Pn{7}}. Second, a contract that is too weak (length preservation for a reversal request) is never turned into a rejection of a correct provider\prov{\Pn{7}}. Third, a global relationship between two calls of $f$ (idempotence, a homomorphism law, injectivity) has no independent per-output postcondition; it stays attached to the whole candidate and only necessary views are extracted from it\prov{\Pn{2},\Pn{6},\Pn{8}}.
+
+\subsubsection{Condition abduction as a guarded refinement rule}
+
+\Pn{2}'s appendix adds one decomposition rule that constructs a program correct on a proved region and then synthesizes the complement\prov{\Pn{2}}.
+
+\begin{lstlisting}
+abduceGuard(Phi = forall x, Post(x, f x), e1, bank):
+  -- e1 is a candidate body already found; it fails some bank inputs.
+  for G in guards ordered by size:          -- constructor tests, equalities,
+                                            -- order comparisons, registered
+                                            -- domain predicates
+    if not decidable(G): continue
+    rank G by how well it separates bank inputs e1 passes from those it fails
+    try prove  forall x, G x -> Post(x, e1 x)            -- branch 1
+    if proved with proof p1:
+      synthesize e2 under hypothesis not (G x)             -- branch 2, same loop
+      if e2 found with proof p2 of forall x, not G x -> Post(x, e2 x):
+        return (fun x => if G x then e1 x else e2 x,
+                reconstruction from p1, p2, and the Decidable instance)
+  return none   -- no promise of a weakest guard; Phi stays authoritative
+\end{lstlisting}
+Separation on the bank ranks guards; it is not the proof of the branch region. The procedure searches progressively richer guards and never claims to find a weakest one\prov{\Pn{2}}.
+
+\subsection{Typed observations and residual evaluation}
+
+\begin{definition}[Typed observation]
+An observation is a typed substitution $\rho$ into the input telescope, proofs of every precondition and dependent bound, the exact output observation in the fiber $B(\rho)$, and an evidence policy (native execution, a proof of the finite proposition, or a kernel-checked reduction)\prov{\Pn{6},\Pn{8}}. The three evidence strengths are stored separately in the manifest; none equals a proof of the universal contract\prov{\Pn{6}}.
+\end{definition}
+
+\subsubsection{The residual value language}
+
+Partial programs are evaluated under a legal sample until evaluation reaches a hole or an opaque operation. The result is a typed residual, never a default value\prov{\Pn{2},\Pn{6}}:
+\begin{lstlisting}
+Residual ::= Known(constructor, fields : list Residual)
+           | Closure(binder, body, env)
+           | Suspended(opaque provider, args : list Residual)
+           | Cond(path condition, thenResidual, elseResidual)
+           | Hole(h, args : list Value, expected : Option Value, path : Phi)
+           | Unknown(reason)      -- fuel exhausted, stuck opaque constant, effect
+\end{lstlisting}
+Fuel is explicit; \code{Unknown} is a first-class outcome and is never read as \code{false}\prov{\Pn{2},\Pn{3},\Pn{6}}. \Pn{2}'s residual forms (known constructors, closures, suspended applications, conditionals, named holes with observed arguments) are adopted verbatim; \Pn{6} adds the path assumptions to the hole record.
+
+\subsubsection{Live-example propagation}
+
+\begin{lstlisting}
+propagate(sketch t, sample rho, expected y, table T, fuel):
+  r := residual(t, rho, fuel)
+  match (r, y):
+  | (Known(K, fs), Known(K, ys)) -> for i: propagate(fs_i, ys_i)   -- decompose
+  | (Known(K, _), Known(K', _)) with K /= K' -> Refute(rho)          -- constructor clash
+  | (Closure(x, b, env), function observation (a |-> v)) ->
+        propagate(b[x := a], v)                                    -- lambda: move to body
+  | (Cond(c, r1, r2), y) ->
+        if c decided under rho: propagate(chosen branch, y)
+        else: record y under symbolic path c and under not c        -- both possibilities
+  | (Suspended(g, args), y) ->
+        if summary(g) has a checked inverse-image rule: apply it
+        elif summary(g) gives a finite alternative set: branch on it
+        else: keep the relational residual { z | g z = y }         -- no guessed inverse
+  | (Hole(h, args, _, path), y) ->
+        T.insert(h, args, y, path)                                 -- constrain ONE use
+        if T has (h, args, y') with y' /= y and args decidably equal:
+          Refute(rho)                                              -- functional consistency
+  | (Unknown(_), _) -> Unresolved(rho)                             -- never a refutation
+\end{lstlisting}
+The hole-observation table $T$ is keyed by hole identity and argument tuple; equal inputs induce equal outputs, so $h(0)=0$ and $h(0)=1$ are inconsistent for one deterministic $h$ although an angelic interpreter assigning each occurrence independently would satisfy both\prov{\Pn{2},\Pn{6}}. \Pn{2}'s regression script checks exactly this: one consistent valuation for the pair versus one spurious independent assignment. For higher-order arguments the argument-equality test may be unavailable; the table then retains uncertainty rather than inventing a comparison\prov{\Pn{2}}. Recursive-call outputs under a sketch are represented symbolically under the induction hypothesis or well-founded call specification; a model of those symbolic constraints does not prove that a single recursive implementation realizes them, so they never support hard pruning\prov{\Pn{2},\Pn{7}}. Two holes correlated by one sample are solved together, not independently\prov{\Pn{7}}.
+
+\subsubsection{Typed test generation for dependent inputs}
+
+\begin{lstlisting}
+generate(telescope (x1 : A1) ... (xn : An[x1..x_{n-1}]), registry):
+  for i in 1..n:
+    Ai' := instantiate Ai with the values already chosen
+    gen := registry.lookup(head Ai')            -- constructors as the start grammar
+    if none: return Unsupported(Ai')             -- symbolic, never invented
+    xi := gen.sample(Ai')                        -- Fin n carries its bound proof;
+                                                 -- a dependent pair chooses fst, then
+                                                 -- samples the instantiated snd type
+    if precondition on xi: attach its proof or discard the sample
+  return rho with all validity proofs
+\end{lstlisting}
+Polymorphic targets are tested at several concrete types with distinct dictionary payloads, heterogeneous products, and asymmetric values, as falsification evidence only\prov{\Pn{3},\Pn{6}}. A generator for $i:\mathrm{Fin}\,n$ cannot sample $n$ and $i$ independently and forget the bound proof\prov{\Pn{1}}. The default evaluator never runs file, network, or process effects; \code{IO} values are never executed as tests\prov{\Pn{3},\Pn{7},\Pn{9}}.
+
+\subsection{The certified CEGIS loop}
+
+\subsubsection{Certified counterexamples}
+
+\begin{definition}[Certified counterexample]
+For $\Phi(t)=\forall x,\ P(x)\to R(x,t(x))$, a certified counterexample is a triple $(a,\ p:P(a),\ q:\neg R(a,t(a)))$ whose components are Lean terms checked in the frozen context\prov{\Pn{7},\Pn{8}}. The reusable bank stores the \emph{observation} $(a,p)$; the refutation $q$ stays attached to $t$. A later candidate is rejected only after its own failure on $(a,p)$ is established afresh\prov{\Pn{7},\Pn{8}}.
+\end{definition}
+
+\begin{lstlisting}
+replay(candidate t, proposal a) -> Option CertifiedCounterexample
+  -- proposals come from native execution, a solver model, or a generator
+  decode a into the exact input type (fibers, Fin bounds, dictionaries)
+  if decoding fails: return none                   -- a model is not a value
+  p := prove P(a)  (or discard if P(a) is refuted)
+  q := prove not R(a, t a) by an approved route:
+         kernel reduction + decide, a proof-producing evaluator,
+         or a proved correspondence theorem for the evaluator used
+  if q is Unknown: return none                     -- timeout is not evidence
+  return some (a, p, q)
+\end{lstlisting}
+\Pn{7}'s prototype checks the general shape as \code{replay_sound}: a failed decidable observation refutes the universal specification. Shrinking must preserve typing and preconditions; an out-of-range index is not a smaller counterexample to a bounds-respecting program\prov{\Pn{7}}. Banks are keyed by the exact specification, environment, input types, and dictionaries; a counterexample under one dictionary selection is not applied to a problem whose printed function name merely coincides\prov{\Pn{5},\Pn{8}}.
+
+\subsubsection{The loop}
+
+The unified loop is \Pn{9}'s Algorithm~4 (bank $E$ plus unresolved set $W$) with \Pn{4}'s cheap bank check before verification, \Pn{5}'s four-valued verifier, \Pn{3}'s bank versioning, and \Pn{7}'s separation of proof and counterexample tasks\prov{\Pn{3},\Pn{4},\Pn{5},\Pn{7},\Pn{9}}. \Pn{1}, \Pn{2}, \Pn{6}, and \Pn{8} give the same loop with a three-valued verifier and no explicit unresolved queue.
+
+\begin{lstlisting}
+cegis(Q, stream S):
+  E := typedExamples(Q); version := 0          -- bank and its version
+  W := fairQueue()                              -- unresolved candidates
+  while budget remains:
+    t := choose fairly:  next candidate from S consistent with E
+                      |  resume (t, tier) from W with a larger tier
+    if no source can produce anything:
+      return Exhausted(declared grammar, bound)   -- scoped to S only
+    freeze t; typecheck t                          -- sec:joint-frozen
+    for (a, p) in E:                               -- cheap necessary check
+      if replay(t, a) = some cex: reject(t, cex); continue outer loop
+    proofTask := prove Phi(t) under tier           -- two RESUMABLE tasks,
+    cexTask   := seekCounterexample(t, Phi)        -- scheduled fairly
+    match first to complete (or both within the quantum):
+    | Proof(p)          -> submit (t, p) to the acceptance gate; return
+    | Refutation(q), witness a ->
+          cex := replay(t, a)
+          reject(t, q)
+          if cex = some c: E := E ++ [c]; version += 1
+                           repartition buckets; wake tasks stamped <= version
+    | Refutation(q), no witness -> reject(t, q)     -- rejects t only
+    | Counterexample(a) from cexTask ->
+          match replay(t, a) with
+          | some c -> reject(t, c); E := E ++ [c]; version += 1; repartition
+          | none   -> record "model failed replay" without pruning authority
+    | Unknown(r)        -> W.push(t, nextTier(tier), r)   -- keep alive
+    | Failure(err)      -> report operational failure; do not infer falsehood
+  return Unfinished(W, E)  -- bottleneck attributed: construction, cex, or proof
+\end{lstlisting}
+
+Bank-consistent selection means the candidate generator uses $E$ as a necessary finite condition (\Pn{3}), ranks by failures on the growing bank (\Pn{2}), and prefers small, diverse, branch-discriminating inputs when it proposes new tests (\Pn{2}). Minimization is an optimization; a large checked witness remains valid evidence\prov{\Pn{2}}. Fairness is the property that a candidate passing every current test but resisting proof does not monopolize the search: candidate search and proof search have separate resumable frontiers linked by the candidate identity, and \Pn{5}'s unit test \code{unknown_is_not_rejection} pins the required behavior (an unknown first candidate stays pending while a later candidate is certified)\prov{\Pn{2},\Pn{5},\Pn{8}}. In strict finite-grammar decision mode every candidate must eventually receive an exact verdict before exhaustion may be claimed; best-effort mode may stop with \code{Unknown} sooner, and the two modes never share an ambiguously named result\prov{\Pn{8}}.
+
+\begin{proposition}[Finite CEGIS bound]
+Let $D$ be a finite input domain with $|D|=N$. If every candidate is checked exactly against all bank entries, verification either proves the finite-domain specification or returns a genuine violating input in $D$, and a satisfying candidate remains in the grammar, then at most $N$ counterexample additions precede success\prov{\Pn{8}}. Dually, for a finite candidate set of size $M$ with permanently retained counterexamples and bank-consistent selection, at most $M$ rejections occur\prov{\Pn{3}}.
+\end{proposition}
+\begin{proof}
+A returned counterexample is not already in the bank, because the candidate satisfied every entry; each refuting round therefore adds a distinct input, and there are $N$ of them. Once all inputs are present, bank consistency is the whole specification. For the dual bound, each counterexample permanently excludes the rejected candidate. Unknown verdicts satisfy neither argument and are not counted\prov{\Pn{3},\Pn{8}}.
+\end{proof}
+Neither bound limits the cost of one round; both are contracts on retention and bank updates, not runtime guarantees\prov{\Pn{3},\Pn{8}}.
+
+\subsubsection{Finite-domain promotion}
+
+When the input type has a certified complete enumeration $L$, a proof for every listed input is promoted by the checked theorem\prov{\Pn{6}}
+\begin{lstlisting}
+theorem finiteValidation {I : Type} (samples : List I)
+    (complete : forall i, i in samples) (R : I -> Prop)
+    (checked : forall i, i in samples -> R i) : forall i, R i
+\end{lstlisting}
+(written here with ASCII binders; the source uses Lean notation). Completeness of $L$ is the hypothesis that an arbitrary bounded generator does not supply: enumerating lists up to length four proves nothing about all lists\prov{\Pn{1},\Pn{5},\Pn{6}}. In practice the promotion is not even performed by the search: the search proposes a literal, and ordinary kernel \code{decide} proves the universal statement about that literal, so synthesis time and proof size are decoupled\prov{\Pn{9}}.
+
+\subsubsection{The finite Boolean CEGIS as implemented in Lean}
+
+Two packages implemented the finite case end to end in compiled Lean, without Mathlib, SMT, or \code{native_decide}\prov{\Pn{8},\Pn{9}}. The unified description follows \Pn{9}'s dynamic-programming enumerator and \Pn{8}'s fuel-indexed loop and truth-table targets.
+
+\begin{lstlisting}
+-- Grammar (P9): e ::= x | y | neg e | conj e e | disj e e     (size = node count)
+-- Grammar (P8): left | right | zero | one | neg | conj | disj | xor, size <= 4
+enumerate(bound):                       -- exact-size DP; table[0] = []
+  table[1] := leaves
+  for n in 2..bound:
+    layer := map neg (table[n-1])
+    for left in 1..n-2: right := n-1-left
+      for a in table[left], b in table[right]:
+        layer := layer ++ [conj a b, disj a b (, xor a b)]
+    table[n] := layer
+  return table                          -- candidates := concat in size order
+
+cegis(candidates, fuel, examples, proposals):
+  if fuel = 0: return none
+  match candidates.find? (fun e => examples.all (agrees e)) with
+  | none   -> return none                             -- grammar exhausted
+  | some e ->
+      match inputs.find? (fun p => not (agrees e p)) with   -- all four inputs
+      | none   -> return some (e, examples, proposals ++ [e])
+      | some p -> cegis(candidates, fuel-1, examples ++ [p], proposals ++ [e])
+
+elab "synthesize_xor%" : term => do        -- untrusted metaprogram
+  match (cegis ...).result with
+  | none   -> throwError "finite CEGIS exhausted its declared grammar/budget"
+  | some e -> return e.quote               -- a literal syntax tree, not a proof
+def synthesizedXor : BExpr := synthesize_xor%
+theorem synthesizedXor_correct : forall x y, synthesizedXor.eval x y = (x != y) := by decide
+\end{lstlisting}
+The counts are exact. \Pn{9}: $a_1=2$, $a_n=a_{n-1}+2\sum_{k=1}^{n-2}a_k a_{n-1-k}$, so $(a_0,\ldots,a_8)=(0,2,2,10,26,114,402,1722,6890)$ and 9168 candidates up to eight nodes; fuel 5. \Pn{8}: $c_1=4$, $c_n=c_{n-1}+3\sum_{i=1}^{n-2}c_ic_{n-1-i}$, so $(c_1,\ldots,c_4)=(4,4,52,148)$ and a pool of 208 syntax trees; fuel 5; all sixteen truth tables on two inputs solved with round counts $(3,4,5,3,5,3,5,5,4,5,2,5,1,5,4,2)$, maximum five, consistent with four distinct counterexamples followed by success\prov{\Pn{8},\Pn{9}}. \Pn{8}'s \code{synth_bool} elaborator additionally emits \code{Circuit.eval (quoted circuit)} as the implementation and proves \code{verify_sound}, \code{all_found}, and \code{all_correct} by \code{decide}; \Pn{9}'s first attempt failed to prove termination of an enumerator written through a list combinator, and the final version uses the structurally decreasing fuel above\prov{\Pn{8}}. Both correctness theorems have empty axiom inventories; the generated function does not run CEGIS when called\prov{\Pn{8},\Pn{9}}.
+
+\subsection{Reversible observational buckets}
+
+\begin{definition}[Bucket]
+For the bank $\Obs=\{x_1,\ldots,x_m\}$ define $\mathrm{obs}_\Obs(t)=(t(x_1),\ldots,t(x_m))$. A bucket is a record
+\begin{lstlisting}
+Bucket := { key : observation vector, bankVersion : Nat,
+            active : Candidate,                 -- the one being scheduled
+            parked : list (Candidate | Recipe), -- members or exact regeneration recipes
+            lastRotated : Nat }
+\end{lstlisting}
+A recipe retains the original context, grammar choices, and frozen telescope; a promise to ``enumerate later'' is not a retention mechanism\prov{\Pn{5}}.
+\end{definition}
+
+\begin{lstlisting}
+split(buckets, new observation x, version):
+  for B in buckets affected by x (same context and domain stamps):
+    groups := partition (B.active :: B.parked) by evaluation at x
+              -- Unknown / timeout is its own group and is never merged
+              -- with a returned value
+    replace B by one bucket per group, key extended by that value,
+      bankVersion := version; each new bucket's members become eligible
+rotate(B, quantum):            -- second liveness rule
+  if B.active has been Unknown for k quanta and B.parked is nonempty:
+    move B.active to parked; promote the next parked member
+    -- a parked member may have a short certificate while the active one resists proof
+\end{lstlisting}
+Rotation is independent of splitting: proof-search diversity is a reason to reactivate members even when no distinguishing test arrives\prov{\Pn{5}}. Keys for open terms are stricter: parking is restricted to closed typed candidates, or to closures over the exact same frozen telescope with the same admissible instantiations and observed result family; a higher-order term may later meet a distinguishing context, a dependent term may live in a fiber whose index is unassigned, and an observation may depend on an unresolved dictionary\prov{\Pn{5},\Pn{8}}. Permanent merging requires a checked equality strong enough for every future use (for functions, pointwise equality plus the relevant extensionality principle), represented by a different API object than finite agreement\prov{\Pn{1},\Pn{4},\Pn{5}}.
+
+Three finite ablations show what permanent merging loses\prov{\Pn{1},\Pn{2},\Pn{3}}:
+\begin{itemize}
+\item \Pn{1}, \code{search_models.py}: candidates constant-true, identity, constant-false, not; initial test \code{true} gives bucket sizes $(2,2)$; keeping the first representative of each bucket yields no solution for identity after adding \code{false}, while retained derivations recover exactly \code{identity}.
+\item \Pn{2}, \code{cegis.py}: identity and reverse agree on the two inputs of length at most one over $\{0,1\}$ and differ at $(0,1)$; permanently deleting reverse when identity is the first representative makes the later length-two counterexample unrecoverable.
+\item \Pn{3}, \code{cegis.py}: all 354 length-viable fold steps agree on the initial bank $\{[],[0]\}$, so a destructive control keeps only the first representative, identity; the counterexample $[0,1]$ rejects it and the control reports \code{finite_grammar_exhausted} although the grammar contains the correct reverse step. The working algorithm repartitions all 354 members on every new input.
+\end{itemize}
+\Pn{5}'s \code{behavior_lab.py} repeats the mechanism (empty versus identity split by the input $((1),())$, bucket counts recomputed on each of three growing examples with all members retained).
+
+\subsection{Certified pruning}\label{alg:pruning}
+
+\subsubsection{The soundness condition}
+
+Let $s$ be a typed sketch, $\Phi_s$ its valid path assumptions, $\Comp(s)$ its completions under the current grammar, and $A(s,\Phi_s)$ an abstract summary with concretization $\gamma$. The condition that licenses pruning is\prov{\Pn{3},\Pn{5},\Pn{8}}
+\[
+ \{\Obs(e,\rho): e\in\Comp(s),\ \rho\models\Phi_s\}\subseteq\gamma(A(s,\Phi_s)),
+\]
+together with an exhibited valid input $\rho_0\models\Phi_s$ and a defined observation for every completion at $\rho_0$; otherwise an empty input domain makes the contract vacuous while the observation set is empty\prov{\Pn{3}}. Proposition~\ref{prop:prune} is the resulting statement; \Pn{6} checks its pointwise instance as
+\begin{lstlisting}
+theorem safePruneAt {C I O : Type} (run : C -> I -> O)
+    (completion : C -> Prop) (pre : I -> Prop) (contract over : I -> O -> Prop)
+    (x : I) (hx : pre x)
+    (sound   : forall c, completion c -> over x (run c x))
+    (exclude : forall y, over x y -> not (contract x y)) :
+    not (exists c, completion c /\ forall z, pre z -> contract z (run c z))
+\end{lstlisting}
+whose proof is the four-line contradiction \code{exclude (run c x) (sound c hc) (hspec x hx)}\prov{\Pn{6}}. \Pn{5} states the same theorem with a necessary abstract condition $N_\Phi$ in place of the pointwise \code{exclude}, and \Pn{2} states the target $\forall e\in\Comp(s),\neg\Phi(e)$ directly; the pointwise form is adopted because it is the one that was checked. The direction is not negotiable: an under-approximation may produce witnesses and counterexamples but never justifies absence\prov{\Pn{1},\Pn{2},\Pn{4},\Pn{5}}. A counterexample to one completion is not evidence about the family: \code{append xs ?tail} has the bad completion \code{?tail := []} and the good completion \code{?tail := ys} for the append contract, and \Pn{5}'s test \code{counterexample_only_refutes_a_completion} pins this\prov{\Pn{5}}.
+
+\subsubsection{The domain-plugin protocol}
+
+\begin{lstlisting}
+DomainPlugin:
+  recognize   : FrozenProblem -> Option DomainProblem      -- may decline
+  reify       : Sketch -> Option AbstractTerm              -- typed; none = Unsupported
+  interpret   : AbstractTerm -> Lean proposition about the exact candidate
+  transfer    : per construct, an abstract rule + its assumptions
+                (missing rule => top, never bottom)
+  soundness   : theorem  Beh(t) in gamma(A(t))  for every reified t
+  necessity   : Option (theorem  Phi(t) -> sigma(t) in N_Phi)
+  checkPositive : proposal + certificate -> Lean proof or refusal
+  replayNegative: model -> typed observation + refutation or refusal
+  coverage    : Option (theorem relating the domain to the original grammar)
+  reply       : Unsupported | RankingHint | NecessaryConstraint(proof)
+              | Counterexample(validity evidence) | NoCompletion(certificate, grammar id)
+\end{lstlisting}
+This merges \Pn{7}'s interface (\code{recognize}, \code{enumerateOrSolve}, \code{checkPositive}, \code{replayNegative}, \code{coverage}) with \Pn{3}'s requirements (reification, interpretation, transfer rules, proof builders, refusal) and \Pn{4}'s four proof-relevant boundaries (interpretation of syntax, meaning of summaries, justified transfer, reconstruction into the requested proposition)\prov{\Pn{3},\Pn{4},\Pn{7}}. A theorem about a callback's length behavior must be instantiated with that exact callback occurrence and dictionary; it is not transferable to a similarly printed occurrence in another branch\prov{\Pn{3}}. The grammar identity in \code{NoCompletion} is part of the certificate's applicability: a summary that assumes the committed prefix is preserved by append is void at a grammar position that may later delete or replace it\prov{\Pn{5}}.
+
+\subsubsection{The exact length abstraction}
+
+For the fold-step grammar $s::=\mathsf{nil}\mid\mathsf{single}\mid\mathsf{tail}\mid\mathsf{append}(s,s)$ with $F_s([])=[]$ and $F_s(x::xs)=[\![s]\!](x,F_s(xs))$, assign\prov{\Pn{3}}
+\[
+ A(\mathsf{nil})=(0,0),\quad A(\mathsf{single})=(0,1),\quad A(\mathsf{tail})=(1,0),\quad A(\mathsf{append}(s,t))=A(s)+A(t),
+\]
+so that $|[\![s]\!](x,r)|=a_s|r|+b_s$ (\code{Step.summary_sound}, structural induction on $s$; append adds lengths, so coefficient pairs add). If $A(s)=(1,1)$ then $|F_s(xs)|=|xs|$ for every list (\code{Step.length_preserved}, induction on $xs$). Conversely, if $F_s$ preserves length on all lists of naturals then $A(s)=(1,1)$ (\code{Step.summary_necessary}): the input $[0]$ forces $b_s=1$ and $[0,0]$ then forces $a_s=1$. The condition is therefore equivalent to universal length preservation in this grammar, and necessity is what licenses pruning for a reversal contract: every term with $A(s)\neq(1,1)$ is a \code{NoCompletion} for the whole sketch family sharing that summary\prov{\Pn{3}}. Of the 3873 terms up to nine nodes ($N_1=3$, $N_3=9$, $N_5=54$, $N_7=405$, $N_9=3402$; $N_{2k+1}=C_k3^{k+1}$), exactly 354 have summary $(1,1)$ and 3519 are eliminated before any counterexample round; the script cross-checks the summary rule on five recursive-result lengths for every term (19{,}365 concrete checks) as a regression, and the Lean theorems carry the universal argument\prov{\Pn{3}}. Length does not distinguish identity from reverse; that needs order-sensitive information\prov{\Pn{3},\Pn{6},\Pn{7}}. \Pn{5}'s laboratory uses the same abstraction with two list inputs, $A(\mathsf{xs})=(1,0)$, $A(\mathsf{ys})=(0,1)$, $A(\mathsf{reverse}\,t)=A(t)$.
+
+\subsubsection{The affine-fold separator theorem}
+
+For natural parameters, let $F_{c,a,b,d}([])=c$, $F_{c,a,b,d}(x::xs)=ax+bF_{c,a,b,d}(xs)+d$, and $S_{A,B,C}(xs)=A\sum xs+B|xs|+C$.
+\begin{theorem}[Exact affine-fold certificate]
+The following are equivalent\prov{\Pn{4}}: (1) $F_{c,a,b,d}=S_{A,B,C}$ on every finite list; (2) the five equations $c=C$, $a=A$, $bA=A$, $bB=B$, $bC+d=B+C$; (3) the two functions agree on the five lists $[]$, $[0]$, $[1]$, $[0,0]$, $[0,1]$.
+\end{theorem}
+\begin{proof}
+(1) implies (3) trivially. From (3): $[]$ gives $c=C$; $[0]$ gives $bC+d=B+C$; $[1]$ gives $a+bC+d=A+B+C$, hence $a=A$; $[0,0]$ gives $b(B+C)+d=2B+C$, hence $bB=B$; $[0,1]$ gives $b(A+B+C)+d=A+2B+C$, hence $bA=A$. From (2), induction on the list: $F(x::xs)=Ax+(bA)\sum xs+(bB)|xs|+(bC+d)=A\sum(x::xs)+B|x::xs|+C$\prov{\Pn{4}}.
+\end{proof}
+Direction (2)$\Rightarrow$(1) is the Lean theorem \code{Leant2Affine.certify}; the other directions are proved on paper and cross-checked exhaustively on the finite parameter domain (2187 candidate--specification pairs: 31 satisfy the equations, 2156 have an explicit separating list)\prov{\Pn{4}}. The theorem gives this domain a \emph{complete} counterexample family: a candidate that fails its universal contract differs on one of the five lists, so the loop obtains a real separating input instead of treating a failed proof as evidence\prov{\Pn{4}}. Each accepted candidate is reconstructed as \code{apply certify <;> decide}; the generic theorem and all twenty-seven instances report only \code{propext} and \code{Quot.sound}\prov{\Pn{4}}. \Pn{7}'s certifier is the same pattern for $f_{a,b}(n)=an+b$ against $f(0)=1\wedge\forall n, f(n+1)=f(n)+2$: \code{affine_spec_iff} proves $\mathrm{Spec}(f_{a,b})\leftrightarrow(a,b)=(2,1)$ and \code{certify} returns \code{Option {c : Affine // Spec c.eval}}, a proof-carrying value rather than a Boolean\prov{\Pn{7}}.
+
+\subsubsection{Target-directed invariant discovery}
+
+\begin{lstlisting}
+discoverInvariant(schema, Post, recursiveCallSubstitution):
+  V := parameters changed by the recursive-call substitution     -- accumulators
+  template := Post generalized over V                            -- start from the target
+  if the fold returns a function: quantify over its future argument
+  if the proof needs output and an auxiliary measure:
+    propose a paired carrier and a relational template
+  for each instantiation of the finite template grammar
+      (affine length relations, conjunctions of bounds, elementwise
+       predicates, permutation relations, accumulator equations):
+    obligations := [ init  : template holds at the initial state,
+                     step  : each branch preserves it under its capabilities,
+                     final : template at the initial state implies Post ]
+    if any bank counterexample refutes the template: discard it
+    if all obligations proved: return (template, proofs)
+    else keep the template unresolved            -- a failed proof is not a refutation
+\end{lstlisting}
+Starting from the postcondition and generalizing only where recursion requires it couples the schema, the induction hypotheses, and the specification, instead of enumerating unrelated invariants from a global language\prov{\Pn{8}}. \Pn{7} gives the same four stages (extract recurring subexpressions, propose a helper, form candidates from the postcondition and library relations, validate preservation) and \Pn{4} the accumulator rule ($g(xs,acc)=\mathrm{reverse}(xs)\mathbin{++}acc$ for a reverse helper, generalizing $acc$ before induction)\prov{\Pn{4},\Pn{7},\Pn{9}}. A numeric parameter vector fitting the examples is not accepted until the base and step obligations are proved\prov{\Pn{8}}.
+
+\subsubsection{Abduction of nogoods}
+
+\begin{lstlisting}
+learnNogood(failedBranch):
+  match cause:
+  | CertifiedReject(cert, grammarId) | CheckedContradiction(indexAssignment):
+      slice := smallest dependency set the certificate mentions
+               (constructor choices, instantiations, path assumptions)
+      store Nogood(slice, request, contract, instances, epoch, grammarId)
+  | BudgetExhausted(method) -> store Penalty(method, budget); retry later
+  | SolverUnsatCore(core)   -> store as a PROPOSED slice; promote only after
+                               a Lean proof of the corresponding implication
+\end{lstlisting}
+A nogood identifies the request, contract, instance selections, environment version, and grammar scope; generalizing beyond the justified slice requires another proof\prov{\Pn{3},\Pn{4},\Pn{5}}.
+
+\subsection{Solver bridges}
+
+External solvers have three distinct uses with three validation paths\prov{\Pn{3}}: proposing choices for a finite sketch (decode the model into a typed plan and check it), proposing counterexample inputs (replay the decoded model against the exact candidate through \code{replay}), and proving a theory obligation (reconstruct through a certificate checker or a proof-producing integration). A single ``solver succeeded'' Boolean is inadequate\prov{\Pn{3},\Pn{4}}.
+
+\begin{lstlisting}
+typedSketchQuery(sketch, examples | abstract semantics):
+  selectors := one finite-domain variable per grammar choice
+  for each dependent hole whose type depends on an earlier witness w:
+    branch-expanded: for each alternative of w, emit the correctly
+      specialized child grammar guarded by w's selector
+    native-first:    ask the solver only for w; let Lean elaborate the
+      residual dependent problem; issue a later query for its completion
+    -- never one untyped multiplexer variable with the type attached later
+  add theory constraints with the adapter's own semantics:
+    Nat as Int with nonnegativity; truncated subtraction guarded;
+    bitvectors modular; division/remainder with Lean's totalized cases;
+    arrays with bounds and extensionality; user functions uninterpreted
+  decodeModel(m): choices -> plan; replay in a fresh native branch; typecheck
+  unsat: RankingHint immediately; NoCompletion only after the encoding theorem
+         and a checked unsatisfiability certificate are accepted
+\end{lstlisting}
+Branch expansion exploits larger simultaneous constraints; native-first avoids an exponential family of heterogeneous child grammars; both reconstruct the same native term\prov{\Pn{5}}. \code{unsat} on an under-approximate grammar excludes only that grammar; \code{unsat} on a sound over-approximation supports stronger conclusions only after its encoding theorem and certificate are accepted; \code{unknown}, timeouts, unsupported proof rules, and malformed models remain distinct outcomes\prov{\Pn{3},\Pn{6}}. A solver may not invent universe expressions, inhabitants of unknown higher-order types, or an element of an empty type to make a counterexample convenient\prov{\Pn{5}}. The staged affine use is: enumerate a coefficient-bounded template, ask the solver for coefficients, substitute them into a native expression, prove the law in Lean; exhaustion of the bounds is template exhaustion, not impossibility\prov{\Pn{9}}. The no-solver profile remains fully functional: every experiment below ran without SMT\prov{\Pn{4},\Pn{7},\Pn{8},\Pn{9}}.
+
+\subsection{Worked traces}
+
+All numbers are those recorded in the source packages; none was re-executed for this document (Section~\ref{sec:results}).
+
+\paragraph{Affine fold for list summation (\Pn{1}).} Grammar: $F_{b,e,a,d}([])=b$, $F_{b,e,a,d}(x::xs)=ex+aF(xs)+d$ with $b,e,a,d\in\{0,1,2\}$, 81 sketches in lexicographic order. Finite verifier: the $1+3+9+27+81=121$ lists of length at most four over $\{0,1,2\}$, checked against \code{sum}\prov{\Pn{1}}.
+\begin{center}\small
+\begin{tabular}{@{}cccl@{}}
+\toprule
+Proposed $(b,e,a,d)$ & Survivors before check & Counterexample & Result \\
+\midrule
+$(0,0,0,0)$ & 81 & $[1]$ & reject \\
+$(0,0,0,1)$ & 11 & $[0]$ & reject \\
+$(0,1,0,0)$ & 5 & $[0,1]$ & reject \\
+$(0,1,1,0)$ & 1 & none in the corpus & submit for proof \\
+\bottomrule
+\end{tabular}
+\end{center}
+The survivor count is recomputed over the whole grammar against the accumulated tests, so $81\to11\to5\to1$; the selected sketch is the unique full-corpus survivor and is then proved equal to \code{List.sum} for every list by structural induction in \code{RecursionCertificates.lean}. The 121 tests select; the theorem certifies\prov{\Pn{1}}.
+
+\paragraph{Reverse as a left-fold step (\Pn{2}).} Skeleton \code{xs.foldl step []}; step grammar \code{acc}, \code{[]}, \code{[x]}, and binary append, enumerated by exact node count up to seven nodes: 471 step expressions. Verifier: the 40 lists of length at most three over $\{-1,0,1\}$; initial bank $\{[]\}$\prov{\Pn{2}}.
+\begin{center}\small
+\begin{tabular}{@{}clrl@{}}
+\toprule
+Round & Selected step & Checks this round & Counterexample \\
+\midrule
+1 & \code{acc} & 1 & $[-1]$ \\
+2 & \code{[x]} & 3 & $[-1,-1]$ \\
+3 & \code{acc ++ [x]} & 6 & $[-1,0]$ \\
+4 & \code{[x] ++ acc} & 10 & none: passes all 40 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The article records the four successive selections and 20 candidate checks including revisits; the per-round checks and the three counterexamples above follow the script's deterministic candidate and corpus order (\code{acc}, \code{[]}, \code{[x]}, then appends by size; lists by length, then lexicographically from $-1$) and sum to the recorded 20, but the lists themselves are stated in the package's \code{cegis-results.json} rather than in its article text. The result is exported as \code{xs.foldl (fun acc x => [x] ++ acc) []} and proved universally in \code{ReverseCertificate.lean} through the accumulator invariant, specialized to the empty accumulator\prov{\Pn{2}}.
+
+\paragraph{Length-guided reverse (\Pn{3}).} Grammar as in the length abstraction above: 3873 terms up to nine nodes, ordered by size with identity before reverse; initial bank $\{[],[0]\}$; verifier the same 121 lists\prov{\Pn{3}}.
+\begin{center}\small
+\begin{tabular}{@{}llrll@{}}
+\toprule
+Search & Round & Consistent & Selected step & Outcome \\
+\midrule
+plain & 1 & 1309 & \code{single} & counterexample $[0,0]$ \\
+plain & 2 & 354 & \code{append single tail} & counterexample $[0,1]$ \\
+plain & 3 & 177 & \code{append tail single} & passes all 121 \\
+length-guided & 1 & 354 & \code{append single tail} & counterexample $[0,1]$ \\
+length-guided & 2 & 177 & \code{append tail single} & passes all 121 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The $(1,1)$ summary removes the spurious \code{single} family before any counterexample round, saving one round; it cannot separate identity from reverse. The selected AST \code{Step.append Step.tail Step.single} is proved equal to \code{List.reverse} at every universe level by \code{selected_correct}\prov{\Pn{3}}.
+
+\paragraph{Affine certifier (\Pn{7}).} Grammar $f_{a,b}(n)=an+b$, $a,b\in\{0,\ldots,4\}$, 25 candidates in lexicographic order; bank initially empty; observations \code{base} ($f(0)=1$) and \code{step 0} ($f(1)=f(0)+2$). Candidate $(0,0)$ fails \code{base}; the next candidate surviving \code{base}, $(0,1)$, fails \code{step 0}; thereafter every candidate up to the winner $(2,1)$ is rejected by the two stored observations before the certifier runs. The Lean theorem \code{run_counts}, proved by \code{decide}, fixes the executed counts: 12 candidates considered, 3 certifier invocations, 9 pruned by the bank, 0 inconclusive; an unfiltered baseline would invoke the certifier 12 times. The winner carries its universal proof in its type\prov{\Pn{7}}.
+
+\paragraph{Boolean exclusive-or (\Pn{8}, \Pn{9}).} \Pn{9}, grammar without a primitive xor, 9168 candidates up to eight nodes, empty initial bank:
+\begin{center}\small
+\begin{tabular}{@{}clc@{}}
+\toprule
+Round & Proposal & New counterexample $(x,y)$ \\
+\midrule
+1 & $x$ & $(0,1)$ \\
+2 & $y$ & $(1,0)$ \\
+3 & $x\lor y$ & $(1,1)$ \\
+4 & $\neg(x\land y)$ & $(0,0)$ \\
+5 & $(x\lor y)\land\neg(x\land y)$ & none \\
+\bottomrule
+\end{tabular}
+\end{center}
+Five proposals, four counterexamples, an eight-node result, quoted and proved by \code{decide} with an empty axiom inventory; the independent Python enumerator reproduced the counts, the trace, and the absence of a smaller solution in the grammar\prov{\Pn{9}}. \Pn{8}, whose grammar contains xor and whose pool has 208 trees, reports five rounds for mask 6 and the implementation \code{Circuit.eval (Circuit.left.xor Circuit.right)}; following its deterministic order by hand (leaves \code{left}, \code{right}, \code{zero}, \code{one}, then negations, then binary nodes with inputs checked in the order $(0,0),(0,1),(1,0),(1,1)$) gives the proposals \code{left}, \code{right}, \code{one}, \code{left || right}, \code{left xor right} with counterexamples $(0,1)$, $(1,0)$, $(0,0)$, $(1,1)$. That reconstruction is consistent with the recorded round count but is not itself recorded in \Pn{8}\prov{\Pn{8}}.
+
+\begin{remark}
+Across the five traces the pattern is identical and is the pattern this section specifies: an untrusted enumerator or solver proposes; a finite bank refutes cheaply and is only ever extended by replayed counterexamples; a certificate, a \code{decide} on a quoted literal, or a structural induction proof supplies the universal claim; and the count of candidates examined is reported as an operation count, never as a speedup (Section~\ref{sec:acceptance}). None of the traces exercises the unknown branch or the unresolved queue; those remain design requirements without prototype evidence\prov{\Pn{9}}.
+\end{remark}

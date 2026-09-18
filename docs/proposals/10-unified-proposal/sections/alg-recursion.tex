@@ -1,0 +1,425 @@
+\section{Algorithms: recursion synthesis}\label{alg:recursion}
+
+Section~\ref{sec:recursion} fixes the design: recursion enters through a schema, recursive calls are capabilities (Invariant~\ref{inv:capabilities}), motives may carry certificates (Proposition~\ref{prop:algebra}), and every plan has two products (Invariant~\ref{inv:lowering}). This section supplies the procedures. Each algorithm is the best-specified version found in the nine proposals, merged where they agree and marked where they differ. Pseudocode is written in the proposals' own vocabulary. Nothing here has been implemented: every recursive definition in every prototype was hand-supplied, and the tactics filled only branch bodies (Section~\ref{alg:rec-status}).
+
+\subsection{Structural schema generation from recursor metadata}\label{alg:rec-structural}
+
+\subsubsection{The plan record}
+
+\begin{definition}[Recursion plan]
+A plan (called \code{RecSketch} in \Pn{9}, a recursion descriptor in \Pn{4}, a schema in \Pn{1} and \Pn{7}) is the record
+\begin{lstlisting}
+RecPlan :=
+  telescope   : the elaborated function telescope (z_1 : A_1) ... (z_n : A_n)
+  major       : index k of the discriminant z_k : D p i
+  fixed       : parameters that never change across recursive calls
+  generalized : Delta, an ordered dependency-closed sub-telescope
+  motive      : M : (i : Indices) -> (x : D p i) -> Sort u, checked by Lean
+  recursor    : the native recursor (or registered fold) instantiated at M
+  branches    : one Branch per constructor (fields, index equations,
+                capabilities, residual contract, program/proof holes)
+  termination : none | structural | TerminationPlan (Section alg:rec-wf)
+  finalSpec   : the checked term mapping (rec ... major) back to the target
+  lowering    : the executable-lowering plan (Section alg:rec-lowering)
+\end{lstlisting}
+The fields are those of \Pn{4}'s descriptor (telescope, decreasing arguments, admitted call forms, motive, generalized parameters, termination evidence per call) and \Pn{9}'s sketch (adds the lowering plan)\prov{\Pn{4},\Pn{7},\Pn{9}}.
+\end{definition}
+
+\subsubsection{The generation algorithm}
+
+The following merges \Pn{2}'s \code{planStructuralRecursion}, \Pn{5}'s structural-plan generator, \Pn{6}'s \code{deriveMotivePlans}, \Pn{7}'s \code{proposeStructuralSchemas}, and \Pn{9}'s \code{StructuralSketches}. They agree on every step; \Pn{2} is the only one that names the final specialization as a checked obligation, and \Pn{5} is the only one that states that generalization must go beyond the type-dependency closure\prov{\Pn{2},\Pn{5},\Pn{6},\Pn{7},\Pn{9}}.
+
+\begin{lstlisting}
+generateStructuralPlans(goal, contract, ctx, budget):
+  -- goal = (z_1 : A_1) -> ... -> (z_n : A_n) -> R(z)
+  intro the telescope, keeping binder provenance of every z_j
+  for major in rankMajorPremises(goal, contract):      -- step 1
+    meta := exactInductiveAndRecursorInfo(typeOf major)
+    -- meta.params, meta.indices, meta.ctors, meta.rec, meta.minors
+    for Delta in generalizationLadder(goal, major, meta, budget):  -- step 2
+      Delta := dependencyClose(Delta)                  -- step 3
+      M := abstractTarget(goal, contract, major, Delta) -- step 4
+      unless leanCheck(M : Indices -> D p i -> meta.rec.motiveSort):
+        continue                                       -- never guess the sort
+      recApp := instantiateRecursor(meta.rec, meta.params, M)
+      branches := []
+      for (ctor, minor) in zip(meta.ctors, meta.minors):  -- step 5
+        br := branchTelescope(minor, M)   -- fields, index eqs, IH types
+        if impossibleByIndices(br): record evidence, skip   -- Section sec:elimination
+        br.caps := [capability(ih) for ih in br.inductionHyps]  -- step 6
+        br.contract := specialize(contract, ctor, br.fields, Delta)  -- step 7
+        br.holes := coupled(programHole(br.target), proofHole(br.contract))
+        branches.append(br)
+      fs := finalSpecialization(recApp, goal)          -- step 8
+      unless leanCheck(fs : originalTarget): continue
+      yield RecPlan(telescope, major, fixed, Delta, M, recApp,
+                    branches, structural, fs, lowering := pending)
+\end{lstlisting}
+
+The steps in detail.
+
+\begin{enumerate}
+\item \emph{Major premise.} Rank the telescope's inductive arguments (\Pn{7}: ``ranked recursive inputs''; \Pn{9}: ``each relevant inductive argument within the scheme budget''). The ranking prefers arguments that occur in the contract, arguments with recursive constructor fields, and arguments whose indices appear in the target family\prov{\Pn{7},\Pn{9}}. Mutual components, parameters, indices, and recursive fields must be kept distinct in the metadata read\prov{\Pn{1}}.
+\item \emph{Generalization ladder.} Enumerate $\Delta$ in increasing structural complexity (Section~\ref{alg:rec-ladder}).
+\item \emph{Dependency closure.} If a generalized variable occurs in the type of a later local, that local is generalized as well, in telescope order\prov{\Pn{2},\Pn{4}}. \Pn{5} adds the \emph{behavioral} closure: a variable whose value changes between the call and the recursive call must be generalized even when nothing depends on it by type (the index $i$ of safe indexing, the accumulator of reversal). \Pn{4} computes this set from the recursive-call substitution of the template: parameters changed by that substitution are generalization candidates\prov{\Pn{4},\Pn{5}}.
+\item \emph{Motive.} $M(\vec i, x) = \prod \Delta(\vec i, x).\ R'(\vec i, x, \Delta)$ where $R'$ is the target after replacing the original indices and discriminant by the motive's bound variables. When a certificate is requested, $R'$ is the packaged family of Section~\ref{alg:rec-certified}. The motive is a Lean expression checked at the recursor's motive sort; the planner never infers the universe by counting surface binders\prov{\Pn{2}}.
+\item \emph{Branch telescope.} Each minor premise of the instantiated recursor is a Pi-telescope: non-recursive fields, recursive fields, then one induction hypothesis $M(\vec i', x')$ per recursive field at that field's own indices. Read it back as an exact local context (\Pn{4} runs Lean's dependent elimination in a sandboxed state rather than substituting constructors textually). A tree gives two hypotheses; a function-valued recursive field gives a dependent family of hypotheses; none of these is flattened into an untyped ``smaller results'' array\prov{\Pn{4},\Pn{5},\Pn{6}}.
+\item \emph{Capabilities.} Every induction hypothesis becomes a capability (Section~\ref{alg:rec-caps}); the constructor field it belongs to is its structural evidence\prov{\Pn{6},\Pn{7}}.
+\item \emph{Per-branch specialization.} Substitute the constructor pattern into the residual contract and observations; simplify with constructor equations; put the branch's index equations into the context\prov{\Pn{7},\Pn{9}}.
+\item \emph{Final specialization.} Elaborate the term that applies the recursor result to the original discriminant and the original values of $\Delta$, and check it against the original target before the plan is admitted. This is what prevents a run from solving a conveniently generalized problem and reporting success on the original one\prov{\Pn{2}}.
+\end{enumerate}
+
+\subsubsection{The motive complexity ladder and failure-directed generalization}\label{alg:rec-ladder}
+
+\Pn{2} specifies the ladder; \Pn{7} the motive grammar; \Pn{6} the sources of extra candidates\prov{\Pn{2},\Pn{6},\Pn{7}}:
+\begin{lstlisting}
+generalizationLadder(goal, major, meta, budget):
+  yield {}                                    -- rung 0: direct result family
+  yield localsDependingOn(major, meta.indices) -- rung 1: type-dependent locals
+  for S in smallSubsets(changingArguments(goal, major), budget.motive):
+    yield rung1 + S                           -- rung 2: behavioral generalization
+  for T in accumulatorTemplates(contract, registeredSummaries):
+    yield rung1 + T                           -- rung 3: new accumulator + invariant
+  -- motive grammar per rung (P7): target family | (trailing args -> family)
+  --   | {y : family // post} | tuples of these
+\end{lstlisting}
+Rung 2 is exponential in the number of changing arguments. All proposals that discuss it agree that enumeration is bounded and ranked, and \Pn{2} proposes \emph{failure-directed generalization} to drive the ranking\prov{\Pn{2},\Pn{6}}:
+\begin{lstlisting}
+failureDirectedGeneralization(plan, failedBranch):
+  -- called when an induction hypothesis or capability cannot be applied
+  reason := classify(failedBranch)
+    -- IH fixed at wrong value of z_j      -> need z_j in Delta
+    -- IH mentions index not in scope      -> need index generalization
+    -- proof needs fact about z_j at call  -> need z_j quantified in R'
+  ext := smallestDependencyClosedExtension(plan.generalized, reason.vars)
+  schedule plan' := plan with generalized := ext, ahead of unrelated rungs
+  -- the failed obligation is not evidence that the program is impossible
+\end{lstlisting}
+Two recorded failures are the regression tests for this component. In \Pn{7}, a first \code{Vec.toList} fixed an ambient index $n$ across recursive calls until its signature was changed to \code{{n : Nat} -> Vec A n -> List A}. In \Pn{9}, induction on \code{Aligned} whose second index was the compound expression \code{(listMap f xs).val} failed until the indices were generalized to variables\prov{\Pn{7},\Pn{9}}.
+
+\subsection{Proof-carrying motives and certificate algebras}\label{alg:rec-certified}
+
+\subsubsection{Motive shapes}
+
+For $f : \prod_{x:D} B(x)$ with contract $\forall x,\ R(x, f(x))$, the certified motive is $C(x) = \{y : B(x) \,//\, R(x,y)\}$ (\Pn{1} ``refinement recursion'', \Pn{3} ``packed motive'', \Pn{5} ``certificate carrier'', \Pn{8} ``certified motive'', \Pn{9} ``pointwise packaging'', Proposition~\ref{prop:pointwise}). With a trailing telescope $a : S$ the motive is $C(x) = \prod_{a:S}\{y : B(x,a) \,//\, R(x,a,y)\}$, and this is where generalizing an index or accumulator becomes a substantive choice\prov{\Pn{3},\Pn{5}}. \Pn{8} notes that a general list recursor branch also receives $xs$ itself, which matters when the proof depends on the original tail\prov{\Pn{8}}.
+
+\subsubsection{Branch obligations}
+
+For lists the instantiated minor premises are exactly the types of \Pn{8}'s checked \code{certifiedRecursor}\prov{\Pn{8}}:
+\begin{lstlisting}
+-- CertifiedFold.lean (hand-written, checked, empty axiom inventory)
+def certifiedRecursor (R : List a -> b -> Prop)
+    (base : {v : b // R [] v})
+    (step : (x : a) -> (xs : List a) ->
+            {v : b // R xs v} -> {v : b // R (x :: xs) v}) :
+    (xs : List a) -> {v : b // R xs v}
+  | [] => base
+  | x :: xs => step x xs (certifiedRecursor R base step xs)
+
+theorem fold_contract (R : List a -> b -> Prop) (base : b) (step : a -> b -> b)
+    (hbase : R [] base)
+    (hstep : forall x xs v, R xs v -> R (x :: xs) (step x v)) :
+    forall xs, R xs (xs.foldr step base)
+-- proof: induction xs; nil => hbase; cons x xs ih => hstep x xs _ ih
+\end{lstlisting}
+A branch state therefore contains a data hole and a proof hole that constrain each other: in the cons branch the data hole has type $B(x{::}xs)$ and the proof hole has type $R(x{::}xs, ?y)$ with $?y$ the data hole, and the context contains $v : B(xs)$ and $h : R(xs, v)$\prov{\Pn{3},\Pn{5}}.
+
+\subsubsection{Contract failure backtracks into the branch choice}
+
+Because the proof hole mentions the data metavariable, a failed proof restores the state to before the data assignment and tries the next data candidate. \Pn{2}'s \code{Choice} trace is the minimal test: the first constructor is assigned, the dependent proof fails, the joint continuation restores the state and the second constructor succeeds\prov{\Pn{2}}. \Pn{3}'s length example shows what the motive does and does not decide: with $r : \mathrm{List}\,A$, $h : |r| = |xs|$, both $x{::}r$ and $r \mathbin{+\!\!+} [x]$ satisfy $|ys| = |x{::}xs|$, so the motive prunes but does not invent intent; an order-sensitive contract decides between identity and reverse\prov{\Pn{3}}.
+\begin{lstlisting}
+certifiedBranch(br):
+  -- br.context has fields, and (v_i, h_i) for each recursive field
+  for y in candidates(br.target, br.context ++ [v_i]):  -- Section sec:spines
+    snapshot := state
+    assign dataHole := y
+    if prove(proofHole : R(ctorPattern, y), br.context ++ [h_i]):  -- Section sec:proof-services
+      return Subtype.mk y proof
+    restore snapshot          -- the proof failure rejects y, not the branch
+  fail(branch)                 -- feeds failureDirectedGeneralization
+\end{lstlisting}
+
+\subsubsection{The alternative route and the choice between them}
+
+\Pn{4} specifies the other route as a two-pass template: construct the structurally recursive function with body holes, complete them, pass Lean's termination and compilation checks, then generate a theorem with the matching induction principle and prove the original contract from the checked defining equations\prov{\Pn{4},\Pn{6}}.
+
+\begin{decision}[Integrated versus separate certification]
+Use the certified motive when the contract is pointwise, $B(x)$ is data-valued, and the per-branch obligation is expected to be local (\Pn{9}'s Proposition~\ref{prop:pointwise} is the bridge). Use synthesize-then-prove when the contract relates several calls or several inputs (injectivity, an involution law), concerns effects or a representation relation, or needs an invariant stronger than the pointwise postcondition; when the executable declaration should stay proof-free; or when a strong library theorem about the executable form exists. Both routes remain in the portfolio and both must end at the same acceptance contract (Section~\ref{sec:acceptance})\prov{\Pn{2},\Pn{5},\Pn{6},\Pn{9}}.
+\end{decision}
+
+The integrated route prunes earlier but inflates types and proof terms; the separate route keeps simpler executables and can reuse library theorems\prov{\Pn{2}}. Three hand-written instances were checked: \code{certifiedMap} with the functional relation \code{MapRel} (\Pn{1}), \code{certifiedAppend} with the contract \code{zs = xs ++ ys} (\Pn{5}), and \code{certifiedRecursor}, \code{fold_contract}, and \code{indexFold_correct} (\Pn{8})\prov{\Pn{1},\Pn{5},\Pn{8}}.
+
+\subsection{Recursive-call capabilities}\label{alg:rec-caps}
+
+\subsubsection{Data structure}
+
+\Pn{2}, \Pn{6}, \Pn{7}, and \Pn{9} each list the fields; the union is\prov{\Pn{2},\Pn{6},\Pn{7},\Pn{9}}:
+\begin{lstlisting}
+Capability :=
+  family     : the declaration under construction (never a provider)
+  motive     : M, the current result family
+  fixed      : the parameters that must be passed unchanged
+  varying    : Delta, the generalized arguments the call may re-supply
+  smaller    : the admissible argument (a constructor field for structural
+               recursion; a bound variable y for well-founded recursion)
+  evidence   : Structural(field path from the recursor minor premise)
+             | WellFounded(obligation : r(y, x), status : open | proved p)
+  resultType : M(indices(smaller), smaller) instantiated -- exact, from Lean
+  build      : the expression constructor that assembles the call
+               (an induction-hypothesis variable in a recursor term;
+                a recursive call in an equation skeleton after lowering)
+\end{lstlisting}
+The result type is read from the actual constructor field and recursor information, never computed by subtracting one from the outer index; this is what makes the same object correct for indexed, nested, and mutual families\prov{\Pn{7}}.
+
+\subsubsection{Consuming a capability}
+
+\begin{lstlisting}
+applyCapability(cap, branch, args):
+  -- args supplies values for cap.varying only; cap.fixed is implicit
+  check args are well-typed against Delta under the branch context
+  match cap.evidence with
+  | Structural(path) =>
+      -- nothing to prove: the recursor supplied the hypothesis
+      term := cap.build(path, args)
+  | WellFounded(obl, open) =>
+      -- the call is admitted only with the decrease proof
+      obl := (r(cap.smaller, currentMajor))   -- Section alg:rec-wf
+      p := prove(obl, branch.context)          -- may fail; may be deferred
+      if p = none: return blocked(obl)         -- reported, never assumed
+      term := cap.build(cap.smaller, p, args)
+  spec := instantiate(branch.contract, cap.smaller, args)  -- the IH's contract
+  return (term : cap.resultType, spec)
+\end{lstlisting}
+A call with a new accumulator on the structurally smaller argument is valid; a call on the unchanged list is not made valid by changing the accumulator (\Pn{7}). For a structural list branch $a{::}xs$ the capability authorizes $xs$, not $a{::}xs$\prov{\Pn{7}}. Each call also instantiates the recursive specification at the smaller input, so the branch prover sees the induction hypothesis's contract\prov{\Pn{7}}.
+
+\subsubsection{The self-reference audit}
+
+The rule has three enforcement points, all motivated by \Pn{2}'s failed first run, in which unfiltered local declarations exposed the provisional definition, a local-provider loop reused it, and Lean's termination check rejected the cycles (error recovery then inserted \code{sorryAx})\prov{\Pn{2}}:
+\begin{lstlisting}
+auditNoSelfReference(plan, candidate):
+  -- 1. during search: the provider inventory excludes the declaration
+  --    under construction and every isImplementationDetail local
+  assert family(plan) not in providerInventory(branch)   -- P2 repair
+  -- 2. at assembly: every occurrence of family(plan) in candidate
+  --    is the build output of some capability with closed evidence
+  for occ in occurrences(family(plan), candidate):
+    assert occ.origin is Capability and occ.origin.evidence is closed
+  -- 3. at acceptance: the dependency closure of the declaration bundle
+  --    contains no provisional constant, no sorryAx, and passes Lean's
+  --    own structural or well-founded elaboration
+  assert dependencyClosure(bundle) has no provisional or sorry constants
+\end{lstlisting}
+Filtering implementation-detail locals (following Lean's own \code{assumption}) repaired the prototype; the second and third checks are production requirements that the prototype does not implement\prov{\Pn{2}}.
+
+\subsection{Accumulator introduction and invariant discovery}\label{alg:rec-acc}
+
+\subsubsection{The lane}
+
+\Pn{7}'s four stages are the skeleton; \Pn{4} supplies the trigger (the recursive-call substitution) and the constraint view; \Pn{3} and \Pn{6} supply the summary grammar; \Pn{9} names the three obligations\prov{\Pn{3},\Pn{4},\Pn{6},\Pn{7},\Pn{9}}:
+\begin{lstlisting}
+discoverAccumulatorInvariant(plan, publicContract):
+  -- stage 1: extract recurring quantities
+  Q := recurringSubexpressions(residualBranchContracts(plan))
+       ++ parametersChangedBy(recursiveCallSubstitution(plan))   -- P4
+  -- stage 2: propose a helper with those quantities as parameters
+  go := helperSignature(plan.telescope ++ [acc : typeOf q | q in Q])
+  -- stage 3: candidate invariants from a bounded grammar
+  for I in summaryGrammar(publicContract, acc, admittedOps, units, budget):
+    -- stage 4: three obligations, all proved or the candidate is dropped
+    init  := forall x, I(x, acc_0) -> publicContract(x)   -- finalization
+    base  := I(base pattern, acc) for the base branch     -- initiation
+    step  := forall acc, I(xs, acc') -> I(ctor xs, acc)   -- preservation
+             where acc' is the accumulator passed to the recursive call
+    if proveAll([init, base, step]):
+      yield plan' with motive generalized over acc and contract I
+    -- a failed proof leaves I unresolved; it never refutes the program
+  -- cost: new fields, type size, and grammar tier are charged separately
+  -- from branch synthesis (P3), so the lane cannot add state indefinitely
+\end{lstlisting}
+The grammar of relational summaries is built from the public relation, the accumulator variable, the admitted operations with registered algebraic summaries (concatenation, length, sum, a monoid fold), and their unit elements; it prefers accumulator types already present in the request or library specifications over invented types\prov{\Pn{3},\Pn{6}}. \Pn{8} calls the same procedure \emph{target-directed}: start from the postcondition and generalize only where recursion requires it (a changing accumulator, a function carrier's future argument, a paired auxiliary measure), rather than enumerating invariants from a global language\prov{\Pn{8}}. Counterexamples from the observation bank eliminate templates cheaply before proof is attempted\prov{\Pn{7}}. Family-specific templates (permutation-and-order for sorting, accumulator length as a function of an index) enter as plugins with documented grammars\prov{\Pn{7}}.
+
+\subsubsection{Worked: accumulator reversal}\label{alg:rec-reverse}
+
+Public request $f : \mathrm{List}\,A \to \mathrm{List}\,A$ with $f(xs) = \mathrm{reverse}(xs)$. The tail-recursive plan (\Pn{6}'s \code{reverseAux}) is
+\begin{lstlisting}
+def go : List A -> List A -> List A
+  | [],      acc => acc
+  | x :: xs, acc => go xs (x :: acc)
+\end{lstlisting}
+Stage 1: the recursive-call substitution is $acc \mapsto x{::}acc$, so $acc$ is a changing argument and must be generalized; the public contract at $acc = []$ is too weak to justify the call with a nonempty accumulator\prov{\Pn{4},\Pn{6},\Pn{9}}. Stage 2: the helper is $go(xs, acc)$ with public result $go(xs, [])$; the accumulator belongs to the helper, not to a changed public type\prov{\Pn{7}}. Stage 3: from the grammar (relation $\mathrm{reverse}$, variable $acc$, operation $\mathbin{+\!\!+}$, unit $[]$) the candidates in cost order are $go(xs,acc) = \mathrm{reverse}(xs)$, $go(xs,acc) = acc \mathbin{+\!\!+} \mathrm{reverse}(xs)$, and $go(xs,acc) = \mathrm{reverse}(xs) \mathbin{+\!\!+} acc$. Stage 4 for the third candidate, with motive $M(xs) = \forall acc,\ go(xs,acc) = \mathrm{reverse}(xs) \mathbin{+\!\!+} acc$:
+\begin{lstlisting}
+initiation   : go [] acc = acc = reverse [] ++ acc          -- rfl
+preservation : ih : forall acc, go xs acc = reverse xs ++ acc
+               goal : go (x :: xs) acc = reverse (x :: xs) ++ acc
+               unfold: go xs (x :: acc)
+               ih at (x :: acc): reverse xs ++ (x :: acc)
+               rhs: (reverse xs ++ [x]) ++ acc
+               close by List.append_assoc, List.cons_append, List.nil_append
+finalization : f xs = go xs [] = reverse xs ++ [] = reverse xs  -- append_nil
+\end{lstlisting}
+The first candidate fails preservation (the induction hypothesis says nothing about $x{::}acc$); the second fails at the same step. Two artifacts checked exactly this invariant by hand. \Pn{2}'s \code{ReverseCertificate.lean} proves \code{foldInvariant : xs.foldl (fun acc x => [x] ++ acc) acc = specReverse xs ++ acc} by \code{induction xs generalizing acc} with the three rewrites above, for the step \code{[x] ++ acc} that its finite CEGIS run selected fourth after \code{acc}, \code{[x]}, and \code{acc ++ [x]} were refuted on 40 lists; \Pn{6}'s \code{reverseAux_spec} proves the same statement for \code{reverseAux} (with \code{propext} in its inventory). Neither invariant was generated\prov{\Pn{2},\Pn{6}}. The difference-list variant $d(ys) = \mathrm{reverse}(xs) \mathbin{+\!\!+} ys$ over the carrier $\mathrm{List}\,A \to \mathrm{List}\,A$ is the same invariant read through a function carrier (Section~\ref{sec:carriers})\prov{\Pn{2},\Pn{8}}.
+
+\subsection{Well-founded recursion}\label{alg:rec-wf}
+
+\subsubsection{Schema and capability}
+
+The schema is $F(x) = \mathrm{step}(x, \lambda y\,(h : y \prec x).\,F(y))$ with a supplied proof that $\prec$ is well-founded; the branch capability is $\mathrm{rec} : \prod_{y:D}\,\prec(y,x) \to M(y)$, and $M$ may be the certified motive so that the smaller call's certificate is available to the branch proof\prov{\Pn{1},\Pn{3},\Pn{5},\Pn{8}}. \Pn{5} fixes the artifact that the lowerer consumes\prov{\Pn{5}}:
+\begin{lstlisting}
+TerminationPlan :=
+  relation  : the chosen relation or measure expression mu
+  wf        : proof that the relation is well-founded
+  calls     : for each recursive occurrence:
+                (argument y, branch context, decrease obligation, evidence)
+\end{lstlisting}
+
+\subsubsection{Measure search}
+
+\Pn{1}'s Algorithm 4 is the most explicit; \Pn{3}, \Pn{5}, \Pn{8}, and \Pn{9} give the same grammar\prov{\Pn{1},\Pn{3},\Pn{5},\Pn{8},\Pn{9}}:
+\begin{lstlisting}
+measureSearch(plan, proposedCalls, budget):
+  grammar := [ natural-number argument n
+             , registered size (List.length, structural size, sizeOf)
+             , bounded difference n - i, admissible only with a branch
+               hypothesis i < n (truncated subtraction: 0 - 1 = 0)
+             , lexicographic tuples of the above, short
+             , user-supplied well-founded relation ]
+  for mu in grammar in cost order:
+    wf := wellFoundedness(mu)              -- a theorem, retrieved or proved
+    ok := true
+    for call (y from x, ctx) in proposedCalls:
+      goal := mu(y) < mu(x)                -- or r(y, x) for a relation
+      p := prove(goal, ctx, [branch hypotheses, arithmetic (omega),
+                             registered decrease lemmas], budget.perCall)
+      if p = none: ok := false; break      -- reject mu, not the program
+      record (call, goal, p) in plan.termination.calls
+    if ok: yield TerminationPlan(mu, wf, calls)
+  -- exhaustion reports "no measure found in this grammar", never "diverges"
+\end{lstlisting}
+Three rules are stated by every proposal that treats this lane. A sampled execution that decreases is not a measure, and an SMT verdict that an arithmetic approximation decreases is not a decrease proof\prov{\Pn{2},\Pn{3},\Pn{5}}. For a loop that increments $i$ under $i < n$, the measure is $n - i$ and its proof must use the branch condition and the exact truncated-subtraction semantics\prov{\Pn{1},\Pn{7}}. For Euclidean-style recursion a modulus-bound lemma is the decisive step and must be retrieved from the library or supplied with a component contract\prov{\Pn{2},\Pn{6}}. The definition is registered only after Lean's own termination elaboration accepts it; because well-founded unfolding is propositional, the generated equation lemmas are registered in the candidate's proof context, and ranking charges the cost of the reduction behavior\prov{\Pn{2},\Pn{9}}. Adding \code{partial} or a fuel parameter is not a repair unless fuel is part of the interface or proved sufficient\prov{\Pn{4},\Pn{8}}.
+
+\subsubsection{Mutual and nested recursion}
+
+Mutual recursion is a single strongly connected component synthesized jointly: the domain is the tagged sum $\Sigma\,t : \mathrm{Tag},\ D_t$, the measure is shared (typically lexicographic in the component size and the tag), each component's capabilities may call the other components only through the shared \code{rec}, and the summaries of the components are checked simultaneously by one well-founded induction (proving each from an unchecked summary of the other is circular and prohibited). The alternative is a registered native mutual recursor with explicit motives per component\prov{\Pn{3},\Pn{4},\Pn{5},\Pn{7},\Pn{8}}. Nested inductives use their actual generated recursion principle; their induction hypotheses may be function- or container-shaped, and the branch solver must then synthesize the corresponding higher-order argument or traversal. Metadata the adapter does not support is reported as an explicit limitation, never approximated as an ordinary non-recursive field, while the family's library components remain usable as ordinary providers\prov{\Pn{2},\Pn{3},\Pn{6},\Pn{8}}.
+
+\subsection{Executable lowering}\label{alg:rec-lowering}
+
+\subsubsection{The failure that motivates it}
+
+Four artifacts hit the same wall. \Pn{4}'s first vector map used tactic induction inside an executable \code{def}: the axiom audit was empty and the code generator rejected the \code{Vec.rec} form. \Pn{6}'s \code{countLeaves t := PilotTree.rec 1 (fun _ _ l r => l + r) t} was rejected for \code{PilotTree.rec} and kept as an expected-failure probe. \Pn{8}'s bare \code{List.rec} definition passed axiom inspection and failed code generation. \Pn{9}'s induction-tactic vector map did the same. In every case rewriting the same construction as pattern equations compiled and evaluated correctly\prov{\Pn{4},\Pn{6},\Pn{8},\Pn{9}}.
+
+\subsubsection{Equation-oriented lowering}
+
+\Pn{6}'s five steps, with \Pn{9}'s authorization protocol as the second stage\prov{\Pn{6},\Pn{9}}:
+\begin{lstlisting}
+lowerToEquations(plan):
+  -- 1. recover structure from the plan, never from printed recursor text
+  major, patterns, locals, caps, Delta := plan.major, [ctor patterns],
+      [branch fields], plan.branches[*].caps, plan.generalized
+  -- 2. replace each induction-hypothesis use by a recursive call
+  for br in plan.branches:
+    body := br.solution
+    for use in occurrences(cap.build for cap in br.caps, body):
+      body := body[use := f fixed cap.smaller (use.varyingArgs)]
+    equations.append(f fixed (pattern br) (Delta) := body)
+  -- 3. hygienic definition syntax with explicit binders
+  decl := def f (fixed) : (major : D p i) -> (Delta) -> M(i, major)
+          with equations
+          plus termination_by mu / decreasing_by proofs from plan.termination
+  -- 4. elaborate in a staging environment with approved dependencies only
+  env' := elaborate(stagingEnv(approved), decl)
+  reject on termination-elaboration or code-generation failure
+  -- 5. certify the executable constant
+  either prove Spec(f) directly against f's equation lemmas
+  or prove forall t, f t = plan.logicalCandidate t and transport the proof
+  return declaration bundle (f, helpers as an audited DAG)
+\end{lstlisting}
+The two-stage protocol is: stage one produces the declaration bundle through Lean's declaration elaborator (telescope, pattern equations, branch bodies, termination annotation); stage two, \Pn{9}'s \code{Authorize}, restores the origin environment in an isolated context, lowers, rejects unresolved metavariables and leaked free variables, kernel-checks the bundle and its contract theorem, audits axioms and implementation dependencies, compiles when the request is executable, exports replay source, and publishes atomically, recording \code{kernelChecked}, \code{compiled}, and \code{evaluatedOnExamples} separately (Section~\ref{sec:acceptance})\prov{\Pn{9}}. The correspondence route was checked once: \Pn{6}'s theorem $\forall t,\ \mathsf{countEq}(t) = \mathsf{countRec}(t)$ between the noncomputable semantic model and the executable equation form, with \code{propext} in its inventory. A pointwise correspondence transfers pointwise contracts; a predicate on the whole function needs function extensionality or a fresh proof, and the axiom policy applies to the transfer proof as well\prov{\Pn{6}}. Lowering may change implementation structure but never the type or specification; helpers it introduces form an audited dependency DAG\prov{\Pn{6}}. The plan grammar tags each construction as genuine recursor, bounded unrolling, or nonrecursive so that repeated case splits are never reported as recursion\prov{\Pn{5}}.
+
+\subsection{Worked traces}\label{alg:rec-traces}
+
+Each trace lists the motive, the branch goals, the capabilities, the final terms, and what was actually checked.
+
+\subsubsection{Indexed vector map}
+
+The family is \code{Vec.nil : Vec A 0} and \code{Vec.cons : A -> Vec A n -> Vec A (n + 1)}\prov{\Pn{2},\Pn{6},\Pn{7},\Pn{9}}.
+\begin{lstlisting}
+target  : {A : Type u} -> {B : Type v} -> (A -> B) -> {n : Nat} -> Vec A n -> Vec B n
+major   : xs : Vec A n        fixed : A, B, f      generalized : {} (rung 0)
+motive  : M (n : Nat) (xs : Vec A n) := Vec B n    -- checked at Type v
+nil branch : index n := 0
+   goal : Vec B 0                       caps : none
+   solution : Vec.nil
+cons branch : index n := k + 1, fields x : A, xs : Vec A k
+   goal : Vec B (k + 1)                 caps : ih : Vec B k  (structural, field xs)
+   spine : Vec.cons ?h ?t  with ?h : B, ?t : Vec B k
+   ?h := f x   (demand-directed application, Section sec:spines)
+   ?t := ih    (capability, no obligation)
+final specialization : rec ... xs : Vec B n  -- identical to target
+lowered :
+   def Vec.map (f : A -> B) : Vec A n -> Vec B n
+     | .nil => .nil
+     | .cons x xs => .cons (f x) (Vec.map f xs)
+\end{lstlisting}
+Checked: \Pn{2}'s \code{SkeletonChecks.lean} (repeated in \Pn{7} as \code{vecMap}) supplies the pattern skeleton and the recursive call \code{have mapped := vectorMap f xs}, and \code{leant2_core} fills both branches; \code{vectorMap_nil} and \code{vectorMap_cons} hold by \code{rfl}; all three declarations have empty axiom inventories; evaluation maps \code{[1, 2]} to \code{[2, 3]} under increment. \Pn{7} adds a hand-written proof of \code{(vecMap f xs).toList = xs.toList.map f}. The type alone does not force elementwise mapping (a nonempty branch may repeat the transformed head); the checked \code{rfl} equations show that the tactic happened to produce the mapping branch\prov{\Pn{2},\Pn{7},\Pn{9}}.
+
+\subsubsection{Zip with a generalized second vector}
+
+Target \code{Vec A n -> Vec B n -> Vec (A x B) n}\prov{\Pn{6}}.
+\begin{lstlisting}
+major   : xs : Vec A n        changing : ys (its length follows n)
+rung 0 fails : ih : Vec (A x B) k is fixed at the original ys, which has
+               length k + 1, so the cons branch cannot use it
+rung 2 (behavioral generalization of ys) :
+motive  : M (n : Nat) (xs : Vec A n) := Vec B n -> Vec (A x B) n
+nil branch : goal : Vec B 0 -> Vec (A x B) 0
+   intro ys; eliminate ys : Vec B 0 (Section sec:elimination):
+     cons impossible (k + 1 = 0 refuted by no-confusion); nil => Vec.nil
+cons branch : index n := k + 1, fields x : A, xs : Vec A k
+   goal : Vec B (k + 1) -> Vec (A x B) (k + 1)
+   caps : ih : Vec B k -> Vec (A x B) k   (structural, field xs)
+   intro ys; eliminate ys : Vec B (k + 1):
+     nil impossible (0 = k + 1); cons y ys' with ys' : Vec B k
+   spine : Vec.cons (x, y) (ih ys')       -- ih applied to the tail
+final specialization : (rec ... xs) ys : Vec (A x B) n
+lowered :
+   def Vec.zip : Vec A n -> Vec B n -> Vec (A x B) n
+     | .nil, .nil => .nil
+     | .cons x xs, .cons y ys => .cons (x, y) (Vec.zip xs ys)
+\end{lstlisting}
+Checked: the lowered definition was hand-written in \Pn{6}'s pilot and reported \code{propext} (from the impossible-branch eliminations). The generalization step and the eliminations were not automated\prov{\Pn{6}}.
+
+\subsubsection{Safe list indexing}
+
+Target \code{lookupFin : (xs : List A) -> Fin xs.length -> A}\prov{\Pn{2}}; \Pn{8} states the vector form \code{(n : Nat) -> Vec A n -> Fin n -> A} with $M(n, xs) = \mathrm{Fin}\,n \to A$\prov{\Pn{8}}.
+\begin{lstlisting}
+major   : xs : List A         changing : i (its type depends on xs)
+rung 1 (dependency closure) : i : Fin xs.length depends on xs
+motive  : M (xs : List A) := Fin xs.length -> A
+nil branch : goal : Fin (List.length []) -> A
+   intro i; i.isLt : i.val < 0; close by Nat.not_lt_zero (elim i)
+cons branch : fields x : A, xs : List A
+   goal : Fin (List.length (x :: xs)) -> A     -- = Fin (xs.length + 1) -> A
+   caps : ih : Fin xs.length -> A   (structural, field xs)
+   intro i; cases i.val:
+     0     => x
+     j + 1 => ih (Fin.mk j (Nat.lt_of_succ_lt_succ i.isLt))
+           -- the data construction and the range proof are one obligation
+final specialization : (rec ... xs) i : A
+\end{lstlisting}
+The point of the trace is the motive: the index stays inside it, so the cons branch's recursive result is \code{Fin xs.length -> A} and not a result specialized to the original index of the larger list\prov{\Pn{2}}. The related fold form with carrier $\Nat \to \mathrm{Option}\,A$ (\code{indexFold}, \Pn{8}; the template in \Pn{5}; \Pn{9}'s carrier sketch) was hand-written and proved equal to a structural reference for every list and index\prov{\Pn{5},\Pn{8},\Pn{9}}. No artifact checked \code{lookupFin} itself, and \Pn{2} warns that the engine must not substitute it for a user's integer-indexed request\prov{\Pn{2}}.
+
+\subsubsection{Accumulator reversal}
+
+The full trace is in Section~\ref{alg:rec-reverse}. In plan terms: major $xs$, generalized $\{acc\}$ found at rung 2 from the recursive-call substitution, motive $M(xs) = \forall acc,\ \{r : \mathrm{List}\,A \,//\, r = \mathrm{reverse}(xs) \mathbin{+\!\!+} acc\}$ in the certified reading, capability in the cons branch $ih : \forall acc,\ M(xs)(acc)$ consumed at $x{::}acc$, final specialization $f(xs) = (\mathrm{rec}\ xs\ [])$ with the finalization lemma \code{List.append_nil}\prov{\Pn{2},\Pn{6}}.
+
+\subsection{What was demonstrated and what was not}\label{alg:rec-status}
+
+Demonstrated, in checked artifacts:
+\begin{itemize}
+\item Branch completion inside hand-supplied structural skeletons: \code{vectorMap}/\code{vecMap} (\Pn{2}, \Pn{4}, \Pn{7}, \Pn{9}) and \code{vectorReplicate} by hand-selected induction on \code{n} (\Pn{5}), with the recursive call bound by the author\prov{\Pn{2},\Pn{4},\Pn{5},\Pn{7},\Pn{9}}.
+\item Hand-written certified folds and their universal theorems: \code{certifiedMap}/\code{MapRel} (\Pn{1}), \code{certifiedAppend} (\Pn{5}), \code{fold_contract}, \code{certifiedRecursor}, \code{indexFold_correct} (\Pn{8})\prov{\Pn{1},\Pn{5},\Pn{8}}.
+\item Hand-written accumulator invariants: \code{foldInvariant} for a fold step selected by finite CEGIS (\Pn{2}); \code{reverseAux_spec} (\Pn{6})\prov{\Pn{2},\Pn{6}}.
+\item The code-generator boundary and its equation-oriented repair, including one checked correspondence theorem (\Pn{4}, \Pn{6}, \Pn{8}, \Pn{9})\prov{\Pn{4},\Pn{6},\Pn{8},\Pn{9}}.
+\item The self-reference failure and its local-filter repair (\Pn{2})\prov{\Pn{2}}.
+\end{itemize}
+Not demonstrated by any artifact: selection of the major premise; dependency-closed or behavioral generalization; motive construction and its Lean check; instantiation of branch telescopes from recursor metadata; creation or consumption of capabilities by the engine; the certified-branch backtracking loop; accumulator or invariant discovery; measure search or any well-founded plan; mutual or nested plans; lowering from a plan; final specialization. Every algorithm in this section is therefore a specification with named regression tests (Sections~\ref{alg:rec-ladder}, \ref{alg:rec-caps}, \ref{alg:rec-lowering}), not a description of running code\prov{\Pn{2},\Pn{7},\Pn{8},\Pn{9}}.

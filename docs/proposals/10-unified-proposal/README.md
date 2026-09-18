@@ -2,15 +2,26 @@
 
 `Leant2.tex` consolidates the nine independent proposals in the sibling
 directories `01-` to `09-` into one design. `Leant2.pdf` is the compiled
-article.
+article (about 106 pages).
 
-The article keeps the consensus of all nine as its core (exact Lean
+Part I (architecture) keeps the consensus of all nine as its core (exact Lean
 expressions as semantic authority; whole-continuation backtracking; recursion
 through typed schemas with call capabilities; graded behavioral authority; one
 kernel-checked acceptance gate; qualified negatives; a non-refundable work
 ledger), selects the best-developed treatment where the proposals differ, and
 marks each idea with the proposals it comes from. Appendix A is the provenance
 ledger.
+
+Part II (algorithms, `sections/alg-*.tex`) gives the procedures as pseudocode
+merged from the best-specified proposals, with the worked traces that recur
+across them: the construction search and spine expansion; dependent
+elimination, transport, retrieval, and carrier invention; recursion-schema and
+motive synthesis, invariants, measures, and executable lowering; contract
+propagation, certified counterexample-guided refinement, and certified
+pruning; scheduling, memoization, and the completeness statements; proof
+services, the constructive propositional lane, and the acceptance gate.
+
+Part III covers evidence, evaluation, and the roadmap.
 
 Two requirements come from the project owner rather than from the proposals:
 

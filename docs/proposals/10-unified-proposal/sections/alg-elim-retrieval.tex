@@ -1,0 +1,408 @@
+\section{Algorithms: dependent elimination, retrieval, and carriers}\label{alg:elim}
+
+Sections~\ref{sec:elimination}, \ref{sec:library}, and \ref{sec:carriers} state what the engine does; this section states how, as procedures over the branch state of Section~\ref{sec:obligation-graph}. Every procedure below runs inside one transaction of Section~\ref{sec:transactions}, assigns only branch-owned metavariables (Invariant~\ref{inv:ownership}), and returns its new obligations to the scheduler of Section~\ref{sec:scheduling} rather than solving them itself; the construction rules that consume those obligations are in Section~\ref{alg:search}. Pseudocode uses the proposals' own names where they had them. Where a procedure was only designed, the text says so; the only parts that ran are the \code{cases} calls in the nine prototypes and the hand-written \code{indexFold} check in \Pn{8}.
+
+\subsection{The case-analysis transaction}\label{alg:cases}
+
+\subsubsection{What the wrapper returns}
+
+Every prototype that split a local called \code{MVarId.cases} and kept only the subgoal identifiers (\code{branches.toList.map (.mvarId)}), discarding the \code{fields} and \code{subst} components of each \code{CasesSubgoal}\prov{\Pn{1},\Pn{2},\Pn{5},\Pn{6},\Pn{7},\Pn{8},\Pn{9}}. That is sufficient for a bounded existence search and insufficient for Leant2, because contracts, observations, and recursive capabilities must follow the same branch substitution as the goal\prov{\Pn{2},\Pn{3}}. The production wrapper therefore returns a record, not a goal list\prov{\Pn{3},\Pn{4},\Pn{6}}:
+
+\begin{lstlisting}
+CaseResult := {
+  scrutinee    : FVarId,                 -- x : I p i
+  closure      : List FVarId,            -- dependents generalized with x
+  motive       : Expr,                   -- checked at the eliminator's sort
+  branches     : List CaseBranch,
+  discharged   : List DischargeRecord,   -- impossible branches, with provenance
+  reconstruct  : List (BranchTerm) -> Expr  -- eliminator application
+}
+CaseBranch := {
+  ctor         : Name,
+  goal         : MVarId,                 -- branch context already reintroduced
+  fields       : List FVarId,            -- constructor fields, telescope order
+  indexEqs     : List (FVarId x Expr),   -- surviving index equations, if any
+  subst        : FVarSubst,              -- parent local -> branch local/term
+  transports   : List MVarId             -- equality obligations created by step 5
+}
+DischargeRecord := (ctor, evidence : kernelChecked p | trustedFragment thm | heuristicOmission)
+\end{lstlisting}
+
+\code{subst} is the branch-to-parent map that the contract translator, the observation bank, and the capability table apply; \code{transports} are goals of the form $i = j$ that the wrapper could not close by unification and that Section~\ref{alg:transport} owns. Only \code{kernelChecked} and \code{trustedFragment} records support a coverage claim\prov{\Pn{4}}.
+
+\subsubsection{Scrutinee selection}
+
+The prototypes disagreed on which locals may be split: \Pn{1}, \Pn{2}, \Pn{8}, and \Pn{9} split any local whose weak-head type is an inductive application; \Pn{5} excludes \code{Nat}; \Pn{6} splits only heads on a whitelist; \Pn{7} splits only non-recursive, non-indexed inductives and marks each split local as used\prov{\Pn{1},\Pn{2},\Pn{5},\Pn{6},\Pn{7},\Pn{8},\Pn{9}}. All of them bounded the number of splits per path (\code{splits}). The unified procedure keeps the bound and replaces the whitelists by a score; a low score delays a split, it never forbids it\prov{\Pn{2},\Pn{3},\Pn{7}}.
+
+\begin{lstlisting}
+scoreScrutinee(x, branch):
+  ty := whnfR (typeOf x);  require ty is an inductive application I p i
+  s := 0
+  if x or one of its indices occurs in an index of the target      then s += 3
+  if a contract clause or observation discriminates on x           then s += 3
+  if x blocks weak-head reduction of a term the target needs       then s += 2
+  if x is Prop-valued and the target sort forbids its eliminator   then return none
+  if I is recursive and no recursion plan covers x                 then s -= 2
+  if splitHistory(branch) already contains the origin of x         then s -= 3
+  if I has no indices and one constructor                          then s -= 1
+  return s
+\end{lstlisting}
+
+Split history is keyed by discriminant origin, not by the current \code{FVarId}: splitting \code{xs} produces a tail whose origin is still \code{xs}, so a second split is recognized as bounded unrolling of one input, which is legitimate for finite cases and never a substitute for a recursion plan (Section~\ref{sec:recursion})\prov{\Pn{2},\Pn{5},\Pn{9}}.
+
+\subsubsection{The transaction}
+
+\Pn{3} and \Pn{4} give the four-step plan and \Pn{5} the same plan with generalization made explicit; \Pn{6} adds the requirement that the substitution map be preserved per branch. Merged\prov{\Pn{3},\Pn{4},\Pn{5},\Pn{6},\Pn{8}}:
+
+\begin{lstlisting}
+caseSplit(branch, x):
+  -- 1. dependency closure of x and its indices
+  (I, params, idx) := decompose (whnfR (typeOf x))
+  closure := []
+  for y in localsAfter x in telescope order:
+    if typeOf y or valueOf y mentions x, any of idx, or any member of closure:
+      closure := closure ++ [y]
+  -- 2. generalize / revert
+  --    fresh index variables j with equations h : j = idx, when idx are not variables
+  (goal1, j, h) := generalizeIndices(branch.goal, x)           -- Lean: generalizeIndices
+  goal2 := revert(goal1, closure)                              -- Lean: MVarId.revert
+  -- 3. eliminator and motive
+  elim := casesOnOf I;  require sortOf(target goal2) admissible for elim (alg:elim-restrictions)
+  motive := fun j x => Pi closure. target goal2                -- checked by inferType
+  -- 4. one branch per constructor
+  for c in constructorsOf I:
+    g := instantiate elim with motive, params, c              -- Lean: MVarId.induction / casesOn
+    fields := intro (fieldsOf c) in g
+    eqs := index equations  c.resultIndices(fields) = j
+    r := unifyEqs(g, eqs)                                     -- Lean: unifyEqs / substs
+    match r with
+    | contradiction p     => discharged += (c, kernelChecked p); continue
+    | solved (g', sigma)  => reintroduce closure in g' with types under sigma
+                             branches += {c, g', fields, residualEqs r, sigma ++ h, []}
+    | stuck eq            => branches += {c, g'', fields, [eq], sigma, [mkTransportGoal eq]}
+  -- 5. reconstruction
+  reconstruct := fun terms => elim motive params (fun fields => terms c) ... x
+  return CaseResult{x, closure, motive, branches, discharged, reconstruct}
+\end{lstlisting}
+
+The bracketed Lean names are the operations the prototypes used or that \code{MVarId.cases} composes internally on Lean 4.34.0: \code{generalizeIndices}, revert of dependents, the \code{casesOn} application, \code{unifyEqs} for the constructor index equations, and reintroduction through \code{FVarSubst}\prov{\Pn{1},\Pn{5},\Pn{6},\Pn{8}}. The first implementation calls \code{MVarId.cases} and reads back \code{fields} and \code{subst} instead of reimplementing steps 2 to 4; a custom fast path is admitted only against differential tests over that wrapper\prov{\Pn{5},\Pn{8}}. If step 3 yields a motive whose generalization exceeds a size bound, the rule declines or enumerates a bounded alternative closure; generalizing less than the closure is never admissible\prov{\Pn{4}}.
+
+\subsubsection{Impossible-branch discharge}
+
+A branch is removed only by evidence, in this order\prov{\Pn{1},\Pn{4},\Pn{5},\Pn{8}}:
+
+\begin{lstlisting}
+discharge(c, eqs, g):
+  if unifyEqs finds a constructor clash   (e.g. 0 = n + 1)   -> kernelChecked (noConfusion proof)
+  else if unifyEqs finds an occurs-check cycle               -> kernelChecked (structural proof)
+  else if a registered exact-fragment procedure (omega on Nat, decide on finite types)
+          proves  eqs -> False  in the branch context        -> trustedFragment (its theorem)
+  else if a bounded local contradiction search closes False  -> kernelChecked (the proof)
+  else                                                        -> keep the branch; it is not impossible
+\end{lstlisting}
+
+Heuristic unification failure, an opaque index expression that does not reduce, or an SMT answer about an approximation of the indices never removes a branch; if the lane still drops it for cost, the record says \code{heuristicOmission} and the result cannot claim coverage\prov{\Pn{4},\Pn{5},\Pn{8}}. Every prototype that split an indexed family observed \code{propext} in the resulting term's axiom inventory; the receipt reports it (Section~\ref{sec:acceptance})\prov{\Pn{2},\Pn{4},\Pn{7},\Pn{8},\Pn{9}}.
+
+\subsection{Equality repair and transport}\label{alg:transport}
+
+An index mismatch is a construction problem with an explicit search action, not a normalization step\prov{\Pn{3},\Pn{4},\Pn{6}}. The unified order is \Pn{3}'s repair rule with \Pn{6}'s example and \Pn{4}'s equality graph:
+
+\begin{lstlisting}
+repairEquality(e : S, target T, branch):
+  -- 1. definitional, on the transparency ladder, budgeted and charged
+  for tr in [reducible, instances, default]:
+    if isDefEq(S, T) under tr within budget: return e   (record tr if stronger than reducible)
+  -- 2. registered proof-producing normalizers (simp sets, arithmetic normal forms)
+  for nrm in registeredNormalizers:
+    if nrm proves  q : S = T  within budget: return castAlong(q, e)
+  -- 3. common family and index equation
+  (F, i, j) := commonFamily(S, T)      -- S == F i, T == F j, with i, j rigid-headed
+  if none: return blocked(S, T)        -- suspended constraint, watchers on its mvars
+  q := newGoal (i = j) role := indexEquality   -- proved by the proof portfolio
+  motive := fun k => F k                       -- checked by inferType at the recursor's sort
+  return  Eq.rec (motive := motive) e q        -- transport; never a raw cast
+\end{lstlisting}
+
+For $v : \mathrm{Vec}\,A\,(n+m)$ against $\mathrm{Vec}\,A\,(m+n)$: step 1 fails at every transparency because addition on open naturals does not reduce; step 2 succeeds if an arithmetic normalizer is registered; otherwise step 3 finds $F = \mathrm{Vec}\,A$, $i = n+m$, $j = m+n$, opens $q : n+m = m+n$ (closed by \code{Nat.add_comm} or \code{omega}), and returns the recursor application. The index is never erased and $n+m$ is never treated as definitionally $m+n$\prov{\Pn{3},\Pn{6},\Pn{8}}. Each transport adds one unit to the \code{casts} component of the cost vector, so a differently oriented construction with no transport outranks it; the simplification phase later tries to remove casts by checked equalities, and failure to simplify is not evidence of ill-typing\prov{\Pn{2},\Pn{4}}.
+
+Transport is also an elimination action on locals: from $h : a = b$ and $x : \beta(a)$, propose $\beta(b)$ in either orientation of $h$\prov{\Pn{4},\Pn{5}}. To find $h$ the branch keeps an \emph{equality graph} over index and dependent-argument expressions whose edges carry proofs, not union-find representatives; a path is used only by inserting its composed proof into a transport; congruence closure may propose a path, and dependent congruence that would need heterogeneous equality returns unknown in the first implementation\prov{\Pn{4}}. \Pn{3} additionally routes arithmetic index equations to solvers whose output must be a proof in the actual local context with the source operation's semantics (truncated subtraction, natural division).
+
+\subsection{Elimination restrictions}\label{alg:elim-restrictions}
+
+The admissibility test in step 3 of \code{caseSplit} reads the recursor, never a table of type names\prov{\Pn{4},\Pn{7},\Pn{8}}:
+
+\begin{lstlisting}
+admissibleElim(I, targetSort, profile):
+  rec := recursorOf I
+  if rec eliminates into targetSort (large elimination or targetSort = Prop): return ok
+  -- I is a Prop with restricted elimination and the target is data
+  if I = False:                       return ok            -- False.elim into any sort
+  if I = Eq or I is a singleton Prop: return ok            -- Lean grants these
+  if I = Nonempty or I = Exists:
+     if profile allows Classical.choice: return ok(labelled noncomputable)
+     else return refuse("proof-to-data extraction")
+  return refuse(I, targetSort)
+quotientElim(q : Quot r, target):
+  create holes  f : A -> target  and  respect : forall a b, r a b -> f a = f b
+  return Quot.lift f respect q      -- both holes coupled, never a representative
+decidableIf(c : Prop, branch):
+  inst := instance obligation Decidable c        -- delayed until c is determined
+  then-goal under h : c, else-goal under h : not c
+  contract clauses split under the same h; a Bool guard must be linked to c by a proved iff
+\end{lstlisting}
+
+\Pn{7}'s prototype keeps a negative control, \code{fail_if_success have : Nonempty A -> A}, showing that the native recursor check rejects the extraction without a special rule; the same file accepts \code{False}-elimination\prov{\Pn{7}}. Quotient outputs go through registered lift components with their respect theorems; searching for representatives is a different, usually noncomputable request\prov{\Pn{3},\Pn{4},\Pn{8}}. A condition synthesized for an \code{if} has its own proof and execution obligations; an SMT predicate with no Lean interpretation cannot become a branch assumption\prov{\Pn{2}}.
+
+\subsection{Worked elimination traces}\label{alg:elim-traces}
+
+\paragraph{Indexed constructor (\Pn{4}).} Target $A \to \mathrm{Vec}\,A\,n \to \mathrm{Vec}\,A\,(n+1)$. Pi introduction exposes $a : A$ and $xs : \mathrm{Vec}\,A\,n$. The result-head key $(\mathrm{Vec}, 2)$ retrieves the two constructors. \code{nil} : unifying $\mathrm{Vec}\,A\,0$ with $\mathrm{Vec}\,A\,(n+1)$ is a rigid clash, rejected in its transaction. \code{cons} : the spine creates $?k : \Nat$, $?h : A$, $?t : \mathrm{Vec}\,A\,?k$ and unifies $\mathrm{Vec}\,A\,(?k+1)$ with the target, assigning $?k := n$ by injectivity of the successor; the exact-local lane solves $?h := a$ and $?t := xs$ in the same continuation. This ran in \Pn{4}'s \code{vcons} and \Pn{2}'s \code{vectorTail}\prov{\Pn{2},\Pn{4}}.
+
+\paragraph{Indexed elimination (\Pn{2}, \Pn{5}, \Pn{8}, \Pn{9}).} Target $\mathrm{Vec}\,A\,(n+1) \to A$. After introduction $v : \mathrm{Vec}\,A\,(n+1)$; \code{scoreScrutinee}: $v$ is the only inductive local, the target is not indexed by it, but nothing else applies, so it is split. Step 1: closure is empty. Step 2: \code{generalizeIndices} introduces $j : \Nat$, $h : j = n+1$ and retypes $v : \mathrm{Vec}\,A\,j$. Step 3: motive $\lambda j\, v.\ A$ (the target does not depend on $v$, so the motive is constant; the eliminator still refines $j$). Step 4, \code{nil}: equation $0 = n+1$; \code{unifyEqs} closes the branch by \code{Nat.noConfusion}; record \code{(nil, kernelChecked)}. Step 4, \code{cons}: fields $k : \Nat$, $a : A$, $t : \mathrm{Vec}\,A\,k$; equation $k+1 = n+1$ solved to $k := n$ by injectivity; branch goal $A$ with $a$ in context; the exact-local lane closes it. Step 5 rebuilds the \code{casesOn} application; the term's axiom inventory contains \code{propext}, contributed by the equation elimination\prov{\Pn{2},\Pn{5},\Pn{8},\Pn{9}}. No conversion to an unindexed list occurs.
+
+\paragraph{Elimination inside a recursion schema (\Pn{4}, \Pn{6}).} Target $(A \to B) \to \mathrm{Vec}\,A\,n \to \mathrm{Vec}\,B\,n$ with $n$ abstract: constructors alone cannot decide between \code{nil} and \code{cons} because $n$ is rigid, so the recursion lane owns the split. With motive $M(n, xs) = \mathrm{Vec}\,B\,n$ (Section~\ref{sec:recursion}), the \code{nil} branch refines $n := 0$ and \code{nil} becomes admissible; the \code{cons} branch refines $n := k+1$, exposes $x : A$, $xs : \mathrm{Vec}\,A\,k$, $ih : \mathrm{Vec}\,B\,k$, and the constructor lane reduces the goal to a $B$ (solved by $f\,x$) and a tail (solved by $ih$)\prov{\Pn{4},\Pn{6}}. \Pn{2}'s and \Pn{4}'s prototypes filled these branches inside a hand-written skeleton; \Pn{9} reports that the first attempt, an \code{induction} tactic inside an executable \code{def}, was rejected by the code generator until the plan was lowered to pattern equations (Section~\ref{sec:recursion}).
+
+\paragraph{Dependent lookup (\Pn{8}).} Target $\Pi n.\ \mathrm{Vec}\,A\,n \to \mathrm{Fin}\,n \to A$. The index argument is consumed after the traversal, so the motive is $M(n, xs) = \mathrm{Fin}\,n \to A$, not $A$. In the \code{nil} branch the reintroduced index has type $\mathrm{Fin}\,0$ and is discharged by splitting it: its bound $i < 0$ is a checked contradiction. In the \code{cons} branch a second split, now on the index, gives zero (return the head) and successor (apply the recursive result to the smaller \code{Fin k}); the index conversion is a transport obligation of Section~\ref{alg:transport}, not an erased annotation. Designed only; the vector-head prototype validates the elimination step, not this trace\prov{\Pn{2},\Pn{8}}.
+
+\subsection{Provider index construction and retrieval}\label{alg:index}
+
+\subsubsection{Building the index}
+
+\Pn{1}, \Pn{5}, \Pn{8}, and \Pn{9} converge on a discrimination tree over normalized result shapes with explicit wildcard buckets; \Pn{6} adds the recipe map for local components; \Pn{7} adds the typed forward DAG. Merged\prov{\Pn{1},\Pn{5},\Pn{6},\Pn{7},\Pn{8},\Pn{9}}:
+
+\begin{lstlisting}
+buildIndex(env, generation):
+  idx := DiscrTree.empty;  wild := [];  reducible := DiscrTree.empty
+  for decl in env, decl admitted by the provider policy:
+    ty := decl.type;  tele := piTelescope ty
+    resHead := whnfR (result tele)         -- reducible transparency only
+    key := (head resHead, arity tele, argHeadPattern resHead,
+            role decl (ctor | proj | thm | def | recursor | lift),
+            isProp (result tele), universeShape decl, binderDeps tele)
+    entry := {name, levelParams, ty, key, visibility, computable?, specEntries decl, provenance}
+    if head resHead is a bound variable or metavariable: wild += entry
+    else idx.insert (pattern resHead) entry
+    if head resHead unfolds under reducible to a different head:
+       reducible.insert (pattern (whnfR' resHead)) entry   -- alias bucket
+    if decl is a structure: register projections and constructors explicitly
+  return Index{idx, wild, reducible, generation}
+\end{lstlisting}
+
+The key deliberately omits detail: a hit is a proposal, and every hit is instantiated with fresh universe levels and matched natively before it becomes a search action, so the index may over-return; it must never silently under-return, so the wildcard and reducible buckets are always consulted at the widening tier\prov{\Pn{3},\Pn{7},\Pn{9}}. Locals, projections of known locals, and constructors of the goal's own family form a separate small inventory searched first\prov{\Pn{1},\Pn{5},\Pn{7}}. Specification entries are stored with the declaration they justify and are instantiated only at the same occurrence\prov{\Pn{5},\Pn{8}}.
+
+\subsubsection{Retrieval tiers and widening}
+
+\begin{lstlisting}
+retrieve(goal, branch, tier):
+  T := whnfR (typeOf goal);  pat := pattern (resultOf T)
+  match tier with
+  | 0 => locals(branch) ++ projectionsOfKnownLocals ++ localDictionaries
+  | 1 => constructorsOf (headOf pat) ++ projectionsOf (headOf pat)
+  | 2 => explicitlyRequestedProviders ++ registeredComponents ++ synthesisLemmas
+  | 3 => idx.getMatch pat ++ reducible.getMatch pat        -- nearby namespaces first
+  | 4 => idx.getUnify pat ++ wild                          -- flexible heads
+  | 5 => budgetedBroadScan(env)                            -- charged, resumable
+  record (tier, cap) in the branch's restriction trail
+  return candidates ranked by (tier, key distance, registered cost, learned relevance)
+\end{lstlisting}
+
+A lane consumes tiers in order and widens on exhaustion; an exhausted tier or a cap such as fifty providers is a restriction recorded in the result, never an \code{impossible} verdict\prov{\Pn{1},\Pn{3},\Pn{9}}. Learned premise ranking may reorder within a tier and must operate only on accessible declarations\prov{\Pn{1}}.
+
+\subsubsection{Typed abstract graph refinement}
+
+For large inventories \Pn{4} and \Pn{9} adopt TYGAR-style abstraction as an accelerator, \Pn{8} as the coarse layer of the demand graph\prov{\Pn{4},\Pn{8},\Pn{9}}:
+
+\begin{lstlisting}
+abstractCompose(goalType, inventory, k):
+  A := abstraction with nodes = (rigid head, bounded argument pattern), edges = providers
+  loop up to k times:
+    path := shortestPath(A, abs(availableTypes), abs(goalType))
+    if none: return noProposal            -- advisory only, never negative evidence
+    t := elaborate path natively in the branch (spines of alg:search, transports of alg:transport)
+    if t typechecks: return proposal t
+    d := explain mismatch (index Vec A 0 vs Vec A (n+1), universe, dictionary identity)
+    A := refine A by the distinction d       -- split one node; never ban the provider
+  return noProposal
+\end{lstlisting}
+
+The abstraction keeps nominal heads, index dependencies, universe constraints, and dictionary identities as labels so that a failed path yields a concrete refinement; the exact branch stays authoritative and no completeness theorem is claimed for the abstract graph\prov{\Pn{4},\Pn{9}}.
+
+\subsection{Component recipes, saturation, and the join}\label{alg:recipes}
+
+\subsubsection{Recipes and telescope substitution}
+
+A solved subterm is stored as a recipe over exactly the locals it depends on\prov{\Pn{6},\Pn{7},\Pn{9}}:
+
+\begin{lstlisting}
+storeRecipe(e, branch):
+  Delta := dependencyClosedTelescope(fvarsOf e ++ fvarsOf (typeOf e))   -- keeps let values
+  sigma := abstract (typeOf e) over Delta;  body := abstract e over Delta
+  return Recipe{Delta, body, sigma, contracts := lemmasProvedAbout e (also abstracted),
+                cost := size body, provenance := branch.decisionTrail, generation}
+reuseRecipe(r, goal, Gamma):
+  freshen universe variables of r
+  for rho in telescopeSubstitutions(r.Delta, Gamma):       -- exact, typed, in order
+    e' := instantiate r.body rho;  s' := instantiate r.sigma rho
+    if isDefEq(s', typeOf goal) and check e' : s' in Gamma:
+       contracts' := instantiate r.contracts rho           -- the SAME rho
+       yield (e', contracts')
+\end{lstlisting}
+
+A name match or a matching pretty-printed type is never enough; the substitution is applied uniformly to term, type, and contracts and the result is rechecked in $\Gamma$\prov{\Pn{6}}. A recipe never contains a stale \code{FVarId}\prov{\Pn{7},\Pn{9}}.
+
+\subsubsection{Forward saturation and the backward demand graph}
+
+\begin{lstlisting}
+forwardSaturate(branch, bound):
+  dag := branch.forwardDag;  queue := locals(branch)
+  while queue nonempty and charged work < bound:
+    v := pop queue
+    for d in [projections of v, constructor equations of v, registered forward rules applied to v]:
+      key := if isProp (typeOf d) then typeOf d else (d, typeOf d)   -- data keyed by expression
+      if key not in dag: dag.add key (derivation d); push queue d
+  return dag
+demandGraph(branch):
+  G := nodes := targetHoles ++ observationDemands
+  for n in G unexplored:
+    for p in retrieve(n, branch, currentTier):
+      add hyperedge  argumentDemands(p, n) --p--> n     -- each node carries telescope,
+                                                       -- assignments, instances, scope
+  seed solved demands from forwardSaturate
+  return G
+join(G, dag):
+  for hyperedge (args --p--> n) with every arg matched by a dag entry or a recipe:
+    instantiate p with the matched entries in one transaction
+    propagate the resulting type/instance assignments across the whole application
+    yield the application with its continuation
+\end{lstlisting}
+
+Two demands with different vector lengths or different dictionary payloads are distinct nodes unless an exact transport identifies them\prov{\Pn{6},\Pn{8}}. Saturation is bounded and demand-driven; it improves the inventory, it does not close the imported environment under all theorems\prov{\Pn{2},\Pn{9}}.
+
+\subsubsection{Candidate context slices}
+
+\begin{lstlisting}
+contextSlice(demand n, branch, depth):
+  S := locals in typeOf n ++ locals in contract(n) ++ locals in pendingConstraints(n)
+  repeat depth times: S := S ++ locals that a retrievable provider can turn into a member of S
+  S := dependencyClosure S
+  return S
+solveSliced(n, branch):
+  r := search n under context contextSlice(n)              -- high-priority lane
+  if r = solution e: e' := weaken e into the full context via an explicit renaming map
+                     recheck e' : typeOf n in the full context; return e'
+  else: continue in the full-context lane                   -- slice failure is not evidence
+\end{lstlisting}
+
+This is the direct algorithmic answer to Leant's indexing diagnostic, in which the handler was found standalone but not amid the outer list and index variables\prov{\Pn{1},\Pn{6},\Pn{7}}.
+
+\subsection{Carrier invention}\label{alg:carriers-alg}
+
+\subsubsection{Grammar and demand rules}
+
+The carrier grammar is \Pn{8}'s, seeded by types already demanded; \Pn{1}'s list $R$, $I \to R$, $S \times R$, invariant-carrying pairs is its first cost layer\prov{\Pn{1},\Pn{8}}:
+\[
+C ::= R \mid D \to C \mid C_1 \times C_2 \mid \mathrm{Option}\,C \mid \Sigma d{:}D,\ C(d),
+\]
+where $R$ and $D$ range over types already present in the telescope, the target, the contract, and the domains of retrieved providers; nothing is drawn from unrelated global types.
+
+\begin{lstlisting}
+proposeCarriers(eliminator E, goal, branch):
+  R := result type demanded after E is applied
+  rest := binders of the goal telescope consumed AFTER the traversal of E's major premise
+  seeds := [R]
+  -- parameter postponement (P8; "backward demand" in P1, "remaining telescope" in P5)
+  for q in rest, in original order:  seeds += [typeOf q -> R]
+  seeds += [Pi rest. R]                                    -- all remaining arguments at once
+  -- result pairing (P8; "two mutually needed summaries" in P4)
+  for (s1, s2) in summaries demanded by the contract of the recursive step: seeds += [s1 x s2]
+  -- accumulator generalization (P8; "behavioral generalization" in P5)
+  for a in arguments whose value differs between a call and its recursive call: seeds += [typeOf a -> R]
+  -- invariant-carrying carriers (P1, P5, P9)
+  if a pointwise contract Q is available: seeds += [{r : R // Q r}] and dependent variants
+  return enumerate seeds by increasing structural cost, each checked at E's carrier sort
+\end{lstlisting}
+
+Backward-demand detection is the trigger: the rule fires when, after choosing $E$, the continuation still consumes an argument $I$; then $I \to R$ is tried before forcing $E$ to produce $R$ directly\prov{\Pn{1},\Pn{5},\Pn{9}}. Generalization is behavioral as well as typal: \Pn{5}'s policy first reabstracts all remaining non-fixed arguments in their original order, then tries a small family of subsets suggested by the contract and by candidate recursive calls, always adding mandatory type dependencies; binder provenance is kept after eager introduction so that an already-introduced index can be reabstracted\prov{\Pn{5}}. Carriers are never guessed from unrelated global types\prov{\Pn{5},\Pn{9}}.
+
+\subsubsection{The carrier frontier}
+
+\Pn{1}'s Algorithm~5, with \Pn{6}'s recipe reuse and \Pn{8}'s cost accounting\prov{\Pn{1},\Pn{6},\Pn{8}}:
+
+\begin{lstlisting}
+carrierFrontier(E, goal, branch):
+  for C in proposeCarriers(E, goal, branch):              -- increasing cost, fair
+    key := (fullContext(branch), motive C, E, bound)
+    if failMemo contains key: continue                     -- memoized only under the full key
+    t := transaction:
+      instantiate E at carrier C                           -- base z : C, step s : fields -> C -> C
+      base, step := coupled holes; outer := continuation applying the fold result to rest
+      solve (base, step, outer) jointly (alg:search)       -- never base-then-step-then-outer
+    if t succeeded: yield t                                -- alternatives stay on the frontier
+    else failMemo += key
+    -- reduced-context attempt (P1): a step solved in its small telescope becomes a recipe
+    if step solvable in contextSlice(step): storeRecipe(step); retry reuseRecipe in full context
+\end{lstlisting}
+
+A failure in the reduced context never prunes the full context, and a success there is not a solution of the whole query until the outer continuation and the contract are closed\prov{\Pn{1}}. Cost is a vector, with carrier complexity separate from program size; the first accepted carrier is not claimed minimal\prov{\Pn{1},\Pn{7}}.
+
+\subsubsection{Worked trace: list indexing as a right fold}
+
+Request $\mathrm{List}\,A \to \Nat \to \mathrm{Option}\,A$ with the relational lookup specification ($\mathrm{lookup}\,[]\,i = \mathrm{none}$; $\mathrm{lookup}\,(x :: xs)\,0 = \mathrm{some}\,x$; $\mathrm{lookup}\,(x :: xs)\,(k+1) = \mathrm{lookup}\,xs\,k$). Merged from \Pn{8}'s trace, \Pn{6}'s recipe step, and \Pn{5}'s template\prov{\Pn{1},\Pn{4},\Pn{5},\Pn{6},\Pn{7},\Pn{8},\Pn{9}}:
+
+\begin{enumerate}
+\item Introduction exposes $xs : \mathrm{List}\,A$ and $i : \Nat$; the target is $\mathrm{Option}\,A$. Retrieval tier 2 returns \code{List.foldr} $: (A \to C \to C) \to C \to \mathrm{List}\,A \to C$ with a flexible carrier $?C$.
+\item Spine expansion on \code{foldr} with major $xs$ leaves $i$ consumed after the traversal: backward demand fires. \code{proposeCarriers} yields, in order, $C_0 = \mathrm{Option}\,A$ and $C_1 = \Nat \to \mathrm{Option}\,A$ (parameter postponement of $i$).
+\item $C_0$ fails: the step $A \to \mathrm{Option}\,A \to \mathrm{Option}\,A$ cannot depend on $i$, and the outer continuation must still consume $i$ from a result that ignores it; the cons/successor clause of the contract is unprovable for every step, which the proof lane reports as a failed obligation, not as impossibility. The key is memoized.
+\item $C_1$ opens the coupled holes
+\[
+ z : \Nat \to \mathrm{Option}\,A, \qquad s : A \to (\Nat \to \mathrm{Option}\,A) \to \Nat \to \mathrm{Option}\,A,
+\]
+with the outer continuation $\mathrm{foldr}\,s\,z\,xs\,i$.
+\item Base: the contract clause for $[]$ demands $\forall i,\ z\,i = \mathrm{none}$; constructor-directed propagation instantiates $z := \lambda i.\ \mathrm{none}$ and closes the clause by reflexivity.
+\item Step: introduce $x : A$, $r : \Nat \to \mathrm{Option}\,A$, $i : \Nat$. The contract clauses discriminate on $i$, so \code{scoreScrutinee} selects $i$ and \code{caseSplit} yields the zero and successor branches (no indices; no discharge). Zero branch: the clause demands $\mathrm{some}\,x$; the constructor lane fills it. Successor branch with field $k$: the recursive hypothesis states that $r\,k$ implements lookup in the tail at $k$; the clause $\mathrm{lookup}\,(x :: xs)\,(k+1) = \mathrm{lookup}\,xs\,k$ reduces the obligation to that hypothesis; the exact-local lane fills $r\,k$.
+\item The step is solved in the slice $(x, r, i)$ and stored as a recipe; \code{reuseRecipe} reintroduces it in the full context by the substitution that maps its telescope to the fold's binders.
+\item Final specialization: the candidate is $\lambda xs\, i.\ \mathrm{foldr}\,s\,z\,xs\,i$ with
+\[
+ z(i) = \mathrm{none}, \qquad s(x, r)(0) = \mathrm{some}\,x, \qquad s(x, r)(k+1) = r(k),
+\]
+and the contract follows by induction on $xs$ and cases on $i$ from the fold equations.
+\end{enumerate}
+
+Lowered, this is \Pn{5}'s template and \Pn{8}'s checked \code{indexFold}:
+\begin{lstlisting}
+fun xs => List.foldr (fun a smaller i => match i with
+                        | 0 => some a
+                        | n + 1 => smaller n) (fun _ => none) xs
+\end{lstlisting}
+\Pn{8} wrote this by hand, proved it equal to a structural reference for all lists and indices, and audited it axiom-free; no proposal discovered it automatically, and step 6 requires a registered relationship between the specification's cons/successor clause and its tail clause or a proof procedure that exposes it\prov{\Pn{5},\Pn{8}}.
+
+\paragraph{Variants.} For a Church-encoded list instantiated at carrier $\Nat \to A$ with default $d : A$, the same equations become $b(i) = d$, $s(x, k)(0) = x$, $s(x, k)(j+1) = k(j)$; correctness is by induction on the encoded list and cases on the index, with no parametricity assumption about arbitrary inhabitants of the Church type\prov{\Pn{1}}. For an integer-indexed interface the carrier is $\mathrm{Int} \to A$ (or $\mathrm{Int} \to \mathrm{Option}\,A$), the step has type $A \to (\mathrm{Int} \to A) \to \mathrm{Int} \to A$, and the branch contract distinguishes negative, zero, and positive inputs, making the integer case operation relevant; the negative-index policy (default, \code{none}, or other) is part of the specification and the proof, never guessed\prov{\Pn{3},\Pn{6},\Pn{7},\Pn{9}}. Leant's own diagnostics found the function-valued carrier and the integer-case step separately and failed to compose them; carrier invention plus the slice-and-recipe reuse above is the proposed repair, and no proposal reran that legacy query\prov{\Pn{1},\Pn{7}}. The same rule turns a left fold into a right fold with carrier $S \to S$: $\mathrm{foldr}\,(\lambda x\,k\,a.\ k(\mathrm{step}\,a\,x))\,(\lambda a.\,a)\,xs\,a_0$\prov{\Pn{4}}.
+
+\subsection{Helper discovery by typed anti-unification}\label{alg:helpers}
+
+\Pn{1} names the mechanism, \Pn{8} gives the rule, \Pn{2} the cost and circularity discipline\prov{\Pn{1},\Pn{2},\Pn{8}}:
+
+\begin{lstlisting}
+discoverHelpers(branch, bound):
+  R := residual obligations that recur (same head shape, comparable structure) across branches
+  for cluster in structurallyComparable R, |cluster| >= 2:
+    -- 1. close each occurrence over exactly its dependency telescope, in order
+    closed := [ (dependencyClosedTelescope o, typeOf o) | o in cluster ]
+    -- 2. typed anti-unification: differing well-scoped subterms become parameters
+    (Delta_h, T_h, args) := antiUnify closed      -- args_o : Delta_h  for each occurrence o
+    if size T_h > bound: continue
+    -- shared indices, instances, and proof assumptions stay explicit parameters;
+    -- a dependency is never dropped because it occurs only in a type
+    -- 3. propose a let-bound helper hole
+    h := newGoal (Pi Delta_h. T_h) role := auxiliary
+    replace each occurrence o by  h args_o           -- checked in o's original context
+    solve h under the intersection of the permitted scopes; validate every application
+    charge the helper body once to program size; charge all search and verification work
+    require the dependency graph of h to be acyclic (no use of the target's own contract)
+    yield the plan with h
+\end{lstlisting}
+
+For recursion the rule composes with accumulator generalization: a changing argument fixed in an induction hypothesis is abstracted, the generalized helper is synthesized, and the original call specializes it (Section~\ref{sec:recursion})\prov{\Pn{8}}. A helper theorem and a helper function are different products; a theorem whose proposition forbids data elimination cannot serve as an executable witness (Section~\ref{alg:elim-restrictions}), and every generated helper enters the acceptance gate in dependency order\prov{\Pn{2},\Pn{8}}. Anti-unification proposes; it never proves that the helper suffices\prov{\Pn{1}}.
+
+\subsection{What ran and what did not}
+
+Of the procedures in this section, only \code{MVarId.cases} with discarded \code{fields} and \code{subst}, split bounds, and the prototypes' scrutinee filters have executed; every one of the nine prototypes exercised them, and the indexed vector-head elimination ran in \Pn{2}, \Pn{5}, \Pn{8}, and \Pn{9}. \Pn{7}'s negative control for \code{Nonempty} extraction ran. The transport rule, the equality graph, the provider index, retrieval tiers, the abstract graph, recipes, the join, context slices, carrier proposal, and helper discovery were designed and not implemented. The \code{indexFold} carrier was hand-supplied and kernel-checked in \Pn{8}; its discovery by \code{carrierFrontier} is the acceptance test for Section~\ref{sec:carriers}, and the baseline corpus's indexing transcripts (Section~\ref{sec:acceptance}) are the regression set.

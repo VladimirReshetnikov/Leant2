@@ -1,0 +1,441 @@
+\section{Algorithms: proof services and the acceptance gate}\label{alg:acceptance}
+
+This section gives the procedures behind Sections~\ref{sec:proof-services}, \ref{sec:classical}, and \ref{sec:acceptance}: the proof-service adapter and its worker loop, the constructive propositional lane with its non-derivability certificate, the acceptance gate as one procedure with named failure results, the freeze step and the transaction adapter's typed outcomes, the production of negative results, an adversarial checklist, and two end-to-end traces. Where the nine proposals give different versions of one procedure, the most fully specified one is adopted and the alternatives are noted. The worker loop is taken from Forge's \code{lean/Forge/Frontend.lean} \cite{forge}, which is the only compiled implementation of this contract among the sources; the pseudocode below follows its control flow line by line and marks every Leant2 addition.
+
+\subsection{The proof-service adapter}\label{alg:proof-adapter}
+
+\subsubsection{Reply type}
+
+The reply type merges \Pn{3}'s \code{ProofReply}, \Pn{1}'s \code{checkFrozen}, \Pn{6}'s plug-in outcomes, and \Pn{7}'s \code{ProofServiceResult}\prov{\Pn{1},\Pn{3},\Pn{6},\Pn{7}}. \Pn{4}'s three-valued adapter (\code{Proved | Refuted | Unknown}) is the same type without the reduced-goal and patch fields.
+\begin{lstlisting}
+inductive ProofReply where
+  | proof       (pf : Expr) (patch : AssignmentPatch)   -- patch is empty in frozen mode
+  | refutation  (pf : Expr) (patch : AssignmentPatch)   -- pf : goal -> False
+  | reducedGoal (goal' : MVarId) (reconstruct : Expr)   -- reconstruct : goal' -> goal
+  | unsupported (feature : String)
+  | unknown     (reason : String) (consumed : Budget) (attempts : Array Attempt)
+
+structure Attempt where       -- Forge's replay record, one entry per worker
+  worker : String; accepted : Bool; reason : String; ms : Nat
+
+structure AssignmentPatch where assigned : Array (MVarId x Expr) -- each in the permitted set
+\end{lstlisting}
+
+A bare Boolean, a ``no goals'' message, or a remote checker's \code{okay = true} is never a reply; \code{unknown} carries the budget consumed so that the scheduler can re-queue at a larger tier, and a \code{refutation} rejects exactly the closed candidate in exactly this context (Section~\ref{sec:joint-frozen})\prov{\Pn{1},\Pn{2},\Pn{3}}.
+
+\subsubsection{The worker loop}
+
+Forge's \code{runWorker} saves the full tactic state, runs one worker under \code{tryCatchRuntimeEx} so that heartbeat and deadline exceptions are caught like any other failure, and on apparent success audits the proof term before keeping the state. Leant2 adds three things: a \emph{mode}, a \emph{permitted assignment set}, and a \emph{budget} argument; in joint mode the assignments the worker made to permitted holes are captured and returned as a patch, and the state is restored either way so that the engine applies the patch through its own transaction\prov{\Pn{2},\Pn{7}}.
+\begin{lstlisting}
+runWorker (goal : MVarId) (worker : Worker) (mode : Joint | Frozen)
+          (permitted : Set MVarId) (policy : AxiomPolicy) (budget : Budget)
+    : TacticM (Except String (Expr x AssignmentPatch)) := do
+  let saved    <- saveState                              -- Forge: full tactic state
+  let goalType <- instantiateMVars (<- goal.getType)      -- the ORIGINAL goal
+  let goalCtx  := (<- goal.getDecl).lctx
+  let before   := currentAssignments (mvars existing now)  -- Leant2: for the patch
+  let outcome <- tryCatchRuntimeEx (withBudget budget do  -- limits are failures too
+      evalTactic worker.script
+      unless (<- getUnsolvedGoals).isEmpty do throw "worker left goals open"
+      let pf <- instantiateMVars (mkMVar goal)
+      if pf.hasSorry     then throw "REJECTED: admitted, not proved"
+      if pf.hasExprMVar  then throw "REJECTED: proof still contains metavariables"
+      let escaped := (collectFVars pf).filter (fun x => not (goalCtx.contains x))
+      unless escaped.isEmpty do throw "REJECTED: uses variables outside the goal's context"
+      let ok <- withLCtx goalCtx (<- goal.getDecl).localInstances do
+                  try Meta.check pf; isDefEq (<- inferType pf) goalType
+                  catch _ => pure false
+      unless ok do throw "REJECTED: term does not have the goal's type"
+      let bad <- disallowedAxioms policy pf     -- collectAxioms over pf.getUsedConstants
+      unless bad.isEmpty do throw s!"REJECTED: axioms outside the policy: {bad}"
+      -- Leant2 additions: what did the worker assign besides the goal?
+      let delta := (currentAssignments before) \ {goal}
+      match mode with
+      | Frozen => unless delta.isEmpty do throw "REJECTED: frozen candidate was assigned"
+      | Joint  => unless delta.subsetOf permitted do
+                    throw s!"REJECTED: assigned outside the permitted set: {delta \ permitted}"
+      pure (pf, AssignmentPatch.ofDelta delta))
+    (fun ex => pure (Except.error (<- ex.toMessageData.toString)))
+  saved.restore (restoreInfo := true)   -- ALWAYS: assignments, lctx, goals, messages
+  return outcome
+\end{lstlisting}
+
+Three details are load-bearing. First, the restore happens on success as well as on failure in Leant2 (Forge keeps the state on success because the tactic \emph{is} the caller); the accepted proof and patch are data that the engine installs through the atomic attempt of Section~\ref{sec:transactions}, so that the patch is subject to the commit criterion, is visible to wake-ups, and is rolled back with its branch\prov{\Pn{2},\Pn{6}}. Second, \code{disallowedAxioms} iterates \code{collectAxioms} over every constant the term uses and subtracts the profile's allowlist (Section~\ref{sec:profiles}); Forge's \code{forge.allowChoice} option is the standard/strict switch, and stock \code{grind} needs \code{Classical.choice}, so the strict profile drops \code{grind} from the portfolio rather than accepting its proofs\cite{forge}. Third, the type check runs under the goal's own local context and instances, so nothing the worker introduced is in scope; this is what catches Forge's ``escape'' test worker, whose proof is a phantom hypothesis of the goal's own type.
+
+The frozen mode closes the candidate before the goal is formed: every program hole that is still open is replaced by a rigid local parameter and the obligation becomes universally quantified over those parameters, so that ``there should be no computational holes'' is enforced structurally rather than by convention\prov{\Pn{2},\Pn{6}}.
+\begin{lstlisting}
+freezeGoal (Phi : Expr) (t : Expr) : MetaM (MVarId x Array FVarId) := do
+  let holes := (collectMVars t).filter isProgramHole
+  withRigidParams holes fun params => do           -- one fvar per open hole
+    let t'  := t.replaceMVars holes params
+    let g   <- mkFreshExprMVar (Phi.betaRev #[t'])  -- Phi applied to the frozen term
+    pure (g.mvarId!, params)
+\end{lstlisting}
+
+\subsubsection{Portfolio order and per-tier budgets}
+
+The adapter runs a fixed ordered list of workers, as Forge's \code{workers} does (\code{decide}, \code{omega}, \code{forge_cone?}, \code{grind}, with the oracle omitted in restricted mode), extended by the tiers the proposals agree on\prov{\Pn{1},\Pn{3},\Pn{5},\Pn{8}}. The order is fixed per query so that the replay record is deterministic; the budgets escalate per obligation rather than per worker.
+\begin{lstlisting}
+tier 0  conversion / rfl; local assumption; constructor of the goal head
+        (budget: one unification each; never re-queued)
+tier 1  decide (kernel reduction only, never native_decide); curated simp with
+        the query's explicit lemma set; omega for linear Nat/Int goals
+tier 2  Forge certificate checkers: cone, Farkas, affine witness, polynomial
+        recurrence, conserved invariant -- proof term is `sound cert (by decide)`
+tier 3  grind (omitted under the strict profile: needs Classical.choice)
+tier 4  Aesop with the query-specific rule set; induction ONLY through the
+        recursion schema of Section alg:recursion, never as a generic worker
+tier 5  optional pinned Mathlib procedures (separate package)
+escalation: an obligation that returns `unknown` at tier k with allowance b is
+        re-queued at tier k+1 with allowance 2b, up to the query's proof budget;
+        each attempt is charged to the ledger and never refunded
+\end{lstlisting}
+
+What is delegated is exactly what each tool decides: \code{decide} closes ground decidable propositions by kernel reduction; \code{omega} closes linear arithmetic over \code{Nat} and \code{Int} with the usual truncated-subtraction case split; \code{simp} performs controlled unfolding with a lemma set the query names (uncontrolled unfolding of a recursive contract is worse than the synthesis problem); \code{grind} supplies congruence closure, its arithmetic module, and e-matching over the project's annotated lemmas; Aesop supplies rule-based structural search; and Forge's checkers cover the arithmetic obligation shapes that have a proposal--check--soundness triple, so that the untrusted proposer runs outside Lean and the proof term is an application of the checker's soundness theorem to a certificate that \code{decide} validates\prov{\Pn{1},\Pn{4},\Pn{8}}\cite{forge}. \Pn{3} and \Pn{8} additionally put indexed theorem retrieval in tier 4; \Pn{2} suggests reusing Aesop's rule infrastructure directly. The unified design keeps retrieval in the construction lanes (Section~\ref{alg:search}) because a retrieved lemma is a provider, not a proof step.
+
+\subsubsection{A joint-mode patch is a branch choice}
+
+The engine never lets a worker commit an assignment. It replays the returned patch as a rule application inside the atomic attempt, recorded in the plan as a construction step so that replay, receipts, and rollback treat it like any other choice\prov{\Pn{2},\Pn{6},\Pn{7}}.
+\begin{lstlisting}
+applyProofPatch (branch) (obl : Obligation) (reply : ProofReply.proof pf patch) :=
+  attempt branch (do
+    for (m, v) in patch.assigned do
+      require m in obl.permitted
+      require admissible v obl.grammar obl.executionPolicy  -- P2 firewall: a
+        -- proof may not fill a program hole with the spec oracle or a choice term
+      m.assign v; wake (dependentsOf m)
+    obl.goal.assign pf
+    branch.plan.push (ProofAssigned obl.id patch reply.worker))
+\end{lstlisting}
+
+\subsubsection{Proof-debt scheduling}
+
+Obligations that cannot be attempted yet are debt, not failures. Each carries a cost, a readiness state, and the set of metavariables it waits on; the scheduler gives proof work a turn after a bounded amount of program growth, wakes index and arithmetic obligations immediately when a relevant hole is assigned, and delays heavy tiers until the computational holes an obligation mentions are assigned or exposed as witness choices\prov{\Pn{1},\Pn{5}}.
+\begin{lstlisting}
+structure Obligation where
+  goal : MVarId; tier : Nat; allowance : Budget; waitsOn : Set MVarId
+  readiness : Ready | Blocked | Deferred; cost : Nat  -- size of goal after instantiate
+
+onAssign (m : MVarId) := for o in waitingOn m do
+  if (instantiateMVars o.goal.type).hasProgramHole then o.readiness := Deferred
+  else o.readiness := Ready; requeue o          -- arithmetic/index goals wake now
+
+schedulerTurn := if growthSinceLastProof >= G then
+  pick the Ready obligation with least (tier, cost); run adapter at its tier
+  match reply with
+  | proof/refutation => install through the attempt; discharge or reject branch
+  | reducedGoal g' r => replace o.goal by g'; remember r for reconstruction
+  | unknown _ c _    => charge c; escalate o (tier+1, 2*allowance) or park it
+                        in the fair layer if the proof budget is exhausted
+\end{lstlisting}
+
+This is a ranking policy, not a pruning theorem: branches whose debt is expensive stay available in the fair cost layer, and a production heuristic that abandons them must say so in the incompleteness ledger\prov{\Pn{1}}.
+
+\subsection{The constructive propositional lane}\label{alg:prop-lane}
+
+\subsubsection{Reification}
+
+The lane reifies the propositional fragment of a goal and its context. Connectives become formula nodes; anything else becomes an atom keyed by its exact expression after \code{instantiateMVars}; an expression containing a metavariable refuses reification. Following Forge's encoder, each atom records at translation time whether it is safe for a negative verdict: an atom that mentions a concrete constant with its own proofs, or an erased instance dictionary, poisons a negative verdict but not a positive one\prov{\Pn{1},\Pn{3},\Pn{5}}\cite{forge}.
+\begin{lstlisting}
+reify (e : Expr) : ReifyM Formula := do
+  match (<- whnfR e) with
+  | A -> B where B does not depend on the binder => imp (reify A) (reify B)
+  | And A B | Prod A B    => and (reify A) (reify B)
+  | Or A B  | Sum A B     => or  (reify A) (reify B)
+  | Iff A B               => and (imp (reify A) (reify B)) (imp (reify B) (reify A))
+  | Not A                 => imp (reify A) bot
+  | False | Empty         => bot
+  | True | Unit | PUnit   => top
+  | e' =>                     -- atom: opaque proposition or type
+      if e'.hasMVar then throw unsupported
+      let a <- atomFor e'     -- keyed by the expression, compared with isDefEq
+      a.refutationSafe := not (mentionsConcreteConstantWithProofs e' || erasedDictionary e')
+      pure (var a)
+reifySequent (Gamma) (T) := (Gamma.filterMap (fun h => try reify h.type), reify T)
+\end{lstlisting}
+
+Types in \code{Sort} and propositions are reified alike, because the lane produces terms, not truth values; the interpretation table \code{atomFor} is what turns a derivation back into Lean.
+
+\subsubsection{A terminating focused calculus}
+
+The calculus is Dyckhoff's contraction-free LJT (G4ip), which Djinn implements and which \Pn{5} and \Pn{9} name as the basis of the lane\prov{\Pn{3},\Pn{5},\Pn{9}}. Its left implication rule is split by the shape of the antecedent, which is what removes contraction and makes the search terminate under a well-founded weight on sequents. Every rule carries its Lean term constructor.
+\begin{lstlisting}
+prove (Gamma |- G) : Option Expr :=          -- terminating; no loop check needed
+  -- right rules (invertible first)
+  G = top            => True.intro
+  G = imp A B        => fun (a : A) => prove (Gamma, a:A |- B)
+  G = and A B        => And.intro (prove Gamma|-A) (prove Gamma|-B)
+  -- invertible left rules on some hypothesis h
+  h : bot            => False.elim h
+  h : and A B        => let a := h.1; let b := h.2; prove (Gamma\h, a, b |- G)
+  h : or A B         => Or.elim h (fun a => prove (Gamma\h, a |- G))
+                                  (fun b => prove (Gamma\h, b |- G))
+  h : imp (and C D) B  => prove (Gamma\h, (fun c d => h (And.intro c d)) |- G)
+  h : imp (or C D) B   => prove (Gamma\h, (fun c => h (Or.inl c)),
+                                          (fun d => h (Or.inr d)) |- G)
+  h : imp (var p) B, p:P in Gamma => prove (Gamma\h, (h p) |- G)
+  -- non-invertible rules: try each, backtrack (finite because weight decreases)
+  G = var p, p in Gamma          => p
+  G = or A B                     => Or.inl (prove Gamma|-A) | Or.inr (prove Gamma|-B)
+  h : imp (imp C D) B =>          -- the rule that replaces contraction
+      let d2b : D -> B := fun d => h (fun _ => d)
+      let cd  : C -> D := prove (Gamma\h, d2b |- imp C D)      -- premise 1
+      let b   : B      := h cd
+      prove (Gamma\h, b |- G)                                  -- premise 2
+  otherwise => none
+\end{lstlisting}
+
+The derivation is translated to a term over the atom table and handed to the proof-service audit like any other worker output: the term is type-checked against the original goal, its free variables must be hypotheses of the goal, and its axiom closure must be empty (the lane uses no axioms). A derivation that survives is a \code{proof} reply; the lane is scheduled at tier 1 for goals whose reification succeeds.
+
+\subsubsection{The non-derivability certificate}
+
+When \code{prove} returns \code{none} the calculus has decided non-derivability, but the enumeration tag is not a checkable object. The lane therefore runs a bounded countermodel proposer and returns \code{fragmentUnderivable} only with a certificate that a separate checker validates by recomputing forcing from scratch, as Forge's extension round does\prov{\Pn{1},\Pn{4},\Pn{6},\Pn{8}}\cite{forge}.
+\begin{lstlisting}
+structure KripkeCountermodel where
+  worlds : Nat                        -- 1 <= worlds <= 32
+  root : Fin worlds
+  relation : Array (Array Bool)       -- reflexive, antisymmetric, transitive; root least
+  valuation : Atom -> Array Bool      -- persistent: v[i] && relation[i][j] -> v[j]
+
+checkCountermodel (Gamma |- G) (M) : Bool :=
+  structural checks on relation and valuation (above), else reject
+  let rec force (w) (f) : Bool :=
+    | var a   => M.valuation a w
+    | bot     => false          | top => true
+    | and a b => force w a && force w b
+    | or a b  => force w a || force w b
+    | imp a b => forall v, M.relation w v -> (force v a -> force v b)   -- all successors
+  (forall h in Gamma, force M.root h) && not (force M.root G)
+\end{lstlisting}
+
+\begin{definition}[Meaning of a fragment certificate]
+An accepted certificate for the reified sequent $\Gamma_0 \vdash G_0$ establishes exactly: there is no derivation of $G_0$ from $\Gamma_0$ in the named intuitionistic propositional calculus over the named atoms. It does not establish that Lean proves $\neg T$, that no Lean term of $T$ exists, that classical reasoning cannot prove $T$, or anything about hypotheses that were not reified. The result is \code{fragmentUnderivable(IPC, cert)} and never \code{impossible} (Decision~\ref{dec:negatives})\prov{\Pn{1},\Pn{2},\Pn{5},\Pn{6},\Pn{8}}.
+\end{definition}
+
+If the world bound is exhausted before a countermodel is found, the reply is \code{unknown} with the enumeration tag in the ledger; the finite model property of IPC does not make a fixed world cap a decision procedure\cite{forge}. The lane's enforcement tests are classical tautologies (excluded middle, double-negation elimination, Peirce's law, propositional linearity): each has a countermodel, each is provable classically, so an interface that promoted any of these certificates to a Lean refutation would be visibly unsound. An atom flagged unsafe for refutation at reification time downgrades the certificate to \code{unknown} with the obstructing atoms named.
+
+\subsubsection{The classical lane}
+
+The classical lane adds \code{Classical.em}, \code{Classical.byContradiction}, and \code{Decidable.em} as explicit providers. It is enabled only by the standard and project-relative profiles, and it is scheduled after the constructive lane has returned a reply for the same goal, so that constructive candidates are found and displayed first and classical ones are labeled by their axiom inventory (Section~\ref{sec:classical})\prov{\Pn{5},\Pn{6}}. For a propositional goal with a certificate the lane first uses Glivenko's theorem: it runs \code{prove} on $\neg\neg G$ and, on success with term $p$, returns \code{Classical.byContradiction (fun h => p h)}; goals with quantifiers skip this step and fall through to the ordinary providers\cite{forge}. The resulting proof's axiom closure contains \code{Classical.choice}, \code{propext}, and \code{Quot.sound}, which the receipt reports.
+
+\subsection{The freeze step and the transaction adapter}\label{alg:freeze}
+
+\subsubsection{What is frozen}
+
+The gate must receive the original elaborated query from an owner that search cannot mutate; otherwise a search can solve a specialization and claim the original, for example by assigning an ambient output-type hole to the input type and turning an impossible generic map into the identity\prov{\Pn{6}}. The freeze happens once, after elaboration and before any search.
+\begin{lstlisting}
+freeze (raw : ElaboratedQuery) : FrozenQuery := do
+  require raw.unknownIdentifiers.isEmpty          -- no auto-bound implicits
+  let ambient  := metavariables present before elaboration (caller-owned)
+  let created  := metavariables elaboration created (query-owned)
+  let permitted := raw.authorizedHoles              -- explicit, possibly empty
+  for m in ambient \ permitted do abstractAsRigidParameter m   -- read-only holes
+  for m in created do resolve m or classify m as an authorized hole or refuse
+  require universe parameters are parameters (no level mvars remain)
+  let Q := { E, U, Gamma, T, Phi, Obs, G, Pol, Bud }  -- Definition def:query
+  Q.manifest := { parameters, authorizedHoles := permitted, epoch := E.epoch }
+  Q.digest := canonicalEncoding Q            -- identity, not evidence
+  seal Q                                     -- immutable; the gate reads only sealed queries
+\end{lstlisting}
+
+The manifest records the distinction between parameters and synthesis metavariables. For the tactic entry point, the result of a query is a patch \{goal := $t$\} $\cup$ \{assignments to permitted ambient holes\}; the caller applies it transactionally after the gate has accepted, and nothing else in the caller's state is touched\prov{\Pn{6},\Pn{7},\Pn{8}}.
+
+\subsubsection{Typed outcomes of the transaction adapter}
+
+Each proposal's prototype catches exceptions broadly; the production adapter returns typed outcomes and never swallows cancellation\prov{\Pn{6},\Pn{9}}.
+\begin{lstlisting}
+inductive Outcome where
+  | progress (children : List MVarId) (changed : Set MVarId)
+  | solved   (term : Expr) (manifest : Dependencies)
+  | blocked  (watched : Set MVarId) (reason : String)
+  | rejected (kind : RejectKind) (cert : Option Certificate)
+  | notApplicable | unsupported (feature : String)
+  | yielded  (cursor : Continuation) (charged : Work)
+  | aborted  (reason : Interrupt)     -- cancellation, OOM, deadline: unwinds to the controller
+
+attempt (snapshot covers: MetaM state, elaborator state incl. postponed synthetic
+         mvars, local instances, messages, scratch environment) :=
+  let s <- saveAll
+  try run rule; on Outcome.progress/solved keep; otherwise restoreAll s
+  catch e => if isInterrupt e then restoreAll s; throw e   -- never "not applicable"
+             else restoreAll s; pure (rejected (exception e) none)
+  ledger.charge work   -- outside the snapshot; never refunded (Decision dec:ledger)
+\end{lstlisting}
+
+\subsection{The acceptance gate as one procedure}\label{alg:gate}
+
+The procedure merges \Pn{4}'s \code{finalize(Q, program, proof)}, \Pn{6}'s \code{accept}, \Pn{8}'s \code{accept}, \Pn{9}'s \code{Authorize(O, P)}, and the five-step transactions of \Pn{3}, \Pn{5}, and \Pn{7}; the two Forge pitfalls are handled in step 4\prov{all}. The step numbering matches Section~\ref{sec:acceptance}. Each \code{fail} names the result returned; nothing is published on any failure, and the candidate remains available as \code{typedOnly} only when its own closure passed steps 1--7 independently of the proof.
+\begin{lstlisting}
+gate (Q : FrozenQuery) (b : CandidateBundle) : GateM Verdict := do
+  -- 1. origin
+  unless b.epoch = Q.manifest.epoch do fail staleEpoch
+  let (T, Phi) := (Q.T, Q.Phi)                      -- never b.inferredType
+  -- 2. close (in a fresh native state; nothing of the search is in scope)
+  let t <- instantiateMVars b.program;  let p <- instantiateMVars b.proof
+  for e in [t, p] ++ b.helpers.map (.value) do
+    if e.hasMVar || e.hasLevelMVar then fail (unresolvedHole e)
+    if e.hasLooseBVars then fail malformedTerm
+    if (collectFVars e).any (fun x => not (Q.Gamma.contains x)) then fail (escapedLocal e)
+  let tC := mkLambdaFVars Q.Gamma t (preserveLets := true)   -- close over the telescope
+  let TC := mkForallFVars Q.Gamma T
+  let PC := mkForallFVars Q.Gamma (Phi.betaRev #[t])          -- Phi applied to THIS t
+  let pC := mkLambdaFVars Q.Gamma p
+  abstract exactly Q.U as level parameters; fail universeSpecialized if fewer remain
+  -- 3. bundle
+  let helpers <- topologicalOrder b.helpers   -- fail cyclicHelpers on a cycle
+  for h in helpers do
+    if h.kind = axiom || h.value.isNone then fail (missingBody h.name)
+    if h.value.mentions b.programName && not h.isCheckedRecursion then fail selfReference
+  let defn := { name := b.programName, levelParams := Q.U, type := TC, value := tC }
+  let thm  := { name := b.theoremName, levelParams := Q.U, type := PC,
+                value := pC.replace (t |-> Expr.const b.programName Q.U) }
+  -- 4. kernel-check, both pitfalls handled
+  let opts := Q.options.set debug.skipKernelTC false          -- pinned OFF, not unset
+  let mut env := Q.E.scratchCopy
+  for d in helpers ++ [defn, thm] do
+    match Kernel.Environment.addDecl env opts d with           -- synchronous; the
+    | .ok env' => env := env'                                  -- Except IS the signal
+    | .error e => fail (kernelRejected d.name e)
+  -- 5. exact-statement matching, read back from the checked environment
+  let ci  := env.find! b.theoremName
+  unless ci.type == PC do fail (statementMismatch ci.type PC)   -- structural, not defeq
+  unless (env.find! b.programName).type == TC do fail statementMismatch
+  unless ci.value.mentionsConst b.programName do fail proofAboutAnotherTerm
+  -- 6. audits: two closures, computed separately
+  let axP <- collectAxioms env b.theoremName
+  let axT <- collectAxioms env b.programName
+  if sorryAx in axP ++ axT then fail admitted
+  unless (axP ++ axT).subsetOf Q.Pol.allowedAxioms do fail (axiomViolation ((axP++axT) \ allowed))
+  let deps := transitiveConstants env b.programName            -- runtime closure
+  for c in deps do
+    if isPartial c || isUnsafe c || hasImplementedBy c || hasExtern c then
+      unless Q.Pol.runtimeAllows c do fail (runtimeViolation c)
+    if isNoncomputable c && Q.Pol.requiresExecutable then fail (runtimeViolation c)
+    if c in Q.G.withheldProviders then fail (withheldProviderUsed c)
+  -- 7. compile
+  let compiled := if Q.Pol.requiresExecutable then compileDecl env b.programName
+                  else notRequested
+  if compiled = failed e && Q.Pol.requiresExecutable then fail (compileFailed e)
+  -- 8. source replay (presentation evidence; never replaces step 4)
+  let src  := delab env Q.presentationContext (helpers ++ [defn, thm])
+  let re   <- elaborateFresh Q.E src (autoImplicit := false)
+  let replay := if re.value == tC then exact
+                else if <- isDefEq re.value tC then variant   -- reported as such
+                else failedPresentation
+  if replay = failedPresentation && Q.Pol.strict then fail replayMismatch
+  -- 9. publish atomically
+  publishAll (helpers ++ [defn, thm]) in Q.E in one command transaction
+  return verified (Accepted.mk defn) (Accepted.mk thm)
+           (receipt Q b axP axT deps compiled replay)
+\end{lstlisting}
+
+Two differences between the sources are resolved here. \Pn{3} and \Pn{5} audit before the kernel check and \Pn{4}, \Pn{6}, \Pn{8}, and \Pn{9} after; the gate audits after, because \code{collectAxioms} must run over the constants as the kernel accepted them, including generated helpers. If the \code{CoreM} \code{addDecl} path is used instead of the synchronous kernel entry, the gate awaits the deferred kernel task and requires its \code{.ok}; under \code{Elab.async} the presence of the constant in the environment is not evidence\cite{forge}. \Pn{7} freezes the declaration's type separately from its body and \Pn{8} reads the statement back from the installed constant; the gate does both, since the read-back is what catches a valid term paired with a proof about another term\prov{\Pn{7},\Pn{8}}.
+
+\begin{invariant}[Closed over the telescope, checked at the frozen statement]
+The program is checked at $\forall \Gamma.\, T$ and the proof at $\forall \Gamma.\, \Phi(t)$ with $\Phi$ taken from the frozen query and applied to the exact accepted $t$, even when $\Phi$ ignores its argument; the theorem refers to the definition by its generated name. Reopening $\Gamma$ yields the two judgments of Definition~\ref{def:answer}; this is the premise of Theorem~\ref{thm:soundness}\prov{\Pn{2},\Pn{5},\Pn{8}}.
+\end{invariant}
+
+\subsubsection{Receipt fields}
+\begin{lstlisting}
+structure Receipt where
+  query      : Digest x FrozenQuery.manifest   -- request identity, epoch, toolchain, imports
+  accepted   : { program, theorem, helpers : Array Name }  -- exact names and closed types
+  contract   : Expr                            -- PC as checked, not as displayed
+  axiomsProof, axiomsProgram : List Name       -- separate closures, actual use
+  runtimeDeps : List (Name x RuntimeMark)      -- implemented_by, extern, partial, noncomputable
+  flags      : { kernelChecked, compiled, evaluatedOnExamples : Bool }
+  sourceReplay : exact | variant | failedPresentation
+  policy     : Profile x allowedAxioms x runtimePolicy x providerPolicy x tiersUsed
+  search     : bounds, incompleteness ledger, lane and branch that produced it
+  counts     : { rejected, notApplicable, infrastructure : Nat }
+  proofProvenance : Array Attempt              -- Forge's replay record per obligation
+  external   : Option RemoteCheck              -- operational evidence only, never kernel
+\end{lstlisting}
+The receipt's accepted-object identifier is tied to the environment generation; a hash detects mismatch but cannot mint an accepted object, and a receipt about one candidate never transfers to a cosmetically similar one\prov{\Pn{3},\Pn{7},\Pn{8},\Pn{9}}.
+
+\subsection{Negative results}\label{alg:negatives}
+
+The four negative statements of \Pn{8}, each produced and certified differently\prov{\Pn{4},\Pn{5},\Pn{6},\Pn{8},\Pn{9}}:
+
+\begin{enumerate}
+\item \code{budgetExhausted}: the scheduler's budget ended with live continuations. Certified by nothing; the result carries the resumable state identifier and the ledger. Never cached as anything but ``not yet''.
+\item \code{grammarExhausted} with unknown obligations: every plan in a named finite grammar was constructed and some proof obligations returned \code{unknown} at the maximal tier. Certified by the enumeration ledger (grammar identity, bound, count of plans, per-plan verdict); it is an incompleteness record, not a certificate.
+\item \code{grammarExhausted} with all candidates refuted: as above, but each plan has a checked \code{refutedCandidate} (a proof of $\neg\Phi(t)$ or a replayed counterexample) and the enumeration has a checked coverage theorem for that grammar. A grammar-relative impossibility; still not \code{impossible}.
+\item \code{impossible}: a Lean term $q : (t : T) \to \Phi(t) \to \mathrm{False}$, or $q : T \to \mathrm{False}$ for a type-only query, that passed the gate's steps 2--6 as a proof at the frozen statement. Only this is an impossibility claim for the exact Lean request.
+\end{enumerate}
+
+The negative lane attempts route 4 directly, using the same proof-service adapter on the negated goal, while ordinary synthesis continues; \Pn{7}'s three safe routes are an explicit contradiction from a hypothetical inhabitant, a checked coverage theorem over a genuinely finite domain, and a proved reflection theorem whose conclusion is exactly the noninhabitation claim\prov{\Pn{5},\Pn{7}}.
+\begin{lstlisting}
+refuteGlobally (Q) : ProofReply :=            -- goal: (t : T) -> Phi t -> False
+  -- template 1: polymorphic instantiation (P2, P4, P5, P6, P7, P8 all check one)
+  if T = forall (A B : Type), A -> B      then fun f => Empty.elim (f Unit Empty ())
+  if T = forall (A : Type), A             then fun f => Empty.elim (f Empty)
+  generally: for each universally quantified type binder, try Unit and Empty
+    at each position, then apply the hypothetical inhabitant to () and eliminate
+  -- template 2: empty inductive or impossible index
+  if T's head is an inductive with no constructor, or every constructor's index
+    equations fail by no-confusion: fun x => nomatch x   (kernel-checked cases)
+  -- template 3: inconsistent contract
+  if Phi t reduces to a hypothesis h : a = a -> False or to h : False:
+    fun t h => h rfl  /  fun t h => h
+  -- otherwise: hand the negated goal to the portfolio at tier 1..4
+  every result passes the audit of runWorker and then gate steps 2-6
+\end{lstlisting}
+
+When only a fragment certificate is available, the lane reports \code{fragmentUnderivable} beside any \code{budgetExhausted} and continues; a fragment certificate or a budget never enters a cache as impossibility, and the negative ledger records the logic, grammar, assumptions, abstraction direction, and exhausted bounds\prov{\Pn{9}}. The prototypes' bounded-failure controls (\code{noFalse}, an impossible natural-number subtype) are tests of a bounded tactic and are reported as \code{budgetExhausted}; their \code{noPolyCast} and \code{uniformEmpty} theorems are route 4\prov{\Pn{4},\Pn{5},\Pn{7}}.
+
+\subsection{Adversarial acceptance checklist}\label{alg:adversarial}
+
+Each item names the shortcut it targets and the verdict the gate or adapter must return. A negative control passes only under the expected category; missing output alone is not evidence of correct rejection\prov{\Pn{8}}.
+
+\begin{enumerate}
+\item \textbf{Forge's four test workers} \cite{forge}. \code{admit}: adapter rejects (\code{hasSorry}). \code{choice}: rejected under strict, accepted and labeled under standard (\code{collectAxioms}). \code{malformed} (goal assigned \code{True.intro} without a type check): rejected by \code{Meta.check}/\code{isDefEq} against the original goal, although \code{getUnsolvedGoals} is empty. \code{escape} (phantom local): rejected by the free-variable check under the goal's own context.
+\item \textbf{\Pn{4}'s negative controls}. \code{True.intro : False} and \code{rfl : id 0 = 1}: \code{kernelRejected}. \code{axiom forged : False} used by a proof: remote checker returns \code{okay = true}; gate returns \code{axiomViolation [forged]} (or \code{missingBody} if the axiom arrived in the bundle). \code{sorry : False}: \code{admitted}.
+\item \textbf{\Pn{8}'s twelve cases}. A valid term with a proof about another term: \code{proofAboutAnotherTerm}. Two \code{Inhabited Nat} dictionaries: distinct candidates, distinct receipts. \code{Vec alpha n} for \code{Vec alpha m}: \code{statementMismatch} unless a checked transport is in the bundle. An older hole assigned a younger branch variable: \code{escapedLocal}, sibling state restored. Passes tests at zero, fails at one: bucket refined, never \code{verified}. Universal verifier timeout: \code{unknown}, never refuted. Invalid recursive decrease: \code{selfReference}, no fuel inserted. Kernel-accepted but uncompilable definition: \code{verified} with \code{compiled = false}, or \code{compileFailed} when executable output is required. Hidden reference function in the output: \code{withheldProviderUsed}. Imported theorem with an unapproved axiom: \code{axiomViolation} although the source shows no placeholder. Printer drops an implicit argument: \code{sourceReplay = variant} or \code{failedPresentation}. Worker dies during a check: \code{infrastructure}; the partial reply is retired by its frame identifier.
+\item \textbf{\Pn{7}'s additions}. Independent universe parameters specialized to equal ones: \code{universeSpecialized}. Strict-implicit binders and dependent fields sharing a witness: closure preserves binder info, else \code{statementMismatch}. A proposition whose proof cannot be eliminated into data: construction rule inapplicable, not a rejection. Callback that assigns an ambient metavariable: joint-mode \code{REJECTED: assigned outside the permitted set}. Stale cache after undo: replayed against the current epoch or \code{staleEpoch}. Exported source that selects a different instance: \code{failedPresentation}.
+\item \textbf{\Pn{5}'s invariant table}. Helper depending on \code{sorryAx} behind a short theorem: \code{admitted}. Completed task from a replaced environment: \code{staleEpoch}. Repeated restore/retry: ledger charged each time. Missing providers, proof timeout, fragment underivability, and checked non-inhabitation: four distinct constructors.
+\item \textbf{\Pn{6} and \Pn{2}}. Falsely strengthened original goal: \code{statementMismatch}. Spurious solver model: not a counterexample until replayed. Incomplete finite enumeration: no \code{grammarExhausted}. Different rendered elaboration: \code{variant}. Missing helper bodies: \code{missingBody}.
+\end{enumerate}
+
+\subsection{Worked traces}\label{alg:acc-traces}
+
+\subsubsection{An accepted candidate}
+
+Query: $T = (n : \Nat) \to \{m : \Nat \,//\, m = n + 1\}$, no contract ($\Phi = \mathrm{True}$), standard profile, executable output requested; this is the subtype-successor example that \Pn{1}'s and \Pn{4}'s prototypes solve by joint mode\prov{\Pn{1},\Pn{4}}.
+\begin{lstlisting}
+search   intro n;  head Subtype.mk on the goal: children ?m : Nat, ?p : ?m = n + 1
+         obligation ?p is Ready (waits on nothing); scheduler turn -> adapter, Joint,
+         permitted = {?m}
+adapter  tier 0 rfl: unify ?m = n + 1 assigns ?m := n + 1; pf := Eq.refl (n + 1)
+         audit: no sorry, no mvars, fvars {n} in goal ctx, check ok, axioms {},
+         delta = {?m} subset of permitted -> proof pf {?m := n+1}; state restored
+engine   applyProofPatch: admissible (n + 1 is grammar/runtime admissible); assign ?m,
+         assign ?p; plan += ProofAssigned(?p, {?m := n+1}, "rfl")
+         no obligations remain -> candidate t := fun n => Subtype.mk (n + 1) (Eq.refl _)
+frozen   verify Phi = True at t: tier 0 constructor -> True.intro
+gate     1 epoch ok  2 no mvars/fvars; Gamma empty, tC := t, TC := T, PC := True
+         3 no helpers; thm.value := True.intro
+         4 addDecl defn, thm with skipKernelTC := false -> .ok, .ok
+         5 read-back types == TC, PC; thm mentions the definition name (vacuously ok)
+         6 axioms {} / {}; runtime deps {Subtype.mk, HAdd.hAdd, instHAdd, Nat.add}
+           computable, none withheld     7 compile -> ok
+         8 delab "fun n => <n + 1, rfl>" re-elaborates to tC (exact)
+         9 publish; receipt: kernelChecked, compiled, axioms [] / [], replay exact
+\end{lstlisting}
+
+\subsubsection{A rejected candidate}
+
+Query: $T = \Nat \to \Nat$ with $\Phi(f) = \forall n,\, f\,n = n + 1$, standard profile. A proposal plugin returns the bundle \{\code{f := fun n => n + 1}, proof \code{p := fun n => forged n}, helper \code{axiom forged : forall n, (fun n => n + 1) n = n + 1}\}; the remote checker used in the prototypes reports \code{okay = true} for such source, as \Pn{4}'s control shows\prov{\Pn{4}}.
+\begin{lstlisting}
+gate     1 epoch ok   2 closes; no mvars, no escaped locals
+         3 helpers: `forged` has kind axiom and no value -> fail (missingBody forged)
+-- variant: the axiom already exists in the imported environment (project file)
+         3-4 pass; kernel accepts thm (it is well typed relative to E)
+         5 read-back type == PC                          (statement is right)
+         6 collectAxioms thm = {forged}; allowed = {propext, Quot.sound, Classical.choice}
+           -> fail (axiomViolation [forged]); program's own closure is clean
+result   typedOnly (f) with pending obligation Phi f; ledger: rejected += 1,
+         reason axiomViolation; receipt not issued; nothing published
+\end{lstlisting}
+
+The same candidate proved by Forge's ``escape'' worker never reaches the gate: the adapter's free-variable check rejects the proof inside \code{runWorker}, restores the state, and records \code{Attempt("escape", false, "uses 1 variable(s) outside the goal's context")} in the replay record before the next worker runs\cite{forge}.

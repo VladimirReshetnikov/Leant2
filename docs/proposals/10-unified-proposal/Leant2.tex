@@ -55,7 +55,7 @@
   morekeywords={def,theorem,example,structure,inductive,where,match,with,fun,forall,let,in,by,exact,apply,intro,cases,induction,constructor,if,then,else,return,do,namespace,end,universe,termination_by,decreasing_by,noncomputable,partial,import,open,instance,class,abbrev,axiom,opaque,private,elab,syntax,macro,deriving},
   sensitive=true,morecomment=[l]{--},morecomment=[s]{/-}{-/},morestring=[b]"
 }
-\lstset{language=LeanSketch,basicstyle=\ttfamily\small,keywordstyle=\bfseries\color{accent},commentstyle=\itshape\color{black!55},backgroundcolor=\color{pale},frame=single,rulecolor=\color{rulecol},breaklines=true,columns=fullflexible,keepspaces=true,showstringspaces=false,aboveskip=8pt,belowskip=8pt,xleftmargin=3pt,xrightmargin=3pt}
+\lstset{language=LeanSketch,basicstyle=\ttfamily\footnotesize,keywordstyle=\bfseries\color{accent},commentstyle=\itshape\color{black!55},backgroundcolor=\color{pale},frame=single,rulecolor=\color{rulecol},breaklines=true,columns=fullflexible,keepspaces=true,showstringspaces=false,aboveskip=8pt,belowskip=8pt,xleftmargin=3pt,xrightmargin=3pt}
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[section]
@@ -83,7 +83,7 @@ consolidated from nine independent design proposals}
 \begin{abstract}
 Nine independently prepared design proposals for Leant2, a Lean-native successor to the Haskell synthesizers Leant and Djex, were written against the same repository snapshots and the same Lean~4.34.0 toolchain. They agree on more than they disagree. This document consolidates them into one proposal. Its architectural core is the consensus of all nine: exact Lean expressions as the only semantic authority; a transactional search whose unit of backtracking is a partial program together with \emph{all} of its unfinished obligations; recursion admitted only through typed schemas with explicit recursive-call capabilities; behavioral information with graded authority, where tests refute, proofs certify, and only proof-producing analyses may prune; and one acceptance gate that kernel-checks the exact program and the exact contract before anything is published. Where the proposals differ, this document selects the best-developed treatment and records its origin.
 
-Two requirements come from the project owner rather than from the proposals. First, Leant2 has a single adaptive engine: no engine switches and, for now, no user-facing settings. Second, the minimal acceptance baseline is the existing Leant \code{:synth} golden corpus, thirty transcripts with 278 queries, read semantically: Leant2 must match or exceed every recorded outcome, but may return better candidates in a different order. Nothing here adds new experimental evidence; the evidence sections cite the nine packages and the sibling project Forge, whose kernel-checked certificate checkers and orchestration frontend Leant2 should reuse.
+Part~I fixes the architecture. Part~II gives the algorithms: the construction search and spine expansion, dependent elimination and transport, retrieval and carrier invention, recursion-schema and motive synthesis, contract propagation and certified counterexample-guided refinement, scheduling and memoization, and the proof-service and acceptance procedures, each as pseudocode merged from the best-specified proposals, with the worked traces that recur across them. Two requirements come from the project owner rather than from the proposals. First, Leant2 has a single adaptive engine: no engine switches and, for now, no user-facing settings. Second, the minimal acceptance baseline is the existing Leant \code{:synth} golden corpus, thirty transcripts with 278 queries, read semantically: Leant2 must match or exceed every recorded outcome, but may return better candidates in a different order. Nothing here adds new experimental evidence; the evidence sections cite the nine packages and the sibling project Forge, whose kernel-checked certificate checkers and orchestration frontend Leant2 should reuse.
 \end{abstract}
 
 \vspace{4pt}
@@ -93,6 +93,7 @@ Two requirements come from the project owner rather than from the proposals. Fir
 \tableofcontents
 \clearpage
 
+\part{Architecture}\label{part:architecture}
 \input{sections/01-scope-baseline}
 \input{sections/02-decisions-problem}
 \input{sections/03-state-search}
@@ -100,6 +101,16 @@ Two requirements come from the project owner rather than from the proposals. Fir
 \input{sections/05-recursion}
 \input{sections/06-behavior}
 \input{sections/07-acceptance-deployment}
+
+\part{Algorithms}\label{part:algorithms}
+\input{sections/alg-search}
+\input{sections/alg-elim-retrieval}
+\input{sections/alg-recursion}
+\input{sections/alg-behavior}
+\input{sections/alg-scheduling}
+\input{sections/alg-acceptance}
+
+\part{Evidence, evaluation, and roadmap}\label{part:evidence}
 \input{sections/08-evidence-evaluation-roadmap}
 
 \appendix
