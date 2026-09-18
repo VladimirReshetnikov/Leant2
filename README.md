@@ -64,7 +64,11 @@ each case once (Leant ran them per engine):
 python tools/run_recursive.py --budget 10000   # Leant test-recursive, 9 cases
 python tools/run_church.py --budget 10000      # Leant test-church behavior probes, 21 cases
 python tools/run_context.py --budget 10000     # Leant test-behavioral simplification + test-context production, products, selections, constructors, universes: 90 cases
+python tools/run_corpus.py --budget 10000      # Leant test-church signature corpus, 350 type-only queries
 ```
+
+All four passed in full on 2026-09-18 (recursive 9/9, Church probes 21/21,
+context 90/90, corpus 350/350) with a 10 s budget per query.
 
 The Church harness imports the specifications from Leant's vendored Djex
 directory (`C:\Leant\lib\Djex	est-church`), so every `:synth` carries the
