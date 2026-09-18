@@ -207,10 +207,10 @@ def runQuery (q : Query) : MetaM Outcome :=
   -- 2. cheap refutation pass, only for type-only queries
   if (← nothingYet) && q.contract.isNone then refutationLane (q.budgetMs / 10) [4, 6]
   -- 3. cheap classical pass (shallow first: classical splits branch quickly)
-  if ← nothingYet then classicalLane (q.budgetMs / 4) [3, 4, 5, 6]
+  if ← nothingYet then classicalLane (q.budgetMs * 3 / 10) [3, 4, 5, 6]
   -- 4. deeper constructive search
   if ← nothingYet then
-    lane ledger timedOut (q.budgetMs / 5) fun ctx =>
+    lane ledger timedOut (q.budgetMs * 3 / 20) fun ctx =>
       enumerateGrace ctx baseCfg goalTy (accept q.target false) [7, 9, 12]
   -- 5. deeper classical search
   if ← nothingYet then classicalLane (q.budgetMs / 5) [8, 10]

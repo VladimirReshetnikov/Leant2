@@ -273,10 +273,11 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
         return ← search cfg leaf splits (rest ++ [{ goal with deferred := goal.deferred + 1 }])
     -- residual evaluation: a pending contract elsewhere in the list that already
     -- reduces to `false` prunes this branch before any further construction
-    for pending in rest do
-      let pty ← instantiateMVars (← pending.mvar.getType)
-      if pty.hasExprMVar && (← isProp pty) then
-        if ← partialRefute pty then return false
+    if cfg.recursionFirst then  -- i.e. a contract is present
+      for pending in rest do
+        let pty ← instantiateMVars (← pending.mvar.getType)
+        if pty.hasExprMVar && (← isProp pty) then
+          if ← partialRefute pty then return false
     charge fun l => { l with ruleApplications := l.ruleApplications + 1 }
     let targetW ← whnfR target
     let d := depth - 1
