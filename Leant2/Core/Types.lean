@@ -40,10 +40,14 @@ inductive NegativeKind where
   | budgetExhausted
   deriving Repr, BEq, Inhabited
 
-/-- One accepted candidate: closed program, closed proof of the contract
-(trivial when there is no contract), and the audited axiom inventory. -/
+/-- One accepted candidate: closed program with its type and universe
+parameters (remaining level metavariables are generalized by the gate),
+closed proof of the contract (trivial when there is no contract), and the
+audited axiom inventory. -/
 structure Accepted where
   program : Expr
+  programType : Expr
+  levelParams : List Name
   proof : Expr
   axioms : Array Name
   classical : Bool

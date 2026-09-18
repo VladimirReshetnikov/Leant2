@@ -15,14 +15,17 @@ open Lean Elab Command Term Meta
 /-- Elaborate `T` and `P` (under `f : T`) into a closed target and contract. -/
 def elabQuery (nameStx : Option Syntax) (tyStx : Syntax) (whereStx : Option Syntax) :
     TermElabM (Expr × Option Expr) := do
-  withAutoBoundImplicit do
+  -- no error recovery: an ill-typed query or assertion is a preflight error
+  withoutErrToSorry <| withAutoBoundImplicit do
     let t ← elabType tyStx
     synthesizeSyntheticMVarsNoPostponing
     let t ← instantiateMVars t
+    if t.hasSorry then throwError "leant2: the query type contains errors"
     let xs ← addAutoBoundImplicits #[] none
     let tc ← mkForallFVars xs t
-    -- remaining universe metavariables become universe parameters of the query
-    let tc ← levelMVarToParam (← instantiateMVars tc)
+    -- remaining universe metavariables stay flexible during search (`Type _` and
+    -- auto-bound sorts are the user's placeholders); the gate generalizes them
+    let tc ← instantiateMVars tc
     match whereStx with
     | none => return (tc, none)
     | some p =>
@@ -34,9 +37,9 @@ def elabQuery (nameStx : Option Syntax) (tyStx : Syntax) (whereStx : Option Synt
         let pe ← elabTerm p (some (mkSort Level.zero))
         synthesizeSyntheticMVarsNoPostponing
         let pe ← instantiateMVars pe
+        if pe.hasSorry then throwError "leant2: the assertion contains errors"
         mkLambdaFVars #[f] pe
-      let c ← levelMVarToParam (← instantiateMVars c)
-      return (tc, some c)
+      return (tc, some (← instantiateMVars c))
 
 /-- Session providers: constants declared after `Init`, plus a curated core set. -/
 def curatedProviders : Array Name :=
@@ -51,10 +54,28 @@ def sessionConstants : CoreM (Array Name) := do
   let mut out := #[]
   for (n, ci) in env.constants.map₂.toList do
     if n.isInternal then continue
+    -- session bindings `it1`, `it2`, ... are results, not providers
+    if let .str .anonymous s := n then
+      if s.startsWith "it" && (s.drop 2).all Char.isDigit && s.length > 2 then continue
     match ci with
     | .axiomInfo _ | .defnInfo _ | .thmInfo _ | .opaqueInfo _ | .ctorInfo _ => out := out.push n
     | _ => pure ()
   return out
+
+/-- Axioms declared in the session. They are accepted premises under the
+project-relative profile (Section 3.4): the corpus models opaque providers
+as `axiom` declarations. -/
+def sessionAxioms : CoreM (List Name) := do
+  let env ← getEnv
+  let mut out := []
+  for (n, ci) in env.constants.map₂.toList do
+    if let .axiomInfo _ := ci then
+      if n != ``sorryAx then out := n :: out
+  return out
+
+/-- The profile used for a session query. -/
+def sessionProfile : CoreM Profile := do
+  return .projectRelative (← sessionAxioms)
 
 def outcomeMessage (o : Outcome) : MetaM MessageData := do
   match o with
@@ -79,14 +100,15 @@ def runQueryFromSyntax (nameStx : Option Syntax) (tyStx : Syntax) (whereStx : Op
   let (t, c) ← elabQuery nameStx tyStx whereStx
   let provs := curatedProviders ++ (← sessionConstants)
   let start ← IO.monoMsNow
-  let o ← runQuery { target := t, contract := c, providers := provs, budgetMs }
+  let o ← runQuery { target := t, contract := c, providers := provs, budgetMs,
+                     profile := ← sessionProfile }
   let elapsed := (← IO.monoMsNow) - start
   logInfo m!"leant2: {elapsed} ms"
   return o
 
-syntax (name := leant2Cmd) "#leant2 " (ident " : ")? term (" where " term)? : command
-syntax (name := leant2Check) "#leant2_check " (ident " : ")? term (" where " term)? : command
-syntax (name := leant2None) "#leant2_none " (ident " : ")? term (" where " term)? : command
+syntax (name := leant2Cmd) "#leant2 " (atomic(ident " : "))? term (" where " term)? : command
+syntax (name := leant2Check) "#leant2_check " (atomic(ident " : "))? term (" where " term)? : command
+syntax (name := leant2None) "#leant2_none " (atomic(ident " : "))? term (" where " term)? : command
 
 private def getParts (stx : Syntax) : Option Syntax × Syntax × Option Syntax :=
   let name? := if stx[1].getNumArgs > 0 then some stx[1][0] else none

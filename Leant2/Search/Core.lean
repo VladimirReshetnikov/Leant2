@@ -55,8 +55,17 @@ structure SearchConfig where
 returns `true` to stop the search. -/
 abbrev Leaf := SearchM Bool
 
-/-- An obligation with its remaining depth. -/
-abbrev Goal := MVarId × Nat
+/-- An obligation with its remaining depth and whether it has already been
+deferred once (Section 15.1.3: type-argument holes and holes whose type still
+contains metavariables are scheduled after their siblings, which usually
+determine them). -/
+structure Goal where
+  mvar : MVarId
+  depth : Nat
+  /-- How many times this goal has been deferred. Type-argument holes may be
+  deferred twice so that an instance sibling (itself deferred once while its
+  type is open) can determine them. -/
+  deferred : Nat := 0
 
 /-- Run one alternative. If it does not stop the search, restore the state so
 the next alternative starts from the same point. -/
@@ -152,17 +161,25 @@ private def isInvertible (ii : InductiveVal) : Bool :=
 partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     List Goal → SearchM Bool
   | [] => leaf
-  | (g, depth) :: rest => do
+  | goal :: rest => do
+    let g := goal.mvar
+    let depth := goal.depth
     if ← g.isAssigned then return ← search cfg leaf splits rest
     if depth = 0 then return false
     checkDeadline
-    charge fun l => { l with ruleApplications := l.ruleApplications + 1 }
     g.withContext do
     let target ← instantiateMVars (← g.getType)
+    -- deferral: let sibling obligations determine type arguments and open types
+    if !rest.isEmpty then
+      let isSortGoal ← match ← whnfR target with | .sort _ => pure true | _ => pure false
+      let limit := if isSortGoal then 2 else 1
+      if goal.deferred < limit && (isSortGoal || target.hasExprMVar) then
+        return ← search cfg leaf splits (rest ++ [{ goal with deferred := goal.deferred + 1 }])
+    charge fun l => { l with ruleApplications := l.ruleApplications + 1 }
     let targetW ← whnfR target
     let d := depth - 1
     let cont (children : List MVarId) : SearchM Bool :=
-      search cfg leaf splits (children.map (·, d) ++ rest)
+      search cfg leaf splits (children.map (fun m => { mvar := m, depth := d }) ++ rest)
     let applyHead (e : Expr) : SearchM Bool := alternative do
       charge fun l => { l with unifications := l.unifications + 1 }
       let children ← g.apply e applyCfg
@@ -172,7 +189,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     if (← whnf target).isForall then
       return ← alternative do
         let (_, g') ← g.intro1P
-        search cfg leaf splits ((g', depth) :: rest)
+        search cfg leaf splits ({ mvar := g', depth } :: rest)
     let locals ← localsToTry
     -- 2. invertible destructuring (does not consume depth or splits)
     for decl in locals do
@@ -180,7 +197,8 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
         if isInvertible ii then
           if ← alternative (do
               let subgoals ← g.cases decl.fvarId
-              search cfg leaf splits (subgoals.toList.map ((·.mvarId, depth)) ++ rest)) then
+              search cfg leaf splits
+                (subgoals.toList.map (fun s => { mvar := s.mvarId, depth }) ++ rest)) then
             return true
           -- destructuring failed (e.g. Prop into data): fall through
     -- 3. reflexivity
@@ -196,7 +214,13 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             cont []
           else return false) then return true
     if targetIsSort then
-      for t in cfg.typeFrontier do
+      -- type invention: types of locals first, then the closed frontier
+      let mut frontier : Array Expr := #[]
+      for decl in locals do
+        let dty ← instantiateMVars decl.type
+        if ← isTypeSort (← inferType dty) then
+          unless frontier.contains dty do frontier := frontier.push dty
+      for t in frontier ++ cfg.typeFrontier do
         if ← alternative (do
             if ← isDefEq (← inferType t) target then
               g.assign t; cont []
@@ -208,7 +232,8 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
           if isInvertible ii || ii.name == ``Nat then continue
           if ← alternative (do
               let subgoals ← g.cases decl.fvarId
-              search cfg leaf (splits - 1) (subgoals.toList.map ((·.mvarId, d)) ++ rest)) then
+              search cfg leaf (splits - 1)
+                (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d }) ++ rest)) then
             return true
     -- 6. projections of local structure values, applied as heads
     for decl in locals do

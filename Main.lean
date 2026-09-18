@@ -21,6 +21,10 @@ structure Session where
   opts : Options
   budgetMs : Nat
   itCounter : Nat := 0
+  /-- Statement of the current `:prove`, if any. A bare `:synth` inside prove
+  mode synthesizes the whole statement (the outcome category is the same as
+  synthesizing the goal after the user's tactics). -/
+  proving : Option String := none
 
 def leanKeywords : List String :=
   ["def", "theorem", "lemma", "inductive", "structure", "class", "instance", "axiom", "opaque",
@@ -73,15 +77,14 @@ def splitSynth (arg : String) : Option String × String × Option String :=
 def parseTerm (env : Environment) (src : String) : Except String Syntax :=
   Parser.runParserCategory env `term src "<synth>"
 
-def bindIts (s : Session) (cands : Array Accepted) (ty : Expr) : IO Session := do
+def bindIts (s : Session) (cands : Array Accepted) : IO Session := do
   let mut s := s
   let mut i := 1
   for c in cands do
     let name := Name.mkSimple s!"it{i}"
     if !(s.env.contains name) then
-      let lps := ((collectLevelParams {} ty).params ++ (collectLevelParams {} c.program).params).toList.eraseDups
       let decl : Declaration := .defnDecl {
-        name := name, levelParams := lps, type := ty, value := c.program,
+        name := name, levelParams := c.levelParams, type := c.programType, value := c.program,
         hints := .abbrev, safety := .safe }
       match s.env.addDeclCore 0 512 decl none true with
       | .ok env' => s := { s with env := env' }
@@ -105,23 +108,24 @@ def doSynth (s : Session) (arg : String) : IO Session := do
         let (t, c) ← elabQuery nameStx tyStx whStx?
         let provs := curatedProviders ++ (← sessionConstants)
         let start ← IO.monoMsNow
-        let o ← runQuery { target := t, contract := c, providers := provs, budgetMs := s.budgetMs }
+        let o ← runQuery { target := t, contract := c, providers := provs, budgetMs := s.budgetMs,
+                           profile := ← sessionProfile }
         let elapsed := (← IO.monoMsNow) - start
         let msg ← addMessageContextFull (← outcomeMessage o)
         let str ← msg.toString
         let cands := match o with | .verified cs _ => cs | _ => #[]
-        return (str, elapsed, cands, t)
+        return (str, elapsed, cands)
     catch e =>
       let str : String := toString e
       IO.println s!"error: {(str.splitOn "\n").headD str}"
       return s
-  let (str, elapsed, cands, t) := r
+  let (str, elapsed, cands) := r
   -- drop the leading "N candidate(s) [...]" line; keep the itN lines
   let lines := str.splitOn "\n"
   for l in lines do
     if l.startsWith "  it" || !(l.contains '[') then IO.println l
   IO.println s!"-- {elapsed} ms"
-  bindIts s cands t
+  bindIts s cands
 
 partial def loop (s : Session) (lines : List String) (chunk : List String) : IO Unit := do
   let flush (s : Session) : IO Session := do
@@ -145,7 +149,12 @@ partial def loop (s : Session) (lines : List String) (chunk : List String) : IO 
       | "reset" =>
         let s' ← freshSession s.budgetMs
         loop s' rest []
+      | "prove" =>
+        IO.println "entering prove mode (leant2: tactic lines are ignored)"
+        loop { s with proving := some arg } rest []
+      | "qed" | "abort" => loop { s with proving := none } rest []
       | "synth" =>
+        let arg := if arg.isEmpty then s.proving.getD "" else arg
         let s ← doSynth s arg
         loop s rest []
       | "type" =>
@@ -154,6 +163,9 @@ partial def loop (s : Session) (lines : List String) (chunk : List String) : IO 
       | _ => IO.println s!"(ignored :{cmd})"; loop s rest []
     else if t.isEmpty then
       let s ← flush s
+      loop s rest []
+    else if s.proving.isSome then
+      -- tactic lines inside prove mode
       loop s rest []
     else if (l.get 0).isWhitespace || l.startsWith "|" then
       loop s rest (l :: chunk)

@@ -47,10 +47,10 @@ def enumerate (ctx : SearchCtx) (cfg : SearchConfig) (goalTy : Expr)
       let root ← mkFreshExprMVar goalTy
       let leaf : Leaf := do
         let e ← instantiateMVars root
-        if e.hasMVar then return false
+        if e.hasExprMVar then return false
         accept e
       let cfg := { cfg with maxDepth := depth }
-      let _ ← alternative (search cfg leaf cfg.maxSplits [(root.mvarId!, depth)])
+      let _ ← alternative (search cfg leaf cfg.maxSplits [{ mvar := root.mvarId!, depth }])
       if ← productive then break
 
 /-- Run `act` with a fresh deadline `ms` from now, swallowing interrupts. -/

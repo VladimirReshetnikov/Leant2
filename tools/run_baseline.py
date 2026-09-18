@@ -19,7 +19,7 @@ import argparse, os, re, subprocess, sys, time, json
 def classify_golden(lines, i):
     """Classify the golden outcome of the :synth at golden line i."""
     j = i + 1
-    while j < len(lines) and not lines[j].startswith("λ>"):
+    while j < len(lines) and not (lines[j].startswith("λ>") or lines[j].startswith("⊢>")):
         l = lines[j]
         if l.startswith("  it1"):
             return "positive"
@@ -34,7 +34,7 @@ def classify_golden(lines, i):
         j += 1
     # assertion with unknown name / type errors show as error blocks
     k = i + 1
-    while k < len(lines) and not lines[k].startswith("λ>"):
+    while k < len(lines) and not (lines[k].startswith("λ>") or lines[k].startswith("⊢>")):
         if "error" in lines[k].lower() or "expected" in lines[k]:
             return "preflight"
         k += 1
@@ -103,8 +103,9 @@ def main():
         with open(os.path.join(args.out, name + ".out"), "w", encoding="utf-8") as f:
             f.write("\n".join(out) + "\n" + proc.stderr.decode("utf-8", errors="replace"))
         # pair up queries in order
-        g_idx = [i for i, l in enumerate(golden) if l.startswith("λ> :synth")]
-        o_idx = [i for i, l in enumerate(out) if l.startswith("λ> :synth")]
+        is_q = lambda l: l.startswith("λ> :synth") or l.startswith("⊢> :synth")
+        g_idx = [i for i, l in enumerate(golden) if is_q(l)]
+        o_idx = [i for i, l in enumerate(out) if is_q(l)]
         n = min(len(g_idx), len(o_idx))
         fx_pass = 0
         for q in range(n):
@@ -116,10 +117,10 @@ def main():
             total += 1; passed += ok; fx_pass += ok
             rows.append((name, golden[gi][3:], gcat, ocat, ok))
             if not ok:
-                print(f"FAIL {name}: {golden[gi][3:]}\n     golden={gcat} ours={ocat}")
+                print(f"FAIL {name}: {golden[gi][3:]}\n     golden={gcat} ours={ocat}", flush=True)
         if len(g_idx) != len(o_idx):
-            print(f"WARN {name}: {len(g_idx)} golden queries, {len(o_idx)} in output")
-        print(f"{name}: {fx_pass}/{n} in {elapsed:.0f}s")
+            print(f"WARN {name}: {len(g_idx)} golden queries, {len(o_idx)} in output", flush=True)
+        print(f"{name}: {fx_pass}/{n} in {elapsed:.0f}s", flush=True)
     print(f"\nTOTAL {passed}/{total}")
     with open(os.path.join(args.out, "summary.json"), "w", encoding="utf-8") as f:
         json.dump([dict(fixture=r[0], query=r[1], golden=r[2], ours=r[3], ok=r[4]) for r in rows], f, indent=1, ensure_ascii=False)
