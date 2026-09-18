@@ -97,6 +97,9 @@ def mkProvider (n : Name) : MetaM (Option Provider) := do
   let head := match concl with
     | .const c _ => some c
     | _ => none
+  -- type constructors and predicates (`Wrap : Type 1 → Type`, `P : Nat → Prop`) are
+  -- not term providers; type holes are filled by the frontier instead
+  if concl.isSort then return none
   return some { name := n, head, argHeads }
 
 def mkProviders (ns : Array Name) (always := false) : MetaM (Array Provider) := do
@@ -207,6 +210,21 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
                 (subgoals.toList.map (fun s => { mvar := s.mvarId, depth }) ++ rest)) then
             return true
           -- destructuring failed (e.g. Prop into data): fall through
+  -- 2b. classical case split on a Prop variable, early: `cases (Classical.em p)`.
+  -- Bounded by `splits`, so it multiplies the search by at most 2^splits.
+    if cfg.classical && splits > 0 then
+      for decl in locals do
+        let dty ← instantiateMVars decl.type
+        unless dty.isProp do continue
+        if ← alternative (do
+            let em ← mkAppM ``Classical.em #[decl.toExpr]
+            let ty ← inferType em
+            let g' ← g.assert (← mkFreshUserName `h) ty em
+            let (h, g'') ← g'.intro1P
+            let subgoals ← g''.cases h
+            search cfg leaf (splits - 1)
+              (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d }) ++ rest)) then
+          return true
     -- 3. reflexivity
     if targetW.isAppOfArity ``Eq 3 then
       if ← alternative (do g.refl; cont []) then return true
@@ -290,7 +308,8 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
               unless filled do return false
             let resTy ← instantiateMVars resTy
             -- only results that can be taken apart are worth naming
-            let some (.inductInfo _) := (← getEnv).find? (← whnfR resTy).getAppFn.constName! | return false
+            let some hn := (← whnfR resTy).getAppFn.constName? | return false
+            let some (.inductInfo _) := (← getEnv).find? hn | return false
             let val ← instantiateMVars (mkAppN decl.toExpr args)
             let g' ← g.assert (← mkFreshUserName `h) resTy val
             let (_, g'') ← g'.intro1P
@@ -340,20 +359,6 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
       if cfg.proofPortfolio then
         if ← alternative (do if ← proofPortfolio g then cont [] else return false) then
           return true
-      -- 11. classical case split on a Prop variable, tried last: `cases (Classical.em p)`
-      if cfg.classical && splits > 0 then
-        for decl in locals do
-          let dty ← instantiateMVars decl.type
-          unless dty.isProp do continue
-          if ← alternative (do
-              let em ← mkAppM ``Classical.em #[decl.toExpr]
-              let ty ← inferType em
-              let g' ← g.assert (← mkFreshUserName `h) ty em
-              let (h, g'') ← g'.intro1P
-              let subgoals ← g''.cases h
-              search cfg leaf (splits - 1)
-                (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d }) ++ rest)) then
-            return true
     return false
 
 end Leant2

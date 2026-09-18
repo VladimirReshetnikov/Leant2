@@ -53,11 +53,14 @@ def enumerate (ctx : SearchCtx) (cfg : SearchConfig) (goalTy : Expr)
       let _ ← alternative (search cfg leaf cfg.maxSplits [{ mvar := root.mvarId!, depth }])
       if ← productive then break
 
-/-- Run `act` with a fresh deadline `ms` from now, swallowing interrupts. -/
-private def lane (ledger : IO.Ref Ledger) (ms : Nat) (act : SearchCtx → MetaM Unit) : MetaM Unit := do
+/-- Run `act` with a fresh deadline `ms` from now. A lane that hits its
+deadline records the fact in `timedOut`; other interrupts propagate. -/
+private def lane (ledger : IO.Ref Ledger) (timedOut : IO.Ref Bool) (ms : Nat)
+    (act : SearchCtx → MetaM Unit) : MetaM Unit := do
   let ctx : SearchCtx := { ledger, deadline := some ((← IO.monoMsNow) + ms) }
   try act ctx
-  catch e => if !isInterrupt e then throw e
+  catch e =>
+    if isInterrupt e then timedOut.set true else throw e
 
 /-- Instantiate every universe parameter of `e` with `Prop`. -/
 private def atProp (e : Expr) : Expr :=
@@ -125,9 +128,10 @@ def runQuery (q : Query) : MetaM Outcome :=
       | none => return false
     enumerate ctx' cfg goalTy acc' (do return (← productive) || (← checkGrace)) depths
   let goalTy ← mkGoal q.target q.contract
+  let timedOut ← IO.mkRef false
   -- refutation lane
   let refuted ← IO.mkRef (none : Option Accepted)
-  let refutationLane (ms : Nat) (depths : List Nat) : MetaM Unit := lane ledger ms fun ctx => do
+  let refutationLane (ms : Nat) (depths : List Nat) : MetaM Unit := lane ledger timedOut ms fun ctx => do
     let negTy ← mkArrow q.target (mkConst ``False)
     let extra ← mkProviders #[``Empty.elim, ``False.elim] (always := true)
     let cfgR := { baseCfg with providers := extra ++ baseCfg.providers }
@@ -135,34 +139,37 @@ def runQuery (q : Query) : MetaM Outcome :=
         match ← gate .strictConstructive e negTy none with
         | .ok acc => refuted.set (some acc); return true
         | .error _ => return false) (do return (← refuted.get).isSome) depths
+  -- classical reasoning needs `Prop` targets: a universe-polymorphic query with
+  -- explicit universe parameters is searched at its `Prop` instantiation
+  let classicalLane (ms : Nat) (depths : List Nat) : MetaM Unit := lane ledger timedOut ms fun ctx => do
+    let tp := atProp q.target
+    if tp != q.target then
+      let goalP ← mkGoal tp (q.contract.map atProp)
+      enumerateGrace ctx { baseCfg with classical := true } goalP (accept tp true) depths
+    else
+      enumerateGrace ctx { baseCfg with classical := true } goalTy (accept q.target true) depths
+  let nothingYet : MetaM Bool := do return (← found.get).isEmpty && (← refuted.get).isNone
   -- 1. cheap constructive pass
-  lane ledger (q.budgetMs / 5) fun ctx => enumerateGrace ctx baseCfg goalTy (accept q.target false) [3, 5]
+  lane ledger timedOut (q.budgetMs * 3 / 20) fun ctx =>
+    enumerateGrace ctx baseCfg goalTy (accept q.target false) [3, 5]
   -- 2. cheap refutation pass, only for type-only queries
-  if (← found.get).isEmpty && q.contract.isNone then refutationLane (q.budgetMs / 8) [4, 6]
-  -- 3. deeper constructive search
-  if (← found.get).isEmpty && (← refuted.get).isNone then
-    lane ledger (q.budgetMs * 3 / 10) fun ctx => enumerateGrace ctx baseCfg goalTy (accept q.target false) [7, 9, 12]
-  -- 4. classical lane, on the query and on its Prop instantiation
-  if (← found.get).isEmpty && (← refuted.get).isNone then
-    lane ledger (q.budgetMs * 3 / 10) fun ctx => do
-      -- classical reasoning needs `Prop` targets: a universe-polymorphic query is
-      -- searched at its `Prop` instantiation (Leant's behavior on Peirce's law)
-      let tp := atProp q.target
-      if tp != q.target then
-        let goalP ← mkGoal tp (q.contract.map atProp)
-        enumerateGrace ctx { baseCfg with classical := true } goalP (accept tp true) [6, 10]
-      else
-        enumerateGrace ctx { baseCfg with classical := true } goalTy (accept q.target true) [6, 10]
-  -- 5. deeper refutation
-  if (← found.get).isEmpty && (← refuted.get).isNone && q.contract.isNone then
-    refutationLane (q.budgetMs / 5) [8]
+  if (← nothingYet) && q.contract.isNone then refutationLane (q.budgetMs / 10) [4, 6]
+  -- 3. cheap classical pass (shallow first: classical splits branch quickly)
+  if ← nothingYet then classicalLane (q.budgetMs / 4) [3, 4, 5, 6]
+  -- 4. deeper constructive search
+  if ← nothingYet then
+    lane ledger timedOut (q.budgetMs / 5) fun ctx =>
+      enumerateGrace ctx baseCfg goalTy (accept q.target false) [7, 9, 12]
+  -- 5. deeper classical search
+  if ← nothingYet then classicalLane (q.budgetMs / 5) [8, 10]
+  -- 6. deeper refutation
+  if (← nothingYet) && q.contract.isNone then refutationLane (q.budgetMs / 10) [8]
   let cands ← found.get
   let l ← ledger.get
   if !cands.isEmpty then return .verified cands l
   if let some cert ← refuted.get then return .negative .impossible (some cert) l
   if (← rejectedCount.get) > 0 && q.contract.isSome then
     return .refutedAll (← rejectedCount.get) l
-  let elapsed := (← IO.monoMsNow) - start
-  return .negative (if elapsed * 10 ≥ q.budgetMs * 9 then .budgetExhausted else .grammarExhausted) none l
+  return .negative (if ← timedOut.get then .budgetExhausted else .grammarExhausted) none l
 
 end Leant2
