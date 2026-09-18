@@ -489,8 +489,16 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             g.assign decl.toExpr
             cont []
           else return false) then return true
-    -- leaves (exact locals) are free; everything below consumes depth
-    if depth = 0 then return false
+    -- leaves are free: exact locals above, and nullary constructors here
+    -- (`[]`, `none`, `true`); everything below consumes depth
+    if depth = 0 then
+      if let .const iname _ := targetW.getAppFn then
+        if let some (.inductInfo ii) := (← getEnv).find? iname then
+          for c in ii.ctors do
+            if ← alternative (do
+                let children ← g.apply (← mkConstWithFreshMVarLevels c) applyCfg
+                if children.isEmpty then cont [] else return false) then return true
+      return false
     -- 1. introduction (default transparency, so that `Not` and similar unfold).
     -- Invertible, hence free of depth cost.
     if (← timed "intro" (whnf target)).isForall then

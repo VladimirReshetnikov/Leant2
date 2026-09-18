@@ -4,7 +4,9 @@
 The specifications are imported verbatim from Leant's vendored Djex directory
 (`C:\\Leant\\lib\\Djex\\test-church`, Leant rev 6bf05ad): the six core operations
 of `behavior_probe.py` (not, swap, map, append, reverse, filter) and the
-thirteen extended operations of `behavior_extended_probe.py`. Each `:synth`
+thirteen extended operations of `behavior_extended_probe.py`, and the nineteen
+partial operations of `behavior_partial_probe.py` (total functions with an
+explicit default argument). Each `:synth`
 carries the spec's `check_<op> f = true` contract, so a candidate passes only
 when it behaves correctly on the spec's exhaustive finite inputs. Leant ran
 the matrix per engine; Leant2 has one adaptive engine, so each case runs once.
@@ -28,7 +30,22 @@ def load_specs(leant_root, which):
     if which in ("extended", "all"):
         import behavior_extended_spec as ext
         specs.append(("extended", ext, list(ext.OPERATIONS), dict(ext.LEAN_TYPES), list(ext.LEAN_NUMERIC_PROVIDERS)))
+    if which in ("partial", "all"):
+        import behavior_partial_spec as part
+        provs = []
+        for op in part.OPERATIONS:
+            for row in part.REQUIRED_PROVIDERS[op]["lean"]:
+                d = f"def {row['name']} : {row['type']} := {row['definition']}"
+                if d not in provs:
+                    provs.append(d)
+        specs.append(("partial", part, list(part.OPERATIONS), dict(part.LEAN_TYPES), provs))
     return specs
+
+
+# Partial operations Leant's behavior ledger (test-church/behavior-ledger.md)
+# never accepted in any engine: stretch goals, reported but not scored.
+STRETCH = {"at", "foldl1", "foldr1", "maximumBy", "maximumOn", "minimumBy", "minimumOn",
+           "minMaxBy", "minmaxElement", "reduce", "maximum", "minimum", "minMax"}
 
 
 def main():
@@ -36,7 +53,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--exe", default=".lake/build/bin/leant2.exe")
     ap.add_argument("--budget", type=int, default=10000)
-    ap.add_argument("--spec", choices=("core", "extended", "all"), default="all")
+    ap.add_argument("--spec", choices=("core", "extended", "partial", "all"), default="all")
     ap.add_argument("--leant", default=r"C:\Leant")
     ap.add_argument("--op", action="append")
     args = ap.parse_args()
@@ -56,7 +73,7 @@ def main():
                 continue
             name = f"{label}_{op}"
             lines.append(f":synth {name} : {targets[op]} where {spec.lean_predicate(op, name)}")
-            expected.append((name, "candidate"))
+            expected.append((name, "stretch" if label == "partial" and op in STRETCH else "candidate"))
         first_op = ops[0]
         lines.append(f":synth {label}_reject : {targets[first_op]} where False")
         expected.append((f"{label}_reject", "none"))
@@ -71,11 +88,14 @@ def main():
         for (name, exp), block in zip(expected, blocks):
             has = re.search(r"^  it1", block, re.M) is not None
             ms = re.search(r"leant2: (\d+) ms", block)
+            first = next((l.strip() for l in block.splitlines() if l.startswith("  it1")), "")
+            tail = "" if has else " | " + " ".join(l.strip() for l in block.splitlines()[1:4] if "leant2:" not in l)[:80]
+            if exp == "stretch":
+                print(f"{'STRETCH-PASS' if has else 'STRETCH-MISS'} {name} [{ms.group(1) if ms else '?'} ms] {first[:120]}")
+                continue
             ok = has if exp == "candidate" else not has
             passed += ok
             total += 1
-            first = next((l.strip() for l in block.splitlines() if l.startswith("  it1")), "")
-            tail = "" if has else " | " + " ".join(l.strip() for l in block.splitlines()[1:4] if "leant2:" not in l)[:80]
             print(f"{'PASS' if ok else 'FAIL'} {name} [{ms.group(1) if ms else '?'} ms] {first[:120]}{tail}")
         if proc.stderr:
             print(proc.stderr.decode("utf-8", errors="replace")[:500])

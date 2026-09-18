@@ -21,6 +21,9 @@ structure SearchCtx where
   /-- Holes the last residual evaluation got stuck on; while all of them are
   still open in the program, re-evaluating cannot decide anything new. -/
   residualBlockers : IO.Ref (Array MVarId)
+  /-- A deadline set once the first candidate is accepted (the grace period),
+  checked together with the lane deadline. -/
+  graceDeadline : IO.Ref (Option Nat)
 
 abbrev SearchM := ReaderT SearchCtx MetaM
 
@@ -31,10 +34,13 @@ def charge (f : Ledger → Ledger) : SearchM Unit := do
 initialize deadlineExceptionId : InternalExceptionId ← registerInternalExceptionId `leant2Deadline
 
 def checkDeadline : SearchM Unit := do
+  let now ← IO.monoMsNow
   match (← read).deadline with
   | none => pure ()
-  | some d =>
-    if (← IO.monoMsNow) > d then throw (.internal deadlineExceptionId)
+  | some d => if now > d then throw (.internal deadlineExceptionId)
+  match ← (← read).graceDeadline.get with
+  | none => pure ()
+  | some d => if now > d then throw (.internal deadlineExceptionId)
 
 /-- `True` when an exception must propagate rather than count as rule failure. -/
 def isInterrupt (e : Exception) : Bool :=
