@@ -53,7 +53,7 @@ Together with Decisions~\ref{dec:single-engine} to~\ref{dec:forge}, these fix th
 \draw[flow] (ga) -- (out);
 \draw[flow] (ix) -- (se);
 \draw[flow, <->] (se) -- (pr);
-\draw[flow] (ga.south) to[out=-90,in=-20] node[below,font=\scriptsize]{rejected / deferred} (se.south east);
+\draw[flow] (ga.south) to[out=-90,in=-20] node[pos=0.2,right,font=\scriptsize]{rejected / deferred} (se.south east);
 \end{tikzpicture}}
 \caption{The pipeline. Everything left of the gate is untrusted search; the gate adds nothing to what the kernel checks except refusal.}
 \label{fig:pipeline}
