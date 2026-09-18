@@ -95,8 +95,14 @@ def outcomeMessage (o : Outcome) : MetaM MessageData := do
   | .negative .budgetExhausted _ _ => return m!"budget exhausted"
   | .preflightError s => return m!"error: {s}"
 
-def runQueryFromSyntax (nameStx : Option Syntax) (tyStx : Syntax) (whereStx : Option Syntax)
-    (budgetMs : Nat := 20000) : TermElabM Outcome := do
+register_option leant2.budgetMs : Nat := {
+  defValue := 20000
+  descr := "leant2: wall-clock budget per query, in milliseconds"
+}
+
+def runQueryFromSyntax (nameStx : Option Syntax) (tyStx : Syntax) (whereStx : Option Syntax) :
+    TermElabM Outcome := do
+  let budgetMs := leant2.budgetMs.get (← getOptions)
   let (t, c) ← elabQuery nameStx tyStx whereStx
   let provs := curatedProviders ++ (← sessionConstants)
   let start ← IO.monoMsNow
@@ -116,11 +122,27 @@ private def getParts (stx : Syntax) : Option Syntax × Syntax × Option Syntax :
   let wh? := if stx[3].getNumArgs > 0 then some stx[3][1] else none
   (name?, ty, wh?)
 
+/-- Bind accepted candidates as session constants `it1`, `it2`, ... (Leant's
+convention). A name already in use is left alone. -/
+def bindIts (cands : Array Accepted) : CommandElabM Unit := do
+  let mut i := 1
+  for c in cands do
+    let name := Name.mkSimple s!"it{i}"
+    i := i + 1
+    if (← getEnv).contains name then continue
+    let decl : Declaration := .defnDecl {
+      name := name, levelParams := c.levelParams, type := c.programType, value := c.program,
+      hints := .abbrev, safety := .safe }
+    -- compile too, so that `#eval it1 ...` works in the REPL
+    try liftCoreM (addAndCompile decl) catch _ => pure ()
+
 @[command_elab leant2Cmd] def elabLeant2 : CommandElab := fun stx => do
   let (n, t, w) := getParts stx
-  liftTermElabM do
+  let o ← liftTermElabM do
     let o ← runQueryFromSyntax n t w
     logInfo (← outcomeMessage o)
+    return o
+  if let .verified cands _ := o then bindIts cands
 
 @[command_elab leant2Check] def elabLeant2Check : CommandElab := fun stx => do
   let (n, t, w) := getParts stx
