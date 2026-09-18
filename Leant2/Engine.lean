@@ -24,7 +24,7 @@ structure Query where
   providers : Array Name := #[]
   /-- Wall-clock budget in milliseconds. -/
   budgetMs : Nat := 20000
-  maxCandidates : Nat := 6
+  maxCandidates : Nat := 12
   /-- After the first accepted candidate, keep enumerating for this long. -/
   graceMs : Nat := 400
 
@@ -66,6 +66,57 @@ private def lane (ledger : IO.Ref Ledger) (timedOut : IO.Ref Bool) (ms : Nat)
 private def atProp (e : Expr) : Expr :=
   let lps := (collectLevelParams {} e).params.toList
   e.instantiateLevelParams lps (lps.map fun _ => Level.zero)
+
+/-- A cheap cost vector for ranking accepted candidates (Section 6.4):
+inputs left unused by the outermost lambdas, eliminator uses, and size.
+Lower is better. -/
+def candidateCost (e : Expr) : Nat × Nat × Nat := Id.run do
+  -- unused outermost binders
+  let mut unused := 0
+  let mut body := e
+  let mut i := 0
+  while body.isLambda do
+    let b := body.bindingBody!
+    if !b.hasLooseBVar 0 then unused := unused + 1
+    body := b
+    i := i + 1
+  -- eliminators and size
+  let mut elims := 0
+  let mut size := 0
+  let mut stack := [e]
+  while !stack.isEmpty do
+    match stack with
+    | [] => pure ()
+    | x :: rest =>
+      stack := rest
+      size := size + 1
+      match x with
+      | .const n _ =>
+        let s := n.toString
+        if s.endsWith ".casesOn" || s.endsWith ".rec" || s.endsWith ".elim" then elims := elims + 1
+      | .app f a => stack := f :: a :: stack
+      | .lam _ t b _ | .forallE _ t b _ => stack := t :: b :: stack
+      | .letE _ t v b _ => stack := t :: v :: b :: stack
+      | .mdata _ b | .proj _ _ b => stack := b :: stack
+      | _ => pure ()
+  return (unused, elims, size)
+
+/-- Sort candidates by cost and drop those that print identically. -/
+def rankCandidates (cands : Array Accepted) : MetaM (Array Accepted) := do
+  let mut keyed : Array (Nat × Nat × Nat × String × Accepted) := #[]
+  for c in cands do
+    let (u, el, sz) := candidateCost c.program
+    let s := toString (← ppExpr c.program)
+    keyed := keyed.push (u, el, sz, s, c)
+  let sorted := keyed.qsort fun a b =>
+    a.1 < b.1 || (a.1 == b.1 && (a.2.1 < b.2.1 || (a.2.1 == b.2.1 && a.2.2.1 < b.2.2.1)))
+  let mut out : Array Accepted := #[]
+  let mut seenStr : Array String := #[]
+  for (_, _, _, s, c) in sorted do
+    if seenStr.contains s then continue
+    seenStr := seenStr.push s
+    out := out.push c
+  return out
 
 /-- Run the whole pipeline for one query. -/
 def runQuery (q : Query) : MetaM Outcome :=
@@ -151,7 +202,7 @@ def runQuery (q : Query) : MetaM Outcome :=
   let nothingYet : MetaM Bool := do return (← found.get).isEmpty && (← refuted.get).isNone
   -- 1. cheap constructive pass
   lane ledger timedOut (q.budgetMs * 3 / 20) fun ctx =>
-    enumerateGrace ctx baseCfg goalTy (accept q.target false) [3, 5]
+    enumerateGrace ctx baseCfg goalTy (accept q.target false) [2, 3, 5]
   -- 2. cheap refutation pass, only for type-only queries
   if (← nothingYet) && q.contract.isNone then refutationLane (q.budgetMs / 10) [4, 6]
   -- 3. cheap classical pass (shallow first: classical splits branch quickly)
@@ -166,7 +217,7 @@ def runQuery (q : Query) : MetaM Outcome :=
   if (← nothingYet) && q.contract.isNone then refutationLane (q.budgetMs / 10) [8]
   let cands ← found.get
   let l ← ledger.get
-  if !cands.isEmpty then return .verified cands l
+  if !cands.isEmpty then return .verified (← rankCandidates cands) l
   if let some cert ← refuted.get then return .negative .impossible (some cert) l
   if (← rejectedCount.get) > 0 && q.contract.isSome then
     return .refutedAll (← rejectedCount.get) l

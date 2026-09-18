@@ -37,6 +37,8 @@ structure Provider where
   argHeads : Array Name := #[]
   /-- Bypass the demand filter (eliminators such as `Empty.elim`). -/
   always : Bool := false
+  /-- Number of explicit arguments; providers are tried in increasing order. -/
+  arity : Nat := 0
   deriving Inhabited
 
 structure SearchConfig where
@@ -87,27 +89,30 @@ def forbiddenProviders : Array Name :=
 def mkProvider (n : Name) : MetaM (Option Provider) := do
   let some ci := (← getEnv).find? n | return none
   let ty ← instantiateMVars ci.type
-  let (concl, argHeads) ← forallTelescopeReducing ty fun xs b => do
+  let (concl, argHeads, arity) ← forallTelescopeReducing ty fun xs b => do
     let b ← whnfR b
     let mut hs : Array Name := #[]
+    let mut arity := 0
     for x in xs do
       let xt ← whnfR (← inferType x)
       if let .const c _ := xt.getAppFn then hs := hs.push c
-    return (b.getAppFn, hs)
+      if (← x.fvarId!.getBinderInfo).isExplicit then arity := arity + 1
+    return (b.getAppFn, hs, arity)
   let head := match concl with
     | .const c _ => some c
     | _ => none
   -- type constructors and predicates (`Wrap : Type 1 → Type`, `P : Nat → Prop`) are
   -- not term providers; type holes are filled by the frontier instead
   if concl.isSort then return none
-  return some { name := n, head, argHeads }
+  return some { name := n, head, argHeads, arity }
 
+/-- Build providers, ordered by increasing explicit arity (stable). -/
 def mkProviders (ns : Array Name) (always := false) : MetaM (Array Provider) := do
   let mut out := #[]
   for n in ns do
     if forbiddenProviders.contains n then continue
     if let some p ← mkProvider n then out := out.push { p with always }
-  return out
+  return out.insertionSort fun a b => a.arity < b.arity
 
 /-- Constants the classical lane adds. `absurd` is deliberately absent: an
 arbitrary `Prop` hole explodes the search. -/
@@ -193,13 +198,22 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
       charge fun l => { l with unifications := l.unifications + 1 }
       let children ← g.apply e applyCfg
       cont children
+    let locals ← localsToTry
+    -- 0. exact locals first: the exact-term lane runs before eta-expansion, so a
+    -- function-typed hole is filled by a matching local rather than introduced
+    for decl in locals do
+      if ← alternative (do
+          charge fun l => { l with unifications := l.unifications + 1 }
+          if ← isDefEq (← inferType decl.toExpr) target then
+            g.assign decl.toExpr
+            cont []
+          else return false) then return true
     -- 1. introduction (default transparency, so that `Not` and similar unfold).
     -- Invertible, hence free of depth cost.
     if (← whnf target).isForall then
       return ← alternative do
         let (_, g') ← g.intro1P
         search cfg leaf splits ({ mvar := g', depth } :: rest)
-    let locals ← localsToTry
     -- 2. invertible destructuring (does not consume depth or splits)
     for decl in locals do
       if let some ii ← inductiveOfLocal decl then
@@ -236,14 +250,6 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             match ← synthInstance? target with
             | some inst => g.assign inst; cont []
             | none => return false) then return true
-    -- 4. exact locals
-    for decl in locals do
-      if ← alternative (do
-          charge fun l => { l with unifications := l.unifications + 1 }
-          if ← isDefEq (← inferType decl.toExpr) target then
-            g.assign decl.toExpr
-            cont []
-          else return false) then return true
     if targetIsSort then
       -- type invention: types of locals first, then the closed frontier
       let mut frontier : Array Expr := #[]
@@ -256,16 +262,6 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             if ← isDefEq (← inferType t) target then
               g.assign t; cont []
             else return false) then return true
-    -- 5. bounded case analysis on multi-constructor locals
-    if splits > 0 && !targetIsSort then
-      for decl in locals do
-        if let some ii ← inductiveOfLocal decl then
-          if isInvertible ii || ii.name == ``Nat then continue
-          if ← alternative (do
-              let subgoals ← g.cases decl.fvarId
-              search cfg leaf (splits - 1)
-                (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d }) ++ rest)) then
-            return true
     -- 6. projections of local structure values, applied as heads
     for decl in locals do
       let dty ← whnfR (← instantiateMVars decl.type)
@@ -355,6 +351,17 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
               else otherGoals := otherGoals ++ [goal]
             search cfg leaf splits (instGoals ++ otherGoals ++ [{ mvar := g'', depth := d }] ++ rest))
           then return true
+      -- 9c. bounded case analysis on multi-constructor locals, after providers so
+      -- that library applications (`List.map f xs`) are found before case splits
+      if splits > 0 then
+        for decl in locals do
+          if let some ii ← inductiveOfLocal decl then
+            if isInvertible ii || ii.name == ``Nat then continue
+            if ← alternative (do
+                let subgoals ← g.cases decl.fvarId
+                search cfg leaf (splits - 1)
+                  (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d }) ++ rest)) then
+              return true
       -- 10. proof portfolio on closed propositions
       if cfg.proofPortfolio then
         if ← alternative (do if ← proofPortfolio g then cont [] else return false) then
