@@ -10,7 +10,9 @@ namespaces, `open`, and session declarations behave as in a file:
 * declarations and `#eval`/`#check` chunks are elaborated as commands;
 * `:synth ARGS` becomes the `#leant2 ARGS` command, whose output is printed;
 * every `:set` line is accepted and ignored (Decision 1.1);
-* `:reset` restores the initial environment; `:quit` exits;
+* `:reset` restores the initial environment; `:undo` drops the last chunk;
+  `:{` ... `:}` delimit a multi-line block; `:providers` lists the session
+  declarations that act as providers; `:quit` exits;
 * `:prove T` enters a minimal prove mode in which a bare `:synth`
   synthesizes `T` and tactic lines are ignored;
 * other non-command lines are evaluated as terms.
@@ -23,6 +25,8 @@ structure Session where
   st : Command.State
   budgetMs : Nat
   proving : Option String := none
+  /-- Command states before each accepted chunk, for `:undo`. -/
+  history : List Command.State := []
 
 def leanKeywords : List String :=
   ["def", "theorem", "lemma", "inductive", "structure", "class", "instance", "axiom", "opaque",
@@ -37,7 +41,7 @@ def startsWithKeyword (s : String) : Bool :=
 
 /-- Elaborate a chunk of Lean commands in the session, printing messages. The
 `#leant2` header line "N candidate(s) [...]" is dropped from the printout. -/
-def elabChunk (s : Session) (src : String) : IO Session := do
+def elabChunk (s : Session) (src : String) (record : Bool := true) : IO Session := do
   let inputCtx := Parser.mkInputContext src "<repl>"
   let st0 := { s.st with messages := {} }
   let st ← IO.processCommands inputCtx {} st0
@@ -54,7 +58,8 @@ def elabChunk (s : Session) (src : String) : IO Session := do
         if body.startsWith "leant2: " || body.contains '[' then IO.println s!"-- {body}"
         else IO.println body
       else IO.println l
-  return { s with st := st.commandState }
+  -- only user chunks (declarations) enter the `:undo` history; queries do not
+  return { s with st := st.commandState, history := if record then s.st :: s.history else s.history }
 
 /-- Translate `:synth ARGS` into a `#leant2` command. -/
 def synthCommand (arg : String) : String :=
@@ -82,7 +87,17 @@ partial def loop (s : Session) (lines : List String) (chunk : List String) : IO 
   | [] => let _ ← flush s; pure ()
   | l :: rest =>
     let t := l.trimRight
-    if t.startsWith ":" then
+    if t == ":{" then
+      -- a block: everything up to `:}` is one chunk of Lean commands
+      let s ← flush s
+      let body := rest.takeWhile (· != ":}")
+      let rest := (rest.dropWhile (· != ":}")).drop 1
+      IO.println "λ> :{"
+      let s ← elabChunk s ("
+".intercalate body)
+      IO.println "λ> :}"
+      loop s rest []
+    else if t.startsWith ":" then
       let s ← flush s
       IO.println s!"λ> {t}"
       let body : String := (t.drop 1).toString
@@ -93,17 +108,28 @@ partial def loop (s : Session) (lines : List String) (chunk : List String) : IO 
       | "set" => loop s rest []
       | "reset" =>
         IO.println "session reset"
-        loop { s with st := s.base, proving := none } rest []
+        loop { s with st := s.base, proving := none, history := [] } rest []
+      | "undo" =>
+        match s.history with
+        | prev :: hist =>
+          IO.println "undone"
+          loop { s with st := prev, history := hist } rest []
+        | [] =>
+          IO.println "nothing to undo"
+          loop s rest []
+      | "providers" =>
+        let s ← elabChunk s "#leant2_providers" (record := false)
+        loop s rest []
       | "prove" =>
         IO.println "entering prove mode (leant2: tactic lines are ignored)"
         loop { s with proving := some arg } rest []
       | "qed" | "abort" => loop { s with proving := none } rest []
       | "synth" =>
         let arg := if arg.isEmpty then s.proving.getD "" else arg
-        let s ← elabChunk s (synthCommand arg)
+        let s ← elabChunk s (synthCommand arg) (record := false)
         loop s rest []
       | "type" =>
-        let s ← elabChunk s s!"#check ({arg})"
+        let s ← elabChunk s s!"#check ({arg})" (record := false)
         loop s rest []
       | _ => IO.println s!"(ignored :{cmd})"; loop s rest []
     else if t.isEmpty then

@@ -71,6 +71,8 @@ def sessionConstants : CoreM (Array Name) := do
       if let some cls := ci.type.getForallBody.getAppFn.constName? then
         if cls ∈ [``DecidableEq, ``Decidable, ``BEq, ``Repr, ``Hashable, ``Ord, ``ToString,
                   ``SizeOf, ``Nonempty, ``Inhabited, ``LawfulBEq] then continue
+    -- a declaration that failed to elaborate is recorded with `sorryAx`: not a provider
+    if ci.type.hasSorry || (ci.value?.map (·.hasSorry)).getD false then continue
     match ci with
     | .axiomInfo _ | .defnInfo _ | .thmInfo _ | .opaqueInfo _ | .ctorInfo _ => out := out.push n
     | _ => pure ()
@@ -130,6 +132,8 @@ def runQueryFromSyntax (nameStx : Option Syntax) (tyStx : Syntax) (whereStx : Op
 syntax (name := leant2Cmd) "#leant2 " (atomic(ident " : "))? term (" where " term)? : command
 syntax (name := leant2Check) "#leant2_check " (atomic(ident " : "))? term (" where " term)? : command
 syntax (name := leant2None) "#leant2_none " (atomic(ident " : "))? term (" where " term)? : command
+/-- List the session declarations that act as providers, one per line. -/
+syntax (name := leant2Providers) "#leant2_providers" : command
 
 private def getParts (stx : Syntax) : Option Syntax × Syntax × Option Syntax :=
   let name? := if stx[1].getNumArgs > 0 then some stx[1][0] else none
@@ -174,5 +178,10 @@ def bindIts (cands : Array Accepted) : CommandElabM Unit := do
     match o with
     | .verified .. => throwError "leant2_none failed: {← outcomeMessage o}"
     | _ => logInfo (← outcomeMessage o)
+
+@[command_elab leant2Providers] def elabLeant2Providers : CommandElab := fun _ => do
+  let names ← liftCoreM sessionConstants
+  let names := names.qsort (fun a b => a.toString < b.toString)
+  logInfo m!"providers: {names.toList}"
 
 end Leant2

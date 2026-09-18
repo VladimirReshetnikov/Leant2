@@ -40,7 +40,8 @@ tests, and the `leant2` REPL executable.
 - `Leant2/Frontend/Command.lean`: `#leant2 T`, `#leant2 f : T where P`,
   `#leant2_check`, `#leant2_none`; results are bound as `it1`, `it2`, ...
 - `Main.lean`: the compatibility REPL that consumes Leant transcripts
-  (`:synth`, `:set` ignored, `:reset`, `:prove`, declarations, `#eval`).
+  (`:synth`, `:set` ignored, `:reset`, `:undo`, `:{ ... :}` blocks,
+  `:providers`, `:prove`, declarations, `#eval`).
 
 ### The baseline
 
@@ -65,10 +66,12 @@ python tools/run_recursive.py --budget 10000   # Leant test-recursive, 9 cases
 python tools/run_church.py --budget 10000      # Leant test-church behavior probes, 21 cases
 python tools/run_context.py --budget 10000     # Leant test-behavioral simplification + test-context production, products, selections, constructors, universes: 90 cases
 python tools/run_corpus.py --budget 10000      # Leant test-church signature corpus, 350 type-only queries
+python tools/run_session.py                    # Leant session provider-identity suite (blocks, :undo, rejected declarations)
 ```
 
-All four passed in full on 2026-09-18 (recursive 9/9, Church probes 21/21,
-context 90/90, corpus 350/350) with a 10 s budget per query.
+All five passed in full on 2026-09-18 (recursive 9/9, Church probes 28/28
+scored plus 13 stretch cases Leant never accepted, context 90/90, corpus
+350/350, session 6/6) with a 10 s budget per query.
 
 The Church harness imports the specifications from Leant's vendored Djex
 directory (`C:\Leant\lib\Djex	est-church`), so every `:synth` carries the
