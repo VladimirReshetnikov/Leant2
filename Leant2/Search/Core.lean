@@ -55,6 +55,13 @@ structure SearchConfig where
   /-- Try structural recursion on recursive inductive locals before constructors
   and providers (used when a behavioral contract is present, Section 17). -/
   recursionFirst : Bool := false
+  /-- The contract `fun f => P f`, when there is one. -/
+  contract : Option Expr := none
+  /-- Precomputed deciders for the contract's conjuncts (left to right):
+  each is `fun f => C_i f` with `fun f => inst_i` when `C_i f` is decidable. -/
+  residual : Array (Expr × Option Expr) := #[]
+  /-- The root hole of the current pass (a `Subtype` when a contract is present). -/
+  root : Option MVarId := none
 
 /-- Leaf callback: receives the search state with all goals assigned and
 returns `true` to stop the search. -/
@@ -71,6 +78,9 @@ structure Goal where
   deferred twice so that an instance sibling (itself deferred once while its
   type is open) can determine them. -/
   deferred : Nat := 0
+  /-- Locals that may not be applied again below this goal: a Church-encoded
+  list folded once is not folded again inside its own step or seed. -/
+  consumed : List FVarId := []
 
 /-- Run one alternative. If it does not stop the search, restore the state so
 the next alternative starts from the same point. -/
@@ -122,43 +132,42 @@ arbitrary `Prop` hole explodes the search. -/
 def classicalProviders : MetaM (Array Provider) :=
   mkProviders #[``Classical.em, ``Classical.byContradiction, ``False.elim] (always := true)
 
+/-- Self-time profile of the search rules, printed by the lane trace. -/
+initialize profTimers : IO.Ref (Array (String × Nat)) ← IO.mkRef #[]
+
+/-- Accumulate the wall time of a non-recursive step under `k` (nanoseconds). -/
+def timed (k : String) (act : SearchM α) : SearchM α := do
+  let t0 ← IO.monoNanosNow
+  let r ← act
+  let dt := (← IO.monoNanosNow) - t0
+  profTimers.modify fun a =>
+    match a.findIdx? (·.1 == k) with
+    | some i => a.modify i fun (k, v) => (k, v + dt)
+    | none => a.push (k, dt)
+  return r
+
 private def isTypeSort (e : Expr) : MetaM Bool := do
   match ← whnfR e with
   | .sort _ => return true
   | _ => return false
 
-/-- Try to close a *closed* `Prop` goal (no metavariables, no locals) with a
-small tactic portfolio. Messages the tactics log are discarded. -/
-def proofPortfolio (g : MVarId) : SearchM Bool := do
-  let t ← instantiateMVars (← g.getType)
-  if t.hasMVar || t.hasFVar then return false
-  -- `False` has no proof and `True` is a constructor: not worth a tactic run
-  if t.isConstOf ``False || t.isConstOf ``True then return false
-  unless ← isProp t do return false
-  charge fun l => { l with proofAttempts := l.proofAttempts + 1 }
-  -- fast path: a decidable closed proposition is decided by reduction; `false`
-  -- refutes the candidate outright, so no further tactic is attempted
-  let inst? : Option Expr ← (do
-    try synthInstance? (mkApp (mkConst ``Decidable) t)
-    catch e => if isInterrupt e then throw e else pure none : MetaM (Option Expr))
-  if let some inst := inst? then
-    let d := mkApp2 (mkConst ``Decidable.decide) t inst
-    let r ← withDefault (whnf d)
-    if r.isConstOf ``Bool.true then
-      let pf := mkApp3 (mkConst ``of_decide_eq_true) t inst
-        (mkApp2 (mkConst ``Eq.refl [Level.succ .zero]) (mkConst ``Bool) (mkConst ``Bool.true))
-      g.assign pf
-      return true
-    if r.isConstOf ``Bool.false then return false
-  let savedMsgs := (← getThe Core.State).messages
-  let r ← Term.TermElabM.run' do
-    let stx ← `(tactic| first | rfl | decide | (simp) | omega)
-    try
-      let gs ← Tactic.run g (Tactic.evalTactic stx)
-      return gs.isEmpty
-    catch _ => return false
-  modifyThe Core.State fun s => { s with messages := savedMsgs }
-  return r
+/-- Types invented from the local context: local type variables, types of
+locals, and one level of arrows over them (Church-style folds with a function
+accumulator instantiate a result type at `R -> R`). -/
+private def localFrontier (locals : Array LocalDecl) : MetaM (Array Expr) := do
+  let mut frontier : Array Expr := #[]
+  for decl in locals do
+    let dty ← instantiateMVars decl.type
+    if (← whnfR dty).isSort then
+      unless frontier.contains decl.toExpr do frontier := frontier.push decl.toExpr
+    else if ← isTypeSort (← inferType dty) then
+      unless frontier.contains dty do frontier := frontier.push dty
+  let base := frontier
+  for a in base do
+    for b in base do
+      let arrow ← mkArrow a b
+      unless frontier.contains arrow do frontier := frontier.push arrow
+  return frontier
 
 /-- Instantiate metavariables *including* delayed assignments whose pending
 hole is still open. The result may mention metavariables whose local
@@ -190,23 +199,174 @@ partial def instantiatePartial (e : Expr) : MetaM Expr := do
     | _ => return e
   go e
 
-/-- Residual evaluation of a pending contract (Section 18.2): split a
-conjunction and decide each conjunct by reduction, even when other holes are
-still open. A conjunct that reduces to `false` refutes every completion of
-the current partial program, so the branch can be abandoned now. -/
-partial def partialRefute (t : Expr) : SearchM Bool := do
+/-- Result of evaluating the contract on a (possibly partial) program. -/
+inductive Residual where
+  | refuted
+  | proved (pf : Expr)
+  | stuck
+
+/-- Left-to-right conjuncts of a right- or left-nested `And` chain. -/
+partial def conjuncts (e : Expr) : Array Expr :=
+  if e.isAppOfArity ``And 2 then conjuncts (e.getArg! 0) ++ conjuncts (e.getArg! 1) else #[e]
+
+/-- Precompute the residual deciders of a contract `fun f => P f` at `T`. -/
+def mkResidual (contract : Expr) (ty : Expr) : MetaM (Array (Expr × Option Expr)) :=
+  withLocalDecl `f .default ty fun f => do
+    let body := (contract.beta #[f])
+    let mut out := #[]
+    for c in conjuncts body do
+      let inst? : Option Expr ← (do
+        try synthInstance? (mkApp (mkConst ``Decidable) c)
+        catch e => if isInterrupt e then throw e else pure none : MetaM (Option Expr))
+      let inst? ← inst?.mapM fun i => do mkLambdaFVars #[f] (← instantiateMVars i)
+      out := out.push (← mkLambdaFVars #[f] c, inst?)
+    return out
+
+/-- The program a root hole currently holds: `Subtype.val` of the partially
+instantiated root (including delayed assignments), or the root itself. -/
+def rootProgram (cfg : SearchConfig) : MetaM (Option Expr) := do
+  let some root := cfg.root | return none
+  let p ← instantiatePartial (mkMVar root)
+  if cfg.contract.isSome then
+    if p.isAppOfArity ``Subtype.mk 4 then return some (p.getArg! 2) else return none
+  return some p
+
+/-- Decide a closed-or-partial decidable proposition by kernel reduction, which
+evaluates recursors and literals natively and is stuck (not failing) on open
+holes. `none` when reduction does not reach a Boolean constant. -/
+def kernelDecide (t inst : Expr) : MetaM (Option Bool × Option Expr) := do
+  let e := mkApp2 (mkConst ``Decidable.decide) t inst
+  match Kernel.whnf (← getEnv) (← getLCtx) e with
+  | .ok r =>
+    if r.isConstOf ``Bool.true then return (some true, none)
+    if r.isConstOf ``Bool.false then return (some false, none)
+    return (none, some r)
+  | .error _ => return (none, none)
+
+/-- Rebuild the `And` tree of a contract from leaf proofs, left to right. -/
+private partial def buildAndProof (proofs : Array (Option Expr)) (t : Expr) (k : Nat) : Expr × Nat :=
+  if t.isAppOfArity ``And 2 then
+    let (l, k) := buildAndProof proofs (t.getArg! 0) k
+    let (r, k) := buildAndProof proofs (t.getArg! 1) k
+    (mkApp4 (mkConst ``And.intro) (t.getArg! 0) (t.getArg! 1) l r, k)
+  else (proofs[k]!.get!, k + 1)
+
+/-- Evaluate the precomputed conjunct deciders on `p`. A conjunct reducing to
+`false` refutes; when every conjunct reduces to `true` the proof is assembled
+(the contract's `And` nesting is rebuilt from `cfg.contract`). Conjuncts
+without a decider, or stuck on open holes, leave the result `stuck`. -/
+def evalResidual (cfg : SearchConfig) (p : Expr) : SearchM Residual := do
+  let mut proofs : Array (Option Expr) := #[]
+  let mut blockers : Array MVarId := #[]
+  for (pred, inst?) in cfg.residual do
+    let some inst := inst? | proofs := proofs.push none; continue
+    let t := pred.beta #[p]
+    let i := inst.beta #[p]
+    let (r, stuck?) ← kernelDecide t i
+    if r == some false then return .refuted
+    if let some stuck := stuck? then
+      blockers := blockers ++ (stuck.collectMVars {}).result
+    if r == some true && !p.hasExprMVar then
+      proofs := proofs.push (some (mkApp3 (mkConst ``of_decide_eq_true) t i
+        (mkApp2 (mkConst ``Eq.refl [Level.succ .zero]) (mkConst ``Bool) (mkConst ``Bool.true))))
+    else proofs := proofs.push none
+  if p.hasExprMVar then
+    -- remember where evaluation stopped; the check is repeated only once one of
+    -- these holes is filled
+    (← read).residualBlockers.set blockers
+    return .stuck
+  if proofs.any (·.isNone) then return .stuck
+  let some contract := cfg.contract | return .stuck
+  let (pf, _) := buildAndProof proofs (contract.beta #[p]) 0
+  return .proved pf
+
+/-- Residual evaluation of a pending contract goal (Section 10): a conjunct
+that already reduces to `false` on the partial program refutes the branch.
+Uses the precomputed deciders when present, otherwise generic decision. -/
+partial def partialRefute (cfg : SearchConfig) (t : Expr) : SearchM Bool := do
+  if !cfg.residual.isEmpty then
+    -- still stuck on the same open holes: nothing new to decide. A blocker that
+    -- no longer exists (rolled back) or is assigned (directly, or through its
+    -- delayed pending hole) means the program moved on.
+    let blockers ← (← read).residualBlockers.get
+    if !blockers.isEmpty then
+      let mut same := true
+      for m in blockers do
+        match (← getMCtx).findDecl? m with
+        | none => same := false; break
+        | some _ => pure ()
+        if ← m.isAssigned then same := false; break
+        if let some da ← getDelayedMVarAssignment? m then
+          if ← da.mvarIdPending.isAssigned then same := false; break
+      if same then return false
+    let some p ← timed "residual.instantiate" (rootProgram cfg) | return false
+    let r ← timed "residual.decide" (evalResidual cfg p)
+    if leant2.traceNodes.get (← getOptions) then
+      IO.println s!"[leant2]     residual {if r matches .refuted then "REFUTED" else "stuck"} {(← ppExpr p).pretty 100000}"
+    return r matches .refuted
   let t := (← instantiatePartial t).headBeta
   if t.isAppOfArity ``And 2 then
-    if ← partialRefute (t.getArg! 0) then return true
-    return ← partialRefute (t.getArg! 1)
+    if ← partialRefute cfg (t.getArg! 0) then return true
+    return ← partialRefute cfg (t.getArg! 1)
   let inst? : Option Expr ← (do
     try synthInstance? (mkApp (mkConst ``Decidable) t)
     catch e => if isInterrupt e then throw e else pure none : MetaM (Option Expr))
   let some inst := inst? | return false
-  let r ← (do
-    try withDefault (whnf (mkApp2 (mkConst ``Decidable.decide) t inst))
-    catch e => if isInterrupt e then throw e else pure (mkConst ``Bool.true) : MetaM Expr)
-  return r.isConstOf ``Bool.false
+  return (← kernelDecide t inst).1 == some false
+
+/-- Try to close a *closed* `Prop` goal (no metavariables, no locals) with a
+small tactic portfolio. Messages the tactics log are discarded. -/
+def proofPortfolio (cfg : SearchConfig) (g : MVarId) : SearchM Bool := do
+  let t ← instantiateMVars (← g.getType)
+  if t.hasMVar || t.hasFVar then return false
+  -- `False` has no proof and `True` is a constructor: not worth a tactic run
+  if t.isConstOf ``False || t.isConstOf ``True then return false
+  unless ← isProp t do return false
+  charge fun l => { l with proofAttempts := l.proofAttempts + 1 }
+  -- the contract goal of a closed program: precomputed conjunct deciders
+  if let some contract := cfg.contract then
+    if !cfg.residual.isEmpty then
+      if let some p ← rootProgram cfg then
+        if leant2.traceNodes.get (← getOptions) then
+          IO.println s!"[leant2]     program {(← ppExpr p).pretty 100000}"
+        if !p.hasExprMVar && t == (contract.beta #[p]) then
+          if (← (← read).refutedPrograms.get).contains p then return false
+          match ← evalResidual cfg p with
+          | .refuted => (← read).refutedPrograms.modify (·.insert p); return false
+          | .proved pf => g.assign pf; return true
+          | .stuck => pure ()
+  -- fast path: a decidable closed proposition is decided by reduction; `false`
+  -- refutes the candidate outright, so no further tactic is attempted
+  let inst? : Option Expr ← (do
+    try synthInstance? (mkApp (mkConst ``Decidable) t)
+    catch e => if isInterrupt e then throw e else pure none : MetaM (Option Expr))
+  if let some inst := inst? then
+    match (← kernelDecide t inst).1 with
+    | some true =>
+      let pf := mkApp3 (mkConst ``of_decide_eq_true) t inst
+        (mkApp2 (mkConst ``Eq.refl [Level.succ .zero]) (mkConst ``Bool) (mkConst ``Bool.true))
+      g.assign pf
+      return true
+    | some false => return false
+    | none => pure ()
+  let savedMsgs := (← getThe Core.State).messages
+  let r ← Term.TermElabM.run' do
+    let stx ← `(tactic| first | rfl | decide | (simp) | omega)
+    try
+      let gs ← Tactic.run g (Tactic.evalTactic stx)
+      return gs.isEmpty
+    catch _ => return false
+  modifyThe Core.State fun s => { s with messages := savedMsgs }
+  return r
+
+/-- `forall R : Sort, ... -> R`: the shape of a Church-encoded datum, whose
+result is the quantified type itself. -/
+private def isChurchEliminator (ty : Expr) : MetaM Bool := do
+  match ty with
+  | .forallE _ bty _ _ =>
+    unless (← whnfR bty).isSort do return false
+    forallTelescopeReducing ty fun xs b => return xs.size > 1 && b == xs[0]!
+  | _ => return false
 
 private def localsToTry : MetaM (Array LocalDecl) := do
   let mut out := #[]
@@ -235,7 +395,8 @@ mutual
 recursor with a constant motive; each constructor branch receives its
 induction hypotheses as recursive-call capabilities. Bounded like a split. -/
 partial def structuralRecursion (cfg : SearchConfig) (leaf : Leaf) (splits d : Nat)
-    (g : MVarId) (locals : Array LocalDecl) (rest : List Goal) : SearchM Bool := do
+    (g : MVarId) (locals : Array LocalDecl) (rest : List Goal) (consumed : List FVarId := [])
+    : SearchM Bool := do
   if splits = 0 then return false
   for decl in locals do
     if let some ii ← inductiveOfLocal decl then
@@ -243,7 +404,7 @@ partial def structuralRecursion (cfg : SearchConfig) (leaf : Leaf) (splits d : N
       if ← alternative (do
           let subgoals ← g.induction decl.fvarId (mkRecName ii.name)
           search cfg leaf (splits - 1)
-            (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d }) ++ rest)) then
+            (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d, consumed }) ++ rest)) then
         return true
   return false
 
@@ -255,7 +416,6 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     let g := goal.mvar
     let depth := goal.depth
     if ← g.isAssigned then return ← search cfg leaf splits rest
-    if depth = 0 then return false
     checkDeadline
     g.withContext do
     let target ← instantiateMVars (← g.getType)
@@ -263,7 +423,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     if !rest.isEmpty then
       let targetW ← whnfR target
       -- a type former (`Type → Type`) is a type hole too
-      let isSortGoal ← forallTelescopeReducing targetW fun _ b => do return (← whnfR b).isSort
+      let isSortGoal ← timed "deferral" (forallTelescopeReducing targetW fun _ b => do return (← whnfR b).isSort)
       let mvarHeaded := targetW.getAppFn.isMVar
       -- limits: a hole typed by a bare metavariable waits longest (its type hole must
       -- come first); a type hole waits for rigid-headed siblings (instances) that
@@ -274,35 +434,46 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     -- residual evaluation: a pending contract elsewhere in the list that already
     -- reduces to `false` prunes this branch before any further construction
     if cfg.recursionFirst then  -- i.e. a contract is present
-      for pending in rest do
-        let pty ← instantiateMVars (← pending.mvar.getType)
-        if pty.hasExprMVar && (← isProp pty) then
-          if ← partialRefute pty then return false
+      let refuted ← timed "residual" do
+        let mut refuted := false
+        for pending in rest do
+          let pty ← instantiateMVars (← pending.mvar.getType)
+          if pty.hasExprMVar && (← isProp pty) then
+            if ← partialRefute cfg pty then refuted := true; break
+        pure refuted
+      if refuted then return false
     charge fun l => { l with ruleApplications := l.ruleApplications + 1 }
     let targetW ← whnfR target
     let d := depth - 1
+    let consumed := goal.consumed
     let cont (children : List MVarId) : SearchM Bool :=
-      search cfg leaf splits (children.map (fun m => { mvar := m, depth := d }) ++ rest)
+      search cfg leaf splits (children.map (fun m => { mvar := m, depth := d, consumed }) ++ rest)
+    -- like `cont`, but the children may not apply `fv` again
+    let contConsuming (fv : FVarId) (children : List MVarId) : SearchM Bool :=
+      search cfg leaf splits
+        (children.map (fun m => { mvar := m, depth := d, consumed := fv :: consumed }) ++ rest)
     let applyHead (e : Expr) : SearchM Bool := alternative do
       charge fun l => { l with unifications := l.unifications + 1 }
-      let children ← g.apply e applyCfg
+      let children ← timed "apply" (g.apply e applyCfg)
       cont children
-    let locals ← localsToTry
+    let locals ← timed "locals" localsToTry
     -- 0. exact locals first: the exact-term lane runs before eta-expansion, so a
     -- function-typed hole is filled by a matching local rather than introduced
     for decl in locals do
       if ← alternative (do
           charge fun l => { l with unifications := l.unifications + 1 }
-          if ← isDefEq (← inferType decl.toExpr) target then
+          if ← timed "exact" (isDefEq (← inferType decl.toExpr) target) then
             g.assign decl.toExpr
             cont []
           else return false) then return true
+    -- leaves (exact locals) are free; everything below consumes depth
+    if depth = 0 then return false
     -- 1. introduction (default transparency, so that `Not` and similar unfold).
     -- Invertible, hence free of depth cost.
-    if (← whnf target).isForall then
+    if (← timed "intro" (whnf target)).isForall then
       return ← alternative do
-        let (_, g') ← g.intro1P
-        search cfg leaf splits ({ mvar := g', depth } :: rest)
+        let (_, g') ← timed "intro" g.intro1P
+        search cfg leaf splits ({ mvar := g', depth, consumed } :: rest)
     -- 2. invertible destructuring (does not consume depth or splits)
     for decl in locals do
       if let some ii ← inductiveOfLocal decl then
@@ -310,7 +481,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
           if ← alternative (do
               let subgoals ← g.cases decl.fvarId
               search cfg leaf splits
-                (subgoals.toList.map (fun s => { mvar := s.mvarId, depth }) ++ rest)) then
+                (subgoals.toList.map (fun s => { mvar := s.mvarId, depth, consumed }) ++ rest)) then
             return true
           -- destructuring failed (e.g. Prop into data): fall through
   -- 2b. classical case split on a Prop variable, early: `cases (Classical.em p)`.
@@ -326,13 +497,13 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             let (h, g'') ← g'.intro1P
             let subgoals ← g''.cases h
             search cfg leaf (splits - 1)
-              (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d }) ++ rest)) then
+              (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d, consumed }) ++ rest)) then
           return true
     -- 2c. structural recursion first, under a contract, at the outermost level
     -- only (nested recursion remains a late alternative, rule 9d)
     let recurseNow := cfg.recursionFirst && !targetW.isSort && splits == cfg.maxSplits
     if recurseNow then
-      if ← structuralRecursion cfg leaf splits d g locals rest then return true
+      if ← structuralRecursion cfg leaf splits d g locals rest consumed then return true
     -- 3. reflexivity
     if targetW.isAppOfArity ``Eq 3 then
       if ← alternative (do g.refl; cont []) then return true
@@ -346,11 +517,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             | none => return false) then return true
     if targetIsSort then
       -- type invention: types of locals first, then the closed frontier
-      let mut frontier : Array Expr := #[]
-      for decl in locals do
-        let dty ← instantiateMVars decl.type
-        if ← isTypeSort (← inferType dty) then
-          unless frontier.contains dty do frontier := frontier.push dty
+      let frontier ← localFrontier locals
       for t in frontier ++ cfg.typeFrontier do
         if ← alternative (do
             if ← isDefEq (← inferType t) target then
@@ -376,9 +543,36 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     if !targetIsSort then
       -- 7. application of locals (default transparency: `¬p` is a function)
       for decl in locals do
+        if consumed.contains decl.fvarId then continue
         let dty ← whnf (← instantiateMVars decl.type)
         unless dty.isForall do continue
-        if ← applyHead decl.toExpr then return true
+        -- a Church-encoded datum (`forall R, ... -> R`) is an eliminator: it is
+        -- not applied again inside its own continuation arguments
+        let eliminator ← isChurchEliminator dty
+        if ← alternative (do
+            charge fun l => { l with unifications := l.unifications + 1 }
+            let children ← timed "apply" (g.apply decl.toExpr applyCfg)
+            if eliminator then contConsuming decl.fvarId children else cont children) then
+          return true
+      -- 7a. polymorphic locals instantiated at the accumulator type `T -> T` for
+      -- the target `T` before application: `apply` cannot see that
+      -- `xs (T -> T) step seed x` has one more argument than `xs T step seed`
+      if !target.hasExprMVar then
+        let acc ← mkArrow target target
+        for decl in locals do
+          if consumed.contains decl.fvarId then continue
+          let dty ← whnf (← instantiateMVars decl.type)
+          let .forallE _ bty body _ := dty | continue
+          unless (← whnfR bty).isSort do continue
+          let eliminator ← isChurchEliminator dty
+          if ← alternative (do
+              unless ← isDefEq (← inferType acc) bty do return false
+              let inst := body.instantiate1 acc
+              unless (← whnf inst).isForall do return false
+              charge fun l => { l with unifications := l.unifications + 1 }
+              let children ← g.apply (mkApp decl.toExpr acc) applyCfg
+              if eliminator then contConsuming decl.fvarId children else cont children) then
+            return true
       -- 7b. bounded forward application: when every argument of a local function is
       -- an exact local, name the result so that it can be destructured or projected
       -- (`match f x with | (a, s) => ...`). Costs one depth unit.
@@ -403,7 +597,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             let val ← instantiateMVars (mkAppN decl.toExpr args)
             let g' ← g.assert (← mkFreshUserName `h) resTy val
             let (_, g'') ← g'.intro1P
-            search cfg leaf splits ({ mvar := g'', depth := d } :: rest)) then return true
+            search cfg leaf splits ({ mvar := g'', depth := d, consumed } :: rest)) then return true
       -- 9. providers, head-filtered: a constant-headed conclusion must match the
       -- target head; a variable-headed provider needs a local demanding one of its
       -- argument heads
@@ -440,10 +634,10 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             let mut otherGoals : List Goal := []
             for a in args do
               let aty ← instantiateMVars (← inferType a)
-              let goal : Goal := { mvar := a.mvarId!, depth := d, deferred := 3 }
+              let goal : Goal := { mvar := a.mvarId!, depth := d, deferred := 3, consumed }
               if (← isClass? aty).isSome then instGoals := instGoals ++ [goal]
               else otherGoals := otherGoals ++ [goal]
-            search cfg leaf splits (instGoals ++ otherGoals ++ [{ mvar := g'', depth := d }] ++ rest))
+            search cfg leaf splits (instGoals ++ otherGoals ++ [{ mvar := g'', depth := d, consumed }] ++ rest))
           then return true
       -- 9c. bounded case analysis on multi-constructor locals, after providers so
       -- that library applications (`List.map f xs`) are found before case splits
@@ -454,15 +648,15 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             if ← alternative (do
                 let subgoals ← g.cases decl.fvarId
                 search cfg leaf (splits - 1)
-                  (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d }) ++ rest)) then
+                  (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d, consumed }) ++ rest)) then
               return true
       -- 9d. structural recursion as a late alternative, top level only (nested
       -- recursion is not attempted: it multiplies the search without payoff here)
       if !recurseNow && splits == cfg.maxSplits then
-        if ← structuralRecursion cfg leaf splits d g locals rest then return true
+        if ← structuralRecursion cfg leaf splits d g locals rest consumed then return true
       -- 10. proof portfolio on closed propositions
       if cfg.proofPortfolio then
-        if ← alternative (do if ← proofPortfolio g then cont [] else return false) then
+        if ← alternative (do if ← timed "portfolio" (proofPortfolio cfg g) then cont [] else return false) then
           return true
     return false
 end

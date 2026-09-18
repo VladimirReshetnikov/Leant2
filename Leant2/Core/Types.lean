@@ -66,4 +66,9 @@ register_option leant2.trace : Bool := {
   descr := "leant2: print lane timings and depth progress"
 }
 
+register_option leant2.traceNodes : Bool := {
+  defValue := false
+  descr := "leant2: print every program checked against the contract (verbose)"
+}
+
 end Leant2

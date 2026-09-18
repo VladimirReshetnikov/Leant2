@@ -48,8 +48,10 @@ def enumerate (ctx : SearchCtx) (cfg : SearchConfig) (goalTy : Expr)
       let leaf : Leaf := do
         let e ← instantiateMVars root
         if e.hasExprMVar then return false
+        if leant2.traceNodes.get (← getOptions) then
+          IO.println s!"[leant2]     leaf {← ppExpr e}"
         accept e
-      let cfg := { cfg with maxDepth := depth }
+      let cfg := { cfg with maxDepth := depth, root := some root.mvarId! }
       let t0 ← IO.monoMsNow
       let _ ← alternative (search cfg leaf cfg.maxSplits [{ mvar := root.mvarId!, depth }])
       -- a depth counts as completed only if the pass returned (not interrupted)
@@ -61,18 +63,30 @@ def enumerate (ctx : SearchCtx) (cfg : SearchConfig) (goalTy : Expr)
 
 /-- Run `act` with a fresh deadline `ms` from now. A lane that hits its
 deadline records the fact in `timedOut`; other interrupts propagate. -/
-private def lane (ledger : IO.Ref Ledger) (timedOut : IO.Ref Bool) (ms : Nat)
+private def lane (ledger : IO.Ref Ledger) (refutedPrograms : IO.Ref (Std.HashSet Expr))
+    (timedOut : IO.Ref Bool) (ms : Nat)
     (act : SearchCtx → MetaM Unit) (name : String := "lane") : MetaM Unit := do
   let t0 ← IO.monoMsNow
   let trace := leant2.trace.get (← getOptions)
-  let ctx : SearchCtx := { ledger, deadline := some (t0 + ms) }
+  let residualBlockers ← IO.mkRef #[]
+  let ctx : SearchCtx := { ledger, deadline := some (t0 + ms), refutedPrograms, residualBlockers }
   try
     act ctx
-    if trace then IO.println s!"[leant2] {name}: finished in {(← IO.monoMsNow) - t0} ms (share {ms} ms)"
+    if trace then
+      let l ← ledger.get
+      IO.println s!"[leant2] {name}: finished in {(← IO.monoMsNow) - t0} ms (share {ms} ms) rules {l.ruleApplications} unif {l.unifications} proofs {l.proofAttempts} cands {l.candidates}"
+      let prof ← profTimers.get
+      IO.println s!"[leant2]   self times (ms): {prof.map fun (k, v) => (k, v / 1000000)}"
+      profTimers.set #[]
   catch e =>
     if isInterrupt e then
       timedOut.set true
-      if trace then IO.println s!"[leant2] {name}: timed out after {(← IO.monoMsNow) - t0} ms (share {ms} ms)"
+      if trace then
+        let l ← ledger.get
+        IO.println s!"[leant2] {name}: timed out after {(← IO.monoMsNow) - t0} ms (share {ms} ms) rules {l.ruleApplications} unif {l.unifications} proofs {l.proofAttempts} cands {l.candidates}"
+      let prof ← profTimers.get
+      IO.println s!"[leant2]   self times (ms): {prof.map fun (k, v) => (k, v / 1000000)}"
+      profTimers.set #[]
     else throw e
 
 /-- Instantiate every universe parameter of `e` with `Prop`. -/
@@ -136,10 +150,15 @@ def runQuery (q : Query) : MetaM Outcome :=
   -- heartbeats are replaced by the wall-clock deadline of each lane
   withTheReader Core.Context (fun c => { c with maxHeartbeats := 0 }) do
   let ledger ← IO.mkRef ({} : Ledger)
+  let refutedPrograms ← IO.mkRef ({} : Std.HashSet Expr)
   let start ← IO.monoMsNow
   let frontier ← defaultTypeFrontier
   let providers ← mkProviders q.providers
-  let baseCfg : SearchConfig := { providers, typeFrontier := frontier, recursionFirst := q.contract.isSome }
+  let residual ← match q.contract with
+    | some c => mkResidual c q.target
+    | none => pure #[]
+  let baseCfg : SearchConfig := { providers, typeFrontier := frontier, recursionFirst := q.contract.isSome,
+                                  contract := q.contract, residual }
   let found ← IO.mkRef (#[] : Array Accepted)
   let seen ← IO.mkRef (#[] : Array Expr)
   let firstFoundAt ← IO.mkRef (none : Option Nat)
@@ -196,7 +215,7 @@ def runQuery (q : Query) : MetaM Outcome :=
   let timedOut ← IO.mkRef false
   -- refutation lane
   let refuted ← IO.mkRef (none : Option Accepted)
-  let refutationLane (ms : Nat) (depths : List Nat) : MetaM Unit := lane ledger timedOut ms (name := "refutation") fun ctx => do
+  let refutationLane (ms : Nat) (depths : List Nat) : MetaM Unit := lane ledger refutedPrograms timedOut ms (name := "refutation") fun ctx => do
     let negTy ← mkArrow q.target (mkConst ``False)
     let extra ← mkProviders #[``Empty.elim, ``False.elim] (always := true)
     let cfgR := { baseCfg with providers := extra ++ baseCfg.providers }
@@ -207,12 +226,17 @@ def runQuery (q : Query) : MetaM Outcome :=
         | .error _ => return false) (do return (← refuted.get).isSome) depths dummy
   -- classical reasoning needs `Prop` targets: a universe-polymorphic query with
   -- explicit universe parameters is searched at its `Prop` instantiation
-  let classicalLane (ms : Nat) (depths : List Nat) : MetaM Unit := lane ledger timedOut ms (name := "classical") fun ctx => do
+  let classicalLane (ms : Nat) (depths : List Nat) : MetaM Unit := lane ledger refutedPrograms timedOut ms (name := "classical") fun ctx => do
     let tp := atProp q.target
     let dummy ← IO.mkRef 0
     if tp != q.target then
-      let goalP ← mkGoal tp (q.contract.map atProp)
-      enumerateGrace ctx { baseCfg with classical := true } goalP (accept tp true) depths dummy
+      let cP := q.contract.map atProp
+      let goalP ← mkGoal tp cP
+      let residualP ← match cP with
+        | some c => mkResidual c tp
+        | none => pure #[]
+      enumerateGrace ctx { baseCfg with classical := true, contract := cP, residual := residualP }
+        goalP (accept tp true) depths dummy
     else
       enumerateGrace ctx { baseCfg with classical := true } goalTy (accept q.target true) depths dummy
   let nothingYet : MetaM Bool := do return (← found.get).isEmpty && (← refuted.get).isNone
@@ -228,7 +252,7 @@ def runQuery (q : Query) : MetaM Outcome :=
   let constructiveDepths := [2, 3, 4, 5, 6, 7, 9, 12]
   let completed ← IO.mkRef 0
   -- 1. cheap constructive pass (a larger share when no classical lane will run)
-  lane ledger timedOut (if needsClassical then q.budgetMs * 3 / 20 else q.budgetMs * 3 / 10) (name := "constructive") fun ctx =>
+  lane ledger refutedPrograms timedOut (if needsClassical then q.budgetMs * 3 / 20 else q.budgetMs * 3 / 10) (name := "constructive") fun ctx =>
     enumerateGrace ctx baseCfg goalTy (accept q.target false) (constructiveDepths.take 4) completed
   -- 2. cheap refutation pass, only for type-only queries
   if (← nothingYet) && q.contract.isNone then refutationLane (q.budgetMs / 10) [4, 6]
@@ -239,7 +263,7 @@ def runQuery (q : Query) : MetaM Outcome :=
     let rem ← remaining
     let share := if needsClassical then rem * 3 / 10 else rem * 4 / 5
     let done ← completed.get
-    lane ledger timedOut share (name := "constructive-deeper") fun ctx =>
+    lane ledger refutedPrograms timedOut share (name := "constructive-deeper") fun ctx =>
       enumerateGrace ctx baseCfg goalTy (accept q.target false) (constructiveDepths.drop done) completed
   -- 5. deeper classical search
   if (← nothingYet) && needsClassical then classicalLane ((← remaining) * 2 / 3) [8, 10]

@@ -15,6 +15,12 @@ open Lean Meta
 structure SearchCtx where
   ledger : IO.Ref Ledger
   deadline : Option Nat := none  -- monotonic milliseconds
+  /-- Closed programs whose contract already reduced to `false` (per query):
+  the same program is reached along several paths and across deepening passes. -/
+  refutedPrograms : IO.Ref (Std.HashSet Expr)
+  /-- Holes the last residual evaluation got stuck on; while all of them are
+  still open in the program, re-evaluating cannot decide anything new. -/
+  residualBlockers : IO.Ref (Array MVarId)
 
 abbrev SearchM := ReaderT SearchCtx MetaM
 

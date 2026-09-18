@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""Run Leant's Church behavior probes through the leant2 REPL.
+
+The specifications are imported verbatim from Leant's vendored Djex directory
+(`C:\\Leant\\lib\\Djex\\test-church`, Leant rev 6bf05ad): the six core operations
+of `behavior_probe.py` (not, swap, map, append, reverse, filter) and the
+thirteen extended operations of `behavior_extended_probe.py`. Each `:synth`
+carries the spec's `check_<op> f = true` contract, so a candidate passes only
+when it behaves correctly on the spec's exhaustive finite inputs. Leant ran
+the matrix per engine; Leant2 has one adaptive engine, so each case runs once.
+`length` needs the numeric providers the spec declares (`BehaviorExtendedNumeric`).
+
+Usage: python tools/run_church.py [--exe PATH] [--budget MS] [--spec core|extended|all]
+                                  [--leant DIR] [--op NAME ...]
+"""
+import argparse, os, subprocess, sys, re
+from pathlib import Path
+
+
+def load_specs(leant_root, which):
+    sys.path.insert(0, str(Path(leant_root) / "lib" / "Djex" / "test-church"))
+    specs = []
+    if which in ("core", "all"):
+        import behavior_spec, behavior_runtime
+        prov = behavior_runtime.source_provenance(Path(leant_root) / "lib/Djex/test-church/manifest.json")
+        targets = {row["name"]: row["lean_target"] for row in prov["operations"]}
+        specs.append(("church", behavior_spec, list(behavior_spec.OPERATIONS), targets, []))
+    if which in ("extended", "all"):
+        import behavior_extended_spec as ext
+        specs.append(("extended", ext, list(ext.OPERATIONS), dict(ext.LEAN_TYPES), list(ext.LEAN_NUMERIC_PROVIDERS)))
+    return specs
+
+
+def main():
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--exe", default=".lake/build/bin/leant2.exe")
+    ap.add_argument("--budget", type=int, default=10000)
+    ap.add_argument("--spec", choices=("core", "extended", "all"), default="all")
+    ap.add_argument("--leant", default=r"C:\Leant")
+    ap.add_argument("--op", action="append")
+    args = ap.parse_args()
+    exe = os.path.abspath(args.exe)
+    try:
+        lean = subprocess.run(["elan", "which", "lean"], capture_output=True, text=True).stdout.strip()
+        os.environ["PATH"] = os.path.dirname(lean) + os.pathsep + os.environ.get("PATH", "")
+    except FileNotFoundError:
+        pass
+    passed = total = 0
+    for label, spec, ops, targets, numeric in load_specs(args.leant, args.spec):
+        lines = [l for l in spec.lean_prelude() if not l.startswith("set_option") and not l.startswith("universe")]
+        lines += numeric + [""]
+        expected = []
+        for op in ops:
+            if args.op and op not in args.op:
+                continue
+            name = f"{label}_{op}"
+            lines.append(f":synth {name} : {targets[op]} where {spec.lean_predicate(op, name)}")
+            expected.append((name, "candidate"))
+        first_op = ops[0]
+        lines.append(f":synth {label}_reject : {targets[first_op]} where False")
+        expected.append((f"{label}_reject", "none"))
+        lines.append(":quit")
+        src = "\n".join(lines) + "\n"
+        proc = subprocess.run([exe, f"--budget={args.budget}"], input=src.encode("utf-8"), capture_output=True)
+        out = proc.stdout.decode("utf-8", errors="replace")
+        blocks = re.split(r"(?m)^λ> :synth ", out)[1:]
+        if len(blocks) != len(expected):
+            print(f"{label}: expected {len(expected)} query blocks, got {len(blocks)}")
+            print(out[-2000:])
+        for (name, exp), block in zip(expected, blocks):
+            has = re.search(r"^  it1", block, re.M) is not None
+            ms = re.search(r"leant2: (\d+) ms", block)
+            ok = has if exp == "candidate" else not has
+            passed += ok
+            total += 1
+            first = next((l.strip() for l in block.splitlines() if l.startswith("  it1")), "")
+            tail = "" if has else " | " + " ".join(l.strip() for l in block.splitlines()[1:4] if "leant2:" not in l)[:80]
+            print(f"{'PASS' if ok else 'FAIL'} {name} [{ms.group(1) if ms else '?'} ms] {first[:120]}{tail}")
+        if proc.stderr:
+            print(proc.stderr.decode("utf-8", errors="replace")[:500])
+    print(f"TOTAL {passed}/{total}")
+
+
+if __name__ == "__main__":
+    main()
