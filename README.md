@@ -1,0 +1,6 @@
+Leant2 is contemplated as exclusively Lean-oriented successor of Djex & Leant, implemented in Lean.
+
+* https://github.com/VladimirReshetnikov/Djex (`C:\Djex\` locally)
+* https://github.com/VladimirReshetnikov/Leant (`C:\Leant\` locally)
+
+These tools allow to automatically generate implementations for a subset of Lean type signatures with optional additional behavioral constraints. But they are implemented in Haskell, internally use Haskell approximations of Lean types, and also Djex has a Haskell frontend and needs to remain compatible with it. All these put certain limitations on their Lean capabilities. We would like to create a successor (let's name it Leant2), which is implemented in Lean, has only Lean frontend, and is designed specifically to handle Lean types (+ behavioral constraints). Of course, it couldn't possibly be made to autogenerate implementations for *all* inhabited Lean types (because that's untractable and possibly undecidable problem); but still we would like it to be able to handle a large fraction of Lean types that occur in practice.
