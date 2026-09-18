@@ -1,1 +1,9 @@
 dist-newstyle/
+.lake/
+*.olean
+*.ilean
+*.trace
+*.hash
+baseline-out/
+baseline-run.log
+scratch/
