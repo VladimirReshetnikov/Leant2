@@ -10,6 +10,7 @@ commit it was produced from and the per-query budget.
 | 2026-09-17 | `f197fe0` | 10 s/query | 278/278 |
 | 2026-09-17 | `56c307d` | 10 s/query | 278/278 (ranked candidates) |
 | 2026-09-17 | `c8caa68` | 10 s/query | 278/278 (kernel-evaluated contracts; Church probes 21/21, recursive 9/9) |
+| 2026-09-18 | `9fc3b91` | 10 s/query | 278/278 (upfront contract refutation; context harness 67/67) |
 
 The `.log` file lists per-fixture scores and any failures; the `summary.json`
 file lists every query with its golden and observed categories.
