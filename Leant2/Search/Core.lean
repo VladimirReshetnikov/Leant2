@@ -433,8 +433,10 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     -- a proposition about open holes (the contract on a partial program) is
     -- decided once the holes are filled: it yields to every other obligation
     -- (class goals are not such propositions: an instance determines type holes)
+    -- (nor is a hole whose type is itself a metavariable: `?h : ?P` is
+    -- determined by an exact local, which also fixes `?P`)
     let isResidual (t : Expr) : MetaM Bool := do
-      if !t.hasExprMVar then return false
+      if !t.hasExprMVar || t.getAppFn.isMVar then return false
       unless ← isProp t do return false
       return (← isClass? t).isNone
     if !rest.isEmpty && (← isResidual target) then
@@ -495,6 +497,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
       if let .const iname _ := targetW.getAppFn then
         if let some (.inductInfo ii) := (← getEnv).find? iname then
           for c in ii.ctors do
+            if isClass (← getEnv) iname then break
             if ← alternative (do
                 let children ← g.apply (← mkConstWithFreshMVarLevels c) applyCfg
                 if children.isEmpty then cont [] else return false) then return true
@@ -575,10 +578,14 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     let targetHead : Option Name := match targetW.getAppFn with
       | .const c _ => some c
       | _ => none
+    -- (never a class: an instance built by hand, `Choice.mk True.intro`, leaves
+    -- the class arguments undetermined; instances come from resolution or
+    -- from instance providers, which fix those arguments)
     if let some iname := targetHead then
       if let some (.inductInfo ii) := (← getEnv).find? iname then
-        for c in ii.ctors do
-          if ← applyHead (← mkConstWithFreshMVarLevels c) then return true
+        if !isClass (← getEnv) iname then
+          for c in ii.ctors do
+            if ← applyHead (← mkConstWithFreshMVarLevels c) then return true
     if !targetIsSort then
       -- 7. application of locals (default transparency: `¬p` is a function)
       for decl in locals do
