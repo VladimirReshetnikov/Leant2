@@ -16,6 +16,9 @@ Usage: python tools/run_baseline.py [--leant C:/Leant/test] [--exe PATH]
 """
 import argparse, os, re, subprocess, sys, time, json
 
+QUERY_END = "-- leant2-query-end"
+ERROR = re.compile(r"(?im)(?:^|\s)(?:error(?:\([^)]*\))?:|PANIC|uncaught exception)")
+
 def classify_golden(lines, i):
     """Classify the golden outcome of the :synth at golden line i."""
     j = i + 1
@@ -42,6 +45,8 @@ def classify_golden(lines, i):
 
 def classify_ours(block):
     txt = "\n".join(block)
+    if ERROR.search(txt):
+        return "error", False
     if re.search(r"^  it1", txt, re.M):
         classical = "(classical)" in txt
         return "positive", classical
@@ -88,7 +93,10 @@ def main():
     fixtures = sorted(f for f in os.listdir(args.leant) if f.startswith("synth-") and f.endswith(".txt"))
     if args.only:
         fixtures = [f for f in fixtures if args.only in f]
+    if not fixtures:
+        ap.error("no baseline fixtures matched")
     total = 0; passed = 0; rows = []
+    healthy = True
     for fx in fixtures:
         name = fx[:-4]
         with open(os.path.join(args.leant, fx), encoding="utf-8") as f:
@@ -96,7 +104,7 @@ def main():
         with open(os.path.join(args.leant, name + ".golden"), encoding="utf-8") as f:
             golden = f.read().splitlines()
         t0 = time.time()
-        proc = subprocess.run([args.exe, f"--budget={args.budget}"], input=src.encode("utf-8"),
+        proc = subprocess.run([args.exe, f"--budget={args.budget}", "--query-markers"], input=src.encode("utf-8"),
                               capture_output=True, timeout=3600)
         out = proc.stdout.decode("utf-8", errors="replace").splitlines()
         elapsed = time.time() - t0
@@ -106,24 +114,43 @@ def main():
         is_q = lambda l: l.startswith("λ> :synth") or l.startswith("⊢> :synth")
         g_idx = [i for i, l in enumerate(golden) if is_q(l)]
         o_idx = [i for i, l in enumerate(out) if is_q(l)]
-        n = min(len(g_idx), len(o_idx))
+        query_ends = [i for i, line in enumerate(out) if line == QUERY_END]
+        n = len(g_idx)
+        process_ok = proc.returncode == 0 and not proc.stderr.strip()
+        if not process_ok or len(g_idx) != len(o_idx) or len(query_ends) != n:
+            healthy = False
         fx_pass = 0
         for q in range(n):
-            gi = g_idx[q]; oi = o_idx[q]
-            oend = o_idx[q + 1] if q + 1 < len(o_idx) else len(out)
+            gi = g_idx[q]
             gcat = classify_golden(golden, gi)
-            ocat, classical = classify_ours(out[oi + 1:oend])
-            ok = passes(gcat, ocat, classical)
+            if q < len(o_idx):
+                oi = o_idx[q]
+                oend = o_idx[q + 1] if q + 1 < len(o_idx) else len(out)
+                ends = [i for i in query_ends if oi < i < oend]
+                if len(ends) == 1:
+                    ocat, classical = classify_ours(out[oi + 1:ends[0]])
+                else:
+                    ocat, classical = "incomplete", False
+            else:
+                ocat, classical = "missing", False
+            ok = process_ok and passes(gcat, ocat, classical)
             total += 1; passed += ok; fx_pass += ok
             rows.append((name, golden[gi][3:], gcat, ocat, ok))
             if not ok:
                 print(f"FAIL {name}: {golden[gi][3:]}\n     golden={gcat} ours={ocat}", flush=True)
         if len(g_idx) != len(o_idx):
-            print(f"WARN {name}: {len(g_idx)} golden queries, {len(o_idx)} in output", flush=True)
+            print(f"FAIL {name}: {len(g_idx)} golden queries, {len(o_idx)} in output", flush=True)
+        if proc.returncode != 0:
+            print(f"FAIL {name}: process exited {proc.returncode}", flush=True)
+        if proc.stderr.strip():
+            print(f"FAIL {name}: process wrote to stderr", flush=True)
+        if len(query_ends) != n:
+            print(f"FAIL {name}: expected {n} completed query markers, got {len(query_ends)}", flush=True)
         print(f"{name}: {fx_pass}/{n} in {elapsed:.0f}s", flush=True)
     print(f"\nTOTAL {passed}/{total}")
     with open(os.path.join(args.out, "summary.json"), "w", encoding="utf-8") as f:
         json.dump([dict(fixture=r[0], query=r[1], golden=r[2], ours=r[3], ok=r[4]) for r in rows], f, indent=1, ensure_ascii=False)
+    return 0 if healthy and total > 0 and passed == total else 1
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

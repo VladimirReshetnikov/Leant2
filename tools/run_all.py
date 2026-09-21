@@ -8,7 +8,8 @@ at full score (stretch cases are never counted).
 
 Usage: python tools/run_all.py [--budget MS] [--skip-build]
 """
-import argparse, os, re, subprocess, sys, time
+import argparse, json, os, re, subprocess, sys, time
+from pathlib import Path
 
 HARNESSES = [
     ("baseline", ["tools/run_baseline.py"]),
@@ -17,6 +18,7 @@ HARNESSES = [
     ("context", ["tools/run_context.py"]),
     ("corpus", ["tools/run_corpus.py"]),
     ("session", ["tools/run_session.py"]),
+    ("extended", ["tools/run_extended.py"]),
 ]
 
 
@@ -25,36 +27,51 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--budget", type=int, default=10000)
     ap.add_argument("--skip-build", action="store_true")
+    ap.add_argument("--out", default="baseline-out/run-all", help="directory for complete harness logs and summary")
     args = ap.parse_args()
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     os.chdir(root)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
     if not args.skip_build:
         t0 = time.time()
         r = subprocess.run(["lake", "build", "Leant2", "Leant2Tests", "leant2"], capture_output=True, text=True,
                            encoding="utf-8", errors="replace")
         ok = r.returncode == 0
+        (out / "build.log").write_text(r.stdout + "\n" + r.stderr, encoding="utf-8")
         print(f"build: {'ok' if ok else 'FAILED'} in {time.time() - t0:.0f}s")
         if not ok:
             print(r.stdout[-3000:], r.stderr[-3000:])
             sys.exit(1)
     rows = []
+    receipts = []
     for name, cmd in HARNESSES:
         t0 = time.time()
-        extra = ["--budget", str(args.budget)] if name != "session" else []
+        extra = ["--budget", str(args.budget)]
         r = subprocess.run([sys.executable, "-X", "utf8", *cmd, *extra], capture_output=True, text=True,
                            encoding="utf-8", errors="replace")
         m = re.search(r"^TOTAL (\d+)/(\d+)", r.stdout, re.M)
         got, tot = (int(m.group(1)), int(m.group(2))) if m else (0, -1)
-        rows.append((name, got, tot, time.time() - t0))
-        print(f"{name}: {got}/{tot} in {time.time() - t0:.0f}s" + ("" if got == tot else "  <-- see below"))
-        if got != tot:
-            print(r.stdout[-2500:])
+        ok = r.returncode == 0 and tot > 0 and got == tot
+        (out / f"{name}.log").write_text(r.stdout + "\n" + r.stderr, encoding="utf-8")
+        receipts.append(dict(harness=name, passed=got, total=tot, seconds=time.time() - t0,
+                             returncode=r.returncode, ok=ok))
+        rows.append((name, got, tot, time.time() - t0, ok))
+        print(f"{name}: {got}/{tot} in {time.time() - t0:.0f}s" + ("" if ok else "  <-- see below"), flush=True)
+        if not ok:
+            print(f"exit status: {r.returncode}\n{r.stdout[-2500:]}\n{r.stderr[-2500:]}")
+        else:
+            for line in r.stdout.splitlines():
+                if line.startswith("OPEN "):
+                    print(f"{name}: {line}", flush=True)
     print()
     print("| Harness | Score | Time |")
     print("| --- | --- | --- |")
-    for name, got, tot, dt in rows:
+    for name, got, tot, dt, ok in rows:
         print(f"| {name} | {got}/{tot} | {dt:.0f} s |")
-    sys.exit(0 if all(got == tot for _, got, tot, _ in rows) else 1)
+    (out / "summary.json").write_text(json.dumps(
+        dict(budget_ms=args.budget, harnesses=receipts), indent=2) + "\n", encoding="utf-8")
+    sys.exit(0 if all(ok for _, _, _, _, ok in rows) else 1)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import Lean
 import Leant2.Engine
+import Leant2.Frontend.Presentation
 /-!
 # `#leant2` command
 
@@ -53,6 +54,7 @@ def sessionConstants : CoreM (Array Name) := do
   let env ← getEnv
   let mut out := #[]
   for (n, ci) in env.constants.map₂.toList do
+    if Presentation.isAuxiliaryName n then continue
     -- private declarations are ordinary session providers; other internal names are not
     if n.isInternal && !isPrivateName n then continue
     -- session bindings `it1`, `it2`, ... are results, not providers
@@ -101,7 +103,7 @@ def outcomeMessage (o : Outcome) : MetaM MessageData := do
     for c in cands do
       let tag := if c.classical then " (classical)" else ""
       let axs := if c.axioms.isEmpty then "" else s!" axioms: {c.axioms.toList}"
-      md := md ++ m!"\n  it{i}  {c.program}{tag}{axs}"
+      md := md ++ m!"\n  it{i}  {← Presentation.programMessage c.program}{tag}{axs}"
       i := i + 1
     return md
   | .refutedAll n _ => return m!"{n} program(s) of the type proposed, none passed the contract"
@@ -149,11 +151,8 @@ def bindIts (cands : Array Accepted) : CommandElabM Unit := do
     let name := Name.mkSimple s!"it{i}"
     i := i + 1
     if (← getEnv).contains name then continue
-    let decl : Declaration := .defnDecl {
-      name := name, levelParams := c.levelParams, type := c.programType, value := c.program,
-      hints := .abbrev, safety := .safe }
-    -- compile too, so that `#eval it1 ...` works in the REPL
-    try liftCoreM (addAndCompile decl) catch _ => pure ()
+    unless ← Presentation.publish name c do
+      logInfo m!"leant2: {name} is noncomputable; its certified kernel definition is available"
 
 @[command_elab leant2Cmd] def elabLeant2 : CommandElab := fun stx => do
   let (n, t, w) := getParts stx

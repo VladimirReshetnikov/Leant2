@@ -1,5 +1,6 @@
 import Lean
 import Leant2.Core.Types
+import Leant2.Behavior.Observations
 /-!
 # Transactional search state
 
@@ -18,9 +19,10 @@ structure SearchCtx where
   /-- Closed programs whose contract already reduced to `false` (per query):
   the same program is reached along several paths and across deepening passes. -/
   refutedPrograms : IO.Ref (Std.HashSet Expr)
-  /-- Holes the last residual evaluation got stuck on; while all of them are
-  still open in the program, re-evaluating cannot decide anything new. -/
-  residualBlockers : IO.Ref (Array MVarId)
+  /-- Lane-local per-observation reductions, guarded by their partial input. -/
+  observationCache : IO.Ref (Array (Option ObservationCacheEntry))
+  /-- Most recent observation report, for diagnostics and search guidance. -/
+  observationReport : IO.Ref ObservationReport
   /-- A deadline set once the first candidate is accepted (the grace period),
   checked together with the lane deadline. -/
   graceDeadline : IO.Ref (Option Nat)

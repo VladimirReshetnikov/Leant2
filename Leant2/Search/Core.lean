@@ -60,6 +60,8 @@ structure SearchConfig where
   /-- Precomputed deciders for the contract's conjuncts (left to right):
   each is `fun f => C_i f` with `fun f => inst_i` when `C_i f` is decidable. -/
   residual : Array (Expr × Option Expr) := #[]
+  /-- Finer necessary conditions used only to prune partial programs. -/
+  observations : Array Observation := #[]
   /-- The root hole of the current pass (a `Subtype` when a contract is present). -/
   root : Option MVarId := none
   /-- Rules disabled for experiments (`leant2.skipRules`). -/
@@ -84,11 +86,14 @@ structure Goal where
   list folded once is not folded again inside its own step or seed. -/
   consumed : List FVarId := []
 
-/-- Self-time profile of the search rules, printed by the lane trace. -/
+/-- Self-time profile of the search rules, collected and printed only when the
+lane trace is enabled. -/
 initialize profTimers : IO.Ref (Array (String × Nat)) ← IO.mkRef #[]
 
-/-- Accumulate the wall time of a non-recursive step under `k` (nanoseconds). -/
+/-- When `leant2.trace` is enabled, accumulate the wall time of a non-recursive
+step under `k` (nanoseconds). Normal search avoids profiling clocks and updates. -/
 def timed (k : String) (act : SearchM α) : SearchM α := do
+  unless leant2.trace.get (← getOptions) do return ← act
   let t0 ← IO.monoNanosNow
   let r ← act
   let dt := (← IO.monoNanosNow) - t0
@@ -101,20 +106,23 @@ def timed (k : String) (act : SearchM α) : SearchM α := do
 /-- Run one alternative. If it does not stop the search, restore the state so
 the next alternative starts from the same point. -/
 def alternative (act : SearchM Bool) : SearchM Bool := do
-  let t0 ← IO.monoNanosNow
+  let profile := leant2.trace.get (← getOptions)
+  let t0 ← if profile then IO.monoNanosNow else pure 0
   let saved : Meta.SavedState ← Meta.saveState
-  let t1 ← IO.monoNanosNow
-  profTimers.modify fun a => bump a "alt.save" (t1 - t0)
+  if profile then
+    let t1 ← IO.monoNanosNow
+    profTimers.modify fun a => bump a "alt.save" (t1 - t0)
   try
     if ← act then return true
   catch e =>
     if isInterrupt e then throw e
     if leant2.traceNodes.get (← getOptions) then
       IO.println s!"[leant2]     alternative failed with: {← e.toMessageData.toString}"
-  let t2 ← IO.monoNanosNow
+  let t2 ← if profile then IO.monoNanosNow else pure 0
   saved.restore
-  let t3 ← IO.monoNanosNow
-  profTimers.modify fun a => bump a "alt.restore" (t3 - t2)
+  if profile then
+    let t3 ← IO.monoNanosNow
+    profTimers.modify fun a => bump a "alt.restore" (t3 - t2)
   return false
 where
   bump (a : Array (String × Nat)) (k : String) (dt : Nat) : Array (String × Nat) :=
@@ -189,6 +197,7 @@ hole is still open. The result may mention metavariables whose local
 contexts no longer match; it is used for reduction only, never assigned. -/
 partial def instantiatePartial (e : Expr) : MetaM Expr := do
   let e ← instantiateMVars e
+  if !e.hasExprMVar then return e
   let rec go (e : Expr) : MetaM Expr := do
     match e with
     | .app .. =>
@@ -271,24 +280,27 @@ private partial def buildAndProof (proofs : Array (Option Expr)) (t : Expr) (k :
 (the contract's `And` nesting is rebuilt from `cfg.contract`). Conjuncts
 without a decider, or stuck on open holes, leave the result `stuck`. -/
 def evalResidual (cfg : SearchConfig) (p : Expr) : SearchM Residual := do
+  if p.hasExprMVar && !cfg.observations.isEmpty then
+    let ctx ← read
+    let (report, cache) ← evalObservations cfg.observations p
+      (← ctx.observationCache.get) instantiatePartial (checkDeadline.run ctx)
+    ctx.observationCache.set cache
+    ctx.observationReport.set report
+    if leant2.traceNodes.get (← getOptions) then
+      IO.println s!"[leant2]     observations {repr report.statuses} reductions {report.reductions} reused {report.reused}"
+    return if report.refuted then .refuted else .stuck
   let mut proofs : Array (Option Expr) := #[]
-  let mut blockers : Array MVarId := #[]
   for (pred, inst?) in cfg.residual do
     let some inst := inst? | proofs := proofs.push none; continue
     let t := pred.beta #[p]
     let i := inst.beta #[p]
-    let (r, stuck?) ← kernelDecide t i
+    let (r, _) ← kernelDecide t i
     if r == some false then return .refuted
-    if let some stuck := stuck? then
-      blockers := blockers ++ (stuck.collectMVars {}).result
     if r == some true && !p.hasExprMVar then
       proofs := proofs.push (some (mkApp3 (mkConst ``of_decide_eq_true) t i
         (mkApp2 (mkConst ``Eq.refl [Level.succ .zero]) (mkConst ``Bool) (mkConst ``Bool.true))))
     else proofs := proofs.push none
   if p.hasExprMVar then
-    -- remember where evaluation stopped; the check is repeated only once one of
-    -- these holes is filled
-    (← read).residualBlockers.set blockers
     return .stuck
   if proofs.any (·.isNone) then return .stuck
   let some contract := cfg.contract | return .stuck
@@ -300,20 +312,6 @@ that already reduces to `false` on the partial program refutes the branch.
 Uses the precomputed deciders when present, otherwise generic decision. -/
 partial def partialRefute (cfg : SearchConfig) (t : Expr) : SearchM Bool := do
   if !cfg.residual.isEmpty then
-    -- still stuck on the same open holes: nothing new to decide. A blocker that
-    -- no longer exists (rolled back) or is assigned (directly, or through its
-    -- delayed pending hole) means the program moved on.
-    let blockers ← (← read).residualBlockers.get
-    if !blockers.isEmpty then
-      let mut same := true
-      for m in blockers do
-        match (← getMCtx).findDecl? m with
-        | none => same := false; break
-        | some _ => pure ()
-        if ← m.isAssigned then same := false; break
-        if let some da ← getDelayedMVarAssignment? m then
-          if ← da.mvarIdPending.isAssigned then same := false; break
-      if same then return false
     let some p ← timed "residual.instantiate" (rootProgram cfg) | return false
     let r ← timed "residual.decide" (evalResidual cfg p)
     if leant2.traceNodes.get (← getOptions) then

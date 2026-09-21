@@ -69,8 +69,11 @@ private def lane (ledger : IO.Ref Ledger) (refutedPrograms : IO.Ref (Std.HashSet
     (act : SearchCtx → MetaM Unit) (name : String := "lane") : MetaM Unit := do
   let t0 ← IO.monoMsNow
   let trace := leant2.trace.get (← getOptions)
-  let residualBlockers ← IO.mkRef #[]
-  let ctx : SearchCtx := { ledger, deadline := some (t0 + ms), refutedPrograms, residualBlockers, graceDeadline }
+  let observationCache ← IO.mkRef #[]
+  let observationReport ← IO.mkRef {}
+  let ctx : SearchCtx := {
+    ledger, deadline := some (t0 + ms), refutedPrograms
+    observationCache, observationReport, graceDeadline }
   try
     act ctx
     if trace then
@@ -86,9 +89,9 @@ private def lane (ledger : IO.Ref Ledger) (refutedPrograms : IO.Ref (Std.HashSet
       if trace then
         let l ← ledger.get
         IO.println s!"[leant2] {name}: timed out after {(← IO.monoMsNow) - t0} ms (share {ms} ms) rules {l.ruleApplications} unif {l.unifications} proofs {l.proofAttempts} cands {l.candidates}"
-      let prof ← profTimers.get
-      IO.println s!"[leant2]   self times (ms): {prof.map fun (k, v) => (k, v / 1000000)}"
-      profTimers.set #[]
+        let prof ← profTimers.get
+        IO.println s!"[leant2]   self times (ms): {prof.map fun (k, v) => (k, v / 1000000)}"
+        profTimers.set #[]
     else throw e
 
 /-- Instantiate every universe parameter of `e` with `Prop`. -/
@@ -160,9 +163,12 @@ def runQuery (q : Query) : MetaM Outcome :=
   let residual ← match q.contract with
     | some c => mkResidual c q.target
     | none => pure #[]
+  let observations ← match q.contract with
+    | some c => mkObservations c q.target
+    | none => pure #[]
   let skip := ((leant2.skipRules.get (← getOptions)).splitOn ",").map (·.trim) |>.filter (· != "")
   let baseCfg : SearchConfig := { providers, typeFrontier := frontier, recursionFirst := q.contract.isSome,
-                                  contract := q.contract, residual, skip }
+                                  contract := q.contract, residual, observations, skip }
   let found ← IO.mkRef (#[] : Array Accepted)
   let seen ← IO.mkRef (#[] : Array Expr)
   let firstFoundAt ← IO.mkRef (none : Option Nat)
@@ -243,7 +249,11 @@ def runQuery (q : Query) : MetaM Outcome :=
       let residualP ← match cP with
         | some c => mkResidual c tp
         | none => pure #[]
-      enumerateGrace ctx { baseCfg with classical := true, contract := cP, residual := residualP }
+      let observationsP ← match cP with
+        | some c => mkObservations c tp
+        | none => pure #[]
+      enumerateGrace ctx { baseCfg with
+        classical := true, contract := cP, residual := residualP, observations := observationsP }
         goalP (accept tp true) depths dummy
     else
       enumerateGrace ctx { baseCfg with classical := true } goalTy (accept q.target true) depths dummy

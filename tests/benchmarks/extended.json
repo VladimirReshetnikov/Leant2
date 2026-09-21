@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "description": "Initial E8 suite: reconstructions of the sixteen article edge probes, nine Lean-core examples, and four impossible-contract controls. Not an external benchmark import. References are withheld from synthesis.",
+  "cases": [
+    {
+      "id": "probe01_reverse", "title": "Reverse a list", "group": "article-probes", "expect": "candidate",
+      "type": "List Nat → List Nat", "contract": "{f} [1, 2, 3] = [3, 2, 1] ∧ {f} [4, 5] = [5, 4]",
+      "reference": "List.reverse", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 1 (reconstructed examples)"
+    },
+    {
+      "id": "probe02_append", "title": "Append two lists", "group": "article-probes", "expect": "candidate",
+      "type": "List Nat → List Nat → List Nat", "contract": "{f} [1, 2] [3] = [1, 2, 3] ∧ {f} [] [4] = [4] ∧ {f} [5] [] = [5]",
+      "reference": "List.append", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 2 (reconstructed examples)"
+    },
+    {
+      "id": "probe03_double", "title": "Double a natural", "group": "article-probes", "expect": "candidate",
+      "type": "Nat → Nat", "contract": "{f} 0 = 0 ∧ {f} 2 = 4 ∧ {f} 5 = 10",
+      "reference": "fun n => n + n", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 3 (reconstructed examples)"
+    },
+    {
+      "id": "probe04_pow_two", "title": "Compute two to a natural power", "group": "article-probes", "expect": "open",
+      "type": "Nat → Nat", "contract": "{f} 0 = 1 ∧ {f} 3 = 8 ∧ {f} 5 = 32",
+      "reference": "fun n => 2 ^ n", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 4 (reconstructed examples; Nat recursion/literals)"
+    },
+    {
+      "id": "probe05_length", "title": "Length of a list", "group": "article-probes", "expect": "candidate",
+      "type": "List Nat → Nat", "contract": "{f} [] = 0 ∧ {f} [8] = 1 ∧ {f} [2, 4, 6] = 3",
+      "reference": "List.length", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 5 (reconstructed examples)"
+    },
+    {
+      "id": "probe06_sum", "title": "Sum a list and execute the bound candidate", "group": "article-probes", "expect": "candidate",
+      "type": "List Nat → Nat", "contract": "{f} [] = 0 ∧ {f} [2, 3] = 5 ∧ {f} [1, 4, 2] = 7",
+      "reference": "fun xs => xs.foldr Nat.add 0", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 6 (reconstructed examples; E1 binding regression)"
+    },
+    {
+      "id": "probe07_vec_head", "title": "Head of a nonempty indexed vector", "group": "article-probes", "expect": "candidate",
+      "prelude": "inductive ExtendedVec (A : Type) : Nat → Type where\n  | nil : ExtendedVec A 0\n  | cons {n : Nat} : A → ExtendedVec A n → ExtendedVec A (n + 1)",
+      "type": "∀ (A : Type) (n : Nat), ExtendedVec A (n + 1) → A",
+      "replay": "@{f} Nat 1 (.cons 7 (.cons 9 .nil)) = 7 ∧ @{f} Bool 0 (.cons true .nil) = true",
+      "reference": "fun _ _ xs => match xs with | .cons x _ => x", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 7 (reconstructed indexed datatype)"
+    },
+    {
+      "id": "probe08_vec_map", "title": "Map over an indexed vector", "group": "article-probes", "expect": "open",
+      "prelude": "inductive ExtendedVec (A : Type) : Nat → Type where\n  | nil : ExtendedVec A 0\n  | cons {n : Nat} : A → ExtendedVec A n → ExtendedVec A (n + 1)",
+      "type": "∀ (A B : Type), (A → B) → ∀ n, ExtendedVec A n → ExtendedVec B n",
+      "replay": "(match @{f} Nat Nat Nat.succ 2 (.cons 1 (.cons 3 .nil)) with | .cons a (.cons b .nil) => a == 2 && b == 4) = true",
+      "reference": "fun A B f _ xs => let rec go {n : Nat} (ys : ExtendedVec A n) : ExtendedVec B n := match ys with | .nil => .nil | .cons x rest => .cons (f x) (go rest); go xs",
+      "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 8 (reconstructed indexed datatype; dependent motive)"
+    },
+    {
+      "id": "probe09_max", "title": "Maximum of two naturals", "group": "article-probes", "expect": "open",
+      "type": "Nat → Nat → Nat", "contract": "{f} 2 5 = 5 ∧ {f} 7 3 = 7 ∧ {f} 4 4 = 4 ∧ {f} 0 1 = 1",
+      "reference": "Nat.max", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 9 (reconstructed examples; guards)"
+    },
+    {
+      "id": "probe10_drop_zeros", "title": "Drop zero entries from a list", "group": "article-probes", "expect": "open",
+      "type": "List Nat → List Nat", "contract": "{f} [0, 2, 0, 3] = [2, 3] ∧ {f} [0, 0] = [] ∧ {f} [4, 5] = [4, 5]",
+      "reference": "List.filter (fun n => n != 0)", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 10 (reconstructed examples; conditional fold)"
+    },
+    {
+      "id": "probe11_tree_inorder", "title": "Flatten a binary tree in order", "group": "article-probes", "expect": "open",
+      "prelude": "inductive ExtendedTree (A : Type) where\n  | leaf : ExtendedTree A\n  | node : ExtendedTree A → A → ExtendedTree A → ExtendedTree A",
+      "type": "ExtendedTree Nat → List Nat",
+      "contract": "{f} .leaf = [] ∧ {f} (.node (.node .leaf 1 .leaf) 2 (.node .leaf 3 .leaf)) = [1, 2, 3] ∧ {f} (.node .leaf 4 (.node .leaf 5 .leaf)) = [4, 5]",
+      "reference": "fun xs => let rec go (ys : ExtendedTree Nat) : List Nat := match ys with | .leaf => [] | .node l x r => go l ++ [x] ++ go r; go xs",
+      "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 11 (reconstructed tree and examples)"
+    },
+    {
+      "id": "probe12_preserve_length", "title": "Universally preserve list length", "group": "article-probes", "expect": "candidate",
+      "type": "List Nat → List Nat", "contract": "∀ xs, ({f} xs).length = xs.length",
+      "reference": "id", "reference_proof": "by intro xs; rfl", "replay_proof": "by first | rfl | simp [{f}]",
+      "replay": "({f} []).length = 0 ∧ ({f} [1, 2, 3]).length = 3",
+      "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 12 (reconstructed universal contract)"
+    },
+    {
+      "id": "probe13_exists", "title": "Existential witness from a local proof", "group": "article-probes", "expect": "candidate",
+      "type": "∀ P : Nat → Prop, P 3 → ∃ n, P n", "reference": "fun _ h => ⟨3, h⟩",
+      "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 13"
+    },
+    {
+      "id": "probe14_fin", "title": "Inhabit Fin of a successor", "group": "article-probes", "expect": "open",
+      "type": "∀ n : Nat, Fin (n + 1)", "reference": "fun n => ⟨0, Nat.zero_lt_succ n⟩",
+      "replay": "(@{f} 0).val = 0 ∧ (@{f} 5).val < 6",
+      "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 14 (arithmetic lemma retrieval)"
+    },
+    {
+      "id": "probe15_eq_symm", "title": "Symmetry of equality", "group": "article-probes", "expect": "candidate",
+      "type": "∀ (A : Type) (a b : A), a = b → b = a", "reference": "fun _ _ _ h => h.symm",
+      "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 15"
+    },
+    {
+      "id": "probe16_le_trans", "title": "Transitivity of natural ordering", "group": "article-probes", "expect": "open",
+      "type": "∀ a b c : Nat, a ≤ b → b ≤ c → a ≤ c", "reference": "fun _ _ _ h₁ h₂ => Nat.le_trans h₁ h₂",
+      "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 16 (lemma retrieval)"
+    },
+    {
+      "id": "core_list_map", "title": "List.map equations at concrete arguments", "group": "lean-core", "expect": "candidate",
+      "type": "∀ A B : Type, (A → B) → List A → List B",
+      "contract": "{f} Nat Nat Nat.succ [] = [] ∧ {f} Nat Nat Nat.succ [1, 3] = [2, 4] ∧ {f} Nat Bool (fun n => n == 0) [0, 2] = [true, false]",
+      "reference": "fun _ _ f xs => List.map f xs", "source": "Lean v4.34.0 Init/Data/List/Basic.lean:477-478 List.map_nil, List.map_cons"
+    },
+    {
+      "id": "core_list_head", "title": "List.head? constructor equations", "group": "lean-core", "expect": "candidate",
+      "type": "∀ A : Type, List A → Option A",
+      "contract": "{f} Nat [] = none ∧ {f} Nat [7, 9] = some 7 ∧ {f} Bool [false, true] = some false",
+      "reference": "fun _ xs => List.head? xs", "source": "Lean v4.34.0 Init/Data/List/Basic.lean:385-386 List.head?_nil, List.head?_cons"
+    },
+    {
+      "id": "core_list_tail", "title": "List.tail constructor equations", "group": "lean-core", "expect": "candidate",
+      "type": "∀ A : Type, List A → List A",
+      "contract": "{f} Nat [] = [] ∧ {f} Nat [7, 9, 11] = [9, 11] ∧ {f} Bool [false, true] = [true]",
+      "reference": "fun _ xs => List.tail xs", "source": "Lean v4.34.0 Init/Data/List/Basic.lean:422-423 List.tail_nil, List.tail_cons"
+    },
+    {
+      "id": "core_option_map", "title": "Option.map constructor equations", "group": "lean-core", "expect": "candidate",
+      "type": "∀ A B : Type, (A → B) → Option A → Option B",
+      "contract": "{f} Nat Nat Nat.succ none = none ∧ {f} Nat Nat Nat.succ (some 4) = some 5 ∧ {f} Nat Bool (fun n => n == 0) (some 0) = some true",
+      "reference": "fun _ _ f x => Option.map f x", "source": "Lean v4.34.0 Init/Data/Option/Basic.lean:57-58 Option.map_none, Option.map_some"
+    },
+    {
+      "id": "core_option_default", "title": "Option.getD constructor equations", "group": "lean-core", "expect": "candidate",
+      "type": "∀ A : Type, Option A → A → A",
+      "contract": "{f} Nat none 7 = 7 ∧ {f} Nat (some 3) 7 = 3 ∧ {f} Bool (some false) true = false",
+      "reference": "fun _ x d => Option.getD x d", "source": "Lean v4.34.0 Init/Data/Option/Basic.lean:54-55 Option.getD_none, Option.getD_some"
+    },
+    {
+      "id": "core_option_is_some", "title": "Option.isSome constructor equations", "group": "lean-core", "expect": "candidate",
+      "type": "∀ A : Type, Option A → Bool",
+      "contract": "{f} Nat none = false ∧ {f} Nat (some 3) = true ∧ {f} Bool (some false) = true",
+      "reference": "fun _ x => Option.isSome x", "source": "Lean v4.34.0 Init/Data/Option/Basic.lean:73-74 Option.isSome_none, Option.isSome_some"
+    },
+    {
+      "id": "core_nat_succ", "title": "Nat.succ concrete addition equations", "group": "lean-core", "expect": "candidate",
+      "type": "Nat → Nat", "contract": "{f} 0 = 1 ∧ {f} 3 = 4 ∧ {f} 7 = 8",
+      "reference": "Nat.succ", "source": "Lean v4.34.0 Init/Data/Nat/Basic.lean:152 Nat.succ_eq_add_one"
+    },
+    {
+      "id": "core_nat_pred", "title": "Nat.pred constructor equations", "group": "lean-core", "expect": "open",
+      "type": "Nat → Nat", "contract": "{f} 0 = 0 ∧ {f} 1 = 0 ∧ {f} 4 = 3 ∧ {f} 8 = 7",
+      "reference": "Nat.pred", "source": "Lean v4.34.0 Init/Data/Nat/Basic.lean:909-910 Nat.pred_zero, Nat.pred_succ (Nat elimination)"
+    },
+    {
+      "id": "core_nat_add_zero", "title": "Universal natural addition right identity", "group": "lean-core", "expect": "candidate",
+      "type": "∀ n : Nat, n + 0 = n", "reference": "fun _ => rfl",
+      "source": "Lean v4.34.0 Init/Data/Nat/Basic.lean:140 uses Nat.add_zero in its right identity instance"
+    },
+    {
+      "id": "control_list_false", "title": "Impossible list contract", "group": "controls", "expect": "none",
+      "type": "List Nat → List Nat", "contract": "False", "source": "Local harness false-positive control"
+    },
+    {
+      "id": "control_option_false", "title": "Impossible option contract", "group": "controls", "expect": "none",
+      "type": "∀ A : Type, Option A → A → A", "contract": "False", "source": "Local harness false-positive control"
+    },
+    {
+      "id": "control_nat_false", "title": "Impossible natural contract", "group": "controls", "expect": "none",
+      "type": "Nat → Nat", "contract": "False", "source": "Local harness false-positive control"
+    },
+    {
+      "id": "control_proof_false", "title": "Impossible contract on an inhabited theorem", "group": "controls", "expect": "none",
+      "type": "∀ (A : Type) (a b : A), a = b → b = a", "contract": "False", "source": "Local harness false-positive control"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 # Implementation notes
 
 How the engine in `Leant2/` relates to the unified proposal
-(`docs/proposals/10-unified-proposal/Leant2.tex`), as of 2026-09-18. The
+(`docs/proposals/10-unified-proposal/Leant2.tex`), as of 2026-09-21. The
 proposal is the design; this page records what is built, where it takes a
 simpler route than the design, and what the measurements taught. Section
 numbers refer to the proposal.
@@ -89,14 +89,20 @@ built. What is built covers the whole corpus:
   `of_decide_eq_true ... rfl`, assembled along the contract's `And` tree.
   Meta-level `whnf` was ten times slower and per-node `synthInstance?` was a
   third of the search time.
-- **Residual evaluation on partial programs** uses the same deciders on the
-  program with its open holes (including delayed assignments, substituted
-  by `instantiatePartial`); the kernel is merely stuck on a hole, and a
-  conjunct reducing to `false` abandons the branch. The holes the last
-  evaluation got stuck on are remembered; while all of them are still open,
-  re-evaluation is skipped, and no evaluation happens at depth 0 (a leaf is
-  closed by an exact local and decided at the contract goal). Refuted closed
-  programs are memoized per query.
+- **Residual evaluation on partial programs** now has per-observation
+  reports (proposal 11, R3 stage 1). Besides `And`, preparation recognizes
+  `Bool.and`, finite `List.all`, named Boolean checkers and `decide P = true`.
+  Expansion is bounded, with unsupported forms retained as single
+  observations. The decision instance explicitly supplied to `decide` is
+  preserved. The kernel reports satisfied, refuted, or stuck for each checked
+  observation; observations after a refutation are marked unevaluated.
+  Blockers conservatively include holes in residual proof/type arguments and
+  need not be minimal. Each cached residual is guarded by its input and
+  observation identity in the current metavariable state; backtracking or
+  changing the surrounding program invalidates it. There is still no
+  evaluation at depth 0, and closed candidates still use the original
+  contract's deciders and proof construction. Refuted closed programs are
+  memoized per query.
 - **Outcome when the type is inhabited but the contract rejects.** Closed
   programs that fail their contract are counted as rejections, so such a
   query reports "N program(s) of the type proposed, none passed the
@@ -123,7 +129,9 @@ ledger counters and self times of the search steps print under
 `set_option leant2.trace true`; `leant2.traceNodes` prints every node,
 every failed alternative and every program checked; `leant2.skipRules`
 disables named rules (`7a,7b,9,9b,9c,residual`) for experiments, which is
-how the cost of each rule on a slow query is measured.
+how the cost of each rule on a slow query is measured. Timer collection is
+now conditional on `leant2.trace`; ordinary searches avoid the profiling
+clock reads and timer-reference updates, including at transaction boundaries.
 
 ## Acceptance (Part II, "acceptance")
 
@@ -141,9 +149,42 @@ Candidates are sorted by (unused explicit inputs, eliminators, size) and
 de-duplicated by printed form. Instance binders do not count as inputs.
 There is no learned or frequency-based ranking.
 
+## Publication of accepted results (proposal 11, E1)
+
+The published declaration retains the exact certified kernel expression.
+Primitive recursors for supported single, non-indexed inductive families
+receive a generated structurally recursive definition derived from the
+recursor's reduction rules. A separately kernel-checked equality theorem,
+audited against the standard axiom profile, registers Lean's `csimp` compiler
+rewrite. Compilation therefore gets executable equations while kernel
+reduction and the recorded axiom inventory continue to refer to the original
+term. Displayed supported recursors use `match` and local recursive functions.
+
+This covers list recursion, natural recursors, polymorphic terms and ordinary
+user-defined trees. It does not add natural recursion to the search grammar.
+Indexed/mutual recursor adapters and providers without executable code can
+still require a noncomputable binding, which is now explicitly reported
+without post-acceptance compiler errors. Realization metadata is registered
+for result definitions so subsequent simplification can unfold them.
+
+## Initial next-phase coverage
+
+Proposal 11's P1 is **partially implemented**, not closed. E1 publication,
+R3 stage-1 reports, opt-in profiling, and an initial local E8 benchmark suite
+are implemented. The suite reconstructs the sixteen article probes and adds
+Lean-specific examples with independent executable replay; it does not yet
+port the external benchmark collections. A proposed cache of local type
+facts was removed after its performance benefit could not be established.
+Sampling-profile attribution, per-local caching, the under-1-ms node-cost
+gate, external benchmark ports, first-candidate timing, and reference ranking
+remain open. See [the extended benchmark notes](baseline/extended.md) for
+the precise measurement and replay boundaries.
+
 ## Measured
 
-Everything in `docs/baseline/` and the harnesses in `tools/` (see the
-README). Every scored case also passes with the budget halved to 5 s; the
-partial operations Leant's ledger never accepted (`foldl1`, `maximumBy`,
-...) are reported as stretch cases and remain unsolved within 10 s.
+Historical measurements are in `docs/baseline/` (see the README for their
+revisions and budgets). The 2026-09-18 implementation also passed every scored
+case with the budget halved to 5 s. Partial operations Leant's ledger never
+accepted (`foldl1`, `maximumBy`, ...) are reported as stretch cases separately
+from the acceptance denominator. New implementation receipts must establish
+their own scores; historical results do not validate the current source.

@@ -24,6 +24,8 @@ structure Session where
   base : Command.State
   st : Command.State
   budgetMs : Nat
+  /-- Machine boundary for the category-only baseline harness. -/
+  queryMarkers : Bool := false
   proving : Option String := none
   /-- Command states before each accepted chunk, for `:undo`. -/
   history : List Command.State := []
@@ -127,6 +129,7 @@ partial def loop (s : Session) (lines : List String) (chunk : List String) : IO 
       | "synth" =>
         let arg := if arg.isEmpty then s.proving.getD "" else arg
         let s ← elabChunk s (synthCommand arg) (record := false)
+        if s.queryMarkers then IO.println "-- leant2-query-end"
         loop s rest []
       | "type" =>
         let s ← elabChunk s s!"#check ({arg})" (record := false)
@@ -157,7 +160,9 @@ unsafe def main (args : List String) : IO Unit := do
   let opts := opts.setBool `autoImplicit true
   let opts := opts.set `leant2.budgetMs budget
   let base := Command.mkState env {} opts
-  let s : Session := { base, st := base, budgetMs := budget }
+  let s : Session := {
+    base, st := base, budgetMs := budget
+    queryMarkers := args.contains "--query-markers" }
   let input ← (← IO.getStdin).readToEnd
   let lines := (input.splitOn "\n").map (·.trimRight)
   loop s lines []

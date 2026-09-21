@@ -1,6 +1,6 @@
 name = "leant2"
 version = "0.1.0"
-defaultTargets = ["Leant2", "leant2"]
+defaultTargets = ["Leant2", "Leant2Tests", "leant2"]
 
 # Core Lean only. No Mathlib: the baseline corpus and the engine need only Init.
 

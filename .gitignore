@@ -7,3 +7,4 @@ dist-newstyle/
 baseline-out/
 baseline-run.log
 scratch/
+__pycache__/

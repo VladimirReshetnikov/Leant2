@@ -40,6 +40,15 @@ tests, and the `leant2` REPL executable.
   conjunct by conjunct, on partial programs as well (residual evaluation).
 - `Leant2/Accept/Gate.lean`: the acceptance gate: universe generalization,
   synchronous kernel check, axiom audit against a trust profile.
+- `Leant2/Behavior/Observations.lean`: finite observations extracted from
+  conjunctions, Boolean checkers and `List.all`, with per-observation kernel
+  results and caches guarded against changes during backtracking. Acceptance
+  still requires a proof of the original contract.
+- `Leant2/Frontend/Presentation.lean`: executable presentations of certified
+  recursor terms through generated structural definitions and kernel-checked
+  compiler rewrite proofs. The published definition retains the original
+  certified term; unsupported compilation is explicitly reported as
+  noncomputable.
 - `Leant2/Engine.lean`: the adaptive lanes under one wall-clock budget
   (constructive, refutation, deeper constructive, classical, deeper
   refutation). There are no engine switches and no user settings.
@@ -73,20 +82,35 @@ python tools/run_church.py --budget 10000      # Leant test-church behavior prob
 python tools/run_context.py --budget 10000     # Leant test-behavioral simplification + test-context production, products, selections, constructors, universes, scheduling: 95 cases
 python tools/run_corpus.py --budget 10000      # Leant test-church signature corpus, 350 type-only queries
 python tools/run_session.py                    # Leant session provider-identity suite (blocks, :undo, rejected declarations)
+python tools/run_extended.py --budget 10000     # 29 independent sessions with typed and executable result replay
 ```
 
 `python tools/run_all.py` builds everything and runs the baseline and all
-five harnesses, printing one summary table (about six minutes).
+six additional harnesses, printing one summary table. It fails on a harness
+process error as well as an incomplete score. The baseline also treats
+missing query output as a failure instead of reducing its denominator, and
+checks query diagnostics through explicit REPL completion markers. It still
+scores synthesis outcomes; the extended suite separately checks execution.
+Complete harness logs and a JSON summary are saved under
+`baseline-out/run-all/` (override with `--out`).
 
 All five passed in full on 2026-09-18 (recursive 9/9, Church probes 28/28
 scored plus 13 stretch cases Leant never accepted, context 95/95, corpus
 350/350, session 6/6) with a 10 s budget per query.
 
+The new [extended suite](docs/baseline/extended.md) reconstructs the sixteen
+probes in proposal 11, adds nine Lean-core examples and four negative
+controls, and separates required capabilities from eight open searches.
+Each query runs in a fresh session; a reported candidate must bind at the
+requested type and pass executable replay. This is the initial local E8
+benchmark work, not a port of the external synthesis benchmark collections.
+
 The Church harness imports the specifications from Leant's vendored Djex
 directory (`C:\Leant\lib\Djex	est-church`), so every `:synth` carries the
 spec's exhaustive `check_<op> f = true` contract.
 
-Diagnostics: `set_option leant2.trace true` prints lane and depth timings with
-ledger counters, and `set_option leant2.traceNodes true` prints every program
-checked against the contract.
+Diagnostics: `set_option leant2.trace true` enables profiling and prints lane
+and depth timings with ledger counters. Ordinary searches do not collect
+profiling timers. `set_option leant2.traceNodes true` prints every program
+checked against the contract, plus observation statuses and cache reuse.
 
