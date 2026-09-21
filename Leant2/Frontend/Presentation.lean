@@ -22,8 +22,12 @@ support, not additional session providers. -/
 def isAuxiliaryName (name : Name) : Bool :=
   (name.toString.splitOn ".").any (·.startsWith "_leant2_compiled")
 
+private def sourceOptions (opts : Options) : Options :=
+  opts.setBool `pp.proofs true |>.setBool `pp.deepTerms true
+
 private def syntaxOptions (opts : Options) : Options :=
-  opts.setBool `pp.explicit true |>.setBool `pp.universes true |>.setBool `pp.fullNames true
+  sourceOptions opts |>.setBool `pp.explicit true |>.setBool `pp.universes true
+    |>.setBool `pp.fullNames true
 
 private def delab (e : Expr) : MetaM (TSyntax `term) :=
   withOptions syntaxOptions <| PrettyPrinter.delab e
@@ -47,17 +51,19 @@ private def matchAlt := Parser.Term.matchAlt (rhsParser := Parser.termParser)
 /-- Render primitive recursion using the very same constructor reduction rules
 used by the compiler adapter. The display is supplementary: the stored and
 audited object is always the original expression. -/
-partial def programSyntax (e : Expr) : MetaM (TSyntax `term) := do
+partial def programSyntax (e : Expr) : MetaM (TSyntax `term) := withOptions sourceOptions do
   let fn := e.getAppFn
   if let .const recName _ := fn then
     if isCasesOnRecursor (← getEnv) recName then
       if let some unfolded ← unfoldDefinition? e then
         return ← programSyntax unfolded
     if let some (.recInfo info) := (← getEnv).find? recName then
-      if info.all.length == 1 && info.numIndices == 0 && info.numMotives == 1 &&
+      if info.all.length == 1 && info.numMotives == 1 &&
           e.getAppNumArgs > info.getMajorIdx then
         let args := e.getAppArgs
-        let fixed := args.extract 0 info.getMajorIdx
+        -- Parameters, motive, and branches stay fixed. Indices vary with the
+        -- recursive subterm and therefore belong to the recursive function.
+        let fixed := args.extract 0 info.getFirstIndexIdx
         let goType ← inferType (mkAppN fn fixed)
         let fresh ← mkFreshId
         let goName := (← getLCtx).getUnusedName <| Name.mkSimple <|
@@ -65,8 +71,8 @@ partial def programSyntax (e : Expr) : MetaM (TSyntax `term) := do
           | .num _ i => s!"loop{i}"
           | _ => s!"loop{fresh.hash}"
         return ← withLocalDeclD goName goType fun go =>
-          openBinders goType 1 "value" fun majors _ => do
-            let major := majors[0]!
+          openBinders goType (info.numIndices + 1) "value" fun varying _ => do
+            let major := varying.back!
             let mut recursive := false
             let mut alts : Array (TSyntax ``Parser.Term.matchAlt) := #[]
             for rule in info.rules do
@@ -76,8 +82,8 @@ partial def programSyntax (e : Expr) : MetaM (TSyntax `term) := do
                 let rhs := rhs.headBeta
                 let rhs := rhs.replace fun sub =>
                   if sub.getAppFn == fn && sub.getAppNumArgs > info.getMajorIdx &&
-                      sub.getAppArgs.extract 0 info.getMajorIdx == fixed then
-                    some (mkAppN go (sub.getAppArgs.extract info.getMajorIdx sub.getAppNumArgs))
+                      sub.getAppArgs.extract 0 info.getFirstIndexIdx == fixed then
+                    some (mkAppN go (sub.getAppArgs.extract info.getFirstIndexIdx sub.getAppNumArgs))
                   else none
                 let usesRec := rhs.containsFVar go.fvarId!
                 let rhs ← programSyntax rhs
@@ -91,10 +97,12 @@ partial def programSyntax (e : Expr) : MetaM (TSyntax `term) := do
             let value ← programSyntax args[info.getMajorIdx]!
             let result ← if recursive then do
               let majorId ← identOf major
+              let varyingIds ← varying.mapM identOf
               let goId ← identOf go
               let goType ← PrettyPrinter.delab goType
-              `(term| let rec $goId:ident : $goType := fun $majorId =>
-                (match $majorId:term with $alts:matchAlt*); $goId $value)
+              let values ← (args.extract info.getFirstIndexIdx (info.getMajorIdx + 1)).mapM programSyntax
+              `(term| let rec $goId:ident : $goType := @fun $varyingIds* =>
+                (match $majorId:term with $alts:matchAlt*); @$goId $values*)
             else
               `(term| match $value:term with $alts:matchAlt*)
             let rest ← (args.extract (info.getMajorIdx + 1) args.size).mapM programSyntax
@@ -142,8 +150,8 @@ def programMessage (e : Expr) : MetaM MessageData := do
 
 private def recursorCommands (info : RecursorVal) (implName proofName : Name) :
     MetaM (Syntax × Syntax) := do
-  unless info.all.length == 1 && info.numIndices == 0 && info.numMotives == 1 do
-    throwError "leant2 presentation: indexed and mutual recursors are not supported"
+  unless info.all.length == 1 && info.numMotives == 1 do
+    throwError "leant2 presentation: mutual and nested recursors are not supported"
   let levels := info.levelParams.toArray.map mkIdent
   let declId ← `(declId| $(mkIdent implName).{$levels,*})
   let proofId ← `(declId| $(mkIdent proofName).{$levels,*})
@@ -154,7 +162,10 @@ private def recursorCommands (info : RecursorVal) (implName proofName : Name) :
       let major := ids.back!
       let mut alts : Array (TSyntax ``Parser.Term.matchAlt) := #[]
       for rule in info.rules do
-        let rhs := (mkAppN rule.rhs (xs.extract 0 info.getMajorIdx)).headBeta
+        -- Reduction-rule telescopes bind the fixed recursor prefix followed
+        -- directly by constructor fields. Result indices are determined by
+        -- the constructor; passing the major's indices here is incorrect.
+        let rhs := (mkAppN rule.rhs (xs.extract 0 info.getFirstIndexIdx)).headBeta
         let alt ← openBinders rhs rule.nfields "field" fun fields rhs => do
           let fieldIds ← fields.mapM identOf
           let params ← (List.range info.numParams).toArray.mapM fun _ => `(term| _)

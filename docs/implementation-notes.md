@@ -71,11 +71,28 @@ retrieval cache is built; the corpus does not need one yet.
 
 ## Structural recursion (gate G4)
 
-`g.induction fvar (mkRecName ...)` with a constant motive on a recursive,
+The original rule uses `g.induction fvar (mkRecName ...)` with a constant motive on a recursive,
 index-free inductive local other than `Nat`; the induction hypotheses are
 the recursive-call capabilities. Tried first at the outermost level under a
 contract, and as a late alternative otherwise. Nested induction on the
 hypotheses is not attempted (it exploded on `Nat`).
+
+A separate late tier now allows one outer induction on `Nat` or a supported
+single-index recursive family. It uses native `g.induction` motive inference
+and dependency reversion, transports consumed locals through the returned
+substitution, and rolls back unsupported index shapes. The permission follows
+root function introductions and the program component of a root contract;
+ordinary application and constructor subgoals cannot start another extended
+induction. Indexed families are tried before natural numbers. Mutual and
+nested families, multiple indices in search, and compound major indices are
+not supported by this tier.
+
+Partial residual pruning is disabled inside these indexed induction branches
+because the existing delayed-assignment representation has no established
+dependent-closure invariant. Closed candidates still prove the original
+contract and pass the acceptance gate. Focused gates synthesize predecessor
+without providers, powers of two with addition alone, and polymorphic vector
+map without providers; universal equations check their recursive behavior.
 
 ## Contracts and residual evaluation (Part II, "behavior")
 
@@ -152,7 +169,7 @@ There is no learned or frequency-based ranking.
 ## Publication of accepted results (proposal 11, E1)
 
 The published declaration retains the exact certified kernel expression.
-Primitive recursors for supported single, non-indexed inductive families
+Primitive recursors for supported single inductive families
 receive a generated structurally recursive definition derived from the
 recursor's reduction rules. A separately kernel-checked equality theorem,
 audited against the standard axiom profile, registers Lean's `csimp` compiler
@@ -161,15 +178,30 @@ reduction and the recorded axiom inventory continue to refer to the original
 term. Displayed supported recursors use `match` and local recursive functions.
 
 Validated cases include list and Nat recursors, polymorphic map and
-identity, a custom binary tree, nested recursion, and printed-source round
-trips that check for variable capture. This does not add natural recursion to
-the search grammar. Indexed/mutual recursor adapters and providers without
-executable code can still require a noncomputable binding, which is now
+identity, a custom binary tree, nested uses of supported recursion, and
+printed-source round trips that check for variable capture. Indexed adapters
+support varying indices and the major premise after a fixed prefix of
+parameters, motives, and branches. Tests include universe-polymorphic vector
+map, a two-index family, and a dependent motive with proof fields; they check
+execution and re-elaboration of printed source as well as kernel equality.
+Proof terms are retained in printed dependent expressions. Mutual and nested
+inductive-family adapters and providers without executable code can still
+require a noncomputable binding, which is
 explicitly reported without post-acceptance compiler errors. Cancellation
 and runtime exceptions still propagate. Realization metadata is registered
-for result definitions so subsequent simplification can unfold them. Existing
-`it1`, `it2`, ... names are preserved across queries; fresh-session replay is
-required to avoid referring to an earlier binding with the same name.
+for result definitions so subsequent simplification can unfold them.
+
+`Frontend/Results.lean` publishes each batch under fresh immutable kernel
+names, then atomically replaces transient aliases for `it1`, `it2`, ... and
+bare `it`. Definitions that already refer to an earlier result retain that
+meaning. A smaller batch removes stale numbered aliases; a well-formed
+unsuccessful query clears the numbered batch but preserves bare `it`.
+Preflight failures preserve both. Bare expression evaluation uses the same
+publication gate and updates only `it` after successful evaluation. Command
+state snapshots restore bindings on undo or failure. Namespace and root
+qualified aliases are supported, user-name collisions are rejected, and the
+generated declarations are excluded from session provider discovery. Aliases
+are session state and are not exported when another module imports the file.
 
 ## Initial next-phase coverage
 
@@ -190,11 +222,20 @@ Implementation commit `87ed037` passed **787/787 scored cases** across
 all seven harnesses at both 10 s and 5 s per query, with clean working trees
 and an unchanged executable. The [2026-09-21 checkpoint](baseline/p1-2026-09-21/README.md)
 records the full results and raw transcripts. The eight extended open
-searches and thirteen historical Church stretch searches remain unsolved at
+searches and thirteen historical Church stretch searches were unsolved at
 both budgets; neither is counted in the required denominator. The baseline
 checks synthesis outcome categories, while the extended suite independently
-checks first-result binding and replay. Three ordinary-command errors in the
-legacy transcripts remain outside that baseline score.
+checks first-result binding and replay. Three ordinary-command errors in those
+legacy transcripts were outside that baseline score.
+
+The current source passes the focused induction/publication Lean tests, five
+new recursion gates, ten result-binding sessions, and the three newly required
+original predecessor/power/vector probes. The expanded nine-harness acceptance
+suite has 805 required cases; both-budget validation is pending. The targeted
+legacy manual transcript now evaluates bare `it * 10` and refreshed `it2`
+successfully. The Option call in `synth-prove` still omits the two explicit
+type arguments required by its requested type, matching an error already
+present in Leant's golden transcript; it is not a stale result binding.
 
 Historical measurements remain in `docs/baseline/`, labeled by their own
 revisions and budgets. These acceptance runs and profiling parity tests are

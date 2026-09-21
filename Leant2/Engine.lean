@@ -53,7 +53,8 @@ def enumerate (ctx : SearchCtx) (cfg : SearchConfig) (goalTy : Expr)
         accept e
       let cfg := { cfg with maxDepth := depth, root := some root.mvarId! }
       let t0 ← IO.monoMsNow
-      let _ ← alternative (search cfg leaf cfg.maxSplits [{ mvar := root.mvarId!, depth }])
+      let _ ← alternative (search cfg leaf cfg.maxSplits
+        [{ mvar := root.mvarId!, depth, allowExtendedRecursion := true }])
       -- a depth counts as completed only if the pass returned (not interrupted)
       completed.modify (· + 1)
       if leant2.trace.get (← getOptions) then

@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "description": "Independent Nat/indexed-recursion acceptance gates. References and universal post-checks are withheld from synthesis; only datatype setup and ordinary curated providers are available. A required expectation is a gate to pass, not a claim that an implementation has passed it.",
+  "cases": [
+    {
+      "id": "recursion_nat_pred",
+      "title": "Natural predecessor with general constructor equations",
+      "group": "nat-recursion",
+      "expect": "candidate",
+      "type": "Nat → Nat",
+      "contract": "{f} 0 = 0 ∧ {f} 1 = 0 ∧ {f} 4 = 3 ∧ {f} 8 = 7",
+      "reference": "Nat.pred",
+      "forbidden_providers": ["Nat.pred", "Nat.sub"],
+      "kernel_checks": [
+        {"type": "{f} 0 = 0", "proof": "by rfl"},
+        {"type": "∀ n : Nat, {f} (n + 1) = n", "proof": "by intro n; rfl"}
+      ],
+      "replay": "{f} 2 = 1 ∧ {f} 3 = 2 ∧ {f} 32 = 31 ∧ {f} 127 = 126",
+      "source": "Lean v4.34.0 Init/Data/Nat/Basic.lean: Nat.pred_zero, Nat.pred_succ; proposal new/3/leant2-expert-answers/sections/10-plan.tex Stage B"
+    },
+    {
+      "id": "recursion_pow_two",
+      "title": "Power of two with general base and doubling equations",
+      "group": "nat-recursion",
+      "expect": "candidate",
+      "type": "Nat → Nat",
+      "contract": "{f} 0 = 1 ∧ {f} 3 = 8 ∧ {f} 5 = 32",
+      "reference": "fun n => 2 ^ n",
+      "forbidden_providers": ["Nat.pow", "HPow.hPow", "Pow.pow"],
+      "kernel_checks": [
+        {"type": "{f} 0 = 1", "proof": "by rfl"},
+        {
+          "type": "∀ n : Nat, {f} (n + 1) = {f} n + {f} n",
+          "proof": "by intro n; rfl",
+          "reference_proof": "by intro n; simp [{f}, Nat.pow_succ, Nat.mul_succ]"
+        }
+      ],
+      "replay": "{f} 1 = 2 ∧ {f} 2 = 4 ∧ {f} 8 = 256 ∧ {f} 10 = 1024",
+      "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex probe 4; independently added universal recursion equations and withheld runtime observations"
+    },
+    {
+      "id": "recursion_vec_map",
+      "title": "Polymorphic indexed vector map with nil and cons equations",
+      "group": "indexed-recursion",
+      "expect": "candidate",
+      "prelude": "inductive RecursionVec (A : Type) : Nat → Type where\n  | nil : RecursionVec A 0\n  | cons {n : Nat} : A → RecursionVec A n → RecursionVec A (n + 1)",
+      "type": "∀ (A B : Type), (A → B) → ∀ n, RecursionVec A n → RecursionVec B n",
+      "reference": "fun A B g _ xs => let rec go {n : Nat} (ys : RecursionVec A n) : RecursionVec B n := match ys with | .nil => .nil | .cons x rest => .cons (g x) (go rest); go xs",
+      "forbidden_providers": ["RecursionVec.map"],
+      "kernel_checks": [
+        {
+          "type": "∀ (A B : Type) (g : A → B), @{f} A B g 0 .nil = .nil",
+          "proof": "by intros; rfl"
+        },
+        {
+          "type": "∀ (A B : Type) (g : A → B) (n : Nat) (x : A) (xs : RecursionVec A n), @{f} A B g (n + 1) (.cons x xs) = .cons (g x) (@{f} A B g n xs)",
+          "proof": "by intros; rfl"
+        }
+      ],
+      "replay": "(match @{f} Nat Bool (fun n => n == 0) 3 (.cons 0 (.cons 7 (.cons 0 .nil))) with | .cons a (.cons b (.cons c .nil)) => a == true && b == false && c == true) = true ∧ (match @{f} Bool Nat (fun b => if b then 2 else 9) 3 (.cons false (.cons true (.cons false .nil))) with | .cons a (.cons b (.cons c .nil)) => a == 9 && b == 2 && c == 9) = true",
+      "source": "docs/proposals/new/1/sections/05-dependent.tex: ordinary Vec.map motive; fresh indexed datatype, independent constructor equations and executable values"
+    },
+    {
+      "id": "recursion_nat_false",
+      "title": "Impossible natural recursion contract",
+      "group": "controls",
+      "expect": "none",
+      "type": "Nat → Nat",
+      "contract": "False",
+      "source": "Local recursion harness false-positive control"
+    },
+    {
+      "id": "recursion_vec_false",
+      "title": "Impossible indexed map contract",
+      "group": "controls",
+      "expect": "none",
+      "prelude": "inductive RecursionVec (A : Type) : Nat → Type where\n  | nil : RecursionVec A 0\n  | cons {n : Nat} : A → RecursionVec A n → RecursionVec A (n + 1)",
+      "type": "∀ (A B : Type), (A → B) → ∀ n, RecursionVec A n → RecursionVec B n",
+      "contract": "False",
+      "source": "Local indexed recursion harness false-positive control"
+    }
+  ]
+}

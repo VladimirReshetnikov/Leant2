@@ -48,11 +48,30 @@ def load_cases(path: Path = MANIFEST) -> list[dict]:
             raise ValueError(f"negative controls must have the False contract: {c['id']}")
         if c["expect"] != "none" and not c.get("reference"):
             raise ValueError(f"positive fixture needs a checked reference: {c['id']}")
+        forbidden = c.get("forbidden_providers", [])
+        if not isinstance(forbidden, list) or any(
+                not isinstance(name, str) or
+                not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)*", name)
+                for name in forbidden):
+            raise ValueError(f"forbidden_providers require declaration names: {c['id']}")
+        checks = c.get("kernel_checks", [])
+        if not isinstance(checks, list) or any(
+                not isinstance(check, dict) or
+                not isinstance(check.get("type"), str) or not check["type"].strip() or
+                not isinstance(check.get("proof"), str) or not check["proof"].strip() or
+                ("reference_proof" in check and
+                 (not isinstance(check["reference_proof"], str) or
+                  not check["reference_proof"].strip())) for check in checks):
+            raise ValueError(f"kernel_checks require nonempty type/proof strings: {c['id']}")
     return cases
 
 
 def replay_commands(case: dict, name: str = "it1") -> list[str]:
     commands = [f"example : {case['type']} := {name}"]
+    for check in case.get("kernel_checks", []):
+        proposition = check["type"].replace("{f}", name)
+        proof = check["proof"].replace("{f}", name)
+        commands.append(f"example : {proposition} := {proof}")
     if case.get("replay_proof"):
         predicate = case["contract"].replace("{f}", name)
         proof = case["replay_proof"].replace("{f}", name)
@@ -71,6 +90,12 @@ def transcript(case: dict) -> str:
     lines = []
     if case.get("prelude"):
         lines += [":{", case["prelude"], ":}"]
+    if case.get("forbidden_providers"):
+        lines += [":{", "open Lean Elab Command in", "run_cmd do",
+                  "  let providers := (← liftCoreM Leant2.sessionConstants) ++ Leant2.curatedProviders"]
+        for name in case["forbidden_providers"]:
+            lines.append(f'  if providers.contains `{name} then throwError "benchmark forbids synthesis provider {name}"')
+        lines.append(":}")
     query = f":synth extended_candidate : {case['type']}"
     if case.get("contract"):
         query += " where " + case["contract"].replace("{f}", "extended_candidate")
@@ -78,7 +103,7 @@ def transcript(case: dict) -> str:
     # Do not elaborate references in the synthesis environment. Replay is
     # guarded so a legitimate open result does not produce unknown-it1 errors.
     lines += [":{", "open Lean Elab Command in", "run_cmd do",
-              "  if (← getEnv).contains `it1 then"]
+              "  if (Leant2.resultBinding? (← getEnv) `it1).isSome then"]
     for command in replay_commands(case):
         lines.append(f"    elabCommand (← `({command}))")
     lines += [":}", ":quit", ""]
@@ -155,6 +180,10 @@ def fixture_source(cases: list[dict]) -> str:
             pred = c["contract"].replace("{f}", "reference")
             proof = c.get("reference_proof", "by decide").replace("{f}", "reference")
             lines.append(f"example : {pred} := {proof}")
+        for check in c.get("kernel_checks", []):
+            proposition = check["type"].replace("{f}", "reference")
+            proof = check.get("reference_proof", check["proof"]).replace("{f}", "reference")
+            lines.append(f"example : {proposition} := {proof}")
         observation = c.get("replay")
         if observation:
             lines.append(f"example : {observation.replace('{f}', 'reference')} := by decide")
@@ -167,6 +196,8 @@ def main() -> int:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--exe", default=str(ROOT / ".lake/build/bin/leant2.exe"))
+    ap.add_argument("--manifest", type=Path, default=MANIFEST,
+                    help="benchmark manifest (default: tests/benchmarks/extended.json)")
     ap.add_argument("--budget", type=int, default=10000)
     ap.add_argument("--case", action="append", default=[], help="exact case id; may repeat")
     ap.add_argument("--out", default=str(ROOT / "baseline-out/extended.json"))
@@ -174,7 +205,8 @@ def main() -> int:
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--validate-fixtures", action="store_true", help="check references with Lean, without synthesis")
     args = ap.parse_args()
-    cases = load_cases()
+    manifest = args.manifest.resolve()
+    cases = load_cases(manifest)
     if args.budget <= 0 or (args.timeout is not None and args.timeout <= 0):
         ap.error("budget and timeout must be positive")
     if args.case:
@@ -245,7 +277,8 @@ def main() -> int:
                "revision": revision.stdout.strip(), "working_tree_dirty": bool(dirty.stdout.strip()),
                "executable": str(exe), "executable_sha256": executable_sha256,
                "executable_changed_during_run": executable_changed,
-               "manifest_sha256": hashlib.sha256(MANIFEST.read_bytes()).hexdigest(), "budget_ms": args.budget,
+               "manifest": str(manifest),
+               "manifest_sha256": hashlib.sha256(manifest.read_bytes()).hexdigest(), "budget_ms": args.budget,
                "capabilities_and_controls": {"passed": sum(r["passed"] for r in scored), "total": len(scored)},
                "open": {"solved": sum(r["outcome"] == "solved" for r in open_rows), "total": len(open_rows)},
                "failures": failures, "success": not failures, "results": rows}

@@ -18,7 +18,9 @@ HARNESSES = [
     ("context", ["tools/run_context.py"]),
     ("corpus", ["tools/run_corpus.py"]),
     ("session", ["tools/run_session.py"]),
+    ("results", ["tools/run_results.py"]),
     ("extended", ["tools/run_extended.py"]),
+    ("recursion-gates", ["tools/run_extended.py", "--manifest", "tests/benchmarks/recursion.json"]),
 ]
 
 
@@ -48,12 +50,12 @@ def main():
     for name, cmd in HARNESSES:
         t0 = time.time()
         extra = ["--budget", str(args.budget)]
-        if name in {"baseline", "church", "session"}:
+        if name in {"baseline", "church", "session", "results"}:
             extra += ["--out", str(out / name)]
         elif name in {"recursive", "context", "corpus"}:
             extra += ["--out", str(out / f"{name}.out")]
-        elif name == "extended":
-            extra += ["--out", str(out / "extended.json")]
+        elif name in {"extended", "recursion-gates"}:
+            extra += ["--out", str(out / f"{name}.json")]
         r = subprocess.run([sys.executable, "-X", "utf8", *cmd, *extra], capture_output=True, text=True,
                            encoding="utf-8", errors="replace")
         m = re.search(r"^TOTAL (\d+)/(\d+)", r.stdout, re.M)

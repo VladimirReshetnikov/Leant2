@@ -84,7 +84,8 @@ class HarnessFailures(unittest.TestCase):
 
     def aggregate(self, total, returncode):
         result = subprocess.CompletedProcess([], returncode, total, "failure details")
-        with patch.object(sys, "argv", ["run_all.py", "--skip-build"]), \
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(sys, "argv", ["run_all.py", "--skip-build", "--out", directory]), \
                 patch.object(run_all, "HARNESSES", [("fake", ["fake.py"])]), \
                 patch.object(subprocess, "run", return_value=result), \
                 contextlib.redirect_stdout(Output()), self.assertRaises(SystemExit) as stopped:
@@ -99,6 +100,51 @@ class HarnessFailures(unittest.TestCase):
 
     def test_aggregate_accepts_successful_score(self):
         self.assertEqual(self.aggregate("TOTAL 2/2\n", 0), 0)
+
+    def integrated_aggregate(self, failing=None):
+        totals = {"baseline": 278, "recursive": 9, "church": 28, "context": 95,
+                  "corpus": 350, "session": 6, "results": 10, "extended": 24,
+                  "recursion-gates": 5}
+        commands = {}
+
+        def run(command, **kwargs):
+            name = ("recursion-gates" if "--manifest" in command else
+                    Path(command[3]).stem.removeprefix("run_"))
+            commands[name] = command
+            total = totals[name]
+            return subprocess.CompletedProcess(command, 1 if name == failing else 0,
+                                               f"TOTAL {total}/{total}\n", "")
+
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(sys, "argv", ["run_all.py", "--skip-build", "--out", directory]), \
+                patch.object(subprocess, "run", side_effect=run), \
+                contextlib.redirect_stdout(Output()), self.assertRaises(SystemExit) as stopped:
+            try:
+                run_all.main()
+            finally:
+                summary = json.loads((Path(directory) / "summary.json").read_text(encoding="utf-8"))
+        return stopped.exception.code, commands, summary
+
+    def test_aggregate_routes_independent_results_and_recursion_receipts(self):
+        status, commands, summary = self.integrated_aggregate()
+        self.assertEqual(status, 0)
+        self.assertEqual(len(summary["harnesses"]), 9)
+        self.assertEqual(sum(row["total"] for row in summary["harnesses"]), 805)
+        outputs = {name: command[command.index("--out") + 1] for name, command in commands.items()}
+        self.assertEqual(len(set(outputs.values())), 9)
+        self.assertEqual(Path(outputs["results"]).name, "results")
+        self.assertEqual(Path(outputs["extended"]).name, "extended.json")
+        self.assertEqual(Path(outputs["recursion-gates"]).name, "recursion-gates.json")
+        recursion = commands["recursion-gates"]
+        self.assertEqual(recursion[recursion.index("--manifest") + 1], "tests/benchmarks/recursion.json")
+        self.assertNotIn("--manifest", commands["extended"])
+
+    def test_independent_recursion_exit_failure_fails_aggregate_despite_full_score(self):
+        status, _, summary = self.integrated_aggregate(failing="recursion-gates")
+        self.assertEqual(status, 1)
+        recursion = next(row for row in summary["harnesses"] if row["harness"] == "recursion-gates")
+        self.assertEqual((recursion["passed"], recursion["total"]), (5, 5))
+        self.assertFalse(recursion["ok"])
 
 
 if __name__ == "__main__":

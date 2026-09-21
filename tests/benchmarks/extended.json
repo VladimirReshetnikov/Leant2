@@ -18,7 +18,7 @@
       "reference": "fun n => n + n", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 3 (reconstructed examples)"
     },
     {
-      "id": "probe04_pow_two", "title": "Compute two to a natural power", "group": "article-probes", "expect": "open",
+      "id": "probe04_pow_two", "title": "Compute two to a natural power", "group": "article-probes", "expect": "candidate",
       "type": "Nat → Nat", "contract": "{f} 0 = 1 ∧ {f} 3 = 8 ∧ {f} 5 = 32",
       "reference": "fun n => 2 ^ n", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 4 (reconstructed examples; Nat recursion/literals)"
     },
@@ -40,7 +40,7 @@
       "reference": "fun _ _ xs => match xs with | .cons x _ => x", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 7 (reconstructed indexed datatype)"
     },
     {
-      "id": "probe08_vec_map", "title": "Map over an indexed vector", "group": "article-probes", "expect": "open",
+      "id": "probe08_vec_map", "title": "Map over an indexed vector", "group": "article-probes", "expect": "candidate",
       "prelude": "inductive ExtendedVec (A : Type) : Nat → Type where\n  | nil : ExtendedVec A 0\n  | cons {n : Nat} : A → ExtendedVec A n → ExtendedVec A (n + 1)",
       "type": "∀ (A B : Type), (A → B) → ∀ n, ExtendedVec A n → ExtendedVec B n",
       "replay": "(match @{f} Nat Nat Nat.succ 2 (.cons 1 (.cons 3 .nil)) with | .cons a (.cons b .nil) => a == 2 && b == 4) = true",
@@ -135,7 +135,7 @@
       "reference": "Nat.succ", "source": "Lean v4.34.0 Init/Data/Nat/Basic.lean:152 Nat.succ_eq_add_one"
     },
     {
-      "id": "core_nat_pred", "title": "Nat.pred constructor equations", "group": "lean-core", "expect": "open",
+      "id": "core_nat_pred", "title": "Nat.pred constructor equations", "group": "lean-core", "expect": "candidate",
       "type": "Nat → Nat", "contract": "{f} 0 = 0 ∧ {f} 1 = 0 ∧ {f} 4 = 3 ∧ {f} 8 = 7",
       "reference": "Nat.pred", "source": "Lean v4.34.0 Init/Data/Nat/Basic.lean:909-910 Nat.pred_zero, Nat.pred_succ (Nat elimination)"
     },

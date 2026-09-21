@@ -5,3 +5,6 @@ import Leant2Tests.Contracts
 import Leant2Tests.Observations
 import Leant2Tests.Substrate
 import Leant2Tests.Presentation
+import Leant2Tests.Results
+import Leant2Tests.IndexedRecursion
+import Leant2Tests.IndexedPresentation

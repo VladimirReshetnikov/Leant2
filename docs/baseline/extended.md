@@ -17,12 +17,12 @@ and time to first candidate remain open E8 work.
 
 | Group | Required candidates | Impossible controls | Open searches |
 | --- | ---: | ---: | ---: |
-| Sixteen article probes | 9 | 0 | 7 |
-| Lean core List/Option/Nat | 8 | 0 | 1 |
+| Sixteen article probes | 11 | 0 | 5 |
+| Lean core List/Option/Nat | 9 | 0 | 0 |
 | Negative controls | 0 | 4 | 0 |
-| Total | 17 | 4 | 8 |
+| Total | 20 | 4 | 5 |
 
-`TOTAL passed/21` covers the required capabilities and controls; `OPEN solved/8`
+`TOTAL passed/24` covers the required capabilities and controls; `OPEN solved/5`
 reports the remaining searches separately. Case selection changes the
 denominators to the selected cases. An open search can exhaust its budget or
 search bounds, or refute all proposed candidates. An exception, malformed or
@@ -33,10 +33,12 @@ or impossible contract for one of them also fails the run. A negative control
 requires `provably no program satisfies the contract`; silence or timeout does
 not establish the control.
 
-The seven open article probes are power of two, indexed vector map, maximum,
-dropping zeros, tree flattening, `Fin (n+1)`, and order transitivity. Natural
-predecessor is the additional open core example. These classifications are
-fixed expectations, not a list silently derived from whichever cases pass.
+The five open article probes are maximum, dropping zeros, tree flattening,
+`Fin (n+1)`, and order transitivity. Power of two, indexed vector map, and
+natural predecessor were promoted to required capabilities after focused
+implementation runs synthesized and replayed all three original cases and
+passed the stronger recursion gates below. These classifications are fixed
+expectations, not a list silently derived from whichever cases pass.
 List sum is a required capability because a reported result must also bind and
 execute; it exercises proposal 11's E1 code-generation defect directly.
 
@@ -93,13 +95,98 @@ python tools/run_extended.py --validate-fixtures
 python -m unittest discover -s tests/benchmarks -p test_extended.py -v
 ```
 
-The nine protocol tests cover missing replay, named and unnamed Lean errors,
+The protocol tests cover missing replay, named and unnamed Lean errors,
 stderr and process failure, certified rejection versus timeout, executable
 counterexamples, missing or duplicated query blocks, impossible claims on
 inhabited open cases, and replay markers without candidates. Fixture validation
 passed with Lean v4.34.0 during implementation. A preliminary seven-case run
 against the original executable reproduced the list-sum compilation failure;
 it is diagnostic evidence, not a completed 29-case acceptance receipt.
+
+## Nat and indexed recursion gates
+
+`tests/benchmarks/recursion.json` is a separate acceptance manifest for a
+bounded recursion extension. Its `TOTAL passed/5` consists of three required
+candidates and two literal-False controls. It is not part of the original
+29-case E8 denominator above. Required expectations define what this gate must
+demonstrate. The three corresponding original E8 cases additionally remain
+required in their original form; the stronger checks below do not replace them.
+
+| Required candidate | Synthesis input | Independent post-checks |
+| --- | --- | --- |
+| Natural predecessor | Four concrete examples | Kernel equations at zero and arbitrary successor; runtime inputs 2, 3, 32, and 127 |
+| Power of two | Three concrete examples | Kernel base and doubling equations for arbitrary `n`; runtime inputs 1, 2, 8, and 10 |
+| Indexed vector map | Polymorphic type over arbitrary `A B : Type` | Kernel nil/cons equations for arbitrary element types, function, length, head, and tail; execution on actual length-three indexed vectors from Nat to Bool and Bool to Nat |
+
+The vector is a fresh indexed inductive family `RecursionVec A n`, not a list
+with an external length check. Nat and indexed-map False controls must report
+a certified impossible contract. Every session starts fresh. The frontend's
+ordinary provider policy supplies arithmetic building blocks such as
+`Nat.add`, but no reference implementation is introduced. Before synthesis,
+the harness checks that explicitly forbidden providers are absent from both
+the session and curated sets: `Nat.pred`/`Nat.sub`, `Nat.pow`/`HPow.hPow`/`Pow.pow`,
+and `RecursionVec.map`, respectively. A provider-policy change that violates
+these checks fails the gate instead of silently changing what it measures.
+
+The optional manifest field `kernel_checks` contains `{type, proof}` pairs,
+with `{f}` replaced by the first accepted result binding. These commands run
+after synthesis and before the executable replay marker; a proof error fails
+the case. `reference_proof` can supply a different proof for validating the
+withheld reference. This allows a library implementation and a synthesized
+recursor to satisfy the same equations through different reductions. The
+current candidate proofs require the base and constructor equations to hold
+definitionally. A future implementation with only propositional equations
+will need an explicitly reviewed proof update rather than dropping the checks.
+
+```powershell
+python tools/run_extended.py --manifest tests/benchmarks/recursion.json --validate-fixtures --out baseline-out/recursion-gates.json
+python tools/run_extended.py --manifest tests/benchmarks/recursion.json --budget 10000 --out baseline-out/recursion-gates.json
+```
+
+`--manifest` selects the fixture file; the receipt records its absolute path
+and hash. The normal E8 file remains the default. Fixture validation checks
+the three withheld references, their universal equations, and all runtime
+observations in a separate Lean process. It does not run synthesis. These
+gates check exact bound types, kernel equations, and executable behavior;
+printed-source roundtrips and higher-universe presentation tests belong to the
+separate `IndexedPresentation` Lean test module.
+
+The focused implementation run passed all five recursion gates, and all three
+original E8 probes produced candidates with successful replay. Those receipts
+were taken from a dirty working tree and establish the promotion decision,
+not a complete acceptance run for the recorded parent commit. Final milestone
+evidence must identify the tested source revision, executable, and manifests.
+
+## Result-binding integration and aggregate scoring
+
+`tools/run_results.py` checks ten independent REPL sessions: bare-expression
+evaluation, type-changing synthesis and saved old definitions, shrinking
+candidate batches, unsuccessful queries, preflight failures, failed evaluation,
+a successful evaluation after an earlier diagnostic, undo/reset, namespace and
+local-binder hygiene, and user-declaration collisions. Its fixed denominator is
+`TOTAL passed/10`; the existing six-session provider suite stays separate.
+
+The result suite requires exact executable markers and query outcomes, checks
+provider inventories where specified, and rejects unexpected diagnostics,
+missing query boundaries, stderr, and process failures. The three intentional
+diagnostic sessions require their expected diagnostic exactly once; the prior
+error must remain visible even when a later evaluation succeeds. Raw session
+input, output, stderr, and the JSON receipt are retained under the supplied
+`--out` directory. The focused implementation run passed all ten sessions.
+
+```powershell
+python tools/run_results.py --budget 10000 --out baseline-out/results
+python tools/run_all.py --budget 10000 --out baseline-out/milestone-10000
+```
+
+`run_all.py` runs nine harnesses with distinct artifact paths. Their expected
+denominators are baseline 278, recursive 9, Church 28, context 95, corpus 350,
+session 6, results 10, extended 24, and recursion gates 5: **805 acceptance
+checks in total**. Some checks exercise the same synthesis goals at different
+boundaries, so this is not a count of 805 distinct benchmark problems. The
+extended suite's five open searches and the Church stretch cases remain
+outside these scored denominators. Every harness must also exit successfully;
+a full printed score does not conceal a process or open-case failure.
 
 ## Source provenance
 

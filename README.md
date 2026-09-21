@@ -55,12 +55,24 @@ tests, and the `leant2` REPL executable.
   are ignored.
 - `Leant2/Frontend/Command.lean`: `#leant2 T`, `#leant2 f : T where P`,
   `#leant2_check`, `#leant2_none`; results are bound as `it1`, `it2`, ...
-  Existing result names are preserved, so use a fresh session when replaying
-  a newly returned result.
+  Each successful query refreshes the numbered names and bare `it` through
+  aliases to immutable kernel declarations. Earlier definitions keep their
+  original meaning, stale numbered results disappear, and undo restores the
+  previous aliases. User declarations are never overwritten.
 - `Main.lean`: the compatibility REPL that consumes Leant transcripts
   (`:synth`, `:set` ignored, `:reset`, `:undo`, `:{ ... :}` blocks,
-  `:providers`, `:prove`, declarations, `#eval`). Comment-only input is
-  ignored without consuming an undo entry.
+  `:providers`, `:prove`, declarations, `#eval`). Bare expressions evaluate
+  through `#leant2_eval` and update `it` after successful evaluation.
+  Comment-only input is ignored without consuming an undo entry.
+
+The next search tier adds bounded outer induction on `Nat` and supported
+single-index inductive families using Lean's native dependent induction.
+Predecessor, powers of two, and polymorphic indexed vector map now pass
+synthesis and universal equation checks with the corresponding library
+implementations withheld. Executable publication also supports single-family
+indexed recursors with multiple indices and dependent motives. These are
+separate search and publication capabilities; arbitrary indexed, mutual, and
+nested induction remain outside the search grammar.
 
 ### The baseline
 
@@ -87,10 +99,12 @@ python tools/run_context.py --budget 10000     # Leant test-behavioral simplific
 python tools/run_corpus.py --budget 10000      # Leant test-church signature corpus, 350 type-only queries
 python tools/run_session.py                    # Leant session provider-identity suite (blocks, :undo, rejected declarations)
 python tools/run_extended.py --budget 10000     # 29 independent sessions with typed and executable result replay
+python tools/run_extended.py --manifest tests/benchmarks/recursion.json --budget 10000 # 3 recursion gates + 2 impossible controls
+python tools/run_results.py --budget 10000      # 10 result-binding and evaluation sessions
 ```
 
 `python tools/run_all.py` builds everything and runs the baseline and all
-six additional harnesses, printing one summary table. It fails on a harness
+eight additional harnesses, printing one summary table. It fails on a harness
 process error as well as an incomplete score. The baseline also treats
 missing query output as a failure instead of reducing its denominator, and
 checks query diagnostics through explicit REPL completion markers. It still
@@ -102,17 +116,19 @@ complete, and reject diagnostics even after a candidate has been printed.
 Literal `False` controls require a certified contract refutation; silence
 and timeouts do not pass them.
 
-On 2026-09-21, all seven harnesses passed **787/787 scored cases** at both
-10 s and 5 s per query on implementation commit `87ed037`. The eight
-extended open searches and thirteen Church stretch searches remain unsolved
-at both budgets. [The checkpoint receipts](docs/baseline/p1-2026-09-21/README.md)
+The previous checkpoint passed **787/787 scored cases** across seven
+harnesses at both 10 s and 5 s per query on implementation commit `87ed037`.
+Its eight extended open searches and thirteen Church stretch searches were
+unsolved at both budgets. [The checkpoint receipts](docs/baseline/p1-2026-09-21/README.md)
 include complete logs, source/executable hashes, and the precise score
 boundaries. In particular, the baseline score does not validate every
-ordinary command in the legacy transcripts.
+ordinary command in the legacy transcripts. The current induction and result
+binding changes have passed their focused Lean, executable, and harness
+checks; the expanded nine-harness, 805-case regression run is pending.
 
 The new [extended suite](docs/baseline/extended.md) reconstructs the sixteen
 probes in proposal 11, adds nine Lean-core examples and four negative
-controls, and separates required capabilities from eight open searches.
+controls, and separates required capabilities from five open searches.
 Each query runs in a fresh session; a reported candidate must bind at the
 requested type and pass executable replay. This is the initial local E8
 benchmark work, not a port of the external synthesis benchmark collections.

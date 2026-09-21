@@ -85,6 +85,11 @@ structure Goal where
   /-- Locals that may not be applied again below this goal: a Church-encoded
   list folded once is not folded again inside its own step or seed. -/
   consumed : List FVarId := []
+  /-- The bounded Nat/indexed rule is available only at the outer function
+  body, after introductions and invertible context setup. Ordinary term
+  applications and constructors clear it; the root contract's `Subtype`
+  constructor passes it only to its program field. -/
+  allowExtendedRecursion : Bool := false
 
 /-- Self-time profile of the search rules, collected and printed only when the
 lane trace is enabled. -/
@@ -433,6 +438,16 @@ indices can be destructured without loss (Prod, And, Iff, Sigma, Subtype...). -/
 private def isInvertible (ii : InductiveVal) : Bool :=
   ii.ctors.length == 1 && !ii.isRec && ii.numIndices == 0
 
+/-- Transport branch-local search metadata through native induction's
+dependency reversion. Discard locals which do not survive in this branch. -/
+private def inductionConsumed (subgoal : InductionSubgoal) (consumed : List FVarId)
+    : MetaM (List FVarId) := do
+  let lctx := (← subgoal.mvarId.getDecl).lctx
+  return consumed.filterMap fun id =>
+    match subgoal.subst.get id with
+    | .fvar id => if (lctx.find? id).isSome then some id else none
+    | _ => none
+
 mutual
 /-- Structural recursion on a recursive inductive local (Section 17): the
 recursor with a constant motive; each constructor branch receives its
@@ -448,6 +463,44 @@ partial def structuralRecursion (cfg : SearchConfig) (leaf : Leaf) (splits d : N
           let subgoals ← g.induction decl.fvarId (mkRecName ii.name)
           search cfg leaf (splits - 1)
             (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d, consumed }) ++ rest)) then
+        return true
+  return false
+
+/-- One bounded outer induction on Nat or a regular single-index family.
+Native Lean computes the motive and reverts dependent locals. Unsupported
+indices (compound, repeated, or dependent in an illegal order) fail inside
+the transaction; they are not evidence that the requested type is impossible.
+Existing nonindexed recursion retains its separate rule and original order. -/
+partial def extendedStructuralRecursion (cfg : SearchConfig) (leaf : Leaf) (splits d : Nat)
+    (g : MVarId) (locals : Array LocalDecl) (rest : List Goal) (consumed : List FVarId)
+    : SearchM Bool := do
+  if splits = 0 || cfg.skip.contains "rec" then return false
+  -- Prefer the indexed major to its Nat index. This order is fixed and does
+  -- not introduce a choice of stronger or invented motives.
+  for indexed in [true, false] do
+    for decl in locals do
+      let some ii ← inductiveOfLocal decl | continue
+      if indexed then
+        unless ii.isRec && ii.numIndices == 1 && ii.all.length == 1 && ii.numNested == 0 do continue
+      else
+        unless ii.name == ``Nat do continue
+      if ← alternative (do
+          checkDeadline
+          let recursorName := mkRecName ii.name
+          if indexed then
+            let info ← mkRecursorInfo recursorName
+            let majorType ← whnfR (← instantiateMVars decl.type)
+            let _ ← getMajorTypeIndices g `leant2_induction info majorType
+          let subgoals ← timed "induction.extended" (g.induction decl.fvarId recursorName)
+          let children ← subgoals.toList.mapM fun s => do
+            let consumed ← inductionConsumed s consumed
+            return ({ mvar := s.mvarId, depth := d, consumed } : Goal)
+          -- The current delayed-assignment residual representation is not a
+          -- typed dependent closure language. Keep indexed branches until the
+          -- original contract can be checked on a closed program instead of
+          -- extending partial-pruning claims to the newly supported motives.
+          let cfg := if indexed then { cfg with skip := "residual" :: cfg.skip } else cfg
+          search cfg leaf (splits - 1) (children ++ rest)) then
         return true
   return false
 
@@ -509,8 +562,13 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     let targetW ← timed "whnf" (whnfR target)
     let d := depth - 1
     let consumed := goal.consumed
-    let cont (children : List MVarId) : SearchM Bool :=
-      search cfg leaf splits (children.map (fun m => { mvar := m, depth := d, consumed }) ++ rest)
+    let cont (children : List MVarId) (isRootSubtypeConstructor : Bool := false) : SearchM Bool :=
+      -- `Subtype.mk` creates the root program before its proof obligation.
+      -- It is the only constructor through which outer-body eligibility flows.
+      let rootSubtype := isRootSubtypeConstructor && goal.allowExtendedRecursion && cfg.contract.isSome &&
+        cfg.root == some g && targetW.isAppOfArity ``Subtype 2
+      search cfg leaf splits (children.mapIdx (fun i m => {
+        mvar := m, depth := d, consumed, allowExtendedRecursion := rootSubtype && i == 0 }) ++ rest)
     -- like `cont`, but the children may not apply `fv` again
     let contConsuming (fv : FVarId) (children : List MVarId) : SearchM Bool :=
       search cfg leaf splits
@@ -518,7 +576,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     let applyHead (e : Expr) : SearchM Bool := alternative do
       charge fun l => { l with unifications := l.unifications + 1 }
       let children ← timed "apply" (g.apply e applyCfg)
-      cont children
+      cont children (e.isConstOf ``Subtype.mk)
     let locals ← timed "locals" localsToTry
     -- 0. exact locals first: the exact-term lane runs before eta-expansion, so a
     -- function-typed hole is filled by a matching local rather than introduced
@@ -545,7 +603,8 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     if (← timed "intro" (whnf target)).isForall then
       return ← alternative do
         let (_, g') ← timed "intro" g.intro1P
-        search cfg leaf splits ({ mvar := g', depth, consumed } :: rest)
+        search cfg leaf splits
+          ({ mvar := g', depth, consumed, allowExtendedRecursion := goal.allowExtendedRecursion } :: rest)
     -- 2. invertible destructuring (does not consume depth or splits)
     for decl in locals do
       if let some ii ← timed "inductive" (inductiveOfLocal decl) then
@@ -555,7 +614,9 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
           if ← alternative (do
               let subgoals ← g.cases decl.fvarId
               search cfg leaf splits
-                (subgoals.toList.map (fun s => { mvar := s.mvarId, depth, consumed }) ++ rest)) then
+                (subgoals.toList.map (fun s => {
+                  mvar := s.mvarId, depth, consumed
+                  allowExtendedRecursion := goal.allowExtendedRecursion }) ++ rest)) then
             return true
           -- destructuring failed (e.g. Prop into data): fall through
   -- 2b. classical case split on a Prop variable, early: `cases (Classical.em p)`.
@@ -751,6 +812,10 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
       if cfg.proofPortfolio then
         if ← alternative (do if ← timed "portfolio" (proofPortfolio cfg g) then cont [] else return false) then
           return true
+      -- A new grammar tier, after the existing rules. It cannot recursively
+      -- reappear in arithmetic or constructor subterms, nor inside a recursor.
+      if goal.allowExtendedRecursion && splits == cfg.maxSplits then
+        if ← extendedStructuralRecursion cfg leaf splits d g locals rest consumed then return true
     return false
 end
 

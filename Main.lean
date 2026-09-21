@@ -93,7 +93,7 @@ partial def loop (s : Session) (lines : List String) (chunk : List String) : IO 
   let flush (s : Session) : IO Session := do
     if chunk.isEmpty then return s
     let src := "\n".intercalate chunk.reverse
-    let src := if startsWithKeyword src then src else s!"#eval ({src.trim})"
+    let src := if startsWithKeyword src then src else s!"#leant2_eval ({src.trim})"
     elabChunk s src
   match lines with
   | [] => let _ ← flush s; pure ()

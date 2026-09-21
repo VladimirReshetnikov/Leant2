@@ -1,6 +1,6 @@
 import Lean
 import Leant2.Engine
-import Leant2.Frontend.Presentation
+import Leant2.Frontend.Results
 /-!
 # `#leant2` command
 
@@ -54,7 +54,7 @@ def sessionConstants : CoreM (Array Name) := do
   let env ← getEnv
   let mut out := #[]
   for (n, ci) in env.constants.map₂.toList do
-    if Presentation.isAuxiliaryName n then continue
+    if Presentation.isAuxiliaryName n || isResultName n then continue
     -- private declarations are ordinary session providers; other internal names are not
     if n.isInternal && !isPrivateName n then continue
     -- session bindings `it1`, `it2`, ... are results, not providers
@@ -143,24 +143,43 @@ private def getParts (stx : Syntax) : Option Syntax × Syntax × Option Syntax :
   let wh? := if stx[3].getNumArgs > 0 then some stx[3][1] else none
   (name?, ty, wh?)
 
-/-- Bind accepted candidates as session constants `it1`, `it2`, ... (Leant's
-convention). A name already in use is left alone. -/
-def bindIts (cands : Array Accepted) : CommandElabM Unit := do
-  let mut i := 1
-  for c in cands do
-    let name := Name.mkSimple s!"it{i}"
-    i := i + 1
-    if (← getEnv).contains name then continue
-    unless ← Presentation.publish name c do
-      logInfo m!"leant2: {name} is noncomputable; its certified kernel definition is available"
-
 @[command_elab leant2Cmd] def elabLeant2 : CommandElab := fun stx => do
   let (n, t, w) := getParts stx
-  let o ← liftTermElabM do
-    let o ← runQueryFromSyntax n t w
-    logInfo (← outcomeMessage o)
-    return o
-  if let .verified cands _ := o then bindIts cands
+  let o ← liftTermElabM <| runQueryFromSyntax n t w
+  if let .verified cands _ := o then bindIts cands else clearCandidateBindings
+  liftTermElabM do logInfo (← outcomeMessage o)
+
+/-- REPL expression evaluation, retaining the certified expression as bare `it`.
+The expression is elaborated and certified once; its immutable definition is
+evaluated once here. An IO action is retained as an action, not its runtime
+result. Failed evaluation leaves earlier result aliases unchanged. -/
+syntax (name := leant2Eval) "#leant2_eval " term : command
+
+@[command_elab leant2Eval] def elabLeant2Eval : CommandElab := fun stx => do
+  let saved ← get
+  set { saved with messages := {} }
+  try
+    let candidate ← liftTermElabM <| withoutErrToSorry do
+      let value ← elabTerm stx[1] none
+      synthesizeSyntheticMVarsNoPostponing
+      let value ← instantiateMVars value
+      match ← gate (← sessionProfile) value (← inferType value) none with
+      | .ok candidate => pure candidate
+      | .error _ => throwError "leant2: evaluation result did not pass the acceptance gate"
+    let name ← freshResultName
+    discard <| Presentation.publish name candidate
+    -- Reject a known name collision before evaluation can perform IO. The
+    -- saved command state also rolls this binding back if evaluation fails.
+    bindEvaluatedResult name
+    elabCommand (← `(command| #eval $(mkIdent name)))
+    if (← get).messages.hasErrors then
+      let messages := (← get).messages
+      set { saved with messages := saved.messages ++ messages }
+    else
+      modify fun state => { state with messages := saved.messages ++ state.messages }
+  catch ex =>
+    set saved
+    throw ex
 
 @[command_elab leant2Check] def elabLeant2Check : CommandElab := fun stx => do
   let (n, t, w) := getParts stx
