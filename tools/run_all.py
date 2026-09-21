@@ -6,7 +6,7 @@ baseline and the extended tiers. Each harness prints its own detail; this
 script keeps the TOTAL lines. Exit status is nonzero when any harness is not
 at full score (stretch cases are never counted).
 
-Usage: python tools/run_all.py [--budget MS] [--skip-build]
+Usage: python tools/run_all.py [--budget MS] [--skip-build] [--out DIRECTORY]
 """
 import argparse, json, os, re, subprocess, sys, time
 from pathlib import Path
@@ -39,7 +39,7 @@ def main():
                            encoding="utf-8", errors="replace")
         ok = r.returncode == 0
         (out / "build.log").write_text(r.stdout + "\n" + r.stderr, encoding="utf-8")
-        print(f"build: {'ok' if ok else 'FAILED'} in {time.time() - t0:.0f}s")
+        print(f"build: {'ok' if ok else 'FAILED'} in {time.time() - t0:.0f}s", flush=True)
         if not ok:
             print(r.stdout[-3000:], r.stderr[-3000:])
             sys.exit(1)
@@ -48,6 +48,12 @@ def main():
     for name, cmd in HARNESSES:
         t0 = time.time()
         extra = ["--budget", str(args.budget)]
+        if name in {"baseline", "church", "session"}:
+            extra += ["--out", str(out / name)]
+        elif name in {"recursive", "context", "corpus"}:
+            extra += ["--out", str(out / f"{name}.out")]
+        elif name == "extended":
+            extra += ["--out", str(out / "extended.json")]
         r = subprocess.run([sys.executable, "-X", "utf8", *cmd, *extra], capture_output=True, text=True,
                            encoding="utf-8", errors="replace")
         m = re.search(r"^TOTAL (\d+)/(\d+)", r.stdout, re.M)

@@ -10,6 +10,7 @@ once. A case passes when leant2 reports at least one accepted candidate; the
 Usage: python tools/run_recursive.py [--exe PATH] [--budget MS]
 """
 import argparse, os, subprocess, sys, re
+import repl_protocol
 
 PRELUDE = [
     "inductive RecursiveCases.Tree (α : Type) where | leaf : α → Tree α | branch : Tree α → Tree α → Tree α",
@@ -41,6 +42,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--exe", default=".lake/build/bin/leant2.exe")
     ap.add_argument("--budget", type=int, default=10000)
+    ap.add_argument("--out", default="baseline-out/recursive.out")
     args = ap.parse_args()
     exe = os.path.abspath(args.exe)
     try:
@@ -55,23 +57,19 @@ def main():
         lines.append(f":synth {name} : {ty} where {pred.format(f=name)}")
         expected.append((name, "candidate"))
     lines.append(":synth recursive_reject_all : Nat → Nat where False")
-    expected.append(("recursive_reject_all", "none"))
+    expected.append(("recursive_reject_all", "false"))
     lines.append(":quit")
     src = "\n".join(lines) + "\n"
-    proc = subprocess.run([exe, f"--budget={args.budget}"], input=src.encode("utf-8"), capture_output=True)
-    out = proc.stdout.decode("utf-8", errors="replace")
-    blocks = re.split(r"(?m)^λ> :synth ", out)[1:]
+    session = repl_protocol.run(exe, args.budget, src, args.out)
+    repl_protocol.print_problems(session)
     passed = 0
-    for (name, exp), block in zip(expected, blocks):
-        has = re.search(r"^  it1", block, re.M) is not None
-        ms = re.search(r"leant2: (\d+) ms", block)
-        ok = has if exp == "candidate" else not has
+    for index, (name, exp) in enumerate(expected):
+        result = session.query(index)
+        ok = session.healthy and repl_protocol.passes(result, exp)
         passed += ok
-        first = next((l.strip() for l in block.splitlines() if l.startswith("  it1")), "")
-        print(f"{'PASS' if ok else 'FAIL'} {name} [{ms.group(1) if ms else '?'} ms] {first[:110]}")
+        print(f"{'PASS' if ok else 'FAIL'} {name} [{result.elapsed_ms} ms] {result.outcome} {result.first[:110]}")
     print(f"TOTAL {passed}/{len(expected)}")
-    if proc.stderr:
-        print(proc.stderr.decode("utf-8", errors="replace")[:500])
+    return 0 if session.healthy and passed == len(expected) else 1
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

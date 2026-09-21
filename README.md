@@ -92,7 +92,11 @@ missing query output as a failure instead of reducing its denominator, and
 checks query diagnostics through explicit REPL completion markers. It still
 scores synthesis outcomes; the extended suite separately checks execution.
 Complete harness logs and a JSON summary are saved under
-`baseline-out/run-all/` (override with `--out`).
+`baseline-out/run-all/` (override with `--out`). The secondary harnesses also
+retain their raw input, stdout and stderr, require every expected query to
+complete, and reject diagnostics even after a candidate has been printed.
+Literal `False` controls require a certified contract refutation; silence
+and timeouts do not pass them.
 
 All five passed in full on 2026-09-18 (recursive 9/9, Church probes 28/28
 scored plus 13 stretch cases Leant never accepted, context 95/95, corpus

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Replay Leant's session provider-identity suite through the leant2 REPL.
+r"""Replay Leant's session provider-identity suite through the leant2 REPL.
 
 The six sessions come from `C:\Leant\test-context\run_session_provider_names.py`
 (Leant rev 6bf05ad): nested namespaces, qualified names, attributes and
@@ -11,6 +11,8 @@ session declarations. Each session is a fresh process.
 Usage: python tools/run_session.py [--exe PATH] [--budget MS]
 """
 import argparse, os, subprocess, sys, re
+from pathlib import Path
+import repl_protocol
 
 QUERY = ":synth pick : Nat → Nat where False\n:providers\n"
 
@@ -36,6 +38,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--exe", default=".lake/build/bin/leant2.exe")
     ap.add_argument("--budget", type=int, default=10000)
+    ap.add_argument("--out", default="baseline-out/session", help="directory for raw session transcripts")
     args = ap.parse_args()
     exe = os.path.abspath(args.exe)
     try:
@@ -45,19 +48,22 @@ def main():
         pass
     passed = total = 0
     for name, src, expected in cases():
-        proc = subprocess.run([exe, f"--budget={args.budget}"], input=(src + ":quit\n").encode("utf-8"), capture_output=True)
-        out = proc.stdout.decode("utf-8", errors="replace")
-        refuted = len(re.findall(r"provably no program satisfies the contract", out))
+        session = repl_protocol.run(exe, args.budget, src + ":quit\n", Path(args.out) / f"{name}.out",
+                                    allowed_outside_errors=1 if name == "rejected-entry" else 0)
+        repl_protocol.print_problems(session)
+        out = session.stdout
+        refuted = sum(repl_protocol.passes(result, "false") for result in session.queries)
         inventories = [sorted(re.findall(r"`?([A-Za-z_][\w.]*)`?", m.group(1)))
                        for m in re.finditer(r"providers: \[([^\]]*)\]", out)]
-        ok = refuted == len(expected) and inventories == [sorted(e) for e in expected]
+        ok = session.healthy and refuted == len(expected) and inventories == [sorted(e) for e in expected]
         passed += ok
         total += 1
         print(f"{'PASS' if ok else 'FAIL'} {name}: refuted {refuted}/{len(expected)}, providers {inventories}")
         if not ok:
             print(out[-1500:])
     print(f"TOTAL {passed}/{total}")
+    return 0 if total > 0 and passed == total else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

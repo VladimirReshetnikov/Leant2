@@ -17,6 +17,7 @@ Usage: python tools/run_church.py [--exe PATH] [--budget MS] [--spec core|extend
 """
 import argparse, os, subprocess, sys, re
 from pathlib import Path
+import repl_protocol
 
 
 def load_specs(leant_root, which):
@@ -56,6 +57,7 @@ def main():
     ap.add_argument("--spec", choices=("core", "extended", "partial", "all"), default="all")
     ap.add_argument("--leant", default=r"C:\Leant")
     ap.add_argument("--op", action="append")
+    ap.add_argument("--out", default="baseline-out/church", help="directory for raw per-tier REPL transcripts")
     args = ap.parse_args()
     exe = os.path.abspath(args.exe)
     try:
@@ -64,6 +66,7 @@ def main():
     except FileNotFoundError:
         pass
     passed = total = 0
+    healthy = True
     for label, spec, ops, targets, numeric in load_specs(args.leant, args.spec):
         lines = [l for l in spec.lean_prelude() if not l.startswith("set_option") and not l.startswith("universe")]
         lines += numeric + [""]
@@ -76,31 +79,26 @@ def main():
             expected.append((name, "stretch" if label == "partial" and op in STRETCH else "candidate"))
         first_op = ops[0]
         lines.append(f":synth {label}_reject : {targets[first_op]} where False")
-        expected.append((f"{label}_reject", "none"))
+        expected.append((f"{label}_reject", "false"))
         lines.append(":quit")
         src = "\n".join(lines) + "\n"
-        proc = subprocess.run([exe, f"--budget={args.budget}"], input=src.encode("utf-8"), capture_output=True)
-        out = proc.stdout.decode("utf-8", errors="replace")
-        blocks = re.split(r"(?m)^λ> :synth ", out)[1:]
-        if len(blocks) != len(expected):
-            print(f"{label}: expected {len(expected)} query blocks, got {len(blocks)}")
-            print(out[-2000:])
-        for (name, exp), block in zip(expected, blocks):
-            has = re.search(r"^  it1", block, re.M) is not None
-            ms = re.search(r"leant2: (\d+) ms", block)
-            first = next((l.strip() for l in block.splitlines() if l.startswith("  it1")), "")
-            tail = "" if has else " | " + " ".join(l.strip() for l in block.splitlines()[1:4] if "leant2:" not in l)[:80]
+        session = repl_protocol.run(exe, args.budget, src, Path(args.out) / f"{label}.out")
+        repl_protocol.print_problems(session)
+        healthy = healthy and session.healthy
+        for index, (name, exp) in enumerate(expected):
+            result = session.query(index)
+            ok = session.healthy and repl_protocol.passes(result, exp)
             if exp == "stretch":
-                print(f"{'STRETCH-PASS' if has else 'STRETCH-MISS'} {name} [{ms.group(1) if ms else '?'} ms] {first[:120]}")
+                healthy = healthy and ok
+                status = "STRETCH-PASS" if ok and result.candidate else "STRETCH-MISS" if ok else "STRETCH-ERROR"
+                print(f"{status} {name} [{result.elapsed_ms} ms] {result.outcome} {result.first[:120]}")
                 continue
-            ok = has if exp == "candidate" else not has
             passed += ok
             total += 1
-            print(f"{'PASS' if ok else 'FAIL'} {name} [{ms.group(1) if ms else '?'} ms] {first[:120]}{tail}")
-        if proc.stderr:
-            print(proc.stderr.decode("utf-8", errors="replace")[:500])
+            print(f"{'PASS' if ok else 'FAIL'} {name} [{result.elapsed_ms} ms] {result.outcome} {result.first[:120]}")
     print(f"TOTAL {passed}/{total}")
+    return 0 if healthy and total > 0 and passed == total else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

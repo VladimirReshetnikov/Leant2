@@ -12,6 +12,7 @@ Usage: python tools/run_corpus.py [--exe PATH] [--budget MS] [--leant DIR] [--li
 """
 import argparse, json, os, subprocess, sys, re
 from pathlib import Path
+import repl_protocol
 
 
 def main():
@@ -40,31 +41,23 @@ def main():
         lines.append(f":synth {c['lean_type']}")
     lines.append(":quit")
     src = "\n".join(lines) + "\n"
-    proc = subprocess.run([exe, f"--budget={args.budget}"], input=src.encode("utf-8"), capture_output=True)
-    out = proc.stdout.decode("utf-8", errors="replace")
-    os.makedirs(os.path.dirname(args.out), exist_ok=True)
-    open(args.out, "w", encoding="utf-8").write(out)
-    blocks = re.split(r"(?m)^λ> :synth ", out)[1:]
-    if len(blocks) != len(cases):
-        print(f"expected {len(cases)} query blocks, got {len(blocks)}")
+    session = repl_protocol.run(exe, args.budget, src, args.out)
+    repl_protocol.print_problems(session)
     passed = 0
     slow = []
-    for c, block in zip(cases, blocks):
-        has = re.search(r"^  it1", block, re.M) is not None
-        ms = re.search(r"leant2: (\d+) ms", block)
-        t = int(ms.group(1)) if ms else -1
-        passed += has
-        first = next((l.strip() for l in block.splitlines() if l.startswith("  it1")), "")
-        if not has:
-            tail = " ".join(l.strip() for l in block.splitlines()[1:3] if "leant2:" not in l)[:80]
-            print(f"FAIL {c['id']} {c['name']} ({c['classification']}) [{t} ms] {c['lean_type'][:140]} | {tail}")
+    for index, c in enumerate(cases):
+        result = session.query(index)
+        ok = session.healthy and repl_protocol.passes(result, "candidate")
+        t = result.elapsed_ms if result.elapsed_ms is not None else -1
+        passed += ok
+        if not ok:
+            print(f"FAIL {c['id']} {c['name']} ({c['classification']}) [{t} ms] {c['lean_type'][:140]} | {result.outcome}")
         elif t >= 2000:
             slow.append((t, c['name']))
     print(f"slow (>= 2 s): {sorted(slow, reverse=True)[:15]}")
     print(f"TOTAL {passed}/{len(cases)}")
-    if proc.stderr:
-        print(proc.stderr.decode("utf-8", errors="replace")[:500])
+    return 0 if session.healthy and cases and passed == len(cases) else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
