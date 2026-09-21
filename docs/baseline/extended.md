@@ -17,12 +17,12 @@ and time to first candidate remain open E8 work.
 
 | Group | Required candidates | Impossible controls | Open searches |
 | --- | ---: | ---: | ---: |
-| Sixteen article probes | 11 | 0 | 5 |
+| Sixteen article probes | 13 | 0 | 3 |
 | Lean core List/Option/Nat | 9 | 0 | 0 |
 | Negative controls | 0 | 4 | 0 |
-| Total | 20 | 4 | 5 |
+| Total | 22 | 4 | 3 |
 
-`TOTAL passed/24` covers the required capabilities and controls; `OPEN solved/5`
+`TOTAL passed/26` covers the required capabilities and controls; `OPEN solved/3`
 reports the remaining searches separately. Case selection changes the
 denominators to the selected cases. An open search can exhaust its budget or
 search bounds, or refute all proposed candidates. An exception, malformed or
@@ -33,8 +33,10 @@ or impossible contract for one of them also fails the run. A negative control
 requires `provably no program satisfies the contract`; silence or timeout does
 not establish the control.
 
-The five open article probes are maximum, dropping zeros, tree flattening,
-`Fin (n+1)`, and order transitivity. Power of two, indexed vector map, and
+The three open article probes are maximum, dropping zeros, and tree flattening.
+`Fin (n+1)` and order transitivity were promoted after the bounded local proof
+service passed their original probes and the separate local-proof gates below.
+Power of two, indexed vector map, and
 natural predecessor were promoted to required capabilities after focused
 implementation runs synthesized and replayed all three original cases and
 passed the stronger recursion gates below. These classifications are fixed
@@ -185,17 +187,48 @@ python tools/run_results.py --budget 10000 --out baseline-out/results
 python tools/run_all.py --budget 10000 --out baseline-out/milestone-10000
 ```
 
-`run_all.py` runs nine harnesses with distinct artifact paths. Their expected
+`run_all.py` runs ten harnesses with distinct artifact paths. Their expected
 denominators are baseline 278, recursive 9, Church 28, context 95, corpus 350,
-session 6, results 10, extended 24, and recursion gates 5: **805 acceptance
+session 6, results 10, extended 26, recursion gates 5, and local proofs 6: **813 acceptance
 checks in total**. Some checks exercise the same synthesis goals at different
-boundaries, so this is not a count of 805 distinct benchmark problems. The
-extended suite's five open searches and the Church stretch cases remain
+boundaries, so this is not a count of 813 distinct benchmark problems. The
+extended suite's three open searches and the Church stretch cases remain
 outside these scored denominators. Every harness must also exit successfully;
 a full printed score does not conceal a process or open-case failure.
 
-All nine harnesses passed **805/805** at both budgets in the clean-source
+The earlier nine-harness configuration passed **805/805** at both budgets in the clean-source
 `555236a` checkpoint. Its ten result sessions also passed at each budget.
+
+## Bounded local-proof gates
+
+`tests/benchmarks/local-proofs.json` adds six independent public sessions:
+five required inhabitants and a certified literal-False control. The positive
+queries cover a successor `Fin`, natural-order transitivity, contradictory
+arithmetic hypotheses proving `False` or a closed false equality, and a
+polymorphic list-constructor step under an explicit length induction hypothesis.
+Every result is rechecked at its exact universal type. The Fin result also
+executes observations valid for any inhabitant; no particular witness is
+required. The supplied induction hypothesis tests local proof construction,
+not discovery of an induction scheme.
+
+References are checked in a separate Lean process and never introduced into
+the synthesis session. Named reference lemmas are forbidden in the session
+and curated provider inventories, while ordinary imported proof automation
+remains available. This measures construction through the local proof service;
+it does not claim that the proof tactics lack access to library theorems.
+
+```powershell
+python tools/run_extended.py --manifest tests/benchmarks/local-proofs.json --validate-fixtures --out baseline-out/local-proofs.json
+python tools/run_extended.py --manifest tests/benchmarks/local-proofs.json --budget 10000 --out baseline-out/local-proofs.json
+```
+
+The focused implementation run passed all six gates and both original
+Fin/transitivity probes. These dirty-tree receipts justify their promotion;
+they are not a complete acceptance receipt for the recorded parent revision.
+The new ten-harness, 813-check configuration still requires a clean-source
+aggregate checkpoint. Focused Lean tests separately exercise dependency
+rigidity, extraction and replay, auxiliary-theorem handling, cancellation,
+rollback, and resource-exhaustion behavior.
 
 ## Source provenance
 

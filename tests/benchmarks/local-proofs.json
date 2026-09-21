@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "description": "Independent six-case public-interface gate for a bounded local-context proof service: five required inhabitants and one certified literal-False control. A required expectation is a gate to pass, not a claim that an implementation has passed it. References and named reference lemmas are withheld from synthesis providers. Ordinary imported proof automation remains available. Every returned proof is checked at the exact requested universal type; the Fin result additionally executes observations valid for every inhabitant.",
+  "cases": [
+    {
+      "id": "local_fin_succ",
+      "title": "Inhabit a successor Fin using a local arithmetic obligation",
+      "group": "local-proofs",
+      "expect": "candidate",
+      "type": "∀ n : Nat, Fin (n + 1)",
+      "reference": "fun n => ⟨n, Nat.lt_succ_self n⟩",
+      "forbidden_providers": ["Nat.lt_succ_self", "Nat.zero_lt_succ", "Fin.last", "Fin.ofNat"],
+      "replay": "(@{f} 0).val = 0 ∧ (@{f} 1).val < 2 ∧ (@{f} 5).val < 6 ∧ (@{f} 31).val < 32",
+      "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex probe 14; independent local-arithmetic gate with witness-neutral runtime observations"
+    },
+    {
+      "id": "local_nat_le_trans",
+      "title": "Prove natural-order transitivity using two local hypotheses",
+      "group": "local-proofs",
+      "expect": "candidate",
+      "type": "∀ a b c : Nat, a ≤ b → b ≤ c → a ≤ c",
+      "reference": "fun _ _ _ h₁ h₂ => Nat.le_trans h₁ h₂",
+      "forbidden_providers": ["Nat.le_trans", "le_trans"],
+      "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex probe 16; exact universal proof type with direct transitivity providers withheld"
+    },
+    {
+      "id": "local_contradiction_false",
+      "title": "Derive False from an inconsistent local arithmetic hypothesis",
+      "group": "local-proofs",
+      "expect": "candidate",
+      "type": "∀ n : Nat, n + 1 ≤ n → False",
+      "reference": "by intro n h; omega",
+      "forbidden_providers": ["Nat.not_succ_le_self", "False.elim"],
+      "source": "docs/proposals/new/1/sections/07-contracts.tex local-context proof adapter; False is justified only under the explicit contradictory hypothesis"
+    },
+    {
+      "id": "local_contradiction_closed_eq",
+      "title": "Use local contradiction even when the target equality is closed",
+      "group": "local-proofs",
+      "expect": "candidate",
+      "type": "∀ n : Nat, n + 1 ≤ n → (0 : Nat) = 1",
+      "reference": "by intro n h; omega",
+      "forbidden_providers": ["Nat.not_succ_le_self", "False.elim"],
+      "source": "docs/proposals/new/2/Leant2_Expert_Answers/Leant2_Expert_Answers.tex local-context proof service; a closed target must not discard its inconsistent local context"
+    },
+    {
+      "id": "local_list_length_ih",
+      "title": "Prove a polymorphic list constructor step under its length IH",
+      "group": "local-proofs",
+      "expect": "candidate",
+      "type": "∀ (A B : Type) (x : A) (y : B) (xs : List A) (ys : List B), ys.length = xs.length → (y :: ys).length = (x :: xs).length",
+      "reference": "fun _ _ _ _ _ _ h => congrArg Nat.succ h",
+      "forbidden_providers": ["congrArg", "List.length_cons"],
+      "source": "docs/proposals/new/1/sections/07-contracts.tex program-aligned local induction obligations; supplied IH, not an invented induction scheme or invariant"
+    },
+    {
+      "id": "local_consistent_false_control",
+      "title": "Reject a False contract when the proof target and locals are consistent",
+      "group": "controls",
+      "expect": "none",
+      "type": "∀ n : Nat, n ≤ n → n ≤ n",
+      "contract": "False",
+      "source": "Local proof-service negative control: the target is inhabited by fun _ h => h, while the separate literal-False contract has no satisfying program"
+    }
+  ]
+}

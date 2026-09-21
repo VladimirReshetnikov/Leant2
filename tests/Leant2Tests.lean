@@ -6,5 +6,8 @@ import Leant2Tests.Observations
 import Leant2Tests.Substrate
 import Leant2Tests.Presentation
 import Leant2Tests.Results
+import Leant2Tests.LocalProof
+import Leant2Tests.Cancellation
+import Leant2Tests.Classical
 import Leant2Tests.IndexedRecursion
 import Leant2Tests.IndexedPresentation

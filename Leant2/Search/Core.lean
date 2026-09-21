@@ -1,6 +1,7 @@
 import Lean
 import Leant2.Core.Types
 import Leant2.Native.Transaction
+import Leant2.Proof.Local
 /-!
 # Construction search (unified proposal, Sections 5, 7, 15)
 
@@ -18,7 +19,7 @@ reflexivity; exact locals; type frontier for `Sort`-valued goals; projections
 of local structure values as heads; constructors of the target's inductive
 head; application of locals (most recent first); bounded case analysis on
 multi-constructor locals; head-filtered providers; the proof portfolio on
-closed propositions.
+closed propositions and bounded proof search in local contexts.
 
 The search enumerates candidates: the leaf callback decides whether to stop.
 -/
@@ -50,7 +51,7 @@ structure SearchConfig where
   typeFrontier : Array Expr := #[]
   /-- Allow `Classical.em` and friends as providers. -/
   classical : Bool := false
-  /-- Run the proof portfolio on closed propositions. -/
+  /-- Run the closed-contract portfolio and bounded local proof service. -/
   proofPortfolio : Bool := true
   /-- Try structural recursion on recursive inductive locals before constructors
   and providers (used when a behavioral contract is present, Section 17). -/
@@ -117,18 +118,21 @@ def alternative (act : SearchM Bool) : SearchM Bool := do
   if profile then
     let t1 ← IO.monoNanosNow
     profTimers.modify fun a => bump a "alt.save" (t1 - t0)
-  try
-    if ← act then return true
-  catch e =>
-    if isInterrupt e then throw e
-    if leant2.traceNodes.get (← getOptions) then
-      IO.println s!"[leant2]     alternative failed with: {← e.toMessageData.toString}"
-  let t2 ← if profile then IO.monoNanosNow else pure 0
-  saved.restore
-  if profile then
-    let t3 ← IO.monoNanosNow
-    profTimers.modify fun a => bump a "alt.restore" (t3 - t2)
-  return false
+  let (result, _) ← tryFinally' (do
+    try
+      act
+    catch e =>
+      if isInterrupt e then throw e
+      if leant2.traceNodes.get (← getOptions) then
+        IO.println s!"[leant2]     alternative failed with: {← e.toMessageData.toString}"
+      return false) fun result? => do
+    unless result? == some true do
+      let t2 ← if profile then IO.monoNanosNow else pure 0
+      saved.restore
+      if profile then
+        let t3 ← IO.monoNanosNow
+        profTimers.modify fun a => bump a "alt.restore" (t3 - t2)
+  return result
 where
   bump (a : Array (String × Nat)) (k : String) (dt : Nat) : Array (String × Nat) :=
     match a.findIdx? (·.1 == k) with
@@ -238,15 +242,25 @@ inductive Residual where
 partial def conjuncts (e : Expr) : Array Expr :=
   if e.isAppOfArity ``And 2 then conjuncts (e.getArg! 0) ++ conjuncts (e.getArg! 1) else #[e]
 
+/-- A stuck typeclass input is an ordinary deferred probe. Lean's
+`trySynthInstance` handles its documented `isDefEqStuck` control exception;
+unrelated internal exceptions and native resource limits still propagate. -/
+private def probeInstance? (type : Expr) : MetaM (Option Expr) := do
+  try
+    match ← trySynthInstance type with
+    | .some inst => return some inst
+    | .none | .undef => return none
+  catch e =>
+    if isInterrupt e then throw e
+    return none
+
 /-- Precompute the residual deciders of a contract `fun f => P f` at `T`. -/
 def mkResidual (contract : Expr) (ty : Expr) : MetaM (Array (Expr × Option Expr)) :=
   withLocalDecl `f .default ty fun f => do
     let body := (contract.beta #[f])
     let mut out := #[]
     for c in conjuncts body do
-      let inst? : Option Expr ← (do
-        try synthInstance? (mkApp (mkConst ``Decidable) c)
-        catch e => if isInterrupt e then throw e else pure none : MetaM (Option Expr))
+      let inst? ← probeInstance? (mkApp (mkConst ``Decidable) c)
       let inst? ← inst?.mapM fun i => do mkLambdaFVars #[f] (← instantiateMVars i)
       out := out.push (← mkLambdaFVars #[f] c, inst?)
     return out
@@ -326,30 +340,39 @@ partial def partialRefute (cfg : SearchConfig) (t : Expr) : SearchM Bool := do
   if t.isAppOfArity ``And 2 then
     if ← partialRefute cfg (t.getArg! 0) then return true
     return ← partialRefute cfg (t.getArg! 1)
-  let inst? : Option Expr ← (do
-    try synthInstance? (mkApp (mkConst ``Decidable) t)
-    catch e => if isInterrupt e then throw e else pure none : MetaM (Option Expr))
+  let inst? ← probeInstance? (mkApp (mkConst ``Decidable) t)
   let some inst := inst? | return false
   return (← kernelDecide t inst).1 == some false
 
 /-- The tactic part of the portfolio on a closed goal; messages the tactics
 log are discarded. -/
 def tacticProve (g : MVarId) : MetaM Bool := do
+  let saved : Meta.SavedState ← Meta.saveState
   let savedMsgs := (← getThe Core.State).messages
-  let r ← Term.TermElabM.run' do
-    let stx ← `(tactic| first | rfl | decide | (simp) | omega)
-    -- heartbeat timeouts inside a tactic are runtime exceptions: a failed
-    -- attempt, not a failed query
-    tryCatchRuntimeEx
-      (do let gs ← Tactic.run g (Tactic.evalTactic stx); return gs.isEmpty)
-      (fun e => do if e.isInterrupt then throw e else return false)
-  modifyThe Core.State fun s => { s with messages := savedMsgs }
-  return r
+  let (result, _) ← tryFinally' (Term.TermElabM.run' do
+      let stx ← `(tactic| first | rfl | decide | (simp) | omega)
+      tryCatchRuntimeEx
+        (do let gs ← Tactic.run g (Tactic.evalTactic stx); return gs.isEmpty)
+        (fun e => do
+          if e.isMaxHeartbeat || e.isMaxRecDepth then return false
+          if isInterrupt e then throw e
+          return false)) fun result? => do
+    if result? == some true then
+      modifyThe Core.State fun s => { s with messages := savedMsgs }
+    else
+      saved.restore
+  return result
 
-/-- Try to close a *closed* `Prop` goal (no metavariables, no locals) with a
-small tactic portfolio. Messages the tactics log are discarded. -/
-def proofPortfolio (cfg : SearchConfig) (g : MVarId) : SearchM Bool := do
+/-- Local propositions use the isolated proof service. Goals with no local
+context retain the closed-contract evaluator and its refutation accounting. -/
+def proofPortfolio (cfg : SearchConfig) (g : MVarId) : SearchM Bool := g.withContext do
   let t ← instantiateMVars (← g.getType)
+  if !(← getLCtx).isEmpty then
+    if t.hasExprMVar then return false
+    unless ← isProp t do return false
+    match ← LocalProof.discharge g with
+    | .solved _ => return true
+    | .unresolved | .unsupportedDependency | .resourceExhausted => return false
   if t.hasMVar || t.hasFVar then return false
   -- `False` has no proof and `True` is a constructor: not worth a tactic run
   if t.isConstOf ``False || t.isConstOf ``True then return false
@@ -372,9 +395,7 @@ def proofPortfolio (cfg : SearchConfig) (g : MVarId) : SearchM Bool := do
           | .stuck => pure ()
   -- fast path: a decidable closed proposition is decided by reduction; `false`
   -- refutes the candidate outright, so no further tactic is attempted
-  let inst? : Option Expr ← (do
-    try synthInstance? (mkApp (mkConst ``Decidable) t)
-    catch e => if isInterrupt e then throw e else pure none : MetaM (Option Expr))
+  let inst? ← probeInstance? (mkApp (mkConst ``Decidable) t)
   if let some inst := inst? then
     match (← kernelDecide t inst).1 with
     | some true =>
@@ -647,7 +668,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     if !target.hasExprMVar then
       if (← isClass? target).isSome then
         if ← alternative (do
-            match ← synthInstance? target with
+            match ← probeInstance? target with
             | some inst => g.assign inst; cont []
             | none => return false) then return true
     if targetIsSort then
@@ -808,7 +829,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
       -- recursion is not attempted: it multiplies the search without payoff here)
       if !recurseNow && splits == cfg.maxSplits then
         if ← structuralRecursion cfg leaf splits d g locals rest consumed then return true
-      -- 10. proof portfolio on closed propositions
+      -- 10. closed contracts and bounded local proof obligations
       if cfg.proofPortfolio then
         if ← alternative (do if ← timed "portfolio" (proofPortfolio cfg g) then cont [] else return false) then
           return true

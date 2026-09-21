@@ -103,13 +103,17 @@ class HarnessFailures(unittest.TestCase):
 
     def integrated_aggregate(self, failing=None):
         totals = {"baseline": 278, "recursive": 9, "church": 28, "context": 95,
-                  "corpus": 350, "session": 6, "results": 10, "extended": 24,
-                  "recursion-gates": 5}
+                  "corpus": 350, "session": 6, "results": 10, "extended": 26,
+                  "recursion-gates": 5, "local-proofs": 6}
         commands = {}
 
         def run(command, **kwargs):
-            name = ("recursion-gates" if "--manifest" in command else
-                    Path(command[3]).stem.removeprefix("run_"))
+            if "--manifest" in command:
+                manifest = command[command.index("--manifest") + 1]
+                name = {"tests/benchmarks/recursion.json": "recursion-gates",
+                        "tests/benchmarks/local-proofs.json": "local-proofs"}[manifest]
+            else:
+                name = Path(command[3]).stem.removeprefix("run_")
             commands[name] = command
             total = totals[name]
             return subprocess.CompletedProcess(command, 1 if name == failing else 0,
@@ -125,26 +129,31 @@ class HarnessFailures(unittest.TestCase):
                 summary = json.loads((Path(directory) / "summary.json").read_text(encoding="utf-8"))
         return stopped.exception.code, commands, summary
 
-    def test_aggregate_routes_independent_results_and_recursion_receipts(self):
+    def test_aggregate_routes_independent_results_and_manifest_receipts(self):
         status, commands, summary = self.integrated_aggregate()
         self.assertEqual(status, 0)
-        self.assertEqual(len(summary["harnesses"]), 9)
-        self.assertEqual(sum(row["total"] for row in summary["harnesses"]), 805)
+        self.assertEqual(len(summary["harnesses"]), 10)
+        self.assertEqual(sum(row["total"] for row in summary["harnesses"]), 813)
         outputs = {name: command[command.index("--out") + 1] for name, command in commands.items()}
-        self.assertEqual(len(set(outputs.values())), 9)
+        self.assertEqual(len(set(outputs.values())), 10)
         self.assertEqual(Path(outputs["results"]).name, "results")
         self.assertEqual(Path(outputs["extended"]).name, "extended.json")
         self.assertEqual(Path(outputs["recursion-gates"]).name, "recursion-gates.json")
+        self.assertEqual(Path(outputs["local-proofs"]).name, "local-proofs.json")
         recursion = commands["recursion-gates"]
         self.assertEqual(recursion[recursion.index("--manifest") + 1], "tests/benchmarks/recursion.json")
+        local = commands["local-proofs"]
+        self.assertEqual(local[local.index("--manifest") + 1], "tests/benchmarks/local-proofs.json")
         self.assertNotIn("--manifest", commands["extended"])
 
-    def test_independent_recursion_exit_failure_fails_aggregate_despite_full_score(self):
-        status, _, summary = self.integrated_aggregate(failing="recursion-gates")
-        self.assertEqual(status, 1)
-        recursion = next(row for row in summary["harnesses"] if row["harness"] == "recursion-gates")
-        self.assertEqual((recursion["passed"], recursion["total"]), (5, 5))
-        self.assertFalse(recursion["ok"])
+    def test_manifest_exit_failure_fails_aggregate_despite_full_score(self):
+        for name, total in (("recursion-gates", 5), ("local-proofs", 6)):
+            with self.subTest(harness=name):
+                status, _, summary = self.integrated_aggregate(failing=name)
+                self.assertEqual(status, 1)
+                receipt = next(row for row in summary["harnesses"] if row["harness"] == name)
+                self.assertEqual((receipt["passed"], receipt["total"]), (total, total))
+                self.assertFalse(receipt["ok"])
 
 
 if __name__ == "__main__":

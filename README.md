@@ -35,11 +35,16 @@ tests, and the `leant2` REPL executable.
   resolution, projections as heads, constructors, local application, local
   application at the accumulator type `T -> T`, forward application, case
   splits, structural recursion from recursor metadata, head- and
-  demand-filtered providers, a proof portfolio on closed propositions,
+  demand-filtered providers, a proof portfolio on closed propositions and
+  bounded proof search under local hypotheses,
   classical splits). Behavioral contracts are decided by kernel reduction,
   conjunct by conjunct, on partial programs as well (residual evaluation).
 - `Leant2/Accept/Gate.lean`: the acceptance gate: universe generalization,
   synchronous kernel check, axiom audit against a trust profile.
+- `Leant2/Proof/Local.lean`: isolated assumption/reflexivity, simplification,
+  and arithmetic proof attempts under the original local context. Incoming
+  holes remain rigid, temporary tactic state is restored, and an extracted
+  proof must replay in the original environment before its assignment commits.
 - `Leant2/Behavior/Observations.lean`: finite observations extracted from
   conjunctions, Boolean checkers and `List.all`, with per-observation kernel
   results and caches guarded against changes during backtracking. Acceptance
@@ -89,7 +94,7 @@ The harness runs every transcript through the REPL, writes the outputs to
 `baseline-out/`, and prints per-fixture scores and a total. Recorded runs
 are in `docs/baseline/`.
 
-Two further harnesses replay Leant's extended tiers through the same REPL,
+Further harnesses replay Leant's extended tiers through the same REPL,
 each case once (Leant ran them per engine):
 
 ```bash
@@ -100,11 +105,12 @@ python tools/run_corpus.py --budget 10000      # Leant test-church signature cor
 python tools/run_session.py                    # Leant session provider-identity suite (blocks, :undo, rejected declarations)
 python tools/run_extended.py --budget 10000     # 29 independent sessions with typed and executable result replay
 python tools/run_extended.py --manifest tests/benchmarks/recursion.json --budget 10000 # 3 recursion gates + 2 impossible controls
+python tools/run_extended.py --manifest tests/benchmarks/local-proofs.json --budget 10000 # 5 local-proof gates + 1 impossible control
 python tools/run_results.py --budget 10000      # 10 result-binding and evaluation sessions
 ```
 
 `python tools/run_all.py` builds everything and runs the baseline and all
-eight additional harnesses, printing one summary table. It fails on a harness
+nine additional harnesses, printing one summary table. It fails on a harness
 process error as well as an incomplete score. The baseline also treats
 missing query output as a failure instead of reducing its denominator, and
 checks query diagnostics through explicit REPL completion markers. It still
@@ -124,7 +130,7 @@ include complete logs, source/executable hashes, and the precise score
 boundaries. In particular, the baseline score does not validate every
 ordinary command in the legacy transcripts.
 
-The current induction and result-binding checkpoint, implementation commit
+The archived induction and result-binding checkpoint, implementation commit
 `555236a`, passed **805/805 required checks across nine harnesses at both
 budgets**. [The new checkpoint receipts](docs/baseline/induction-2026-09-21/README.md)
 include complete raw outputs and hashes captured before the runs. Five extended
@@ -134,10 +140,18 @@ benchmark problems.
 
 The new [extended suite](docs/baseline/extended.md) reconstructs the sixteen
 probes in proposal 11, adds nine Lean-core examples and four negative
-controls, and separates required capabilities from five open searches.
+controls, and separates required capabilities from three open searches.
 Each query runs in a fresh session; a reported candidate must bind at the
 requested type and pass executable replay. This is the initial local E8
 benchmark work, not a port of the external synthesis benchmark collections.
+
+The next local-proof slice passes focused checks for `Fin (n + 1)`, natural
+order transitivity, local contradictions, and a supplied list-length induction
+hypothesis. Fin and transitivity are now required in the original E8 suite;
+the six separate local-proof gates bring the configured aggregate to 813
+checks across ten harnesses. A complete clean-source aggregate run for this
+slice remains pending; the 805-check archive above records the preceding
+implementation.
 
 The Church harness imports the specifications from Leant's vendored Djex
 directory (`C:\Leant\lib\Djex	est-church`), so every `:synth` carries the

@@ -48,9 +48,11 @@ Departures and refinements:
   locals whose result is `F R` are not eliminators and may nest.
 - **Classes are never built by constructor.** An instance produced by
   `Choice.mk True.intro` leaves the class arguments undetermined; instances
-  come from `synthInstance?` on closed goals and from instance declarations
+  come from `trySynthInstance` on closed goals and from instance declarations
   used as providers (which fix the arguments by unification). Class
   instances in the context are taken apart by projection, not `casesOn`.
+  Unresolved class inputs produce a deferred probe through Lean's documented
+  `.undef` result; unrelated internal exceptions are not search failures.
 - **Session providers** exclude compiler- and `deriving`-generated
   auxiliaries (`noConfusion`, `casesOn`, `sizeOf`, `injEq`, ...), instances of
   decision and printing classes, `it1`-style result bindings, and any
@@ -150,15 +152,57 @@ how the cost of each rule on a slow query is measured. Timer collection is
 now conditional on `leant2.trace`; ordinary searches avoid the profiling
 clock reads and timer-reference updates, including at transaction boundaries.
 
+When a classical lane runs, its `Prop` specialization first instantiates
+existing universe assignments, then substitutes zero for remaining universe
+placeholders and named parameters. It preserves successors, so a fixed `Type`
+does not become `Prop`, and refuses this specialization while universe
+equations remain pending. The target and contract are frozen together for
+construction, residual checks, and final acceptance. The returned candidate
+records its actual specialized type; it is not advertised at the original
+universe-polymorphic type. The original query's level placeholders remain
+unchanged. This closes the gap where auto-bound query universes stayed flexible
+and forced the classical search through unnecessary alternatives.
+
 ## Acceptance (Part II, "acceptance")
 
 As designed: universe metavariables are generalized jointly over program and
 proof, the declaration is added with `addDeclCore` (kernel check), axioms are
 collected and audited against the profile. The profile in the REPL is
 project-relative: session axioms are accepted premises, `Classical.choice`
-marks a candidate classical. The proof-service adapter, joint-mode patches
-and proof-debt scheduling are not built; the portfolio above is the only
-proof service.
+marks a candidate classical. A bounded local-context proof service now
+complements the closed-contract portfolio. Joint-mode patches and proof-debt
+scheduling remain unimplemented.
+
+`Proof/Local.lean` tries assumption/reflexivity, `simp_all`, and `omega`, with
+a fresh scratch goal for each tier. The target and all local types and let
+values must have no unresolved expression metavariables. Incoming expression
+and universe holes remain rigid; this first service does not jointly solve
+program holes and proofs. It can use local hypotheses and instances, including
+contradictory hypotheses when the target is `False` or a closed false equality.
+
+Each tier restores the full Meta/Core state on every exit. Extraction rejects
+unfinished proofs, sorry, escaped locals or universes, and reported errors.
+Native tactics can introduce auxiliary theorems, so extraction recursively
+copies only newly created theorem bodies, with a 64-expansion cap. New axioms,
+definitions, and opaque declarations cannot escape through this path. The
+extracted expression is then checked against the original goal in the original
+environment after restoration. Only that goal's assignment is committed; the
+closed candidate still passes the ordinary kernel and profile gate.
+
+Preparation, each tactic tier, and replay have separate heartbeat bounds;
+zero never disables a bound. Deadline and cancellation checks surround these
+stages. Ordinary tactic failure and exhausted local resources leave search
+unresolved, not logically refuted. Proof-attempt charges and lane deadlines
+remain outside rollback.
+
+Search transactions use result-aware finalizers so native cancellation and
+resource exceptions restore state even when Lean's ordinary exception handler
+skips them. `attempt` commits any successful value, including `false`, while
+an `alternative` commits only `true`. Lane boundaries consume only recognized
+lane/grace deadlines and native heartbeat/recursion limits; user cancellation
+and unrelated internal exceptions propagate. The earlier of the lane and
+grace deadlines determines whether the stop counts as a timeout. Upfront
+contract refutation restores state and receives a fresh heartbeat origin.
 
 ## Ranking
 

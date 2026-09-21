@@ -32,36 +32,73 @@ abbrev SearchM := ReaderT SearchCtx MetaM
 def charge (f : Ledger → Ledger) : SearchM Unit := do
   (← read).ledger.modify f
 
-/-- Internal exception raised when the search deadline passes. -/
+/-- Internal exception raised when the search lane deadline passes. -/
 initialize deadlineExceptionId : InternalExceptionId ← registerInternalExceptionId `leant2Deadline
 
+/-- Grace-period completion is successful enumeration termination, not a timeout. -/
+initialize graceExceptionId : InternalExceptionId ← registerInternalExceptionId `leant2Grace
+
+/-- Resource limits consumed by a lane. User cancellation is deliberately absent. -/
+inductive SearchStop where
+  | deadline
+  | grace
+  | heartbeats
+  | recursionDepth
+  deriving BEq, Repr
+
+/-- Identify the first expired bound. Merely having a grace deadline does not
+turn an earlier lane deadline into successful grace-period completion. -/
+def expiredDeadline? (now : Nat) (deadline grace : Option Nat) : Option SearchStop :=
+  match deadline, grace with
+  | some d, some g =>
+    if g ≤ d then (if now > g then some .grace else none)
+    else (if now > d then some .deadline else none)
+  | some d, none => if now > d then some .deadline else none
+  | none, some g => if now > g then some .grace else none
+  | none, none => none
+
 def checkDeadline : SearchM Unit := do
-  let now ← IO.monoMsNow
-  match (← read).deadline with
-  | none => pure ()
-  | some d => if now > d then throw (.internal deadlineExceptionId)
-  match ← (← read).graceDeadline.get with
-  | none => pure ()
-  | some d => if now > d then throw (.internal deadlineExceptionId)
+  Core.checkInterrupted
+  let ctx ← read
+  match expiredDeadline? (← IO.monoMsNow) ctx.deadline (← ctx.graceDeadline.get) with
+  | some .deadline => throw (.internal deadlineExceptionId)
+  | some .grace => throw (.internal graceExceptionId)
+  | _ => pure ()
 
-/-- `True` when an exception must propagate rather than count as rule failure. -/
+/-- Only explicitly recognized search/resource limits are consumed by a lane.
+Other errors, including native user cancellation, retain their identity. -/
+def searchStop? (e : Exception) : Option SearchStop :=
+  if e.isMaxHeartbeat then some .heartbeats
+  else if e.isMaxRecDepth then some .recursionDepth
+  else match e with
+    | .internal id _ =>
+      if id == deadlineExceptionId then some .deadline
+      else if id == graceExceptionId then some .grace
+      else none
+    | _ => none
+
+/-- Only ordinary, non-resource error messages count as rule failure. Internal
+exceptions must be handled by their owning API or propagate with their identity. -/
 def isInterrupt (e : Exception) : Bool :=
-  e.isInterrupt || e.isRuntime ||
-    (match e with
-     | .internal id _ => id == deadlineExceptionId
-     | _ => false)
+  match e with
+  | .internal .. => true
+  | .error .. => e.isRuntime
 
-/-- Run `act` from a saved state. On failure restore the state and return
-`none`. Interrupts, heartbeat exhaustion, and the search deadline propagate. -/
+/-- Run `act` from a saved state. On ordinary failure return `none`; cancellation
+and resource limits propagate. Every uncommitted exit restores state, including
+native interrupts and runtime exceptions, which skip Lean's ordinary `catch`. -/
 def attempt (act : SearchM α) : SearchM (Option α) := do
   let saved : Meta.SavedState ← Meta.saveState
-  try
-    checkDeadline
-    let r ← act
-    return some r
-  catch e =>
-    if isInterrupt e then throw e
-    saved.restore
-    return none
+  let (result, _) ← tryFinally' (do
+    try
+      checkDeadline
+      return some (← act)
+    catch e =>
+      if isInterrupt e then throw e
+      return none) fun result? =>
+        match result? with
+        | some (some _) => pure ()
+        | _ => saved.restore
+  return result
 
 end Leant2

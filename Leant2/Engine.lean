@@ -62,9 +62,10 @@ def enumerate (ctx : SearchCtx) (cfg : SearchConfig) (goalTy : Expr)
 
       if ← productive then break
 
-/-- Run `act` with a fresh deadline `ms` from now. A lane that hits its
-deadline records the fact in `timedOut`; other interrupts propagate. -/
-private def lane (ledger : IO.Ref Ledger) (refutedPrograms : IO.Ref (Std.HashSet Expr))
+/-- Run `act` with a fresh lane deadline. Restore state on every exceptional
+exit. Only explicit lane/resource limits are consumed; native user interrupts
+and unrelated errors propagate after restoration. -/
+def withLane (ledger : IO.Ref Ledger) (refutedPrograms : IO.Ref (Std.HashSet Expr))
     (graceDeadline : IO.Ref (Option Nat))
     (timedOut : IO.Ref Bool) (ms : Nat)
     (act : SearchCtx → MetaM Unit) (name : String := "lane") : MetaM Unit := do
@@ -75,6 +76,10 @@ private def lane (ledger : IO.Ref Ledger) (refutedPrograms : IO.Ref (Std.HashSet
   let ctx : SearchCtx := {
     ledger, deadline := some (t0 + ms), refutedPrograms
     observationCache, observationReport, graceDeadline }
+  let saved : Meta.SavedState ← Meta.saveState
+  -- This narrow boundary must see native interrupts to restore before
+  -- rethrowing them; ordinary Core.tryCatch deliberately skips them.
+  let _ : MonadExceptOf Exception MetaM := MonadAlwaysExcept.except
   try
     act ctx
     if trace then
@@ -84,21 +89,32 @@ private def lane (ledger : IO.Ref Ledger) (refutedPrograms : IO.Ref (Std.HashSet
       IO.println s!"[leant2]   self times (ms): {prof.map fun (k, v) => (k, v / 1000000)}"
       profTimers.set #[]
   catch e =>
-    if isInterrupt e then
-      -- a cut by the grace period is not a budget timeout
-      if (← graceDeadline.get).isNone then timedOut.set true
+    saved.restore
+    if let some reason := searchStop? e then
+      if reason != .grace then timedOut.set true
       if trace then
         let l ← ledger.get
-        IO.println s!"[leant2] {name}: timed out after {(← IO.monoMsNow) - t0} ms (share {ms} ms) rules {l.ruleApplications} unif {l.unifications} proofs {l.proofAttempts} cands {l.candidates}"
+        IO.println s!"[leant2] {name}: stopped ({repr reason}) after {(← IO.monoMsNow) - t0} ms (share {ms} ms) rules {l.ruleApplications} unif {l.unifications} proofs {l.proofAttempts} cands {l.candidates}"
         let prof ← profTimers.get
         IO.println s!"[leant2]   self times (ms): {prof.map fun (k, v) => (k, v / 1000000)}"
         profTimers.set #[]
     else throw e
 
-/-- Instantiate every universe parameter of `e` with `Prop`. -/
-private def atProp (e : Expr) : Expr :=
+/-- Propose the classical lane's `Prop` universe specialization. Existing
+assignments are instantiated first; only remaining universe metavariables and
+parameters become zero. Successors and other level structure are preserved,
+so an assigned `Type` universe is never lowered to `Prop`. This does not assign
+the original query's metavariables. Pending universe equations conservatively
+disable this specialization until their constraints have been resolved.
+
+The result is a specialized candidate type, not a proof of the original
+universe-polymorphic query; acceptance records and checks this exact type. -/
+def atProp? (e : Expr) : MetaM (Option Expr) := do
+  unless (← getPostponed).isEmpty do return none
+  let e ← instantiateMVars e
   let lps := (collectLevelParams {} e).params.toList
-  e.instantiateLevelParams lps (lps.map fun _ => Level.zero)
+  return some <| replaceExprLevelMVars (fun _ => Level.zero)
+    (e.instantiateLevelParams lps (lps.map fun _ => Level.zero))
 
 /-- A cheap cost vector for ranking accepted candidates (Section 6.4):
 inputs left unused by the outermost lambdas, eliminator uses, and size.
@@ -179,8 +195,8 @@ def runQuery (q : Query) : MetaM Outcome :=
   let mkGoal (target : Expr) (c? : Option Expr) : MetaM Expr := match c? with
     | none => pure target
     | some c => mkAppM ``Subtype #[c]
-  let accept (target : Expr) (classicalLane : Bool) : Expr → SearchM Bool := fun e => do
-    let contract := q.contract.map fun c => if target == q.target then c else atProp c
+  let accept (target : Expr) (contract : Option Expr) (classicalLane : Bool) :
+      Expr → SearchM Bool := fun e => do
     let (prog, proof?) ← match contract with
       | none => pure (e, none)
       | some c => do
@@ -230,7 +246,7 @@ def runQuery (q : Query) : MetaM Outcome :=
   let timedOut ← IO.mkRef false
   -- refutation lane
   let refuted ← IO.mkRef (none : Option Accepted)
-  let refutationLane (ms : Nat) (depths : List Nat) : MetaM Unit := lane ledger refutedPrograms graceRef timedOut ms (name := "refutation") fun ctx => do
+  let refutationLane (ms : Nat) (depths : List Nat) : MetaM Unit := withLane ledger refutedPrograms graceRef timedOut ms (name := "refutation") fun ctx => do
     let negTy ← mkArrow q.target (mkConst ``False)
     let extra ← mkProviders #[``Empty.elim, ``False.elim] (always := true)
     let cfgR := { baseCfg with providers := extra ++ baseCfg.providers }
@@ -240,12 +256,16 @@ def runQuery (q : Query) : MetaM Outcome :=
         | .ok acc => refuted.set (some acc); return true
         | .error _ => return false) (do return (← refuted.get).isSome) depths dummy
   -- classical reasoning needs `Prop` targets: a universe-polymorphic query with
-  -- explicit universe parameters is searched at its `Prop` instantiation
-  let classicalLane (ms : Nat) (depths : List Nat) : MetaM Unit := lane ledger refutedPrograms graceRef timedOut ms (name := "classical") fun ctx => do
-    let tp := atProp q.target
+  -- explicit universe parameters or unresolved level placeholders is searched
+  -- at its `Prop` instantiation, preserving already fixed universe structure.
+  let classicalLane (ms : Nat) (depths : List Nat) : MetaM Unit := withLane ledger refutedPrograms graceRef timedOut ms (name := "classical") fun ctx => do
+    let some tp ← atProp? q.target | return ()
+    let cP ← match q.contract with
+      | none => pure none
+      | some c => atProp? c
+    if q.contract.isSome && cP.isNone then return ()
     let dummy ← IO.mkRef 0
-    if tp != q.target then
-      let cP := q.contract.map atProp
+    if tp != q.target || cP != q.contract then
       let goalP ← mkGoal tp cP
       let residualP ← match cP with
         | some c => mkResidual c tp
@@ -255,9 +275,10 @@ def runQuery (q : Query) : MetaM Outcome :=
         | none => pure #[]
       enumerateGrace ctx { baseCfg with
         classical := true, contract := cP, residual := residualP, observations := observationsP }
-        goalP (accept tp true) depths dummy
+        goalP (accept tp cP true) depths dummy
     else
-      enumerateGrace ctx { baseCfg with classical := true } goalTy (accept q.target true) depths dummy
+      enumerateGrace ctx { baseCfg with classical := true } goalTy
+        (accept q.target q.contract true) depths dummy
   let nothingYet : MetaM Bool := do return (← found.get).isEmpty && (← refuted.get).isNone
   -- classical reasoning can only matter when the query mentions propositions
   -- (a `Prop` binder or a universe-flexible sort); data queries skip those lanes
@@ -273,16 +294,21 @@ def runQuery (q : Query) : MetaM Outcome :=
     let negTy ← withLocalDecl `f .default q.target fun f => do
       mkForallFVars #[f] (mkApp (mkConst ``Not) (c.beta #[f]))
     -- bounded by heartbeats: this is a quick check, not a lane
-    let proved ← withTheReader Core.Context (fun c => { c with maxHeartbeats := 20000 * 1000 }) do
-      tryCatchRuntimeEx (do
-        let mv ← mkFreshExprMVar negTy
-        let ok ← tacticProve mv.mvarId!
-        let pf ← instantiateMVars mv
-        if !ok || pf.hasMVar then return false
-        match ← gate .standard pf negTy none with
-        | .ok _ => return true
-        | .error _ => return false)
-        (fun e => do if e.isInterrupt then throw e else return false)
+    let proved ← withoutModifyingState do
+      withCurrHeartbeats do
+        withTheReader Core.Context (fun c => { c with maxHeartbeats := 20000 * 1000 }) do
+          tryCatchRuntimeEx (do
+            let mv ← mkFreshExprMVar negTy
+            let ok ← tacticProve mv.mvarId!
+            let pf ← instantiateMVars mv
+            if !ok || pf.hasMVar then return false
+            match ← gate .standard pf negTy none with
+            | .ok _ => return true
+            | .error _ => return false)
+            (fun e => do
+              if e.isMaxHeartbeat || e.isMaxRecDepth then return false
+              if isInterrupt e then throw e
+              return false)
     if proved then
       return .negative .contractImpossible none (← ledger.get)
   -- constructive depths; a later lane resumes at the first depth the earlier one did not finish
@@ -293,10 +319,10 @@ def runQuery (q : Query) : MetaM Outcome :=
   -- the cheap and the deeper pass, so a single pass takes the whole budget
   -- rather than cutting a depth and redoing it.
   let singlePass := !needsClassical && q.contract.isSome
-  lane ledger refutedPrograms graceRef timedOut
+  withLane ledger refutedPrograms graceRef timedOut
       (if singlePass then q.budgetMs else if needsClassical then q.budgetMs * 3 / 20 else q.budgetMs * 3 / 10)
       (name := "constructive") fun ctx =>
-    enumerateGrace ctx baseCfg goalTy (accept q.target false)
+    enumerateGrace ctx baseCfg goalTy (accept q.target q.contract false)
       (if singlePass then constructiveDepths else constructiveDepths.take 4) completed
   -- 2. cheap refutation pass, only for type-only queries
   if (← nothingYet) && q.contract.isNone then refutationLane (q.budgetMs / 10) [4, 6]
@@ -307,8 +333,9 @@ def runQuery (q : Query) : MetaM Outcome :=
     let rem ← remaining
     let share := if needsClassical then rem * 3 / 10 else rem * 4 / 5
     let done ← completed.get
-    lane ledger refutedPrograms graceRef timedOut share (name := "constructive-deeper") fun ctx =>
-      enumerateGrace ctx baseCfg goalTy (accept q.target false) (constructiveDepths.drop done) completed
+    withLane ledger refutedPrograms graceRef timedOut share (name := "constructive-deeper") fun ctx =>
+      enumerateGrace ctx baseCfg goalTy (accept q.target q.contract false)
+        (constructiveDepths.drop done) completed
   -- 5. deeper classical search
   if (← nothingYet) && needsClassical then classicalLane ((← remaining) * 2 / 3) [8, 10]
   -- 6. deeper refutation

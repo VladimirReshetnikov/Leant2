@@ -78,7 +78,7 @@
       "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 13"
     },
     {
-      "id": "probe14_fin", "title": "Inhabit Fin of a successor", "group": "article-probes", "expect": "open",
+      "id": "probe14_fin", "title": "Inhabit Fin of a successor", "group": "article-probes", "expect": "candidate",
       "type": "∀ n : Nat, Fin (n + 1)", "reference": "fun n => ⟨0, Nat.zero_lt_succ n⟩",
       "replay": "(@{f} 0).val = 0 ∧ (@{f} 5).val < 6",
       "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 14 (arithmetic lemma retrieval)"
@@ -89,7 +89,7 @@
       "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 15"
     },
     {
-      "id": "probe16_le_trans", "title": "Transitivity of natural ordering", "group": "article-probes", "expect": "open",
+      "id": "probe16_le_trans", "title": "Transitivity of natural ordering", "group": "article-probes", "expect": "candidate",
       "type": "∀ a b c : Nat, a ≤ b → b ≤ c → a ≤ c", "reference": "fun _ _ _ h₁ h₂ => Nat.le_trans h₁ h₂",
       "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 16 (lemma retrieval)"
     },
