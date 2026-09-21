@@ -1,0 +1,97 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{newpxtext}
+\usepackage{amsmath,amsthm}
+\usepackage{newpxmath}
+\usepackage[margin=25mm,headheight=15pt]{geometry}
+\usepackage{microtype,mathtools}
+\usepackage{booktabs,longtable,array,tabularx}
+\usepackage{xcolor,enumitem,listings,fancyhdr,needspace}
+\usepackage{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue!45!black,
+ pdftitle={Leant2: Answers to the Expert Questions in Proposal 11},
+ pdfauthor={OpenAI},pdfsubject={Dependent program synthesis; research and architecture review}}
+\urlstyle{same}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{12pt}
+\setlength{\emergencystretch}{2.5em}
+\setlist{nosep,leftmargin=1.6em}
+\setcounter{tocdepth}{2}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\R}{\mathcal R}
+\newcommand{\G}{\mathcal G}
+\newcommand{\E}{\mathcal E}
+\newcommand{\N}{\mathbb N}
+\newcommand{\List}{\operatorname{List}}
+\newcommand{\fold}{\operatorname{foldr}}
+\newcommand{\id}{\operatorname{id}}
+\newcommand{\dom}{\operatorname{dom}}
+\newcommand{\cost}{\operatorname{cost}}
+\newcommand{\Q}[3]{\Needspace{9\baselineskip}\subsection{#1. #2}\label{q:#1}\noindent\textit{Question, paraphrased.} #3\par}
+\newcommand{\answer}{\noindent\textbf{Answer.} }
+\lstset{basicstyle=\ttfamily\small,columns=fullflexible,keepspaces=true,
+ breaklines=true,breakatwhitespace=false,showstringspaces=false,
+ frame=single,rulecolor=\color{black!20},framerule=.3pt,
+ xleftmargin=3pt,xrightmargin=3pt,aboveskip=9pt,belowskip=9pt,
+ captionpos=b,upquote=true}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small Leant2: Expert Questions, Investigated}
+\fancyhead[R]{\small Research and Design Review}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{.3pt}
+\begin{document}
+\begin{titlepage}
+\thispagestyle{empty}
+\vspace*{17mm}
+\noindent{\large\scshape Dependent program synthesis}\par
+\vspace{8mm}
+\noindent{\huge\bfseries Leant2:\\[3mm]Answers to the Expert Questions\\[3mm]in Proposal 11}\par
+\vspace{9mm}
+\noindent{\Large Mathematical foundations, concrete algorithms,\\implementation boundaries, and an evaluation plan}\par
+\vspace{12mm}
+\noindent Prepared for Vladimir Reshetnikov\par
+\noindent 21 September 2026\par
+\vspace{12mm}
+\noindent\rule{\textwidth}{.5pt}
+\vspace{4mm}
+\begin{abstract}
+The further-improvements proposal for Leant2 poses 31 expert questions in nine areas: search control, carrier invention, evaluation with holes, dependent elimination, general recursion, contracts, retrieval, ranking, and learned guidance. This article gives a separately identifiable answer to every question, grounded in a pinned repository snapshot, primary literature, and explicit mathematical arguments. Several apparent research barriers have useful bounded solutions: finite-state carrier inference becomes a finite constraint problem; type classes already have a dictionary-passing treatment in Hoogle+; and Lean exposes a concrete motive-construction API. Other ambitions need sharper contracts: finite observations do not determine a unique semantic carrier, open-goal counts are not generally admissible search bounds, and final kernel checking cannot repair an unsound pruning rule.
+
+The proposed architecture keeps Lean's native expressions and transactional state, adds dependency-indexed constraints and replayable proposal recipes, and separates fixed certification objectives from adaptive search priorities. It gives substitution-stable residual checking, capability-based recursion with a simulation obligation, local inductive contracts, and a retrieval abstraction that preserves dependencies conservatively. The recommendations include amendments to the acceptance boundary and result algebra, a staged implementation plan, and reproducible finite-model checks. No new Leant2 performance measurements or compiled Lean implementation are claimed.
+\end{abstract}
+\vfill
+\noindent\small Repository snapshot:\par
+\noindent\code{784664ff34e819422510a4d470ab07fe48bb736b}\par
+\noindent Target toolchain: \code{leanprover/lean4:v4.34.0}.\par
+\noindent Scope: Proposal \code{docs/proposals/11-further-improvements}, with selected implementation and Lean API inspection.
+\end{titlepage}
+\tableofcontents
+\clearpage
+\input{sections/01_scope}
+\input{sections/02_foundations}
+\input{sections/03_search}
+\input{sections/04_carriers}
+\input{sections/05_evaluation}
+\input{sections/06_dependent}
+\input{sections/07_recursion}
+\input{sections/08_contracts}
+\input{sections/09_retrieval}
+\input{sections/10_ranking}
+\input{sections/11_learning}
+\input{sections/12_roadmap}
+\appendix
+\input{sections/13_appendices}
+\input{references}
+\end{document}

@@ -1,0 +1,307 @@
+{
+  "title": "Leant2: Answers to the Expert Questions",
+  "date": "2026-09-21",
+  "article_pages": 38,
+  "repository": "https://github.com/VladimirReshetnikov/Leant2",
+  "repository_commit": "784664ff34e819422510a4d470ab07fe48bb736b",
+  "lean_toolchain": "leanprover/lean4:v4.34.0",
+  "question_count": 31,
+  "question_mapping": [
+    {
+      "area": "R1",
+      "source": "docs/proposals/11-further-improvements/sections/05-search.tex",
+      "questions": [
+        "R1.1",
+        "R1.2",
+        "R1.3",
+        "R1.4"
+      ]
+    },
+    {
+      "area": "R2",
+      "source": "docs/proposals/11-further-improvements/sections/06-carriers.tex",
+      "questions": [
+        "R2.1",
+        "R2.2",
+        "R2.3",
+        "R2.4",
+        "R2.5"
+      ]
+    },
+    {
+      "area": "R3",
+      "source": "docs/proposals/11-further-improvements/sections/07-evaluation.tex",
+      "questions": [
+        "R3.1",
+        "R3.2",
+        "R3.3",
+        "R3.4"
+      ]
+    },
+    {
+      "area": "R4",
+      "source": "docs/proposals/11-further-improvements/sections/08-dependent.tex",
+      "questions": [
+        "R4.1",
+        "R4.2",
+        "R4.3",
+        "R4.4"
+      ]
+    },
+    {
+      "area": "R5",
+      "source": "docs/proposals/11-further-improvements/sections/09-recursion.tex",
+      "questions": [
+        "R5.1",
+        "R5.2",
+        "R5.3"
+      ]
+    },
+    {
+      "area": "R6",
+      "source": "docs/proposals/11-further-improvements/sections/10-contracts.tex",
+      "questions": [
+        "R6.1",
+        "R6.2",
+        "R6.3",
+        "R6.4"
+      ]
+    },
+    {
+      "area": "R7",
+      "source": "docs/proposals/11-further-improvements/sections/11-retrieval.tex",
+      "questions": [
+        "R7.1",
+        "R7.2",
+        "R7.3"
+      ]
+    },
+    {
+      "area": "R8",
+      "source": "docs/proposals/11-further-improvements/sections/12-ranking.tex",
+      "questions": [
+        "R8.1",
+        "R8.2"
+      ]
+    },
+    {
+      "area": "R9",
+      "source": "docs/proposals/11-further-improvements/sections/12-ranking.tex",
+      "questions": [
+        "R9.1",
+        "R9.2"
+      ]
+    }
+  ],
+  "reviewed_repository_paths": [
+    "lean-toolchain",
+    "docs/proposals/11-further-improvements/Leant2-next.tex",
+    "docs/proposals/11-further-improvements/sections/01-evidence.tex",
+    "docs/proposals/11-further-improvements/sections/03-engineering.tex",
+    "docs/proposals/11-further-improvements/sections/04-adaptation.tex",
+    "docs/proposals/11-further-improvements/sections/05-search.tex",
+    "docs/proposals/11-further-improvements/sections/06-carriers.tex",
+    "docs/proposals/11-further-improvements/sections/07-evaluation.tex",
+    "docs/proposals/11-further-improvements/sections/08-dependent.tex",
+    "docs/proposals/11-further-improvements/sections/09-recursion.tex",
+    "docs/proposals/11-further-improvements/sections/10-contracts.tex",
+    "docs/proposals/11-further-improvements/sections/11-retrieval.tex",
+    "docs/proposals/11-further-improvements/sections/12-ranking.tex",
+    "docs/proposals/11-further-improvements/sections/14-roadmap.tex",
+    "docs/proposals/11-further-improvements/sections/15-experts.tex",
+    "docs/proposals/11-further-improvements/sections/16-references.tex",
+    "Leant2/Accept/Gate.lean",
+    "Leant2/Core/Types.lean",
+    "Leant2/Engine.lean",
+    "Leant2/Native/Transaction.lean",
+    "Leant2/Search/Core.lean"
+  ],
+  "reviewed_lean_paths_at_v4_34_0": [
+    "src/Lean/Meta/Tactic/Induction.lean",
+    "src/Lean/Elab/Tactic/Cbv.lean"
+  ],
+  "primary_reference_links": [
+    {
+      "citation_key": "repo",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/tree/784664ff34e819422510a4d470ab07fe48bb736b"
+      ]
+    },
+    {
+      "citation_key": "leaninduction",
+      "urls": [
+        "https://github.com/leanprover/lean4/blob/v4.34.0/src/Lean/Meta/Tactic/Induction.lean"
+      ]
+    },
+    {
+      "citation_key": "leancbv",
+      "urls": [
+        "https://github.com/leanprover/lean4/blob/v4.34.0/src/Lean/Elab/Tactic/Cbv.lean"
+      ]
+    },
+    {
+      "citation_key": "leantactics",
+      "urls": [
+        "https://lean-lang.org/doc/reference/latest/Tactic-Proofs/Tactic-Reference/"
+      ]
+    },
+    {
+      "citation_key": "leanrec",
+      "urls": [
+        "https://lean-lang.org/doc/reference/latest/Definitions/Recursive-Definitions/"
+      ]
+    },
+    {
+      "citation_key": "leaninductbook",
+      "urls": [
+        "https://lean-lang.org/theorem_proving_in_lean4/Inductive-Types/"
+      ]
+    },
+    {
+      "citation_key": "aesop",
+      "urls": [
+        "https://doi.org/10.1145/3573105.3575671",
+        "https://zenodo.org/records/7430233"
+      ]
+    },
+    {
+      "citation_key": "aesopreadme",
+      "urls": [
+        "https://github.com/leanprover-community/aesop/blob/master/README.md"
+      ]
+    },
+    {
+      "citation_key": "canonical",
+      "urls": [
+        "https://arxiv.org/html/2504.06239v1"
+      ]
+    },
+    {
+      "citation_key": "probe",
+      "urls": [
+        "https://arxiv.org/abs/2010.08663"
+      ]
+    },
+    {
+      "citation_key": "luby",
+      "urls": [
+        "https://www.sciencedirect.com/science/article/pii/0020019093900299"
+      ]
+    },
+    {
+      "citation_key": "gibbons",
+      "urls": [
+        "https://www.cs.ox.ac.uk/publications/publication2368-abstract.html"
+      ]
+    },
+    {
+      "citation_key": "weber",
+      "urls": [
+        "https://doi.org/10.1007/978-3-540-25938-1_11"
+      ]
+    },
+    {
+      "citation_key": "polytesting",
+      "urls": [
+        "https://doi.org/10.1007/978-3-642-11957-6_8"
+      ]
+    },
+    {
+      "citation_key": "angluin",
+      "urls": [
+        "https://doi.org/10.1016/0890-5401(87)90052-6"
+      ]
+    },
+    {
+      "citation_key": "smyth",
+      "urls": [
+        "https://doi.org/10.1145/3408991",
+        "https://arxiv.org/abs/1911.00583"
+      ]
+    },
+    {
+      "citation_key": "scrybe",
+      "urls": [
+        "https://arxiv.org/abs/2210.13873"
+      ]
+    },
+    {
+      "citation_key": "selfadjust",
+      "urls": [
+        "https://arxiv.org/abs/1106.0478"
+      ]
+    },
+    {
+      "citation_key": "lean4lean",
+      "urls": [
+        "https://arxiv.org/abs/2403.14064v3"
+      ]
+    },
+    {
+      "citation_key": "burst",
+      "urls": [
+        "https://doi.org/10.1145/3498682",
+        "https://arxiv.org/abs/2107.06253"
+      ]
+    },
+    {
+      "citation_key": "sauto",
+      "urls": [
+        "https://doi.org/10.1007/978-3-030-51054-1_3",
+        "https://www.mimuw.edu.pl/~lukaszcz/sauto/index.html",
+        "https://coqhammer.github.io/"
+      ]
+    },
+    {
+      "citation_key": "synquid",
+      "urls": [
+        "https://arxiv.org/abs/1510.08419v3"
+      ]
+    },
+    {
+      "citation_key": "hoogle",
+      "urls": [
+        "https://doi.org/10.1145/3371080",
+        "https://ranjitjhala.github.io/static/hoogle_plus.pdf"
+      ]
+    },
+    {
+      "citation_key": "trio",
+      "urls": [
+        "https://doi.org/10.1145/3571263"
+      ]
+    },
+    {
+      "citation_key": "leandojo",
+      "urls": [
+        "https://arxiv.org/abs/2306.15626"
+      ]
+    },
+    {
+      "citation_key": "leanhammer",
+      "urls": [
+        "https://arxiv.org/abs/2506.07477",
+        "https://cmu-l3.github.io/lean-hammer/"
+      ]
+    }
+  ],
+  "executed_experiments": {
+    "script": "experiments/model_checks.py",
+    "result": "experiments/results.json",
+    "groups": 8,
+    "status": "all checks passed",
+    "finite_machine_tables_examined": 2392
+  },
+  "not_performed": [
+    "Lean compilation of proposed implementations",
+    "Leant2 benchmark rerun",
+    "Machine formalization of the mathematical propositions",
+    "Model proposal accuracy measurement"
+  ],
+  "important_limits": [
+    "Moving Lean manual descriptions are distinguished from pinned source checks.",
+    "Finite-model results do not verify the real Leant2 engine.",
+    "Historical repository benchmarks are source-reported, not independently reproduced.",
+    "No changes were made to the GitHub repository."
+  ]
+}

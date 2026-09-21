@@ -1,0 +1,107 @@
+\section{Question-by-question cross-reference}\label{app:crosswalk}
+
+Every numbered item under ``Questions for experts'' in Proposal 11 is covered below. The source numbers abbreviate filenames under \code{docs/proposals/11-further-improvements/sections/}: 05 is \code{05-search.tex}, 06 is \code{06-carriers.tex}, 07 is \code{07-evaluation.tex}, 08 is \code{08-dependent.tex}, 09 is \code{09-recursion.tex}, 10 is \code{10-contracts.tex}, 11 is \code{11-retrieval.tex}, and 12 is \code{12-ranking.tex}. Source 12 contains both R8 and R9. Questions are paraphrased in the article rather than reproduced verbatim.\cite{proposal}
+
+\begin{longtable}{@{}L{17mm}L{14mm}L{105mm}r@{}}
+\toprule
+Question & Source & Answer topic & Page\\
+\midrule
+\endfirsthead
+\toprule
+Question & Source & Answer topic & Page\\
+\midrule
+\endhead
+R1.Q1 & 05 & Coupled goals, dependency components, and memoization & \pageref{q:R1.Q1}\\
+R1.Q2 & 05 & Admissible lower bounds without double counting & \pageref{q:R1.Q2}\\
+R1.Q3 & 05 & Adaptive search priority versus a fixed ranking objective & \pageref{q:R1.Q3}\\
+R1.Q4 & 05 & Wall-clock limitations, deterministic prefixes, and replay & \pageref{q:R1.Q4}\\
+R2.Q1 & 06 & Minimal carriers, finite constraint solving, and lower bounds & \pageref{q:R2.Q1}\\
+R2.Q2 & 06 & Parametric functions, positions, and equality patterns & \pageref{q:R2.Q2}\\
+R2.Q3 & 06 & Backward fusion, auxiliary summaries, and reversal & \pageref{q:R2.Q3}\\
+R2.Q4 & 06 & Graded motive and carrier enumeration & \pageref{q:R2.Q4}\\
+R2.Q5 & 06 & Generalization, failed proofs, and helper speculation & \pageref{q:R2.Q5}\\
+R3.Q1 & 07 & Higher-order live evaluation and dependent hole closures & \pageref{q:R3.Q1}\\
+R3.Q2 & 07 & Incremental reduction and rollback-safe invalidation & \pageref{q:R3.Q2}\\
+R3.Q3 & 07 & Conservative evaluators and residual certificates & \pageref{q:R3.Q3}\\
+R3.Q4 & 07 & Finite top-down angelic refinement and completeness & \pageref{q:R3.Q4}\\
+R4.Q1 & 08 & Bounded motive classes and accumulator generalization & \pageref{q:R4.Q1}\\
+R4.Q2 & 08 & Typed transports and limits of cast erasure & \pageref{q:R4.Q2}\\
+R4.Q3 & 08 & Demand-driven unfolding and transparency & \pageref{q:R4.Q3}\\
+R4.Q4 & 08 & Lean 4.34 motive-construction and induction APIs & \pageref{q:R4.Q4}\\
+R5.Q1 & 09 & Recursive capabilities, simulation, and compilation & \pageref{q:R5.Q1}\\
+R5.Q2 & 09 & Shared constraints in top-down angelic recursion & \pageref{q:R5.Q2}\\
+R5.Q3 & 09 & A small recursion basis and honest coverage metrics & \pageref{q:R5.Q3}\\
+R6.Q1 & 10 & Interleaving value and proof obligations & \pageref{q:R6.Q1}\\
+R6.Q2 & 10 & Local algebra certificates and recognizable proof fragments & \pageref{q:R6.Q2}\\
+R6.Q3 & 10 & Available Lean automation and a bounded proof adapter & \pageref{q:R6.Q3}\\
+R6.Q4 & 10 & Fair proof-debt scheduling and its empirical model & \pageref{q:R6.Q4}\\
+R7.Q1 & 11 & Relational abstract reachability for dependent signatures & \pageref{q:R7.Q1}\\
+R7.Q2 & 11 & Hoogle+ dictionaries and Lean instance constraints & \pageref{q:R7.Q2}\\
+R7.Q3 & 11 & Data-goal relevance and leakage-controlled corpora & \pageref{q:R7.Q3}\\
+R8.Q1 & 12 & Description length, preferences, and bounded optimality & \pageref{q:R8.Q1}\\
+R8.Q2 & 12 & Typed equivalence versus observational grouping & \pageref{q:R8.Q2}\\
+R9.Q1 & 12 & A matched experiment for model-proposed carriers/helpers & \pageref{q:R9.Q1}\\
+R9.Q2 & 12 & Proposal replay, model provenance, and query-bound checking & \pageref{q:R9.Q2}\\
+\bottomrule
+\end{longtable}
+
+The nine rows in the proposal's \code{15-experts.tex} summarize these same areas; they are not nine additional independent question sets. The source question counts are $4+5+4+4+3+4+3+2+2=31$.
+
+\section{Reproducible finite checks}\label{app:checks}
+
+The archive includes a dependency-free Python script, \code{checks/check_design_examples.py}, and its executed output, \code{checks/results.json}. These are checks of finite mathematical examples used in the design, not executions of Leant2 or evidence of synthesis speed. The script is deliberately small enough to inspect and rerun.
+
+\subsection{Carrier lower bound}
+
+Take alphabet $\{a,b\}$ and require a Boolean output indicating that both letters occur. The observation set contains every word of length at most three, hence $1+2+4+8=15$ words. The witness suffixes $[],[a],[b],[a,b]$ and left-prefix contexts $[],[a],[b]$ have respective observation rows
+\[
+ (0,0,0),\quad(0,0,1),\quad(0,1,0),\quad(1,1,1).
+\]
+They are pairwise distinguishable. The carrier theorem therefore forces at least four reachable states for any deterministic right-fold realization with a final Boolean observation.
+
+For a $k$-state carrier with initial state fixed to 0, the exhaustive script enumerates $k^{2k}$ step tables and $2^k$ output tables. Fixing the initial state loses no realizations up to relabelling. The tested table counts for $k=1,2,3$ are respectively $2$, $64$, and $5{,}832$, totaling $5{,}898$. No table matches all fifteen observations. A four-state bit-pair carrier records whether each letter has occurred. The supplied implementation matches all 511 words of length at most eight.
+
+The exhaustive search proves a finite negative statement about one-, two-, and three-state machines. The mathematical distinguishing-context argument gives the general lower bound; the bit-pair transition invariant gives the general four-state realization. Testing that realization on 511 words is a consistency check of the script, not a substitute for the invariant proof.
+
+\subsection{Other checks}
+
+The script compares reversal by a list-valued right fold with append, reversal by a continuation carrier, and ordinary sequence reversal on all 255 Boolean words of length at most seven. It checks the nontransitivity of compatibility between partial observation rows. It also constructs a rollback-cache counterexample, a toy shared-goal cost counterexample, and two polymorphic list behaviors agreeing through length seven but differing at length eight.
+
+The goal-cost check uses an explicit abstract search model, not Lean's unifier. The cache check demonstrates a dependency-key failure pattern, not a demonstrated bug trace from the repository. These distinctions are recorded in the JSON and should be retained when using the examples in tests or talks.
+
+\clearpage
+\section{Assumptions and certificate obligations}\label{app:obligations}
+
+The strongest conclusions in the article depend on identifiable assumptions. A compact implementation checklist is useful:
+
+\begin{longtable}{@{}L{38mm}L{114mm}@{}}
+\toprule
+Conclusion & Required evidence or assumption\\
+\midrule
+\endfirsthead
+\toprule
+Conclusion & Required evidence or assumption\\
+\midrule
+\endhead
+Independent subsearch & Completion spaces factor; shared parameters are fixed; no omitted observation, type, universe, local-value, instance, or future-rule dependency crosses the partition.\\
+Admissible heuristic & A proved relaxation lower bound, or disjoint cost accounting for independent components; fixed objective and sound handling of zero-cost transitions.\\
+Carrier impossibility & A real finite-cardinality bound or a complete finite grammar search, with well-defined realization constraints; not a count of values discovered so far.\\
+Canonical polymorphic tests & A suitable relational/naturality theorem for the admitted term fragment and dictionaries; input-length coverage stated separately.\\
+Residual refutation & A substitution-stable checked exclusion certificate, or a proved simulation with conservative unknown cases and correctly scoped oracle assumptions.\\
+Angelic completeness & Finite candidate/domain bounds where claimed, sound refinements, a total verifier in the finite theorem, and fair exploration.\\
+Recursive execution & Well-foundedness/decrease evidence, a checked realization, and a simulation or sufficient equation correspondence; runtime trust reported separately.\\
+Universal contract & Local invariant certificates plus the induction theorem, or a checked global proof; examples alone do not establish universality.\\
+Retrieval exclusion & Every concrete derivation in the claimed grammar maps to the abstract search; resource failure is not abstract impossibility.\\
+Candidate merging & Same-type definitional/proved equality or a fragment-specific contextual congruence; finite observations alone justify only grouping.\\
+Negative result & Retained proof or a precise completed grammar/bound descriptor; original frozen target, universe treatment, and axiom policy preserved.\\
+Replay & Pinned environment, query, grammar, policy, priority/model transcript, logical work, and stable tie-breaking; wall time is a separate measurement.\\
+\bottomrule
+\end{longtable}
+
+\section{Provenance and build instructions}\label{app:build}
+
+The repository was inspected at commit \code{784664ff34e819422510a4d470ab07fe48bb736b}; its toolchain file specifies \code{leanprover/lean4:v4.34.0}. The source proposal is dated 18 September 2026, and its performance evidence explicitly concerns commit \code{33cec8b}. The article's literature and documentation review date is 21 September 2026. Rolling documentation is identified as such; version-sensitive implementation recommendations use the inspected 4.34.0 source wherever available.
+
+The selected implementation inspection covered the acceptance gate, result types, engine, transaction support, and relevant portions of the search core. It was a source review, not a complete security audit or a build of the repository. No Lean compiler was available in the working environment. Consequently the proposed interfaces and snippets are architectural descriptions unless explicitly quoted as existing source, and no new Lean test pass or benchmark result is claimed.
+
+To regenerate the article with a TeX distribution containing the listed packages, run \code{./build.sh} from the extracted archive, or invoke \code{pdflatex} on \code{leant2_expert_answers.tex} three times. The document uses local section files and an inline bibliography; there is no BibTeX step or downloaded figure dependency. Run \code{python3 checks/check_design_examples.py} to regenerate the finite-check results. The README distinguishes these commands and lists the included files.

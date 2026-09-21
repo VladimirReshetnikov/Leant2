@@ -1,0 +1,67 @@
+\section{R5: recursion capabilities and realization}
+\label{sec:recursion}
+
+\Q{R5.1}{Does search-time evaluation agree definitionally with realized recursion?}
+\ans Not in general. Propositional agreement is the correct general contract; definitional agreement is a useful special case for particular structural encodings. Well-founded recursion should be evaluated through proved equations or a verified fuelled semantics, rather than by assuming its kernel representation reduces like an ordinary recursive program.
+
+Lean's reference explicitly demonstrates well-founded definitions whose expected unfolding equation fails by \code{rfl}, and then proves the equation using \code{WellFounded.fix_eq}. Generated equation theorems hide the packing of parameters and termination evidence \cite{leanrecursion}. This directly answers the first part of the question: the capability interpreter cannot claim blanket agreement ``up to kernel conversion.''
+
+Let the search body $b$ use a capability
+\[
+ \mathrm{rec}:(y:X)\to R(y,x)\to Y(y),
+\]
+where $R$ is a fixed well-founded relation for this candidate scheme. A realization pass constructs $P_b:(x:X)\to Y(x)$ and proves its unfolding equation. A search interpreter $\mathrm{eval}_b(k,x)$ has a fuel parameter and returns either a typed value or unknown. Its essential theorem is
+\[
+  \mathrm{eval}_b(k,x)=\mathrm{some}(v)
+  \quad\Longrightarrow\quad P_b(x)=v. \tag{1}
+\]
+A separate adequate-fuel theorem, when available, establishes that enough fuel produces a value. Soundness (1) does not require a computable universal fuel bound. Fuel exhaustion does not refute $P_b$.
+
+\begin{proposition}[A sufficient interpreter--realization bridge]
+Suppose every body operation has a proved interpretation theorem, every recursive call carries a proof of decrease, and the realization satisfies the body's unfolding equation. If the interpreter recursively evaluates only those calls and combines results according to the same body operations, every successful finite evaluation agrees propositionally with the realization.
+\end{proposition}
+\begin{proof}
+Use well-founded induction on the current argument. Each interpreted recursive call is at a strictly smaller argument, so the induction hypothesis identifies its returned value with the corresponding realization call. Substitute these equalities into the interpretation theorem for the body operations, and then use the realization's unfolding equation. This gives the equality for the current argument. Equivalently, one may induct on a successful finite evaluation derivation when the interpreter semantics records the recursive calls explicitly.
+\end{proof}
+
+For closed examples, several implementations of this contract are reasonable. Rewrite with the generated equation lemmas and discharge resulting decidable equalities. Or reify the admitted body fragment, evaluate it with an ordinary structurally recursive fuel interpreter, and use (1) to reconstruct the observation proof. Compiled execution may cheaply order candidates or nominate a counterexample, but a strict pruning guarantee requires confirmation. A candidate that passes fast tests still needs the original contract proof.
+
+\subsubsection*{Publishing executable definitions}
+
+The compilation issue in E1 is real in the reported probe, but \code{implemented_by} is not an equality proof. Prefer a generated equation-style definition plus a checked equivalence to the certified logical term. A particularly relevant existing pattern is Lean's \code{Nat.recCompiled} and the \code{@[csimp]} theorem \code{Nat.rec_eq_recCompiled}: the pinned core source explicitly supplies a compiled implementation and a proved equality \cite{leanreccompiled}.
+
+This suggests a small publication adapter rather than a general trusted recursor decompiler. For each admitted recursor scheme, generate the recursive definition, obtain its equation theorems, and prove the bridge once per scheme or once per candidate as appropriate. A compiler simplification theorem or a published equivalent definition can then connect the executable code to the mathematical term. Audit the equivalence proof's axioms too; they may not already occur in the original program's axiom closure.
+
+A definition that cannot be compiled should remain a valid logical result with an explicit non-executable status. A definition that compiles but lacks the bridge is not automatically a certified implementation of the original term. Mathematical proof validity and runtime implementation trust are separate entries in the receipt.
+
+\Q{R5.2}{Does angelic execution compose with top-down search?}
+\ans Yes. The top-down direction is not itself an obstacle; maintaining the right constraints and refinement alternatives is the difficult part. Smyth already supplies a top-down example of recursion with incomplete traces, while Burst's contribution gives a different, bottom-up angelic construction \cite{smyth,burst}. Their data structures and completeness assumptions should not be conflated.
+
+In top-down search, an unknown body produces typed hole closures at observed recursive arguments. Store constraints on those closures and propagate only sound consequences. Repeated calls at the same input share an oracle variable, or receive a consistency constraint. If the candidate body is subsequently filled, discharge every oracle fact by the actual recursion semantics. Inconsistent witness assignments are rejected without concluding that every witness for the body is inconsistent.
+
+Compared with a bottom-up tree-automaton method, the top-down engine gains strong contextual typing and natural sketches. It loses some immediate canonical sharing of equal bottom-up behaviors, and it cannot assume that a finite set of partial evaluations is a congruence for every future context. Search states must include the current environment, substitutions, and oracle constraints. Typed specialization and closed subterm caches recover some sharing without changing these semantics.
+
+The safest first integration uses angelic values only for priority. A later version may use impossibility in a proved over-approximation to prune. Reuse R3's observation infrastructure and realization theorem; a separate unverified recursive evaluator would duplicate the hardest correctness boundary.
+
+\Q{R5.3}{Is there a canonical small basis with measured textbook coverage?}
+\ans A useful engineering basis can be specified; no canonical minimal basis or coverage percentage for Leant2 follows from the inspected literature. A single universal recursor can make a basis syntactically tiny while making every example difficult. The meaningful objective is coverage at bounded synthesis cost under a fixed component environment.
+
+I recommend the following ordered scheme family, as a proposal rather than a measured result.
+
+\begin{longtable}{@{}p{.27\linewidth}p{.67\linewidth}@{}}
+\toprule
+Scheme & Typical purpose and admission condition \\
+\midrule
+\endhead
+Structural, one major argument & List map, length, tree folds, powers on naturals. Start with an inferred or supplied motive and constructor-field recursive capabilities.\\
+Structural with parameters & Accumulator reverse, folds with a changing parameter, and \code{zip} by recursion on one list while matching the other. Generalize changing parameters.\\
+Product result & Fibonacci, extrema pairs, and result-plus-statistic computations. A product often avoids a more elaborate call scheme.\\
+Bounded course-of-values & Calls on deeper subterms when a direct tuple encoding is inconvenient. Track the allowed constructor paths explicitly.\\
+Measure or lexicographic order & Euclidean-style recursion, division, and merge variants where no single structural argument decreases on every branch. Each call supplies a checked decrease proof.\\
+Tagged mutual or nested scheme & More specialized cases. Use a generated combined definition and its actual induction/termination interface rather than assume the simple structural API handles every family.\\
+\bottomrule
+\end{longtable}
+
+These categories overlap. For example, \code{zip} does not inherently require a simultaneous-two-argument recursor, and Fibonacci does not inherently require course-of-values. Count a benchmark as covered by every admissible reference encoding, then use the cheapest verified encoding for a scheme-complexity metric. Otherwise the measured ``coverage of schemes'' is mostly an artifact of which reference program happened to be chosen.
+
+For each task, record the first successful scheme, carrier, required components, termination proof cost, and whether examples include recursive-call inputs. Run a carrier-given or scheme-given oracle track to distinguish interface invention from branch-body search. Report the overlap matrix before deciding which schemes deserve native support. This produces the requested measured coverage; none is invented in this report.

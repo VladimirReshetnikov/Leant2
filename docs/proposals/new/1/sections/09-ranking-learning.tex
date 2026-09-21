@@ -1,0 +1,167 @@
+\section{R8: Ranking and candidate equivalence}\label{sec:r8}
+
+\question{R8.Q1}{What formal objective is defensible for ranking inhabitants?}
+\status{A conditional description-length or Bayesian objective is defensible; agreement with human intent remains empirical and task-dependent.}
+
+Choose a proper grammar-based prior $P_\theta(t\mid T,\Gamma,E)$ and rank
+contract-satisfying terms by
+\[
+ J(t)=-\log P_\theta(t\mid T,\Gamma,E)
+       +\lambda_{r}\,\widehat{\mathsf{runtime}}(t)
+       +\lambda_{p}\,\widehat{\mathsf{proofCost}}(t).
+ \tag{10}\label{eq:ranking}
+\]
+The first term is a description length under a declared coding model. The
+other terms express engineering preferences, not logical correctness. A
+frozen prior makes the objective reproducible. A changing exploration model
+need not change $J$.
+
+This objective clarifies why a reusable library call can be better than a
+large reconstructed implementation, and why changing the library changes the
+ranking. It also exposes the limitations: a contract with two examples may
+admit several sensible programs, and no distribution-free rule identifies the
+user's intended one. A studied synthesis system's ``interesting results'' or
+reference-solution ranks are not equivalent to a controlled user-preference
+study. Hoogle+, for instance, explicitly uses relevance filtering and manual
+judgment in its evaluation \cite{hoogleplus}.
+
+Treat unused inputs as a soft prior, not a universal defect. A constant
+function can be exactly right. A proof argument may be computationally
+irrelevant. Syntactic occurrence is also not semantic influence: an input can
+appear in $x-x$ while not affecting the output. Exact semantic influence is
+not generally cheap to decide. Approximate it using normalized syntax and
+probe perturbations, labeling it as a heuristic.
+
+Prefer one readable representative of each observed behavior, show a
+separating input when candidates differ, and preserve an expandable list of
+alternatives. A reference solution's rank is useful for regression testing,
+but should be measured both by exact syntax and by an appropriate behavioral
+or proved-equivalence class.
+
+\paragraph{When a frontier justifies stopping.}
+Let $L(s)$ be a lower bound on the final \emph{same} objective $J$ for every
+completion of frontier state $s$. If every unexplored alternative, pending
+proof job, and delayed retrieval choice is represented, and
+\[
+ \min_{s\in\mathcal F} L(s)\ \ge\ J(t_*),
+\]
+then no strictly better candidate remains. This follows immediately by applying
+the bound to the frontier ancestor of any hypothetical better completion.
+A strict inequality also excludes an unseen equal-cost tie. Actual CPU work
+already spent is not a lower bound on description length; nor are stale
+learned queue scores. The proposal's stopping argument is valid only after
+those distinctions are enforced.
+
+\question{R8.Q2}{Which candidate equivalence is cheap and meaningful for dependent types?}
+\status{Use several explicitly named equivalence levels, not one catch-all normalization or observational hash.}
+
+Start with alpha-aware structural identity on elaborated expressions; pretty
+printing is not an adequate key. Next use checked definitional equality in a
+transactional context. A stronger merge can use a checked propositional
+function equality, or a typed heterogeneous relation where required. The
+proof and any necessary transports must remain available to reconstruct the
+claimed substitution of one candidate for another.
+
+For presentation, define the finite observational signature
+\[
+ \mathsf{sig}_{\mathcal P}(t)=
+   (\mathsf{observe}_{p}(t))_{p\in\mathcal P},
+\]
+where each probe is typed and may return unknown. Equal complete signatures
+mean ``agrees on these probes,'' not global equivalence. For dependent results,
+the probe must specify how to compare values in the relevant fibers; raw
+printed-value equality is insufficient. Unknown observations should not be
+treated as evidence of equal values.
+
+Observational buckets are safe as a display device. They are not generally
+safe as permanent search pruning. Two functions may agree on the current input
+$0$ and differ when a later context applies them at $1$. If new tests arrive,
+retain enough alternatives to refine the buckets. In bottom-up synthesis,
+substitution by a representative requires congruence for every future context
+admitted by the observation semantics; it is not guaranteed merely because
+the subterms are closed.
+
+Within an audited parametric fragment, Section~\ref{sec:r2}'s canonical tests
+give stronger length-bounded guarantees. Outside it, distinguish evidence
+levels in the interface. Proof irrelevance may identify proof fields, but
+computational dictionaries and nontrivial dependent casts must not be erased
+from the semantic key. This policy avoids both duplicate clutter and false
+claims that finitely observed candidates are the same program.
+
+\section{R9: Learned guidance under a kernel gate}\label{sec:r9}
+
+\question{R9.Q1}{What accuracy do current models achieve on accumulator or helper proposals?}
+\status{No numerical estimate is justified for this exact Leant2 task by the evidence examined. A targeted study is necessary.}
+
+Whole-proof success, general code generation, and component prediction are not
+measurements of producing the right carrier or helper from only a Lean type
+and examples. A March 2026 study compares language models with symbolic tools
+across several synthesis domains, including recursive functions, and reports
+important accuracy and runtime limitations. Its prompts, models, specifications,
+and verifiers differ from the proposed carrier-proposal task
+\cite{llmsynthesis}. It cannot supply a percentage for Leant2 by extrapolation.
+
+A focused experiment should separate four questions. Does the proposal parse
+and type check? Does it contain a carrier or helper with a solution under an
+ideal or supplied filler? Can the actual bounded synthesizer find that filler?
+Does the resulting complete program satisfy the contract with a checked proof?
+These are nested but different success rates. A good carrier can appear
+unsuccessful because the step search is weak; an apparently successful helper
+can overfit sparse examples.
+
+Use held-out algorithm families rather than randomly split variants of the
+same textbook function. Vary example completeness, noise-free ambiguity,
+and whether a sketch is supplied. Compare the same frozen enumerator with no
+model, model-based reordering, and model-supplied additional templates. Record
+top-one and top-$k$ useful-template recall, invalid proposals, time to certified
+answer, model startup and inference latency, and replay success. Charge all
+model work to the same end-to-end budget, including a cold-start track.
+
+One proposal batch per query is a better initial experiment than a model call
+at every node. Carrier, generalization, and helper-shape decisions have large
+possible downstream effects, whereas a call for every routine constructor
+would pay latency repeatedly. This is a hypothesis about where guidance may
+be economical; the proposed study should be allowed to reject it.
+
+\question{R9.Q2}{Can learned contributions be deterministic and auditable beyond recording proposals?}
+\status{Yes through frozen artifacts and a restricted interface; a seed and temperature zero are not a general reproducibility guarantee.}
+
+Separate three notions. \emph{Proof replay} rechecks a final term against the
+original type and contract. \emph{Search replay} repeats an exact sequence of
+proposals and decisions. \emph{Model replay} regenerates identical proposals
+from the model. The first two can be achieved without the third by recording
+proposal bytes and a deterministic logical trace. Floating-point execution,
+parallel inference, and changes in libraries or hardware can affect the third
+even when a seed is fixed.
+
+A receipt should identify the query and original contract, environment and
+provider inventory, Lean toolchain, trust profile, search grammar, cost model,
+proposal bundle, logical work counters, and accepted program and proof. For a
+learned source also record model and tokenizer hashes, prompt/template version,
+inference implementation, and any normalization of its output. An offline
+content-addressed proposal bundle or a frozen integer-valued ranking table is
+particularly easy to audit.
+
+Restrict proposals to a small typed syntax or a list of named components and
+binder selections. Arbitrary Lean commands, tactic blocks, and imports can
+execute metaprograms; the phrase ``the model only proposes Lean'' is not a
+sandbox. Elaborate untrusted syntax in an isolated environment, then validate
+the resulting term against the independently retained query. Lean's current
+validation documentation explicitly distinguishes ordinary kernel checking
+from protection against malicious code and describes statement comparison and
+external checking in a sandboxed workflow \cite{leanvalidation}.
+
+Reordering preserves completeness only with the right quantifiers. Exhaustive
+search over a fixed finite structural bound still sees the same candidate set
+if every alternative is eventually processed and pruning remains conservative.
+A fixed time or node budget need not see the same set after reordering. An
+infinite search needs fairness. If the model adds a new helper or component,
+it has changed the grammar, not merely reordered it, and the receipt should
+say so. Reserve a deterministic fallback share and never turn a zero model
+probability into a semantic impossibility claim.
+
+For correctness citations, the authoritative artifact is the checked program,
+its exact contract proof, and its allowed assumptions. The model's ranking
+score is not evidence of correctness. Recording why the search tried a
+candidate is useful for engineering audit, but cannot replace replay of the
+proof or a certificate for a claimed negative result.

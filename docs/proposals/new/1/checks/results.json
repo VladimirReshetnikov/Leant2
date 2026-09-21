@@ -1,0 +1,124 @@
+{
+  "checks": [
+    {
+      "inputs": 1093,
+      "max_length": 6,
+      "name": "reverse_is_a_plain_right_fold",
+      "passed": true
+    },
+    {
+      "machines": [
+        {
+          "candidates_examined": 2,
+          "solution": null,
+          "states": 1
+        },
+        {
+          "candidates_examined": 64,
+          "solution": null,
+          "states": 2
+        },
+        {
+          "candidates_examined": 3173,
+          "delta": [
+            1,
+            1,
+            2,
+            2,
+            0,
+            0
+          ],
+          "finish": [
+            true,
+            false,
+            false
+          ],
+          "seed": 0,
+          "states": 3
+        }
+      ],
+      "name": "minimal_finite_carrier_for_length_mod_3",
+      "passed": true,
+      "samples": 31,
+      "witness_delta": [
+        1,
+        1,
+        2,
+        2,
+        0,
+        0
+      ],
+      "witness_finish": [
+        true,
+        false,
+        false
+      ]
+    },
+    {
+      "clique_size": 3,
+      "name": "context_conflict_clique_lower_bound",
+      "passed": true,
+      "rows": [
+        [
+          true,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          true
+        ],
+        [
+          false,
+          true,
+          false
+        ]
+      ]
+    },
+    {
+      "name": "different_partial_rows_need_not_conflict",
+      "passed": true,
+      "row1": {
+        "c0": false
+      },
+      "row2": {
+        "c1": true
+      }
+    },
+    {
+      "naive_sum": 2,
+      "name": "coupled_goal_sum_not_admissible",
+      "passed": true,
+      "safe_max": 1,
+      "true_cost": 1
+    },
+    {
+      "name": "rollback_cache_requires_assignment_identity",
+      "passed": true
+    },
+    {
+      "name": "finite_probe_agreement_is_not_global_equivalence",
+      "passed": true
+    },
+    {
+      "name": "angelic_calls_require_shared_constraints",
+      "passed": true
+    },
+    {
+      "name": "deterministic_trace_is_not_identical_wall_clock_output",
+      "passed": true
+    },
+    {
+      "inputs": 31,
+      "name": "fibonacci_pair_invariant",
+      "passed": true
+    },
+    {
+      "name": "failed_angelic_choice_is_not_branch_refutation",
+      "passed": true
+    }
+  ],
+  "passed": 11,
+  "scope": "Finite mathematical models; no Leant2/Lean execution"
+}

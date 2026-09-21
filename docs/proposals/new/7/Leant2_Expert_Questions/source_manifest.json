@@ -1,0 +1,295 @@
+{
+  "review_date": "2026-09-21",
+  "repository": "https://github.com/VladimirReshetnikov/Leant2",
+  "repository_commit": "784664ff34e819422510a4d470ab07fe48bb736b",
+  "toolchain": "leanprover/lean4:v4.34.0",
+  "pdf_pages": 42,
+  "question_count": 31,
+  "bibliography_entry_count": 37,
+  "executed": [
+    "Independent standard-library Python finite-model checks",
+    "pdfLaTeX compilation",
+    "PDF rendering and visual layout inspection"
+  ],
+  "not_executed": [
+    "Leant2 build or tests",
+    "Lean compilation or kernel checking of proposed mechanisms",
+    "Leant2 performance benchmarks",
+    "Model accuracy experiments",
+    "Human ranking preference study"
+  ],
+  "sources": [
+    {
+      "citation_key": "repo",
+      "bibliography_entry_tex": "Vladimir Reshetnikov. \\emph{Leant2}. Repository snapshot, 18 September 2026.\\par\n\\code{784664ff34e819422510a4d470ab07fe48bb736b}.\n\\url{https://github.com/VladimirReshetnikov/Leant2/tree/784664ff34e819422510a4d470ab07fe48bb736b}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/tree/784664ff34e819422510a4d470ab07fe48bb736b"
+      ]
+    },
+    {
+      "citation_key": "proposal",
+      "bibliography_entry_tex": "Leant2 project. \\emph{Leant2: Design for Further Improvements}. 18 September 2026. Main source; distinguishes original measurements from proposals.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/Leant2-next.tex}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/Leant2-next.tex"
+      ]
+    },
+    {
+      "citation_key": "repo-r1",
+      "bibliography_entry_tex": "Leant2 project. R1: Search control with coupled goals under a wall-clock budget.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/05-search.tex}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/05-search.tex"
+      ]
+    },
+    {
+      "citation_key": "repo-r2",
+      "bibliography_entry_tex": "Leant2 project. R2: Carriers, accumulators and auxiliary state.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/06-carriers.tex}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/06-carriers.tex"
+      ]
+    },
+    {
+      "citation_key": "repo-r3",
+      "bibliography_entry_tex": "Leant2 project. R3: Evaluation of programs with holes.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/07-evaluation.tex}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/07-evaluation.tex"
+      ]
+    },
+    {
+      "citation_key": "repo-r4",
+      "bibliography_entry_tex": "Leant2 project. R4: Indexed families and the motive problem.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/08-dependent.tex}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/08-dependent.tex"
+      ]
+    },
+    {
+      "citation_key": "repo-r5",
+      "bibliography_entry_tex": "Leant2 project. R5: General recursion from incomplete examples.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/09-recursion.tex}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/09-recursion.tex"
+      ]
+    },
+    {
+      "citation_key": "repo-r6",
+      "bibliography_entry_tex": "Leant2 project. R6: Contracts beyond decidable observations.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/10-contracts.tex}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/10-contracts.tex"
+      ]
+    },
+    {
+      "citation_key": "repo-r7",
+      "bibliography_entry_tex": "Leant2 project. R7: Component retrieval at library scale.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/11-retrieval.tex}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/11-retrieval.tex"
+      ]
+    },
+    {
+      "citation_key": "repo-r89",
+      "bibliography_entry_tex": "Leant2 project. R8: Ranking and candidate equivalence; R9: Learned guidance under a kernel gate.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/12-ranking.tex}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/12-ranking.tex"
+      ]
+    },
+    {
+      "citation_key": "repo-gate",
+      "bibliography_entry_tex": "Leant2 project. \\path{Leant2/Accept/Gate.lean}. In particular, \\code{kernelCheckAndAudit} and \\code{gate}.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/Leant2/Accept/Gate.lean}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/Leant2/Accept/Gate.lean"
+      ]
+    },
+    {
+      "citation_key": "repo-search",
+      "bibliography_entry_tex": "Leant2 project. \\path{Leant2/Search/Core.lean}. Inspected portions include lines 1--470: branch state, residual evaluation, proof portfolio, and structural recursion.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/Leant2/Search/Core.lean}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/Leant2/Search/Core.lean"
+      ]
+    },
+    {
+      "citation_key": "repo-engine",
+      "bibliography_entry_tex": "Leant2 project. \\path{Leant2/Engine.lean}. Inspected enumeration, lanes, candidate extraction, ranking, and gate calls.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/Leant2/Engine.lean}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/Leant2/Engine.lean"
+      ]
+    },
+    {
+      "citation_key": "repo-toolchain",
+      "bibliography_entry_tex": "Leant2 project. \\path{lean-toolchain}.\n\\url{https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/lean-toolchain}.",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/lean-toolchain"
+      ]
+    },
+    {
+      "citation_key": "aesop",
+      "bibliography_entry_tex": "Jannis Limperg and Asta Halkj\\ae r From.\nAesop: White-Box Best-First Proof Search for Lean.\n\\emph{CPP}, pp. 253--266, 2023. DOI: \\url{https://doi.org/10.1145/3573105.3575671}.\nPrimary conference record:\n\\url{https://popl23.sigplan.org/details/CPP-2023-papers/5/Aesop-White-Box-Best-First-Proof-Search-for-Lean}.",
+      "urls": [
+        "https://doi.org/10.1145/3573105.3575671",
+        "https://popl23.sigplan.org/details/CPP-2023-papers/5/Aesop-White-Box-Best-First-Proof-Search-for-Lean"
+      ]
+    },
+    {
+      "citation_key": "canonical",
+      "bibliography_entry_tex": "Chase Norman and Jeremy Avigad.\n\\emph{Canonical for Automated Theorem Proving in Lean}.\nITP 2025; arXiv:2504.06239. Version 1 inspected.\n\\url{https://arxiv.org/html/2504.06239v1}.",
+      "urls": [
+        "https://arxiv.org/html/2504.06239v1"
+      ]
+    },
+    {
+      "citation_key": "probe",
+      "bibliography_entry_tex": "Shraddha Barke, Hila Peleg, and Nadia Polikarpova.\nJust-in-Time Learning for Bottom-Up Enumerative Synthesis.\n\\emph{OOPSLA}, 2020. arXiv:2010.08663.\n\\url{https://arxiv.org/abs/2010.08663}.",
+      "urls": [
+        "https://arxiv.org/abs/2010.08663"
+      ]
+    },
+    {
+      "citation_key": "luby",
+      "bibliography_entry_tex": "Michael Luby, Alistair Sinclair, and David Zuckerman.\nOptimal Speedup of Las Vegas Algorithms.\n\\emph{Information Processing Letters} 47, pp. 173--180, 1993.\n\\url{https://doi.org/10.1016/0020-0190(93)90029-9}.",
+      "urls": [
+        "https://doi.org/10.1016/0020-0190(93)90029-9"
+      ]
+    },
+    {
+      "citation_key": "folds",
+      "bibliography_entry_tex": "Jeremy Gibbons, Graham Hutton, and Thorsten Altenkirch.\nWhen is a Function a Fold or an Unfold?\n\\emph{Electronic Notes in Theoretical Computer Science} 44(1), 2001.\nAuthor/institutional publication record:\n\\url{https://www.cs.ox.ac.uk/publications/publication2368-abstract.html}.",
+      "urls": [
+        "https://www.cs.ox.ac.uk/publications/publication2368-abstract.html"
+      ]
+    },
+    {
+      "citation_key": "angluin",
+      "bibliography_entry_tex": "Dana Angluin.\nLearning Regular Sets from Queries and Counterexamples.\n\\emph{Information and Computation} 75, pp. 87--106, 1987.\n\\url{https://doi.org/10.1016/0890-5401(87)90052-6}.",
+      "urls": [
+        "https://doi.org/10.1016/0890-5401(87)90052-6"
+      ]
+    },
+    {
+      "citation_key": "autolifter",
+      "bibliography_entry_tex": "Ruyi Ji, Yuwei Zhao, Yingfei Xiong, Di Wang, Lu Zhang, and Zhenjiang Hu.\n\\emph{Decomposition-Based Synthesis for Applying Divide-and-Conquer-Like Algorithmic Paradigms}.\narXiv:2202.12193, version 4, 29 January 2024; paper reports acceptance to ACM TOPLAS.\n\\url{https://arxiv.org/html/2202.12193v4}.",
+      "urls": [
+        "https://arxiv.org/html/2202.12193v4"
+      ]
+    },
+    {
+      "citation_key": "hipspec",
+      "bibliography_entry_tex": "Koen Claessen, Moa Johansson, Dan Ros\\'en, and Nicholas Smallbone.\nHipSpec: Automating Inductive Proofs of Program Properties.\nATx 2012 workshop paper, published 2013. DOI: \\url{https://doi.org/10.29007/3qwr}.\nAuthor copy: \\url{https://smallbone.se/papers/hipspec-atx.pdf}.",
+      "urls": [
+        "https://doi.org/10.29007/3qwr",
+        "https://smallbone.se/papers/hipspec-atx.pdf"
+      ]
+    },
+    {
+      "citation_key": "smyth",
+      "bibliography_entry_tex": "Justin Lubin, Nick Collins, Cyrus Omar, and Ravi Chugh.\nProgram Sketching with Live Bidirectional Evaluation.\n\\emph{Proceedings of the ACM on Programming Languages} 4(ICFP), article 109, 2020.\nDOI: \\url{https://doi.org/10.1145/3408991}.\n\\url{https://arxiv.org/abs/1911.00583}.",
+      "urls": [
+        "https://doi.org/10.1145/3408991",
+        "https://arxiv.org/abs/1911.00583"
+      ]
+    },
+    {
+      "citation_key": "burst",
+      "bibliography_entry_tex": "Anders Miltner, Adrian Trejo Nu\\~nez, Ana Brendel, Swarat Chaudhuri, and Isil Dillig.\nBottom-up Synthesis of Recursive Functional Programs using Angelic Execution.\n\\emph{POPL}, 2022; arXiv:2107.06253.\n\\url{https://arxiv.org/abs/2107.06253}.",
+      "urls": [
+        "https://arxiv.org/abs/2107.06253"
+      ]
+    },
+    {
+      "citation_key": "adapton",
+      "bibliography_entry_tex": "Matthew A. Hammer, Jana Dunfield, Kyle Headley, Nicholas Labich, Jeffrey S. Foster, Michael Hicks, and David Van Horn.\n\\emph{Incremental Computation with Names}.\n2015. arXiv:1503.07792.\n\\url{https://arxiv.org/abs/1503.07792}.",
+      "urls": [
+        "https://arxiv.org/abs/1503.07792"
+      ]
+    },
+    {
+      "citation_key": "lean4lean",
+      "bibliography_entry_tex": "Mario Carneiro.\n\\emph{Lean4Lean: Towards a Verified Typechecker for Lean, in Lean}.\n2024. arXiv:2403.14064.\n\\url{https://arxiv.org/abs/2403.14064}.",
+      "urls": [
+        "https://arxiv.org/abs/2403.14064"
+      ]
+    },
+    {
+      "citation_key": "lean4lean2026",
+      "bibliography_entry_tex": "Lean4Lean project. \\emph{Lean4Lean: Mechanizing the Metatheory of Lean}.\nWITS 2026 conference presentation record.\n\\url{https://popl26.sigplan.org/details/wits-2026-papers/11/-Lean4Lean-Mechanizing-the-Metatheory-of-Lean}.",
+      "urls": [
+        "https://popl26.sigplan.org/details/wits-2026-papers/11/-Lean4Lean-Mechanizing-the-Metatheory-of-Lean"
+      ]
+    },
+    {
+      "citation_key": "lean-induction",
+      "bibliography_entry_tex": "Lean project. \\path{src/Lean/Meta/Tactic/Induction.lean}, tag \\code{v4.34.0}.\nPublic induction and motive-construction implementation.\n\\url{https://github.com/leanprover/lean4/blob/v4.34.0/src/Lean/Meta/Tactic/Induction.lean}.",
+      "urls": [
+        "https://github.com/leanprover/lean4/blob/v4.34.0/src/Lean/Meta/Tactic/Induction.lean"
+      ]
+    },
+    {
+      "citation_key": "lean-cbv",
+      "bibliography_entry_tex": "Lean project. \\path{src/Lean/Elab/Tactic/Cbv.lean}, tag \\code{v4.34.0}.\n\\code{cbv} and \\code{decide_cbv} tactic adapters.\n\\url{https://github.com/leanprover/lean4/blob/v4.34.0/src/Lean/Elab/Tactic/Cbv.lean}.",
+      "urls": [
+        "https://github.com/leanprover/lean4/blob/v4.34.0/src/Lean/Elab/Tactic/Cbv.lean"
+      ]
+    },
+    {
+      "citation_key": "lean-tactics",
+      "bibliography_entry_tex": "Lean project. \\emph{Lean Language Reference: Tactic Reference}.\nCurrent online documentation, accessed 21 September 2026.\n\\url{https://lean-lang.org/doc/reference/latest/Tactic-Proofs/Tactic-Reference/}.",
+      "urls": [
+        "https://lean-lang.org/doc/reference/latest/Tactic-Proofs/Tactic-Reference/"
+      ]
+    },
+    {
+      "citation_key": "lean-recursion",
+      "bibliography_entry_tex": "Lean project. \\emph{Lean Language Reference: Recursive Definitions}.\nCurrent online documentation, accessed 21 September 2026.\n\\url{https://lean-lang.org/doc/reference/latest/Definitions/Recursive-Definitions/}.",
+      "urls": [
+        "https://lean-lang.org/doc/reference/latest/Definitions/Recursive-Definitions/"
+      ]
+    },
+    {
+      "citation_key": "lean-nat",
+      "bibliography_entry_tex": "Lean project. \\emph{Theorem Proving in Lean 4: Inductive Types}, especially the natural-number definitions and induction examples.\nCurrent online documentation, accessed 21 September 2026.\n\\url{https://lean-lang.org/theorem_proving_in_lean4/Inductive-Types/}.",
+      "urls": [
+        "https://lean-lang.org/theorem_proving_in_lean4/Inductive-Types/"
+      ]
+    },
+    {
+      "citation_key": "synquid",
+      "bibliography_entry_tex": "Nadia Polikarpova, Ivan Kuraj, and Armando Solar-Lezama.\nProgram Synthesis from Polymorphic Refinement Types.\n\\emph{PLDI}, 2016. DOI: \\url{https://doi.org/10.1145/2908080.2908093}.\n\\url{https://arxiv.org/abs/1510.08419}.",
+      "urls": [
+        "https://doi.org/10.1145/2908080.2908093",
+        "https://arxiv.org/abs/1510.08419"
+      ]
+    },
+    {
+      "citation_key": "hoogle",
+      "bibliography_entry_tex": "Zheng Guo, Michael James, David Justo, Jiaxiao Zhou, Ziteng Wang, Ranjit Jhala, and Nadia Polikarpova.\nProgram Synthesis by Type-Guided Abstraction Refinement.\n\\emph{Proceedings of the ACM on Programming Languages} 4(POPL), article 12, 2020.\nDOI: \\url{https://doi.org/10.1145/3371080}.\nAuthor copy: \\url{https://ranjitjhala.github.io/static/hoogle_plus.pdf}.",
+      "urls": [
+        "https://doi.org/10.1145/3371080",
+        "https://ranjitjhala.github.io/static/hoogle_plus.pdf"
+      ]
+    },
+    {
+      "citation_key": "leandojo",
+      "bibliography_entry_tex": "Kaiyu Yang, Aidan M. Swope, Alex Gu, Rahul Chalamala, Peiyang Song, Shixing Yu, Saad Godil, Ryan Prenger, and Anima Anandkumar.\nLeanDojo: Theorem Proving with Retrieval-Augmented Language Models.\n\\emph{NeurIPS}, 2023. arXiv:2306.15626.\n\\url{https://arxiv.org/abs/2306.15626}.",
+      "urls": [
+        "https://arxiv.org/abs/2306.15626"
+      ]
+    },
+    {
+      "citation_key": "leanhammer",
+      "bibliography_entry_tex": "Thomas Zhu, Joshua Clune, Jeremy Avigad, Albert Qiaochu Jiang, and Sean Welleck.\n\\emph{Premise Selection for a Lean Hammer}.\nICLR 2026; arXiv:2506.07477, version 2, 2026.\n\\url{https://arxiv.org/html/2506.07477v2}.\n\\url{https://proceedings.iclr.cc/paper_files/paper/2026/file/cf6501108fced72ee5c47e2151c4e153-Paper-Conference.pdf}.",
+      "urls": [
+        "https://arxiv.org/html/2506.07477v2",
+        "https://proceedings.iclr.cc/paper_files/paper/2026/file/cf6501108fced72ee5c47e2151c4e153-Paper-Conference.pdf"
+      ]
+    },
+    {
+      "citation_key": "sauto-docs",
+      "bibliography_entry_tex": "CoqHammer project. \\emph{CoqHammer: Proof Automation for Dependent Type Theory}.\nOfficial documentation, especially Sauto options and Hammer reconstruction guidance. Accessed 21 September 2026.\n\\url{https://coqhammer.github.io/}.",
+      "urls": [
+        "https://coqhammer.github.io/"
+      ]
+    }
+  ],
+  "validation_details": {
+    "latex_warnings": 0,
+    "undefined_citations_or_references": 0,
+    "question_count_checked": 31,
+    "finite_check_assertions_passed": true,
+    "pdf_contains_replacement_characters": false
+  }
+}

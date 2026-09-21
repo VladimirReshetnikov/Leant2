@@ -1,0 +1,100 @@
+\section{An integrated implementation plan}\label{sec:roadmap}
+
+\subsection{One native state, several explicit kinds of evidence}
+
+The recommendations do not require replacing Lean's expression language with an unrelated theorem prover. Keep native \code{Expr}, native local contexts, and native transactional metavariable state as the authoritative substrate. The new layer is a search controller with explicit dependency and evidence records. Separate the following objects: a frozen query; a branch state; a constraint store; an enumerative recipe; a proof-service request; and an accepted, query-bound certificate.
+
+A branch state contains a saved native state, open goals, the partial root program, accumulated fixed cost, and a deterministic recipe path. Its constraint store contains typed observations, dependencies on assigned as well as unassigned metavariables, oracle assumptions, termination obligations, and local invariant obligations. Its scheduling metadata contains estimated usefulness, proof debt, and logical-work charges. The fixed cost belongs to the grammar; estimated usefulness belongs to the scheduler. Neither is the same as elapsed time.
+
+Use recipes to move proposals between branches and to persist search. A recipe names an allowed operation and its arguments; replay allocates fresh metavariables in the destination context. It must not consist of an \code{Expr} whose free-variable identifiers belong to a discarded branch. Revalidate imported recipes in the current frozen environment. Newly introduced helpers form an explicit acyclic dependency sequence of declarations, each checked before use; future mutual recursion needs a separate supported realization rule.
+
+The essential controller can be expressed schematically as follows. This is architectural pseudocode, not a claim of compiled Lean code.
+\begin{lstlisting}
+while logical work remains and no external cancellation:
+    select a branch/proof obligation by the replayable scheduler
+    restore the branch's native state
+    propagate assignments and update dependency records
+    apply only supported, completion-stable reductions
+    if a checked exclusion certificate applies:
+        prune this branch with the certificate's exact scope
+    else if the program and required evidence are closed:
+        check against the original frozen query and axiom policy
+        record accepted certificate; attempt checked publication
+    else:
+        enumerate or replay the next permitted recipe
+        elaborate it transactionally
+        record children, dependencies, costs, and pending proofs
+    charge work outside rollback and save resumable progress
+\end{lstlisting}
+
+The existing transaction module already places its work ledger outside rollback; retain that good design. The existing global residual-blocker memo, by contrast, should evolve into a dependency-aware per-observation mechanism before being used across a large persistent frontier. Snapshot cost must be measured again after this change: cheap snapshots along one DFS path do not imply cheap retention of thousands of frontier states and caches.\cite{implementation}
+
+\subsection{Recommended implementation order}
+
+\paragraph{Phase 1: harden the observable contract.}
+Bind acceptance to the frozen target and contract; make universe specialization a separate explicit outcome; apply the requested axiom policy to negative certificates; retain those certificates; and separate proof certification from executable publication. Add receipts and verification replay. Investigate proof-backed \code{csimp} publication using the standard-library precedent. This phase fixes the meaning of success and failure before changing the search.
+
+\paragraph{Phase 2: improve observations without replacing the evaluator.}
+Decompose supported contracts through checked equivalences or necessary-condition lemmas. Keep true/false/stuck/resource states separately. Cache closed observations first; then introduce explicit read sets and assignment-aware invalidation. Use richer residual information for ranking and goal ordering before allowing any new custom-evaluator refutation rule. Differential tests should include open typed contexts, delayed substitutions, and rollback histories.
+
+\paragraph{Phase 3: widen the useful native grammar.}
+Enable a bounded outer structural recursion rule for naturals, dependency-closed indexed induction, and a small set of conditional/comparison components. Introduce product, option, and continuation carriers through one graded grammar, with a sketch path that supplies the carrier explicitly. Add local algebra invariants and an induction-along-the-program proof adapter. The paired ``carrier given'' and ``carrier invented'' tracks will show where the remaining difficulty lies.
+
+\paragraph{Phase 4: expose a persistent frontier and principled retrieval.}
+Refactor the continuation search into replayable whole states while retaining DFS as a policy for regression comparison. Add fixed-cost enumeration, fair scheduling, and conservative dependency components. Use abstract reachability as a ranking aid initially; promote it to a hard filter only with the required over-approximation argument and a stated grammar scope. Implement the small finite-carrier constraint solver as an exact bounded component, not as a universal carrier oracle.
+
+\paragraph{Phase 5: add stronger semantic guidance.}
+Develop the typed hole-closure fragment, backward observations, and capability-based recursive equations with checked realization. Add finite-domain angelic refinements where unsatisfiability can be justified, and keep unsupported cases as unknown. Introduce one-helper synthesis and invariant speculation with a separate cost grade. Upgrade proof debt scheduling using measurements rather than assuming a generic bandit policy is optimal.
+
+\paragraph{Phase 6: evaluate learned proposals as an optional lane.}
+Once frozen-query certificates, replay, and matched benchmarks exist, compare learned carrier/helper suggestions with the native grammar and the oracle-carrier condition. Record full costs and retain a model-free default. The core research result is a measured improvement in certified synthesis, not an impressive isolated suggestion.
+
+This ordering differs from making the carrier problem a prerequisite for everything else. Its unbounded version is genuinely hard, but useful bounded carriers, sketches, and native motive support can already unblock other work. Conversely, safe pruning, result semantics, and publication should not wait for a successful invention algorithm.
+
+\subsection{Regression tests tied to the actual failure modes}
+
+A dedicated soundness-oriented suite should accompany ordinary functionality tests. The following table gives compact tests and what each protects. They are proposed implementation tests, not a claim that the current repository has been run against them.
+
+\begin{longtable}{@{}L{38mm}L{114mm}@{}}
+\toprule
+Test family & Required behavior\\
+\midrule
+\endfirsthead
+\toprule
+Test family & Required behavior\\
+\midrule
+\endhead
+Shared dependencies & Goals sharing type or universe metavariables, local let values, class arguments, or one relational observation must not be treated as independent merely because their displayed targets differ.\\
+Rollback and cache & After a hole is assigned differently in sibling branches, a cached residual must be recomputed or validated against the full dependency key. Include an assignment--rollback--reassignment history.\\
+Oracle consistency & Repeated occurrences of the same recursive call cannot choose inconsistent results; unknown calls must not be given a finite result domain and then globally refuted without a domain-completeness argument.\\
+Boolean observations & A deliberately unusual \code{BEq} instance must preserve the exact Boolean contract. The checker may not silently replace it by propositional equality without the required law.\\
+Dependent transport & An index mismatch must require the appropriate equality proof. Removing casts for display or ranking must not change the typed semantic term.\\
+Proof/value interaction & A proof may uniformly solve an open expression or legitimately constrain a hole. A failed proof attempt must remain unknown, not become evidence that the value is wrong.\\
+Frozen query & A valid term for a specialized universe or a weaker contract must not be returned as satisfying the original query.\\
+Negative policy & A negative proof using an axiom outside the requested profile must not produce an accepted impossibility result; the actual retained certificate must replay.\\
+Grammar scope & Exhaustion of one carrier, provider subset, motive class, or cost grade must not become impossibility of the target type or full contract.\\
+Publication & A semantically accepted term which fails compilation remains certified but not executable. A replacement implementation needs a checked relationship and a separate runtime status.\\
+External proposals & Escaped identifiers, undeclared dependencies, forbidden constants, oversized ASTs, and attempted environment changes must be rejected or safely bounded before authoritative acceptance.\\
+Resource limits & Timeout, heartbeat exhaustion, unsupported evaluation, and incomplete class search must never be reported as a mathematical counterexample.\\
+\bottomrule
+\end{longtable}
+
+A particularly important adversarial test embeds two syntactically independent functions in one contract equation. It checks that the independence detector looks at semantic obligations, not only goal types. Another gives the same Boolean observations to many inequivalent polymorphic list programs; it checks that observational buckets can later split rather than permanently losing candidates.
+
+\subsection{A benchmark report that can support the claims}
+
+Preserve the published baseline as a regression target, but do not treat its saturated outcome counts as the only measure of progress. The proposal reports those measurements on a particular earlier commit and workstation; this review has not reproduced them.\cite{evidence} Report the existing Leant suites, unresolved stretch cases, indexed-family cases, general-recursion cases, and universal-contract cases separately. Distinguish closed-example certification from universal proof certification.
+
+For each query, record grammar representability when a reference witness is available, time and logical work to the first candidate, time and work to the first certified candidate, export success, peak memory, provider candidates considered, failed unifications, observation reductions, and proof-service work. Report curves over completed work grades and wall-clock limits, not only one final solved count. Include cold versus warm imports and indexes, and disclose the compiler/runtime, operating system, processor, and parallelism.
+
+Ablate one architectural change at a time. Useful comparisons include native kernel observations versus richer decomposition; no cache versus closed cache versus dependency cache; DFS versus fixed-cost frontier; fixed versus learned priority; supplied versus invented carrier; retrieval ranking versus hard bounded filtering; post-hoc proof versus local algebra certificates; and model-free versus transcript-guided synthesis. Measure memory along with time, because retaining alternate states and observational recipes is intentionally trading space for less repeated work.
+
+Claims of determinism should use repeated runs with the same logical work, including perturbed worker speeds and different thread arrival orders. A wall-clock run may produce different prefix lengths and still obey the intended reproducibility contract. Claims of pruning completeness should use a bounded reference enumerator on small instances to verify that no valid in-bound witness disappears. Claims of positive correctness should replay every retained certificate, not merely inspect the number of successful searches.
+
+\subsection{What has and has not been resolved}
+
+The investigation supplies concrete answers where the question admits them: conservative independence conditions; safe lower bounds for coupled search; exact finite-domain carrier inference; continuation-based carrier lower bounds; a typed residual-certificate formulation; bounded angelic refinement conditions; an accessible Lean motive API; an existing proof-backed recursor compilation pattern; local invariant certificates; and a published dictionary-passing treatment of type classes in TYGAR.
+
+It also identifies claims that need explicit hypotheses rather than a new heuristic: global parametricity of arbitrary Lean terms, negative conclusions from sample-limited carriers, observational replacement in dependent contexts, best-candidate guarantees under learned priorities, and equal results under equal wall-clock budgets. The mathematical arguments explain the missing hypotheses and propose operational replacements.
+
+What remains empirical includes useful carrier-grammar size, the value of partial-success signals, memory cost of the frontier, effectiveness of invariant and helper proposals, data-goal retrieval accuracy, and model suggestion quality under the exact budget. The right next contribution is an implementation with the stated evidence boundaries and a reproducible ablation study. The article's proposed architecture is intended to make those experiments interpretable, not to announce performance results that have not been measured.

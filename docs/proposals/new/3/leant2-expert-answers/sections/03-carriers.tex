@@ -1,0 +1,109 @@
+\section{R2: carriers, accumulators, and auxiliary state}
+\label{sec:carriers}
+
+\Q{R2.1}{Can finite examples determine a minimal carrier type?}
+\ans They can determine a minimum \emph{within a precisely bounded synthesis problem}, or the smallest finite-state model consistent with the samples. They do not, without additional assumptions, determine the intended carrier or a unique minimal Lean type. The objective and the bound must include the code that uses the carrier.
+
+A candidate consists of more than $K$. For a list input, write it as
+\[
+  (K,z,s,o),\qquad z:K,\quad s:A\to K\to K,\quad o:K\to T,
+\]
+with result $o(\foldr\ s\ z\ xs)$. Possible notions of minimum include the number of carrier values, the size of a type expression for $K$, and the description length of $(K,z,s,o)$. They are not interchangeable. Isomorphic types may have different syntax costs, and a tiny type can require a very complicated step.
+
+A particularly important degeneracy is $K=\List A$, $s=\mathrm{cons}$, $z=[]$, and $o$ equal to the entire desired function. This is always a formal ``carrier solution'' when that function is available, but it has not solved the synthesis problem. Penalize the finishing program and constrain its grammar. Otherwise a carrier search can hide all the difficulty in \code{finish}.
+
+\textbf{A terminating bounded algorithm.} Fix a finite grammar of type expressions and finitely many term productions, including literal and universe bounds. Bound the total syntax cost of $K,z,s,o$, not merely the carrier depth. In a fragment with total type checking and evaluation, enumerate candidates in objective order, type-check them, evaluate the finite observations, and return the first success. Exhaustion proves that no candidate in \emph{that bounded grammar} fits the observations. If a checker or evaluator times out, record an unresolved alternative; do not upgrade that run to exhaustive failure. General Lean type inhabitation cannot be replaced by a finite search over type names alone.
+
+For a finite alphabet and a finite carrier of $k$ states, there is a more direct complete decision procedure: enumerate or solve for the initial state, transition tables, and output table. For an alphabet of size $a$ and finite output set of size $b$, there are at most
+\[
+  k\cdot k^{ak}\cdot b^k
+\]
+raw tables before symmetry reduction. Fixing the initial state's name to zero removes a factor $k$ without losing any nonempty-state model. SAT or finite-domain constraint solving improves the search, but the result is still a sample-consistent state machine, not identification of the unknown target on all inputs.
+
+\subsubsection*{A sound carrier-exclusion rule}
+
+For right folds, the relevant contexts \emph{prepend} a list: $u\concat xs$. Let $S$ be a finite set of sampled suffixes and $U$ a finite set of prepended contexts. Whenever observations specify different outputs for $u\concat x$ and $u\concat y$, put an edge between $x$ and $y$. Missing observations impose no edge. Call the resulting graph $H$.
+
+\begin{theorem}[Finite observation lower bound]
+If a deterministic implementation $o\circ\foldr\ s\ z$ satisfies all these observations, then its reachable states color $H$ properly. Consequently, $|K|\geq\chi(H)$ for finite $K$; in particular a clique of size $r$ rules out every carrier with fewer than $r$ values.
+\end{theorem}
+\begin{proof}
+Associate suffix $x$ with $q(x)=\foldr\ s\ z\ x$. If $q(x)=q(y)$, prepending the same finite context applies the same sequence of functions $s(a,-)$ to equal states. The resulting states remain equal, and applying $o$ gives equal outputs. Thus endpoints of an edge cannot share a state. This is a proper coloring by elements of $K$, giving the lower bound.
+\end{proof}
+
+This is a necessary condition, not a sufficient transition-consistency test. A coloring may fail to extend to a deterministic transition system. Use it as a cheap certified exclusion before synthesizing the tables or terms.
+
+Here is a better carrier benchmark than reverse. On a one-letter alphabet, request the Boolean output ``length is a multiple of three.'' Suffix lengths $0,1,2$, together with suitable prefix lengths in $\{0,1,2\}$, are pairwise distinguishable. Thus two-state \code{Bool} is too small even though the result type is Boolean. Three states suffice, with a cyclic transition and a Boolean finishing test. \code{Option Bool} has exactly three values and is a candidate from the proposal's grammar. The accompanying finite-model script checks this example exhaustively.
+
+The count of values \emph{enumerated so far} at a syntactic depth is not a sound substitute for $|K|$. Small code may produce states outside that enumeration, and intermediate fold states need not be among the examples. For infinite carriers such as \code{Nat}, use a proved abstract-state bound or call the test a heuristic; do not present it as a cardinality refutation.
+
+\subsubsection*{Why reverse must not be semantically excluded}
+
+The classical fold characterization tests whether equal results remain equal after adding a constructor \cite{whenfold}. For reverse there is a direct witness:
+\[
+  \rev(xs)=\foldr\ (\lambda a\ r.\ r\concat[a])\ []\ xs.
+\]
+\begin{proof}
+At the empty list both sides are empty. For $a::xs$, the fold returns the induction-hypothesis result followed by $[a]$, which is exactly $\rev(a::xs)$.
+\end{proof}
+The same carrier $\List A$ is therefore sufficient semantically. With ordinary list append, the displayed implementation performs quadratic list traversal. A function carrier or a left fold can provide a better operational representation. A small grammar lacking append may fail to express the step, but that is a \emph{step-language} obstruction, not a proof that the carrier cannot represent reverse.
+
+\Q{R2.2}{What replaces the alphabet for abstract polymorphic elements?}
+\ans For an appropriately restricted relationally parametric fragment, shapes and positions are the right starting point. Equality tests between abstract elements are \emph{not} automatically available. The capability to compare elements must come from the signature or a justified semantic assumption.
+
+A list container has shapes $n\in\N$ and positions $\mathrm{Fin}(n)$. A natural transformation from lists to lists is described by an output shape $m(n)$ and a position-selection map
+\[
+  \phi_n:\mathrm{Fin}(m(n))\to\mathrm{Fin}(n).
+\]
+Its action is to copy the input positions selected by $\phi_n$, allowing omission, duplication, and permutation. This representation captures the information that a genuinely parametric program cannot manufacture a new abstract element or branch on its representation. It also forces the empty-input constraints: without another source of an $A$, the output shape at zero must be zero.
+
+There is directly relevant published work missing from the proposal: Mulleners, Jeuring, and Heeren use container morphisms to automate reasoning about realizability of polymorphic programs from examples and sketches \cite{polymorphic}. This is a more precise starting point than an informal appeal to an alphabet of equalities. It does not already provide a complete synthesis engine for arbitrary Lean-dependent signatures.
+
+For a function with a \code{DecidableEq A} or comparison dictionary, enrich the symbolic domain with the permitted operations and their laws. Equality patterns of finitely many named positions can then be useful; ordered inputs may need order types. A register- or data-automaton interpretation is plausible for such explicitly capability-bounded fragments, but its abstraction must distinguish what the dictionary can observe. Replacing all concrete elements by distinct tokens would lose behaviors that depend on repeated equal values.
+
+Do not apply a free theorem to every kernel-accepted polymorphic Lean term. The allowed constants, axioms, type-class operations, and universe features determine whether a parametricity theorem applies. A safe implementation attaches a proven parametricity certificate to a small syntax fragment or to individual components. Outside that fragment, canonical distinct-element tests are useful probes, not completeness certificates.
+
+Even inside the fragment, testing the canonical list at every length up to $n$ identifies behavior only for those lengths. A program may switch from identity to reverse at length $n+1$. Thus finite canonical tests support bounded observations, not unrestricted functional equality.
+
+\Q{R2.3}{Can fusion be run backwards to invent auxiliary information?}
+\ans Yes as a synthesis strategy, and auxiliary-information synthesis already has substantial precedent. The useful target is a coupled system of equations, not a uniquely invertible transformation of a few examples.
+
+AutoLifter formulates lifting problems in which auxiliary programs and combinators are synthesized together, and decomposes these problems to reduce the synthesis burden. Its second-minimum example enriches a summary with additional information; its setting includes a reference program and prescribed algorithmic paradigms \cite{autolifter}. This directly qualifies the proposal's broad statement that synthesis systems do not invent auxiliary state. It does not settle the Lean problem with only a type and sparse arbitrary contracts.
+
+For Leant2, treat state invention as discovering a feature vector $q$ and an algebra:
+\begin{align*}
+ q([])&=z,&q(a::xs)&=s(a,q(xs)),&o(q(xs))&=h(xs).
+\end{align*}
+The reference $h$ may be a full specification or only sampled observations. A failed attempt to define $s$ exposes two tails that currently have the same summary but require different next summaries or final outputs. Search for an additional feature separating that pair. Pairing adds information; \code{Option} records an empty/nonempty phase; a function-valued state delays a parameter; an index component tracks a remaining resource.
+
+This leads to a concrete counterexample-guided proposal generator. Maintain a set of required distinctions. Enumerate a low-cost feature from an allowed observation grammar, evaluate how many distinctions it separates, and propose the best enrichments. Then jointly synthesize the update and finishing programs. A failure of one proposed feature is a reason to backtrack, not to conclude that the original carrier class is impossible.
+
+For a polynomial functor
+\[
+  F(X)=\sum_{c\in\mathcal C} A_c\times X^{r_c},
+\]
+replace the list step by one operation $A_c\times K^{r_c}\to K$ for each constructor. This supplies a uniform schema for lists and finitely branching trees. It explains why tupling and invariant strengthening recur across datatypes. A bounded enumeration of well-typed carrier expressions and algebra operations is complete for the declared finite grammar. It is not a complete algorithm for discovering arbitrary catamorphisms from finite examples.
+
+\textbf{Practical first version.} Use distinctions to rank a short grammar of result carriers, products, options, and parameter arrows. Keep the carrier-given benchmark track. Measure whether distinction-guided proposals reduce explored terms relative to the same grammar enumerated blindly. This separates a useful invention heuristic from an unsupported claim of optimal learning.
+
+\Q{R2.4}{Is there a complete motive enumeration for primitive recursion with parameters?}
+\ans There is a simple complete enumeration for an explicitly restricted schema. Avoiding every exponential blowup is a different demand and has no justification merely from the word ``primitive.''
+
+Fix finitely many candidate recursor arguments, a finite local telescope, a bounded carrier grammar, and a bound on nested recursion. Enumerate motives of the form
+\[
+ M(\vec\imath,x)=\prod_{j\in J}(a_j:S_j(\vec\imath,x,\vec a_{<j})).\ K(\vec\imath,x,\vec a),
+\]
+where $J$ is dependency-closed and $K$ comes from the declared grammar. Type-check each complete motive candidate before opening all of its branch searches. The ordinary result motive, one generalized parameter, and a small tuple enrichment should appear early, with explicit costs for extra binders and carrier nodes.
+
+Every primitive-recursive program representable by this schema eventually receives its motive, provided the enumerator is fair and the remaining term grammar is also complete within the chosen bounds. The schema does not include every primitive-recursive program unless the surrounding language and bounds are enlarged accordingly. A recursion-depth bound or outermost-only policy is a useful operational restriction, not a theorem that nested recursion is unnecessary.
+
+For natural numbers, begin with outermost primitive recursion and a small parameter set. Fibonacci can be expressed with the invariant state $(F_n,F_{n+1})$ and step $(a,b)\mapsto(b,a+b)$; it need not first be found by a two-step recursive-call search. Conversely, primitive recursion with a changing accumulator needs an arrow motive or a generalized parameter. A list of constant result types alone is not complete for that case.
+
+\Q{R2.5}{Do generalization and lemma-speculation heuristics transfer?}
+\ans They transfer as \emph{proposal mechanisms}, especially when failure traces are represented as equations over partial summaries. They do not transfer as automatically valid pruning rules.
+
+A recurring proof failure can reveal that an induction hypothesis mentions a fixed accumulator while the recursive call uses a changed one. The corresponding synthesis repair is to generalize that accumulator. Two computations traversing the same structure suggest tupling. A failed recursive branch requiring both a result and a structural statistic suggests adding that statistic to the carrier. Anti-unification of several failed obligations can propose a helper specification, but the generalized statement may be false or too strong.
+
+Use a bounded repair language: generalize one dependency-closed local set, add one product component, add one phase tag, or propose one helper with a typed interface. Each repair retains the original contract as the final obligation. Give it a provenance record showing which failed obligations motivated it. Re-run proof checking after the repair; do not import a conjectured helper lemma as an axiom.
+
+The highest-value transfer is a shared \emph{strengthening service} for both programs and proofs. Its inputs are failed transition constraints and failed induction obligations; its outputs are candidate interfaces and a cost. This unifies carriers, generalized motives, and helper contracts without pretending that one generic repair is always successful. An ablation should compare the same repair grammar with and without failure-guided ordering. That is the relevant evidence of transfer.

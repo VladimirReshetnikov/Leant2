@@ -1,0 +1,138 @@
+\section{R4: Indexed families and motive search}\label{sec:r4}
+
+\question{R4.Q1}{Can a useful motive class be enumerated completely and terminate?}
+\status{Yes at a fixed template bound; index-occurrence abstraction alone is not closed under accumulator generalization.}
+
+A practical motive search should start from the recursor's dependent telescope,
+not from an untyped enumeration of expressions of type \code{Sort}. Compute
+candidate abstractions of selected, maximal occurrences of indices and the
+major premise in the goal. Abstract consistently, preserve dependencies, and
+reject any candidate whose motive type is wrong. If there are $k$ eligible
+occurrences, a raw subset enumeration is finite, with at most $2^k$ choices;
+typed equivalence and repeated occurrences can reduce it substantially.
+
+That finite class does not automatically include accumulating recursion. A
+motive like $M(n,x)=S\to T(n,x)$ contains a new binder not created by replacing
+an index occurrence. Close the template language explicitly under a bounded
+number of dependent products, product-valued strengthening, and optional
+initialization state. Enumerate dependency-closed subsets of existing locals
+for generalization and bounded fresh auxiliary types from the carrier grammar.
+This gives an exact, useful answer to the question: completeness relative to
+the defined template language, not completeness for arbitrary motives.
+
+For \code{Vec A n -> Vec B n}, the intended motive abstracts the index and
+vector to yield \code{Vec B n}; no accumulator invention is necessary. Preserve
+fixed parameters $A$, $B$, and the mapping function, and give the recursive
+branch its correctly indexed induction hypothesis. Generalizing every local
+would unnecessarily enlarge the branch interface. Conversely, an accumulator
+that changes at recursive calls must be generalized even when its type does
+not depend on an index. Syntactic index-dependency closure alone will miss it.
+
+\question{R4.Q2}{How should transports be represented without destroying canonical enumeration?}
+\status{Canonicalize index expressions where justified, retain typed equality evidence, and separate display erasure from kernel terms.}
+
+Proof irrelevance concerns inhabitants of the same proposition. It does not
+turn every pair of propositionally equal indices into definitionally equal
+indices, nor does it make every \code{Eq.rec} computation disappear. A term of
+$\mathsf{Vec}\ A\ n$ cannot simply be inserted where
+$\mathsf{Vec}\ A\ m$ is expected because some proof of $n=m$ exists somewhere.
+The equality and the appropriate transport must actually be supplied.
+
+Use a small index-normalization service. It returns a normalized index and a
+proof of equality to the original, or reports that no supported normalization
+applies. Constructor arithmetic and selected associativity/identity rules can
+be handled predictably. Arbitrary \code{simp} search can be an optional proof
+service, but its success is not a definition of a globally canonical form.
+The example $\mathsf{Vec}\ A\ (n+0)$ needs no propositional cast with Lean's
+usual addition; $\mathsf{Vec}\ A\ (0+n)$ at symbolic $n$ is the instructive
+case \cite{leanprelude}.
+
+A typed congruence structure may store equivalent expressions together with
+proofs and their types. Heterogeneous equality can help express relationships
+before source and destination types coincide, but it does not remove the need
+for a typed reconstruction theorem. Replacing Lean's typing problem by a
+setoid problem would move rather than solve the difficulty.
+
+Rank candidates using a proof-insensitive representation only after stating
+which equalities it respects. Proof subterms may have zero semantic ranking
+cost, while transport nodes still have construction and checking costs.
+A displayed term with omitted casts must be elaborated again and proved equal
+to the certified term, or be explicitly labeled as a presentation rather than
+paste-ready Lean. Bound transports to control search, but record that bound;
+it restricts the grammar and may exclude valid programs.
+
+\question{R4.Q3}{What unfolding strategy is supported by existing experience?}
+\status{Use staged, demand-driven unfolding in Leant2, informed by actual tool behavior rather than a universal transparency rule.}
+
+Canonical's published encoding unfolds definitions that alias function types,
+including \code{Set} and \code{Not}, and unfolds reducible definitions and
+type-class instances before constructing its search problem. This is more
+specific than describing it simply as fixed transparency or complete
+normalization. It also supports generalized induction over indexed types,
+so it is a stronger baseline than the proposal's comparison suggests
+\cite{canonical}.
+
+The sensible adaptation is a staged policy. First expose only the head shape
+needed by the next rule: a function binder for introduction, an inductive head
+for elimination, or a class head for instance resolution. Use a small,
+predictable reducible view for indexing. Escalate transparency only when a
+particular matching or conversion attempt is stuck, and charge the escalation
+to that attempt. Cache under the transparency mode and relevant environment
+fingerprint. Do not normalize every program and every local type fully at
+every node.
+
+The official \code{sauto} documentation gives a concrete comparison:
+\code{unfold:} names definitions to unfold heuristically, with an empty list by
+default; \code{unfold!:} forces the listed unfoldings. Logical \code{iff} and
+\code{not} receive special treatment, while \code{red} simplification and its
+\code{ered} eager scheduling are enabled by default. This is a configurable
+mixture of reduction and selective unfolding, not blanket normalization of
+all definitions \cite{sauto}. Pin the version and these options in any
+comparison; the documented defaults are not a theorem about every historical
+implementation path.
+
+A useful ablation measures head exposure, reducible normalization, and
+aggressive unfolding separately. Count conversion failures, expansions,
+normalization time, and cache growth. A transparency policy that saves a few
+unifications but expands huge definitions is not necessarily beneficial.
+
+\question{R4.Q4}{Can Lean's motive computation be called directly with useful failures?}
+\status{Yes. Lean 4.34.0 exposes concrete meta-level entry points; their cost and diagnostic abstraction must be controlled by an adapter.}
+
+Three operations in the inspected source are directly relevant. The function
+\code{getMajorTypeIndices} extracts the recursor's indices. The function
+\code{mkRecursorAppPrefix} constructs a recursor prefix through its motive by
+abstracting the major premise and indices from the target. Finally, the goal
+method \code{MVarId.induction} already reverts indices and the major premise,
+reintroduces them, builds the prefix, and returns branch goals with a
+free-variable substitution. These operations are not all hidden inside syntax
+elaboration \cite{leaninduction}.
+
+The low-level index extractor requires variable indices satisfying specific
+occurrence and dependency conditions. A major premise with a compound or
+repeated index may therefore need the higher-level preparation used by
+\code{cases}/\code{induction}, or an explicit generalization with equality
+constraints. Calling the low-level prefix builder without preparing its
+preconditions is not a complete motive-inference algorithm.
+
+Implement a version-pinned adapter returning a structured result:
+\begin{lstlisting}
+MotiveAttempt :=
+  success(prefix, branches, localSubstitution, dependencies)
+  | unsupportedMajor(reason)
+  | indexPreparationNeeded(indices)
+  | typeMismatch(diagnostic)
+  | unresolvedConstraint(constraint)
+  | resourceExhausted
+\end{lstlisting}
+Run every attempt in a saved state with explicit heartbeat and recursion
+limits. Restore assignments, messages, local substitutions, and branch-local
+caches on failure. Do not parse fragile exception text as a proof of
+impossibility. Preserve the original diagnostic for developers while exposing
+a stable coarse category to the search.
+
+This makes the initial indexed-induction improvement relatively contained:
+remove Leant2's blanket exclusion for a well-prepared subset of indexed
+families, reuse Lean's construction, and test the resulting branches. It does
+not solve general higher-order motive search, but it is a useful prerequisite
+before investing in a new motive language.

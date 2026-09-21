@@ -1,0 +1,14 @@
+{
+  "repository_commit": "784664ff34e819422510a4d470ab07fe48bb736b",
+  "lean_source_tag_reviewed": "v4.34.0",
+  "pdf_pages": 35,
+  "expert_questions": 31,
+  "bibliography_entries": 31,
+  "latex_compilation": "passed; no warnings or overfull boxes",
+  "pdf_layout": "all pages rendered; visual inspection; final standalone build pixel-matched",
+  "python_checks": "executed; all assertions passed",
+  "new_lean_code_compiled": false,
+  "leant2_benchmarks_rerun": false,
+  "pdf_sha256": "79add77fe8506486208743ea3455cbf1129d2aa551d43931e5c0f30d133aeeae",
+  "tex_sha256": "da6ec19313aa5d23aaf3affa9ea415ce7416c6240ca5ad1f9e3ce72066da5db0"
+}

@@ -1,0 +1,122 @@
+\section{R7: Component retrieval at library scale}\label{sec:r7}
+
+\question{R7.Q1}{What abstraction is useful for dependent, universe-polymorphic signatures?}
+\status{Use a refinable, constraint-carrying hypergraph; a graph of unrelated argument heads loses essential conjunctions and correlations.}
+
+Begin with a component descriptor containing its telescope, result head,
+rigid type-parameter sharing, selected index shapes, universe constraints, and
+class prerequisites. The first abstraction may erase most term indices while
+retaining facts such as a vector's element type, whether an index is zero or
+a successor, and whether two occurrences share the same type parameter. A
+later abstraction can retain linear index expressions or a small predicate
+set. The purpose is to reject impossible compositions cheaply, not to solve
+full dependent unification outside Lean.
+
+A component with two arguments is a hyperedge requiring both arguments, not
+two ordinary edges either of which enables its result. If values are reusable,
+model that reuse explicitly: a strict token-consuming Petri net without copying
+can exclude $x\mapsto(x,x)$. If the language permits unused inputs, do not
+silently impose the relevant-typing restriction that every input must be used.
+Retrieval and final ranking may prefer relevance without changing inhabitation.
+
+\begin{proposition}[The requirement on a retrieval abstraction]\label{prop:retrieval}
+If every well-typed composition in a candidate grammar maps to an abstract
+reachability derivation, then abstract unreachability excludes all such
+compositions. If a resource-limited abstract search merely fails to find a
+path, or if some constructors and recursion templates have no abstract
+counterpart, that conclusion does not follow.
+\end{proposition}
+\begin{proof}
+A concrete composition would supply an abstract derivation by hypothesis,
+contradicting abstract unreachability. A timeout is not unreachability; a
+missing abstract counterpart invalidates the hypothesis.
+\end{proof}
+
+TYGAR's abstract typing and refinement framework is the relevant precedent
+\cite{hoogleplus}. In Lean, a failed concrete elaboration is not automatically
+a proof of untypeability: higher-order unification can be incomplete, and
+instance resolution or normalization can time out. Refine from a definite
+rigid constructor clash, a checked incompatible index constraint, or another
+justified obstruction. Otherwise deprioritize the candidate and retain the
+possibility of a different instantiation.
+
+Use universe constraints explicitly or conservatively forget them. Rejecting
+an abstraction because a guessed universe assignment failed is unsound when
+another assignment could work. Likewise, a path-length cutoff of three is a
+bounded retrieval heuristic, not evidence of general uninhabitability. Keep a
+fair fallback provider stream if completeness relative to a larger grammar
+is claimed. Store indexes by environment fingerprint and declaration identity,
+not only a namespace or package version string.
+
+\question{R7.Q2}{Has type-guided abstraction refinement been combined with type classes?}
+\status{Yes. Hoogle+ uses dictionary passing directly; Lean adds contextual and dependent-instance complications.}
+
+The Hoogle+ paper's Section~2.5 translates a class requirement such as
+\code{Eq a} into an ordinary dictionary argument. A transition requiring
+comparison is enabled only if the dictionary type is inhabited. Instance
+constructors can themselves provide dictionaries. The answer to the literal
+question is therefore already positive, not an unexplored extension of
+TYGAR \cite{hoogleplus}.
+
+For Lean, retain a class requirement as an explicit prerequisite in the
+component descriptor, and resolve it when enough type information is known.
+A dictionary supplied as a local argument is an ordinary available value.
+An inferred dictionary must be justified by Lean's instance mechanism or an
+explicit construction admitted by the query's grammar.
+
+Memoizing only by ``class and type'' is insufficient. The full instance goal
+can contain multiple parameters, indices, output parameters, and universes.
+Local instances and their priorities can change the answer. An unresolved
+metavariable may later be instantiated in a way that enables a previously
+failing search. Key a resolved result by the normalized complete goal,
+relevant local-instance context, environment, and assignment fingerprint;
+revalidate it on replay. Cache timeout as a resource event, not nonexistence.
+
+Most importantly, computational dictionaries are not proof-irrelevant.
+Two \code{Add A} instances can produce different programs; two equality
+implementations can yield different observations. Their actual identity and
+behavior belong in the candidate and its observational cache. Only a
+proposition-valued field enjoys the corresponding proof-irrelevance guarantee.
+This is why type-class caching and candidate equivalence must share a semantic
+identity policy instead of independently erasing all instance arguments.
+
+\question{R7.Q3}{Can existing premise retrieval support data goals and examples, and where should training data come from?}
+\status{Data-goal lookup is already possible; example-conditioned program relevance needs a separate adapter and an appropriate benchmark.}
+
+The pinned Lean library-search source includes a data-goal example,
+\code{example : Nat := by exact?}. Thus basic retrieval is not intrinsically
+restricted to propositions \cite{librarysearch}. However, accepting a goal
+metavariable is not the same as learning how candidate functions transform
+example inputs. A premise selector trained on theorem proofs may offer useful
+symbol overlap while missing the relevant behavior of a polymorphic function.
+
+A Leant2 retrieval adapter should combine a type-shape query with a separate
+behavioral sketch: available input types, observed calls, output constructors,
+size changes, and simple relations such as preserving length. The existing
+selector can supply one ranked source. A deterministic symbolic index supplies
+another. A behavior-aware model, when available, supplies a third. Do not claim
+that passing extra prose to a theorem retriever gives a validated
+example-conditioned ranking interface.
+
+Recent retrieval work, including LeanHammer and LeanSearch v2, improves
+premise retrieval for theorem proving, but its reported evaluations are not
+measurements of carrier- or example-conditioned program retrieval
+\cite{leanhammer,leansearch}. Hoogle+'s published evaluation uses hundreds of
+components, so it should not be cited as direct experimental evidence for
+Leant2-scale retrieval across every imported declaration \cite{hoogleplus}.
+
+A useful program corpus can be constructed from small safe definitions in
+Init, Std, and selected Mathlib modules. Extract types, explicit component
+dependencies from elaborated bodies, and generated observations where the
+domains are executable. Train on component use, not merely names occurring in
+pretty-printed text. Remove the target definition from the provider set and
+remove target-specific equation lemmas or wrappers that trivially reveal its
+body. Group near-duplicate algorithms and their lemmas into the same split;
+respect import and source-order availability.
+
+Maintain two evaluation tracks: API composition, where existing implementations
+may legitimately be used, and body synthesis, where the target and equivalent
+wrappers are forbidden. Report retrieval recall of a usable component set and
+end-to-end certified synthesis separately. Compiled behavioral probes can
+improve ranking, but failure of a standalone component on a whole-function
+example cannot refute its usefulness inside a composition.

@@ -1,0 +1,98 @@
+{
+  "maximum_prefix_sum": {
+    "all_passed": true,
+    "associativity_checks": 10648,
+    "closure_checks": 484,
+    "concatenation_checks": 14641,
+    "identity_checks": 44,
+    "input_lists": 121,
+    "invariant_states": 22,
+    "right_fold_checks": 121,
+    "scheme_distinguishing_inputs": [
+      [
+        0
+      ],
+      [
+        -1
+      ],
+      [
+        1
+      ]
+    ],
+    "unrestricted_identity_counterexample": [
+      1,
+      -1
+    ]
+  },
+  "reverse": {
+    "accumulator_lists": 15,
+    "all_passed": true,
+    "function_carrier_checks": 7665,
+    "input_lists": 511,
+    "snoc_fold_checks": 511
+  },
+  "scope": "finite semantic sanity checks; not Lean or Leant2 benchmarks",
+  "unary_machines": {
+    "all_passed": true,
+    "complete_distinguishing_rows": [
+      [
+        true,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        true
+      ],
+      [
+        false,
+        true,
+        false
+      ]
+    ],
+    "enumeration": [
+      {
+        "matches": 0,
+        "states": 1,
+        "tables_tested": 2
+      },
+      {
+        "matches": 0,
+        "states": 2,
+        "tables_tested": 16
+      },
+      {
+        "matches": 2,
+        "states": 3,
+        "tables_tested": 216
+      }
+    ],
+    "first_witness": {
+      "initial": 0,
+      "output": [
+        true,
+        false,
+        false
+      ],
+      "states": 3,
+      "transition": [
+        1,
+        2,
+        0
+      ]
+    },
+    "minimum_for_these_samples": 3,
+    "sample_lengths": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ]
+  }
+}

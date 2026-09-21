@@ -1,0 +1,117 @@
+{
+  "scope": "finite Python models; not Leant2 or Lean verification",
+  "reverse_fold": {
+    "passed": true,
+    "alphabet_size": 3,
+    "max_length": 6,
+    "words_checked": 1093
+  },
+  "minimal_carrier": {
+    "passed": true,
+    "sample_lengths": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "tables_checked": {
+      "1": 2,
+      "2": 16,
+      "3": 216
+    },
+    "number_of_solutions": {
+      "1": 0,
+      "2": 0,
+      "3": 2
+    },
+    "minimum_state_count": 3,
+    "three_state_witness": {
+      "transition": [
+        1,
+        2,
+        0
+      ],
+      "output": [
+        true,
+        false,
+        false
+      ]
+    },
+    "incompatibility_clique_edges": [
+      {
+        "suffix_lengths": [
+          0,
+          1
+        ],
+        "prefix_witness": 0
+      },
+      {
+        "suffix_lengths": [
+          0,
+          2
+        ],
+        "prefix_witness": 0
+      },
+      {
+        "suffix_lengths": [
+          1,
+          2
+        ],
+        "prefix_witness": 1
+      }
+    ]
+  },
+  "joint_cost_bound": {
+    "passed": true,
+    "model": "two obligations, one joint transition",
+    "true_cost": 1,
+    "naive_goal_sum": 2,
+    "max_relaxed_cost": 1,
+    "positive_goal_count_fails_for_zero_cost_exact": true
+  },
+  "rollback_cache": {
+    "passed": true,
+    "branch_sequence": [
+      "A",
+      "B",
+      "A_with_unrelated_change"
+    ],
+    "results": [
+      true,
+      false,
+      true
+    ],
+    "evaluations": 2,
+    "cache_hits": 1,
+    "unassigned_blocker_only_key_is_insufficient": true
+  },
+  "observation_cluster": {
+    "passed": true,
+    "matching_inputs": [
+      0,
+      12
+    ],
+    "counterexample_input": 13,
+    "counterexample_outputs": [
+      13,
+      14
+    ]
+  },
+  "approximation_direction": {
+    "passed": true,
+    "concrete_possible_outputs": [
+      0,
+      1
+    ],
+    "underapproximation": [
+      0
+    ],
+    "desired_outputs": [
+      1
+    ],
+    "underapproximation_would_falsely_refute": true
+  }
+}
