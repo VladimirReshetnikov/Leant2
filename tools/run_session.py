@@ -23,11 +23,13 @@ def block(code):
 
 def cases():
     original = block("namespace Longer\ndef value : Nat := 37\nend Longer")
+    comments = "-- standalone line comment\n--comment without a space\n/- standalone block comment -/\n/-comment-/\n/-outer /-nested-/ comment-/\n"
+    comment_only_block = block("--comment-only block must not enter undo history\n/-outer /-nested-/ comment-/")
     yield "nested", block("namespace Outer\nnamespace Inner\ndef value : Nat := 37\nend Inner\nend Outer") + QUERY, [["Outer.Inner.value"]]
     yield "qualified", "def Outer.Inner.value : Nat := 37\n" + QUERY, [["Outer.Inner.value"]]
-    yield "attributes-comments", block("namespace Outer\n/- def fake := 0 -/\n@[inline]\ndef value : Nat := 37\nend Outer") + QUERY, [["Outer.value"]]
+    yield "attributes-comments", comments + block("namespace Outer\n/- def fake := 0 -/\n@[inline]\ndef value : Nat := 37\nend Outer") + QUERY, [["Outer.value"]]
     yield "same-leaf", block("namespace One\ndef value : Nat := 37\nend One\nnamespace Two\ndef value : Nat := 53\nend Two") + QUERY, [["One.value", "Two.value"]]
-    yield "append-undo", original + QUERY + block("namespace A\ndef value : Nat := 53\nend A") + QUERY + ":undo\n" + QUERY, \
+    yield "append-undo", original + QUERY + block("namespace A\ndef value : Nat := 53\nend A") + QUERY + comment_only_block + ":undo\n" + QUERY, \
         [["Longer.value"], ["A.value", "Longer.value"], ["Longer.value"]]
     yield "rejected-entry", original + QUERY + block("namespace Bad\ndef value : Nat := True\nend Bad") + QUERY, \
         [["Longer.value"], ["Longer.value"]]

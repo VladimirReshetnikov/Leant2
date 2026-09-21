@@ -34,19 +34,29 @@ def leanKeywords : List String :=
   ["def", "theorem", "lemma", "inductive", "structure", "class", "instance", "axiom", "opaque",
    "abbrev", "universe", "namespace", "end", "open", "set_option", "#eval", "#check", "#print",
    "#reduce", "#leant2", "example", "variable", "section", "noncomputable", "private", "protected",
-   "deriving", "attribute", "mutual", "@[", "/-", "--", "unsafe", "partial", "macro", "syntax",
+   "deriving", "attribute", "mutual", "@[", "unsafe", "partial", "macro", "syntax",
    "elab", "notation", "infix", "prefix", "postfix"]
 
 def startsWithKeyword (s : String) : Bool :=
   let t := s.trimLeft
-  leanKeywords.any fun k => t.startsWith k && (t.length == k.length || !(t.get ⟨k.length⟩).isAlphanum)
+  t.startsWith "--" || t.startsWith "/-" ||
+    leanKeywords.any fun k => t.startsWith k && (t.length == k.length || !(t.get ⟨k.length⟩).isAlphanum)
 
 /-- Elaborate a chunk of Lean commands in the session, printing messages. The
 `#leant2` header line "N candidate(s) [...]" is dropped from the printout. -/
 def elabChunk (s : Session) (src : String) (record : Bool := true) : IO Session := do
   let inputCtx := Parser.mkInputContext src "<repl>"
   let st0 := { s.st with messages := {} }
-  let st ← IO.processCommands inputCtx {} st0
+  -- `parseCommand` tests for EOF before consuming leading whitespace. Start
+  -- after Lean's own whitespace/comment lexer, as the file header parser does.
+  -- On malformed comments, preserve the ordinary frontend's diagnostics.
+  let leading := Parser.whitespace.run inputCtx
+    { env := st0.env, options := st0.scopes.head!.opts }
+    (Parser.getTokenTable st0.env) { cache := Parser.initCacheForInput inputCtx.inputString }
+  if !leading.hasError && inputCtx.atEnd leading.pos then return s
+  let parserState : Parser.ModuleParserState :=
+    if leading.hasError then {} else { pos := leading.pos }
+  let st ← IO.processCommands inputCtx parserState st0
   for msg in st.commandState.messages.toList do
     let str ← msg.toString
     for l in str.splitOn "\n" do
