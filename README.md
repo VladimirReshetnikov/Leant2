@@ -65,7 +65,7 @@ tests, and the `leant2` REPL executable.
   through `#leant2_eval` and update `it` after successful evaluation.
   Comment-only input is ignored without consuming an undo entry.
 
-The next search tier adds bounded outer induction on `Nat` and supported
+A late search tier adds bounded outer induction on `Nat` and supported
 single-index inductive families using Lean's native dependent induction.
 Predecessor, powers of two, and polymorphic indexed vector map now pass
 synthesis and universal equation checks with the corresponding library
@@ -122,9 +122,15 @@ Its eight extended open searches and thirteen Church stretch searches were
 unsolved at both budgets. [The checkpoint receipts](docs/baseline/p1-2026-09-21/README.md)
 include complete logs, source/executable hashes, and the precise score
 boundaries. In particular, the baseline score does not validate every
-ordinary command in the legacy transcripts. The current induction and result
-binding changes have passed their focused Lean, executable, and harness
-checks; the expanded nine-harness, 805-case regression run is pending.
+ordinary command in the legacy transcripts.
+
+The current induction and result-binding checkpoint, implementation commit
+`555236a`, passed **805/805 required checks across nine harnesses at both
+budgets**. [The new checkpoint receipts](docs/baseline/induction-2026-09-21/README.md)
+include complete raw outputs and hashes captured before the runs. Five extended
+searches and thirteen Church stretch cases remain unsolved. The checks include
+repeated goals tested at different boundaries; 805 is not a count of distinct
+benchmark problems.
 
 The new [extended suite](docs/baseline/extended.md) reconstructs the sixteen
 probes in proposal 11, adds nine Lean-core examples and four negative

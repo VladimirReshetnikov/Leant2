@@ -23,6 +23,23 @@ commit `87ed037` at both 10 s and 5 s per query: **787/787 scored
 cases** in all seven harnesses at each budget. It includes the new 29-session
 extended suite (21 required capabilities/controls, eight open searches),
 complete raw logs, and source/executable hashes. The eight extended open
-searches and thirteen Church stretch searches remain unsolved. The checkpoint
+searches and thirteen Church stretch searches were unsolved at that checkpoint. The checkpoint
 also records the difference between baseline outcome scoring and execution
 of ordinary commands or newly returned results.
+
+## Dependent recursion and session results checkpoint
+
+The [next 2026-09-21 checkpoint](induction-2026-09-21/README.md) validates
+implementation commit `555236a` at both 10 s and 5 s per query:
+**805/805 required checks across nine harnesses** at each budget. Predecessor,
+powers of two, and indexed vector map are now required E8 cases, leaving five
+open searches. Five independent recursion gates check universal equations and
+execution; ten result sessions check refresh, rollback, evaluation, and undo.
+The denominator includes overlapping goals tested at different boundaries.
+
+The archive preserves both complete raw runs, a pre-run snapshot of source,
+executable, compiled modules, and external inputs, and verified receipt/ZIP
+hashes. All five remaining E8 searches and thirteen Church stretch searches
+were unsolved at both budgets. The checkpoint distinguishes search coverage
+from indexed executable-presentation coverage and documents the one remaining
+ordinary-command type error in the legacy baseline.

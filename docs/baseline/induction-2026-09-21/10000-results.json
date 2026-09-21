@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-21T22:36:47.361809+00:00",
+  "revision": "555236a27f3f7d6f9a2284bcc597b1133b6e1be2",
+  "working_tree_dirty": false,
+  "executable": "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\.lake\\build\\bin\\leant2.exe",
+  "executable_sha256": "63309375f601ed69375a8ce1544e625622807feabe5a97ecb80459393d2bb69c",
+  "executable_changed_during_run": false,
+  "budget_ms": 10000,
+  "harness_sha256": "198bb1d121e773e1ffa9edbf63875694bf29c4a15d7b79e5bc6e3a643e193e60",
+  "passed": 10,
+  "total": 10,
+  "failures": [],
+  "success": true,
+  "results": [
+    {
+      "id": "bare-eval",
+      "passed": true,
+      "problems": [],
+      "wall_elapsed_ms": 2243,
+      "queries": [],
+      "expected_diagnostics": 0,
+      "transcript": "2 + 2\nit * 10\n:{\nexample : it = 40 := rfl\nexample : (it : Nat).succ = 41 := rfl\n#eval (\"RESULTS_bare_eval_OK\" : String)\n:}\n:providers\n:quit\n",
+      "stdout": "4\n40\nλ> :{\n\"RESULTS_bare_eval_OK\"\nλ> :}\nλ> :providers\nproviders: []\nλ> :quit\n",
+      "stderr": ""
+    },
+    {
+      "id": "type-refresh",
+      "passed": true,
+      "problems": [],
+      "wall_elapsed_ms": 2264,
+      "queries": [
+        {
+          "command": ":synth value : Nat where value = 0",
+          "text": "\nleant2: 5 ms\n2 candidate(s) [rules 13, proofs 5]\n  it1  0\n  it2  Nat.zero\n",
+          "outcome": "candidate",
+          "candidate": true,
+          "elapsed_ms": 5,
+          "first": "it1  0"
+        },
+        {
+          "command": ":synth value : Bool where value = true",
+          "text": "\nleant2: 4 ms\n1 candidate(s) [rules 4, proofs 2]\n  it1  true\n",
+          "outcome": "candidate",
+          "candidate": true,
+          "elapsed_ms": 4,
+          "first": "it1  true"
+        }
+      ],
+      "expected_diagnostics": 0,
+      "transcript": ":synth value : Nat where value = 0\ndef savedNat : Nat := it1\n:synth value : Bool where value = true\n:{\nexample : it1 = true := rfl\nexample : it = true := rfl\nexample : savedNat = 0 := rfl\n#eval (\"RESULTS_type_refresh_OK\" : String)\n:}\n:providers\n:quit\n",
+      "stdout": "λ> :synth value : Nat where value = 0\nleant2: 5 ms\n2 candidate(s) [rules 13, proofs 5]\n  it1  0\n  it2  Nat.zero\n-- leant2-query-end\nλ> :synth value : Bool where value = true\nleant2: 4 ms\n1 candidate(s) [rules 4, proofs 2]\n  it1  true\n-- leant2-query-end\nλ> :{\n\"RESULTS_type_refresh_OK\"\nλ> :}\nλ> :providers\nproviders: [savedNat]\nλ> :quit\n",
+      "stderr": ""
+    },
+    {
+      "id": "batch-shrink",
+      "passed": true,
+      "problems": [],
+      "wall_elapsed_ms": 2331,
+      "queries": [],
+      "expected_diagnostics": 0,
+      "transcript": ":{\nopen Lean Elab Command Term Meta Leant2\nelab \"#results_fixture \" terms:term,* : command => do\n  let candidates ← liftTermElabM <| terms.getElems.mapM fun term => do\n    let value ← elabTerm term none\n    synthesizeSyntheticMVarsNoPostponing\n    let value ← instantiateMVars value\n    match ← gate (← sessionProfile) value (← inferType value) none with\n    | .ok candidate => pure candidate\n    | .error _ => throwError \"result fixture failed the gate\"\n  bindIts candidates\n\n#results_fixture (3 : Nat), (7 : Nat)\nexample : it1 = 3 ∧ it2 = 7 := ⟨rfl, rfl⟩\ndef savedSecond : Nat := it2\n#results_fixture (fun (A : Type) (a : A) => a)\nexample : it1 Nat 12 = 12 := rfl\nexample : savedSecond = 7 := rfl\nrun_cmd do\n  if (resultBinding? (← getEnv) `it2).isSome then\n    throwError \"stale numbered result\"\n  unless (getAliases (← getEnv) `it2 false).isEmpty do\n    throwError \"stale numbered alias\"\n  if (← liftCoreM sessionConstants).any isResultName then\n    throwError \"generated result leaked into providers\"\n#eval (\"RESULTS_batch_shrink_OK\" : String)\n:}\n:quit\n",
+      "stdout": "λ> :{\n\"RESULTS_batch_shrink_OK\"\nλ> :}\nλ> :quit\n",
+      "stderr": ""
+    },
+    {
+      "id": "query-failure",
+      "passed": true,
+      "problems": [],
+      "wall_elapsed_ms": 2289,
+      "queries": [
+        {
+          "command": ":synth value : Nat where value = 0",
+          "text": "\nleant2: 5 ms\n2 candidate(s) [rules 13, proofs 5]\n  it1  0\n  it2  Nat.zero\n",
+          "outcome": "candidate",
+          "candidate": true,
+          "elapsed_ms": 5,
+          "first": "it1  0"
+        },
+        {
+          "command": ":synth value : Nat where False",
+          "text": "\nleant2: 1 ms\nprovably no program satisfies the contract\n",
+          "outcome": "contract_impossible",
+          "candidate": false,
+          "elapsed_ms": 1,
+          "first": ""
+        }
+      ],
+      "expected_diagnostics": 0,
+      "transcript": ":synth value : Nat where value = 0\n:synth value : Nat where False\n:{\nopen Lean Elab Command Leant2\nrun_cmd do\n  if (resultBinding? (← getEnv) `it1).isSome then\n    throwError \"failed query retained a candidate\"\n  unless (getAliases (← getEnv) `it1 false).isEmpty do\n    throwError \"failed query retained a candidate alias\"\nexample : it = 0 := rfl\n#eval (\"RESULTS_query_failure_OK\" : String)\n:}\n:quit\n",
+      "stdout": "λ> :synth value : Nat where value = 0\nleant2: 5 ms\n2 candidate(s) [rules 13, proofs 5]\n  it1  0\n  it2  Nat.zero\n-- leant2-query-end\nλ> :synth value : Nat where False\nleant2: 1 ms\nprovably no program satisfies the contract\n-- leant2-query-end\nλ> :{\n\"RESULTS_query_failure_OK\"\nλ> :}\nλ> :quit\n",
+      "stderr": ""
+    },
+    {
+      "id": "preflight-failure",
+      "passed": true,
+      "problems": [],
+      "wall_elapsed_ms": 2159,
+      "queries": [
+        {
+          "command": ":synth value : Bool where value = true",
+          "text": "\nleant2: 5 ms\n1 candidate(s) [rules 4, proofs 2]\n  it1  true\n",
+          "outcome": "candidate",
+          "candidate": true,
+          "elapsed_ms": 5,
+          "first": "it1  true"
+        }
+      ],
+      "expected_diagnostics": 1,
+      "transcript": ":synth value : Bool where value = true\n:{\n#leant2 value : Nat where value true = 0\nexample : it1 = true := rfl\nexample : it = true := rfl\n#eval (\"RESULTS_preflight_failure_OK\" : String)\n:}\n:quit\n",
+      "stdout": "λ> :synth value : Bool where value = true\nleant2: 5 ms\n1 candidate(s) [rules 4, proofs 2]\n  it1  true\n-- leant2-query-end\nλ> :{\nerror: Function expected at\n  value\nbut this term has type\n  Nat\nNote: Expected a function because this term is being applied to the argument\n  true\n\"RESULTS_preflight_failure_OK\"\nλ> :}\nλ> :quit\n",
+      "stderr": ""
+    },
+    {
+      "id": "eval-failure",
+      "passed": true,
+      "problems": [],
+      "wall_elapsed_ms": 2299,
+      "queries": [],
+      "expected_diagnostics": 1,
+      "transcript": "17\n:{\n#leant2_eval (true : Nat)\nexample : it = 17 := rfl\n#eval (\"RESULTS_eval_failure_OK\" : String)\n:}\n:quit\n",
+      "stdout": "17\nλ> :{\nerror: Type mismatch\n  true\nhas type\n  Bool\nbut is expected to have type\n  Nat\n\"RESULTS_eval_failure_OK\"\nλ> :}\nλ> :quit\n",
+      "stderr": ""
+    },
+    {
+      "id": "prior-error",
+      "passed": true,
+      "problems": [],
+      "wall_elapsed_ms": 2313,
+      "queries": [],
+      "expected_diagnostics": 1,
+      "transcript": ":{\n#check (true : Nat)\n#leant2_eval 7\nexample : it = 7 := rfl\n#eval (\"RESULTS_prior_error_OK\" : String)\n:}\n:quit\n",
+      "stdout": "λ> :{\nerror: Type mismatch\n  true\nhas type\n  Bool\nbut is expected to have type\n  Nat\n7\n\"RESULTS_prior_error_OK\"\nλ> :}\nλ> :quit\n",
+      "stderr": ""
+    },
+    {
+      "id": "undo-reset",
+      "passed": true,
+      "problems": [],
+      "wall_elapsed_ms": 2224,
+      "queries": [],
+      "expected_diagnostics": 0,
+      "transcript": "11\ndef savedBeforeUndo : Nat := it\nit + 1\n:undo\n:{\nexample : it = 11 := rfl\nexample : savedBeforeUndo = 11 := rfl\n#eval (\"RESULTS_undo_OK\" : String)\n:}\n:reset\n:{\nopen Lean Elab Command Leant2\nrun_cmd do\n  if (resultBinding? (← getEnv) `it).isSome || (resultBinding? (← getEnv) `it1).isSome then\n    throwError \"reset retained result aliases\"\n  if (← getEnv).contains `savedBeforeUndo then\n    throwError \"reset retained a user declaration\"\n#eval (\"RESULTS_reset_OK\" : String)\n:}\n:providers\n:quit\n",
+      "stdout": "11\n12\nλ> :undo\nundone\nλ> :{\n\"RESULTS_undo_OK\"\nλ> :}\nλ> :reset\nsession reset\nλ> :{\n\"RESULTS_reset_OK\"\nλ> :}\nλ> :providers\nproviders: []\nλ> :quit\n",
+      "stderr": ""
+    },
+    {
+      "id": "namespace-hygiene",
+      "passed": true,
+      "problems": [],
+      "wall_elapsed_ms": 2148,
+      "queries": [
+        {
+          "command": ":synth value : Nat where value = 0",
+          "text": "\nleant2: 4 ms\n2 candidate(s) [rules 13, proofs 5]\n  it1  0\n  it2  Nat.zero\n",
+          "outcome": "candidate",
+          "candidate": true,
+          "elapsed_ms": 4,
+          "first": "it1  0"
+        },
+        {
+          "command": ":synth value : Bool where value = true",
+          "text": "\nleant2: 3 ms\n1 candidate(s) [rules 4, proofs 2]\n  it1  true\n",
+          "outcome": "candidate",
+          "candidate": true,
+          "elapsed_ms": 3,
+          "first": "it1  true"
+        }
+      ],
+      "expected_diagnostics": 0,
+      "transcript": "namespace ResultScope\n:synth value : Nat where value = 0\n:{\nexample : ResultScope.it1 = 0 := rfl\nexample : _root_.it1 = 0 := rfl\nexample : (fun it1 : Nat => it1 + 1) 41 = 42 := rfl\nexample : it1.succ = 1 := rfl\n-- it1 and ResultScope.it1 inside comments are inert.\n/- it1 := false; :synth not_a_command -/\n#eval if (\"it it1 ResultScope.it1\" : String).length == 22 then \"RESULTS_string_OK\" else \"RESULTS_string_FALSE\"\n#eval (\"RESULTS_namespace_OK\" : String)\n:}\nend ResultScope\n:synth value : Bool where value = true\n:{\nopen Lean Elab Command Leant2\nexample : it1 = true := rfl\nrun_cmd do\n  unless (getAliases (← getEnv) `ResultScope.it1 false).isEmpty do\n    throwError \"old namespace alias survived refresh\"\n#eval (\"RESULTS_namespace_refresh_OK\" : String)\n:}\n:quit\n",
+      "stdout": "λ> :synth value : Nat where value = 0\nleant2: 4 ms\n2 candidate(s) [rules 13, proofs 5]\n  it1  0\n  it2  Nat.zero\n-- leant2-query-end\nλ> :{\n\"RESULTS_string_OK\"\n\"RESULTS_namespace_OK\"\nλ> :}\nλ> :synth value : Bool where value = true\nleant2: 3 ms\n1 candidate(s) [rules 4, proofs 2]\n  it1  true\n-- leant2-query-end\nλ> :{\n\"RESULTS_namespace_refresh_OK\"\nλ> :}\nλ> :quit\n",
+      "stderr": ""
+    },
+    {
+      "id": "user-collision",
+      "passed": true,
+      "problems": [],
+      "wall_elapsed_ms": 2318,
+      "queries": [],
+      "expected_diagnostics": 0,
+      "transcript": ":{\nopen Lean Elab Command Term Meta Leant2\ndef it1 : String := \"user value\"\nrun_cmd do\n  let original ← liftCoreM <| getConstInfo `it1\n  let candidate ← liftTermElabM do\n    let value := mkNatLit 13\n    match ← gate (← sessionProfile) value (Lean.mkConst ``Nat) none with\n    | .ok candidate => pure candidate\n    | .error _ => throwError \"collision fixture failed the gate\"\n  let mut rejected := false\n  try\n    bindIts #[candidate]\n  catch _ => rejected := true\n  unless rejected do throwError \"publication did not reject the user-name collision\"\n  unless (← liftCoreM <| getConstInfo `it1).value? == original.value? do\n    throwError \"publication mutated the user declaration\"\n  if (resultBinding? (← getEnv) `it1).isSome then\n    throwError \"failed publication installed aliases\"\nexample : it1 = \"user value\" := rfl\n#eval (\"RESULTS_collision_OK\" : String)\n:}\n:quit\n",
+      "stdout": "λ> :{\n\"RESULTS_collision_OK\"\nλ> :}\nλ> :quit\n",
+      "stderr": ""
+    }
+  ]
+}

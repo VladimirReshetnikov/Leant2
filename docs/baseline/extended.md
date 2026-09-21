@@ -157,6 +157,12 @@ were taken from a dirty working tree and establish the promotion decision,
 not a complete acceptance run for the recorded parent commit. Final milestone
 evidence must identify the tested source revision, executable, and manifests.
 
+The subsequent clean-source [induction checkpoint](induction-2026-09-21/README.md)
+at `555236a` passed all 24 required E8 cases and all five recursion gates at
+both 10,000 and 5,000 ms/query. Its five remaining E8 open searches were
+unsolved at both budgets. The archive includes the unchanged executable hash,
+pre-run input/module hashes, complete raw output, and universal-equation checks.
+
 ## Result-binding integration and aggregate scoring
 
 `tools/run_results.py` checks ten independent REPL sessions: bare-expression
@@ -187,6 +193,9 @@ boundaries, so this is not a count of 805 distinct benchmark problems. The
 extended suite's five open searches and the Church stretch cases remain
 outside these scored denominators. Every harness must also exit successfully;
 a full printed score does not conceal a process or open-case failure.
+
+All nine harnesses passed **805/805** at both budgets in the clean-source
+`555236a` checkpoint. Its ten result sessions also passed at each budget.
 
 ## Source provenance
 

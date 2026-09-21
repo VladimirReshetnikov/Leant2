@@ -228,10 +228,16 @@ checks synthesis outcome categories, while the extended suite independently
 checks first-result binding and replay. Three ordinary-command errors in those
 legacy transcripts were outside that baseline score.
 
-The current source passes the focused induction/publication Lean tests, five
-new recursion gates, ten result-binding sessions, and the three newly required
-original predecessor/power/vector probes. The expanded nine-harness acceptance
-suite has 805 required cases; both-budget validation is pending. The targeted
+Implementation commit `555236a` passed **805/805 required checks across nine
+harnesses at both budgets**, including five new recursion gates, ten
+result-binding sessions, and the three newly required original
+predecessor/power/vector probes. Its full Lean build also passed the focused
+induction, publication, and result-binding tests. The
+[induction checkpoint](baseline/induction-2026-09-21/README.md) archives both
+runs and verifies their source, executable, module, and input hashes against
+a pre-run snapshot. Five extended open searches and thirteen Church stretch
+cases remain unsolved. These scores include overlapping synthesis goals with
+different acceptance checks, not 805 distinct benchmark problems. The targeted
 legacy manual transcript now evaluates bare `it * 10` and refreshed `it2`
 successfully. The Option call in `synth-prove` still omits the two explicit
 type arguments required by its requested type, matching an error already

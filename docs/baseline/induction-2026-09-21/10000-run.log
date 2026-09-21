@@ -1,0 +1,29 @@
+build: ok in 0s
+baseline: 278/278 in 77s
+recursive: 9/9 in 4s
+church: 28/28 in 154s
+context: 95/95 in 6s
+corpus: 350/350 in 15s
+session: 6/6 in 14s
+results: 10/10 in 23s
+extended: 24/24 in 110s
+extended: OPEN probe09_max refuted [10019 ms]
+extended: OPEN probe10_drop_zeros refuted [10022 ms]
+extended: OPEN probe11_tree_inorder refuted [10019 ms]
+extended: OPEN probe14_fin budget_exhausted [8621 ms]
+extended: OPEN probe16_le_trans search_exhausted [31 ms]
+extended: OPEN 0/5 solved
+recursion-gates: 5/5 in 13s
+recursion-gates: OPEN 0/0 solved
+
+| Harness | Score | Time |
+| --- | --- | --- |
+| baseline | 278/278 | 77 s |
+| recursive | 9/9 | 4 s |
+| church | 28/28 | 154 s |
+| context | 95/95 | 6 s |
+| corpus | 350/350 | 15 s |
+| session | 6/6 | 14 s |
+| results | 10/10 | 23 s |
+| extended | 24/24 | 110 s |
+| recursion-gates | 5/5 | 13 s |
