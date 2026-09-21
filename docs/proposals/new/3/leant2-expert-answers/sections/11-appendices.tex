@@ -1,0 +1,87 @@
+\clearpage
+\appendix
+\section{Coverage index: all 31 expert questions}
+\label{app:index}
+
+Question labels below preserve the proposal's R-group and the order within its ``Questions for experts'' list. Descriptions are paraphrases, not quotations. R8 and R9 share the source file \code{12-ranking.tex}. Every row points to a substantive answer, not merely a bibliographic pointer.
+
+\begin{longtable}{@{}p{.11\linewidth}p{.74\linewidth}r@{}}
+\toprule
+Question & Subject of the answer & Page\\
+\midrule
+\endhead
+R1.1 & Coupled goals, independence, and memoization & \pageref{q:R1.1}\\
+R1.2 & Admissible cost-to-completion heuristics & \pageref{q:R1.2}\\
+R1.3 & Just-in-time learning and ranking stability & \pageref{q:R1.3}\\
+R1.4 & Wall-clock budgets and machine independence & \pageref{q:R1.4}\\
+R2.1 & Constructive carrier inference and bounded minimality & \pageref{q:R2.1}\\
+R2.2 & Polymorphic alphabets, shapes, and positions & \pageref{q:R2.2}\\
+R2.3 & Backward fusion and auxiliary-state invention & \pageref{q:R2.3}\\
+R2.4 & Motive enumeration for primitive recursion & \pageref{q:R2.4}\\
+R2.5 & Generalization and lemma-speculation heuristics & \pageref{q:R2.5}\\
+R3.1 & Higher-order and dependent live evaluation & \pageref{q:R3.1}\\
+R3.2 & Incremental normalization and backtracking caches & \pageref{q:R3.2}\\
+R3.3 & A sound, fast evaluator and Lean4Lean & \pageref{q:R3.3}\\
+R3.4 & Top-down angelic recursion and completeness & \pageref{q:R3.4}\\
+R4.1 & Bounded motive classes and generalization & \pageref{q:R4.1}\\
+R4.2 & Canonical treatment of propositional transport & \pageref{q:R4.2}\\
+R4.3 & Definitional unfolding in existing tools & \pageref{q:R4.3}\\
+R4.4 & Lean's callable motive-computation services & \pageref{q:R4.4}\\
+R5.1 & Interpreter agreement with realized recursion & \pageref{q:R5.1}\\
+R5.2 & Angelic execution in top-down synthesis & \pageref{q:R5.2}\\
+R5.3 & A practical, measurable recursion-scheme basis & \pageref{q:R5.3}\\
+R6.1 & Interleaving program holes and proof holes & \pageref{q:R6.1}\\
+R6.2 & Recognizable classes of induction-friendly contracts & \pageref{q:R6.2}\\
+R6.3 & Automated induction and Lean integration & \pageref{q:R6.3}\\
+R6.4 & Scheduling proof debt & \pageref{q:R6.4}\\
+R7.1 & Dependent and universe-polymorphic type abstraction & \pageref{q:R7.1}\\
+R7.2 & Type classes in abstraction refinement & \pageref{q:R7.2}\\
+R7.3 & Data-goal retrieval and training corpora & \pageref{q:R7.3}\\
+R8.1 & A formal ranking objective and user preference & \pageref{q:R8.1}\\
+R8.2 & Candidate equivalence in dependent types & \pageref{q:R8.2}\\
+R9.1 & Model accuracy and an appropriate evaluation study & \pageref{q:R9.1}\\
+R9.2 & Deterministic and auditable model contributions & \pageref{q:R9.2}\\
+\bottomrule
+\end{longtable}
+
+\section{Executable checks and the limits of the evidence}
+\label{app:checks}
+
+The archive contains \code{validate_models.py} and its generated \code{model_results.json}. The script uses the Python standard library and was executed successfully during preparation of this report. It checks six small, explicitly defined models. These checks are useful regression examples for the proposed algorithms; they are \emph{not} Lean proofs, tests of Leant2, or performance benchmarks.
+
+\begin{longtable}{@{}p{.25\linewidth}p{.69\linewidth}@{}}
+\toprule
+Check & Actual result and interpretation\\
+\midrule
+\endhead
+Reverse as a list fold & All 1,093 lists over a three-symbol alphabet, of lengths 0--6, agree with reversal when evaluated using the step $r\concat[a]$. The induction proof in R2.1 covers arbitrary finite lists; enumeration alone would not.\\
+Finite carrier inference & Exhaustive unary transition/output tables with a fixed initial state: 2 one-state tables, 16 two-state tables, and 216 three-state tables. On the length-0--6 observations for divisibility of length by 3, there are respectively 0, 0, and 2 solutions. The first witness cycles through three states.\\
+Carrier incompatibility & Suffix lengths 0, 1, and 2 form a three-vertex incompatibility clique. Prefix lengths 0, 0, and 1 respectively witness the three edges. Thus any deterministic fold satisfying those observations needs at least three reachable states.\\
+Coupled-goal cost & One abstract transition of cost 1 closes two obligations. Their naive per-goal sum is 2; a maximum of the individual lower bounds is 1. A separate zero-cost exact move also defeats a positive open-goal count.\\
+Rollback-aware cache & Branches A, B, and A with an irrelevant change produce true, false, and true. A dependency-version key needs two evaluations and permits one cache hit. Merely observing that no holes remain unassigned does not distinguish A from B.\\
+Finite observation classes & The functions $f(n)=n$ and $g(n)=n$ for $n\leq12$, $g(n)=n+1$ otherwise, agree on 0--12 and differ at 13, returning 13 and 14.\\
+Approximation direction & Concrete possible outputs $\{0,1\}$ intersect the desired output $\{1\}$. The under-approximation $\{0\}$ does not. Pruning from that under-approximation would therefore discard a possible solution.\\
+\bottomrule
+\end{longtable}
+
+The two carrier rows arise from one model family; hence there are six families, not seven independently developed experiments. State labels are not quotiented when counting the tables or solutions. Fixing the initial state to 0 is harmless for the existence question because an automaton's states can be renamed.
+
+\subsection{Reproduction}
+
+From the archive's source directory, run:
+\begin{lstlisting}
+python3 validate_models.py
+pdflatex -interaction=nonstopmode -halt-on-error article.tex
+pdflatex -interaction=nonstopmode -halt-on-error article.tex
+pdflatex -interaction=nonstopmode -halt-on-error article.tex
+\end{lstlisting}
+
+The first command checks its assertions and regenerates the JSON results. The remaining commands build the article and settle the table of contents, references, and page links. The bibliography is included directly in \code{references.tex}; BibTeX and internet access are not required to compile the article. A standard TeX Live installation with the packages listed in the preamble is sufficient.
+
+\subsection{What was not established}
+
+No Lean executable was available in the execution environment used for this report. Consequently, the proposed interfaces and code-shaped examples were not compiled, the mathematical arguments were not formalized in Lean, and the repository's acceptance and stretch suites were not rerun. Source inspection establishes what the inspected code does, not that every suggested change will compile or improve performance.
+
+The report does not claim that a proposed evaluator is verified, that the suggested grammar is optimal, that a current model reaches a particular accuracy, or that the complete design is already implemented. Published systems supply precedents with their own assumptions and experimental settings. Transferring them to Leant2 requires the staged validation described in Section~\ref{sec:plan}.
+
+The constructive mathematical results here are deliberately conditional: factorization requires effect confinement; the cache lemma requires a complete dependency set; carrier exclusion requires genuine finite-state bounds; bounded completeness requires a fixed finite grammar and justified decisions; and recursive realization requires checked equations and termination evidence. These conditions are part of the result, not optional implementation details.

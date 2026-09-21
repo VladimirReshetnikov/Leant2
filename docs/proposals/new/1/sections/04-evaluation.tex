@@ -1,0 +1,172 @@
+\section{R3: Evaluation of programs with holes}\label{sec:r3}
+
+\question{R3.Q1}{What is already available for higher-order and dependent examples?}
+\status{Higher-order examples have a concrete precedent in Smyth; dependent closures need additional typed-substitution machinery.}
+
+Smyth represents incomplete computations by hole closures and propagates
+required results backward into constraints on holes. Its implementation
+supports higher-order function examples even though its core exposition is
+simplified to first-order examples \cite{smyth}. Leant2 should begin by
+adapting that distinction: higher-order behavior is observed through a finite
+collection of applications, not by demanding a complete mathematical function
+as the output of unevaluation.
+
+For a hole $h$ declared under telescope $\Delta$, represent an observation as
+\[
+ (h,\rho,\mathcal O),\qquad
+ \rho:\Gamma\longrightarrow\Delta,
+ \tag{6}\label{eq:closure}
+\]
+where $\rho$ is a well-typed environment substitution and $\mathcal O$ is a
+typed elimination or result constraint. Two occurrences of $h$ can have
+substitutions that instantiate indices differently. A hole producing
+$\mathsf{Vec}\ B\ n$ may be observed at length zero in one closure and length
+three in another. These are constraints on one contextual term, not two
+untyped examples of a common ground output type.
+
+The first dependent difficulty is therefore not merely storing proofs in an
+environment. It is transporting the expected observation type along $\rho$
+and composing substitutions correctly under binders. The next difficulty is
+backward propagation through an eliminator whose motive depends on the value
+being inspected. Begin with a typed first-order data fragment, then dependent
+constructors with known indices, then application observations of function
+holes. Unsupported inversions should produce residual constraints rather than
+inventing an untyped example.
+
+A contract is not necessarily a list of equations. Normalize its Boolean and
+propositional structure using checked equivalences, retaining provenance to
+the original proposition. Splitting \code{List.all} over a known finite list
+or a conjunction of Booleans is useful. Replacing \code{a == b = true} by
+$a=b$ needs a suitable lawfulness theorem; \code{BEq} alone does not supply
+one. Multiple calls to the synthesized function in one observation must remain
+related rather than being treated as independent input-output examples.
+
+No source examined here supplies a ready-made, conservative evaluator for the
+whole Lean language with this dependent closure interface. That identifies
+an implementation and proof task, not evidence that every component of it is
+unexplored.
+
+\question{R3.Q2}{How should normalization caches survive assignment and rollback?}
+\status{Use dependency-tracked persistent memoization; do not key validity only by hole identifiers or a global update counter.}
+
+Self-adjusting computation provides a general precedent for memoization with
+change propagation and a consistency theorem \cite{selfadjust}. It is not a
+drop-in normalizer for Lean. The adaptation is to record what an evaluation
+\emph{read}, not only what variable it was visibly stuck on.
+
+A memo entry should contain the expression or closure identity, local-context
+fingerprint, relevant environment and transparency data, a result, and a read
+set. Each read-set item records an assignment's identity or immutable version.
+Include universe assignments, delayed-assignment links, instance dictionaries,
+and type dependencies whenever the evaluator inspected them. Reuse is valid
+only when all relevant reads still denote the same values.
+
+\begin{proposition}[Read-set cache reuse]\label{prop:cache}
+Assume a deterministic evaluator's result depends only on an immutable
+expression, fixed semantic parameters, and the values in its recorded read
+set. If another state agrees on all those values, the memoized result is valid
+there.
+\end{proposition}
+\begin{proof}
+Replay the evaluation. Every read yields the recorded value, so every branch
+and reduction rule is the same. Induction over the finite evaluation trace
+gives the same result. The completeness of the read set is an explicit
+hypothesis, not a property implied by recording just blocked holes.
+\end{proof}
+
+A rollback can restore an old assignment and later take a different branch
+using the same metavariable identifier. This is the familiar identity-reuse
+problem: the name did not change, but its meaning did. Immutable state tokens,
+content identities, or validated assignment fingerprints avoid it. A single
+global timestamp is safe if it invalidates everything on every relevant change,
+but loses most reuse; a reused timestamp is unsafe.
+
+Use per-observation caches first. The current code already decomposes
+conjunctions and remembers blockers, so this is an incremental improvement.
+However, \code{residualBlockers} is outside the saved meta-state. A future
+frontier must attach its memo identity to the node, or validate the entire
+read set before reuse \cite{searchcode,transactioncode}. False results can be
+cached globally only with a proof or a key strong enough to establish that
+the exact same proposition and program are being refuted.
+
+\question{R3.Q3}{What is the cheapest route to a provably conservative fast evaluator?}
+\status{A small proof-producing or reflected fragment is preferable to a second unverified implementation of the entire kernel.}
+
+The evaluator need not decide every Lean term. It needs to prove the decisions
+it does make. Define a typed observation language containing the constructors,
+projections, primitive operations, and recursors the synthesizer actually
+uses. Give it a denotation into Lean terms and prove a fuelled evaluation
+correctness theorem. A successful evaluation can then provide a theorem about
+the original observation; unsupported syntax or fuel exhaustion gives
+\emph{unknown}.
+
+There are two practical implementation paths. A proof-producing reducer emits
+an equality certificate for each step, composing certificates only for the
+parts inspected. A reflected evaluator runs over a reified typed syntax and
+uses one proved soundness theorem. The former has simpler incremental
+integration; the latter may give smaller checking overhead after a larger
+initial proof investment. Both permit a fast untrusted proposal phase followed
+by validation of the claimed reduction.
+
+\begin{proposition}[Residual refutation]\label{prop:eval}
+Suppose a partial program $p$ has a well-typed completion telescope $\Delta$.
+If a checked certificate proves
+\[
+ \forall\theta:\Delta,\quad
+ \mathsf{decide}(C(p[\theta]))=\mathsf{false},
+\]
+using an appropriate decision procedure for each instance, then rejecting $p$
+is conservative. A certificate under additional assumptions is sufficient only
+when those assumptions follow from the requested contract for every accepted
+completion.
+\end{proposition}
+\begin{proof}
+For any completion, instantiate the certificate. The correctness of
+\code{decide} yields $\neg C(p[\theta])$. Under additional assumptions, a
+hypothetical accepted completion supplies those assumptions and produces the
+same contradiction.
+\end{proof}
+
+The current kernel-reduction path has a strong advantage: genuine reduction
+of a well-typed expression commutes with well-typed substitution. But its
+\code{instantiatePartial} helper explicitly constructs reduction-only
+expressions whose metavariable contexts may no longer match. A completeness
+argument still needs a well-scoped closure/substitution account for that
+transformation. Calling the kernel's reducer does not by itself prove a
+separate preprocessing transformation correct \cite{searchcode}.
+
+Lean4Lean is a useful source of formalized kernel structure and verification
+work, not a button that extracts an incremental closure evaluator
+\cite{lean4lean}. A closure machine has its own environment relation and
+substitution lemmas. Reuse relevant definitions and proved lemmas where they
+match, but prove the fragment's simulation theorem explicitly. Differential
+testing remains valuable for finding mistakes; even a hundred thousand passing
+closed tests is not a proof about every open completion.
+
+\question{R3.Q4}{Can top-down angelic recursion have termination and completeness guarantees?}
+\status{Yes for carefully bounded fragments with fair exploration and relational oracle constraints; not by simply guessing one helpful return value per call.}
+
+An angelic recursive call denotes an existentially chosen result subject to
+constraints. Equal arguments to the same pure function must share a result.
+For example, independently choosing two results could satisfy
+$f(0)\ne f(0)$, although no function can. Maintain a map of call observations
+with equality and relational constraints, rather than unrelated successful
+oracle guesses.
+
+A supplied equation $f(v)=w$ can constrain the oracle at $v$ because every
+accepted function must respect it. An unobserved recursive result is different:
+a convenient value may guide a branch, but failure of that value does not
+refute all possible results. To prune using angelic execution, compute an
+over-approximation of possible results and prove it cannot satisfy the
+observation. Otherwise use angelic information only for ordering.
+
+Burst gives a concrete refinement-based synthesis design, but its arguments
+cannot be transferred merely by changing bottom-up enumeration to top-down
+search \cite{burst}. A top-down bounded theorem needs finite skeletons, finite
+oracle domains or a terminating complete constraint solver, fair exploration
+of refinements, and a decreasing or bounded measure preventing repeated
+unchanged refinements. Under those conditions the search terminates; if its
+rules cover every bounded candidate and all pruning is conservative, it is
+complete for that fragment. For unbounded syntax, dovetailing yields at most
+a relative semidecision guarantee. No general termination claim follows from
+the existence of a final kernel gate.

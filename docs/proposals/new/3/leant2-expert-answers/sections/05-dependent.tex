@@ -1,0 +1,52 @@
+\section{R4: indexed families, motives, and transport}
+\label{sec:dependent}
+
+\Q{R4.1}{Is maximal-occurrence motive enumeration finite and complete?}
+\ans It is finite and exhaustible for a precisely specified finite occurrence grammar. It is not complete for all useful accumulator generalizations merely because it abstracts maximal index occurrences. Generalization must be part of the grammar.
+
+Fix a normalized goal expression, finitely many candidate index expressions, and a finite set of permitted occurrence positions. Enumerating subsets of those positions gives finitely many raw abstractions; type-checking removes ill-formed ones. If the permitted set has $k$ elements, the raw bound is $2^k$. This is a termination statement about \emph{syntactic generation}, not a small complexity bound or a complete algorithm for arbitrary higher-order unification.
+
+Maximality is a syntactic convenience. For example, a goal containing $\mathrm{Vec}\ B\ (n+k)$ may require abstraction of the occurrence of $n$ \emph{inside} the index expression while retaining the parameter $k$. An occurrence policy that only abstracts the whole maximal expression $n+k$ does not automatically generate that motive. More importantly, abstraction of index occurrences does not introduce a generalized accumulator parameter that did not occur there.
+
+Use a combined grammar with three independent choices: the major premise and its indices; a dependency-closed telescope of generalized locals; and a result carrier expression. Require the resulting motive to type-check before applying the recursor. The type checker is a filter, not a guarantee that every omitted motive is unnecessary.
+
+For vector map, the standard motive is simply
+\[
+  M(n,x)=\mathrm{Vec}\ B\ n.
+\]
+The empty branch builds the empty vector; the constructor branch maps the head with $f:A\to B$ and combines it with the induction hypothesis at the predecessor length. No arbitrary motive invention is needed here. Indeed, the inspected \code{structuralRecursion} rejects every inductive family with nonzero \code{numIndices} \emph{before} calling Lean's induction API \cite{searchcore}. The first experiment should therefore admit supported indexed locals and call the existing API, rather than first build a general higher-order motive enumerator.
+
+Accumulator examples require more: to prove or synthesize a function whose recursive call changes parameter $a$, the motive must quantify $a$ rather than freeze it. Dependency closure matters when later locals depend on $a$. Conversely, reverting every local inflates branch interfaces and search. Rank small dependency-closed generalizations first, with a fair bounded fallback.
+
+\Q{R4.2}{Can transports be canonicalized with setoids or heterogeneous equality?}
+\ans Neither setoids nor heterogeneous equality provides a general cheap canonical quotient of dependent Lean programs. They can be useful internal relations, but they move proof obligations rather than eliminate them. A typed intermediate language with proof-producing index normalization is a better first design.
+
+A transport is not just a proof argument that may be deleted from every representation. Given $v:F(i)$ and $e:i=j$, the cast has type $F(j)$, whereas $v$ itself has type $F(i)$. Erasing the cast in a displayed definition may make that definition fail to elaborate. Proof irrelevance identifies proofs of the same proposition; it does not make arbitrary index expressions definitionally equal or turn every transport into the identity reduction.
+
+Normalize indices using a fixed terminating rewrite discipline, retaining proofs of each equality. For a small arithmetic index fragment, choose a canonical affine representation and produce a Lean proof relating the original expression to it. Expressions beyond the fragment stay symbolic. Store a cast constraint with source family, source index, target index, and proof obligation. Merge constraints only using checked congruence or a proved canonicalization theorem.
+
+For example, with the usual Lean natural addition, $n+0$ reduces to $n$, because addition recurses on its second argument. The source proposal's \code{Vec A (n + 0)} example therefore normally requires no propositional transport. The open expression $0+n$ is the better example: rewriting with the appropriate equality gives the desired index \cite{leanprelude}. A normalization ladder should test definitional equality first, then try a bounded proof-producing index procedure.
+
+For ranking, assigning a low or zero \emph{display cost} to proof evidence is reasonable. Keep a positive search-resource charge or a finite transport bound so infinitely many equalities do not create a zero-cost enumeration loop. For a returned program, either print the necessary cast, or print a sugared expression that is re-elaborated and proved equal to the certified term. ``Erase it for display'' must not mean ``publish untypeable Lean.''
+
+Heterogeneous equality is suitable for some intermediate congruence constraints when two terms have different types. Before acceptance, every use must be realized by a well-typed proof term at the intended type. Setoid-based semantics can justify an observational quotient in a specific fragment, but requires all synthesized operations to respect that relation. It is not a substitute for the actual dependent typing judgment.
+
+\Q{R4.3}{How do Canonical and sauto manage unfolding?}
+\ans The inspected systems do not support a single universal prescription such as ``normalize everything up front.'' Canonical's paper translates to its own normal-form representation and discusses unfolding definitions and instances, with possible expression growth. It also gives an indexed-recursion example and a generalized-induction example using a supplied stronger recursor and predicate synthesis \cite{canonical}. This is a concrete precedent, not an unrestricted complete generalization procedure.
+
+The \code{sauto} documentation exposes selected and forced unfolding options, as well as heuristic variants. Its project documentation explicitly says that \code{sauto} and related reconstruction tactics do not themselves perform induction \cite{sauto,sautodocs}. Thus its useful precedent here is controlled unfolding and dependent elimination, not automatic induction discovery.
+
+For Leant2, use an on-demand transparency ladder. First perform cheap weak-head normalization sufficient to expose a binder, constructor family, or rigid application head. Try unification at the ordinary regime. If failure is blocked by an eligible definition, unfold that definition under a local budget and record the reason. Reserve broad normalization for a closed candidate or a selected expensive proof tier. Distinguish \emph{stuck at this transparency} from \emph{incompatible after a complete decision procedure}.
+
+Memoize normalized forms with the transparency regime, environment version, and assignment dependencies in the key. A failure obtained without unfolding a reducible alias must not permanently exclude a candidate later tried with stronger transparency. Large class dictionaries and recursive definitions are particularly poor targets for indiscriminate full expansion. This ladder is a proposed engineering policy whose thresholds must be measured; it is not claimed as an optimal normalization strategy.
+
+\Q{R4.4}{Which Lean motive-computation functions are reusable?}
+\ans There are directly reusable functions in the pinned source, but no reason to promise constant-time failure or a version-stable standalone motive oracle. Wrap the actual APIs behind Leant2's own adapter.
+
+At tag \code{v4.34.0}, Lean's induction source exposes three useful functions: \code{getMajorTypeIndices}, \code{mkRecursorAppPrefix}, and \code{Lean.MVarId.induction}. The prefix builder computes the motive by abstracting the major premise and indices from the target. The induction operation itself reverts indices and the major premise, reintroduces them, and constructs branch subgoals with substitutions. Its index checks include the requirement that indices be suitable variables, distinct in the relevant positions, with permitted dependencies \cite{leaninduction}.
+
+This has two immediate consequences. First, do not duplicate the index-reversion logic blindly: the low-level operation already performs much of it. Second, non-variable indices such as $n+1$ may need the elaborator's richer generalization path or explicit equations before the low-level API applies. A successful \code{cases} tactic on an indexed local does not imply that every direct call to this induction API accepts the same input unchanged.
+
+The elaborator's induction implementation also exposes elimination-application machinery and uses \code{ElimApp.mkElimApp} and \code{ElimApp.setMotiveArg} along its tactic paths. Those functions are useful implementation references, but surrounding elaboration state and generalization assumptions matter \cite{leanfuninduction}.
+
+The adapter should take a snapshot, normalize only enough to inspect the major premise, compute candidate generalized telescopes, and attempt one motive at a time. Return structured outcomes such as unsupported major type, non-variable index, forbidden elimination from \code{Prop}, unsolved universe constraint, ill-typed abstraction, or resource exhaustion. Preserve the original Lean diagnostic as detail. Use a bounded resource context and restore all speculative state after failure. Cancellation and heartbeat exhaustion are not ordinary type errors. Finally, pin and compile a small adapter-test suite against the repository's actual toolchain before calling this a supported Leant2 API.

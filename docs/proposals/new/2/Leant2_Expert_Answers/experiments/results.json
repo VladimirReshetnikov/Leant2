@@ -1,0 +1,93 @@
+{
+  "finite_carriers": {
+    "exhaustive_search": {
+      "1": {
+        "machines_checked": 2,
+        "satisfying_machines": 0
+      },
+      "2": {
+        "machines_checked": 128,
+        "satisfying_machines": 0
+      },
+      "3": {
+        "machines_checked": 17496,
+        "satisfying_machines": 0
+      }
+    },
+    "explicit_four_state_transition": [
+      1,
+      1,
+      3,
+      3,
+      2,
+      3,
+      2,
+      3
+    ],
+    "four_state_tested_words": 2047,
+    "note": "The article supplies the all-input proof; testing alone is not that proof.",
+    "prefixes": [
+      [],
+      [
+        0
+      ],
+      [
+        1
+      ]
+    ],
+    "profiles": [
+      [
+        false,
+        false,
+        false
+      ],
+      [
+        false,
+        false,
+        true
+      ],
+      [
+        false,
+        true,
+        false
+      ],
+      [
+        true,
+        true,
+        true
+      ]
+    ],
+    "suffixes": [
+      [],
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "unique_observations": 9
+  },
+  "folds": {
+    "reverse_tested_words": 3280,
+    "tail_plain_fold_counterexample": {
+      "a": 0,
+      "u": [],
+      "v": [
+        1
+      ]
+    }
+  },
+  "hazard_witnesses": {
+    "branch_blind_cache_can_be_stale": true,
+    "finite_observations_do_not_imply_function_equality": true,
+    "partial_row_compatibility_nontransitive": true,
+    "sum_of_shared_goal_costs_can_overestimate": true,
+    "transitive_dependencies_matter": true
+  },
+  "scope": "Finite mathematical sanity checks; no Lean/Leant2 execution"
+}

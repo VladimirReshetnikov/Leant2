@@ -1,0 +1,37 @@
+\Needspace{13\baselineskip}
+\section{R8: Ranking and equivalence are different questions}\label{sec:ranking}
+
+\Q{R8.Q1}{A defensible ranking objective}{Can ranking inhabitants be given a formal objective such as minimum description length, and should it agree with user preference?}
+
+\answer Yes to a formal objective, no to an automatic identification of that objective with a user's intent. Treat typing, the exact contract, and the axiom policy as hard constraints. Within that feasible set, one possible score is
+\[
+ J(f)=L_{\G}(f)+\lambda_H L(\text{new helpers})
+       +\lambda_R\widehat{\mathsf{runtime}}(f)+\lambda_U U(f),
+\]
+where $L_{\G}$ is a description length under a fixed grammar, the helper term charges definitions not already in the environment, runtime is a declared estimate or measured observation, and $U$ is a soft penalty for suspiciously unused information. All weights, normalization choices, and dictionary costs belong to the ranking model's version. An alternative is a lexicographic score that avoids pretending the units are naturally interchangeable.
+
+If a probabilistic grammar is used, $L_{\G}(f)=-\log P_{\G}(f)$ gives the usual coding interpretation, subject to a properly specified probability model. Every legal production must have a usable finite grade in the completeness lane, and zero-cost cycles must not prevent progress. A learned prior can affect preference without affecting the truth of the contract, as in cost-guided synthesis, but its training distribution is not a theorem about the current user's intended program.\cite{probe}
+
+The current syntactic unused-input heuristic deserves particular caution. Projection functions legitimately ignore an argument. A contract may require a constant. Conversely, a term can mention a variable in a branch whose two results are identical without depending semantically on that variable. Syntactic use is an inexpensive feature, not a decision procedure for information flow. Penalize it softly, explain the feature, and let contract evidence override it.
+
+Proof size should normally be a separate certification or presentation cost, rather than letting a long proof hide an excellent short program. Proof irrelevance does not mean the checker spends zero resources on every proof. Similarly, a raw recursor may be small as an expression while an exported ordinary definition is easier to read or execute. Report the semantic program, its proof, and its presentation separately, with an explicit relationship between them.
+
+A cost-ordered search proves that a candidate is optimal only when its frontier lower bound uses this same fixed objective and all cheaper relevant alternatives have been accounted for. Adaptive priorities, top-$k$ retrieval, a first-success grace period, and a changing grammar invalidate that simple conclusion. A truthful interface can say ``best among candidates found'' without saying ``minimum.'' If it proves bounded optimality, include the completed bound and cost-model fingerprint in the receipt.
+
+Human preference should be evaluated directly. Record pairwise preferences between contract-consistent candidates, reference-solution rank, time to a useful answer, and whether diversity helps users disambiguate the task. The reference solution is not necessarily the unique correct answer, so rank metrics should distinguish exact reference syntax, proved semantic equivalence, and another valid implementation. No empirical user-preference result is established by this review.
+
+\Q{R8.Q2}{What to merge, and what merely to group}{For dependent programs, should equality mean definitional equality, equality after ignoring proofs, or agreement on generated inputs?}
+
+\answer Keep three separate relations. \emph{Definitional equality} is a kernel-level compatibility notion at aligned types. \emph{Proved equality} includes suitable extensional equalities established by Lean. \emph{Agreement on a finite probe set} is an observational signature used for display and ranking. The last is not a replacement for either of the first two.
+
+For closed, same-typed candidates, bounded definitional-equality checks are a useful first deduplication stage. They should run transactionally: a meta-level equality check on terms with holes may assign metavariables, which would otherwise mutate search. Failure or a resource limit is not proof of inequality. Hashing normalized syntax accelerates a sufficient syntactic comparison; it does not make full conversion free or complete under a time bound.
+
+For dependent types, the types themselves matter. Values at different indices cannot simply be compared after deleting all casts. First establish the type alignment or an appropriate dependent relation; then compare the values with that alignment recorded. Proof irrelevance identifies proofs of the same proposition in the relevant setting, not arbitrary data or transports between unrelated endpoint types. The typed cast discipline of R4 should therefore also govern ranking.
+
+Finite observations are valuable for diversity. Group candidates by their outputs on the contract's concrete inputs and additional deterministic probes, show a representative from each group, and retain the remaining members for later refinement. A distinguishing input is an explanation of a difference, not a proof that either candidate is wrong. For an empty or weak probe set, aggressive grouping can hide essentially every interesting behavior.
+
+There is an elementary obstruction even for purely parametric list programs. Fix $m$. The identity and the function that returns its input up to length $m$ but returns the empty list above that length agree on every input of length at most $m$ and disagree at length $m+1$. Both are element-parametric. Thus parametricity reduces the \emph{element alphabet} needed for each length; it does not remove the need to consider unbounded lengths. The supplied finite checks instantiate this example at $m=7$.
+
+Observational pruning inside synthesis needs stronger conditions than grouping finished answers. The equivalence must be a congruence for all admitted enclosing contexts and all relevant evaluation environments, and representative replacement must preserve the cost or feasibility bound. Shared holes, recursively generated calls, dependent indices, and new counterexamples can invalidate a previously adequate finite signature. Keep alternative recipes or regenerate the bucket when observations change. Permanent deletion is warranted only with the corresponding fragment-specific theorem or certificate.
+
+The implementation currently deduplicates candidates by pretty-printed text. That is a presentation key, not a semantic one: notation, implicit arguments, and proof elision can hide differences. Replace it by a typed structural identity layer, optional bounded conversion/proved-equality merging, and a separately labelled observational grouping layer.\cite{implementation} This gives both reliability and useful variety without promising a cheap decision procedure for general program equivalence.

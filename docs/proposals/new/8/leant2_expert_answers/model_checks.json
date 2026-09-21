@@ -1,0 +1,144 @@
+{
+  "all_checks_passed": true,
+  "conjunctive_retrieval": {
+    "available": [
+      "A"
+    ],
+    "conjunctive_provider_enabled": false,
+    "pairwise_abstraction_enabled": true,
+    "provider_arguments": [
+      "A",
+      "C"
+    ]
+  },
+  "finite_carrier": {
+    "clique_lengths": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "enumeration_ledger": [
+      {
+        "checked": 2,
+        "exhausted": true,
+        "solution_found": false,
+        "states": 1
+      },
+      {
+        "checked": 16,
+        "exhausted": true,
+        "solution_found": false,
+        "states": 2
+      },
+      {
+        "checked": 216,
+        "exhausted": true,
+        "solution_found": false,
+        "states": 3
+      },
+      {
+        "checked": 1731,
+        "exhausted": false,
+        "solution_found": true,
+        "states": 4
+      }
+    ],
+    "first_counterexample_length": 6,
+    "first_minimal_machine_generalizes": false,
+    "graph_edges": 9,
+    "graph_vertices": 6,
+    "minimal_states_in_exhaustive_search": 4,
+    "observed_lengths": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "outputs": [
+      false,
+      false,
+      true,
+      false
+    ],
+    "refined_additional_length_checks": 100,
+    "refined_enumeration_ledger": [
+      {
+        "checked": 2,
+        "exhausted": true,
+        "solution_found": false,
+        "states": 1
+      },
+      {
+        "checked": 16,
+        "exhausted": true,
+        "solution_found": false,
+        "states": 2
+      },
+      {
+        "checked": 216,
+        "exhausted": true,
+        "solution_found": false,
+        "states": 3
+      },
+      {
+        "checked": 1779,
+        "exhausted": false,
+        "solution_found": true,
+        "states": 4
+      }
+    ],
+    "refined_outputs": [
+      false,
+      false,
+      true,
+      false
+    ],
+    "refined_transition": [
+      1,
+      2,
+      3,
+      3
+    ],
+    "state_lower_bound": 4,
+    "transition": [
+      1,
+      2,
+      3,
+      0
+    ]
+  },
+  "observational_noncongruence": {
+    "agree_on_probes": true,
+    "distinguishing_input": 2,
+    "f_output": 0,
+    "g_output": 2,
+    "probes": [
+      0,
+      1
+    ]
+  },
+  "partial_observation_rows": {
+    "different_partial_rows_force_distinct_states": false
+  },
+  "plain_fold_reverse": {
+    "binary_lists_checked": 2047,
+    "max_length": 10,
+    "plain_fold_agrees_with_reverse": true
+  },
+  "rollback_cache": {
+    "correct_second_branch_result": 2,
+    "first_branch_result": 1,
+    "naive_second_branch_result": 1
+  },
+  "schema_version": 1,
+  "scope": "Finite Python models only; no Lean execution or performance claims",
+  "shared_goal_heuristic": {
+    "hole_count_overestimates": true,
+    "maximum_individual_bound": 1,
+    "open_obligations": 4,
+    "optimal_decision_cost": 1
+  }
+}

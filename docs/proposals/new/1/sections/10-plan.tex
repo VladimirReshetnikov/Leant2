@@ -1,0 +1,292 @@
+\section{An integrated implementation plan}\label{sec:architecture}
+
+The answers above point to a staged architecture, not a replacement of every
+working subsystem at once. The most valuable immediate work makes existing
+capabilities composable: local proof goals, indexed induction, callable library
+retrieval, explicit observations, and correct persistence of branch state.
+The more speculative parts---general lifting, symbolic higher-order
+unevaluation, and learned proposals---then become extensions of a stable
+interface rather than competing search engines.
+
+\subsection{Four interfaces with different authority}
+
+The following is interface-level pseudocode, not a compiled Lean implementation.
+A \code{QueryId} identifies the original type, contract, imported environment,
+local telescope, and trust policy. It must not be reconstructed from a model's
+output or from a pretty-printed candidate.
+\begin{lstlisting}
+ProposalService.propose : DecisionPoint -> SearchView -> Proposals
+ObservationService.check : PartialProgram -> ObservationReport
+ProofService.tryProve : TypedObligation -> Budget -> ProofReply
+AcceptanceGate.check : OriginalQuery -> Candidate -> Proof -> GateReply
+\end{lstlisting}
+The proposal service can suggest terms, carriers, generalizations, components,
+or guards. Its outputs carry no authority to remove alternatives. The
+observation service can return values and blockers without claiming a proof;
+a pruning result additionally carries a certificate or invokes a documented,
+conservative evaluator. The proof service distinguishes a checked proof from
+an inconclusive attempt. The gate reconstructs the exact requested statement,
+checks its proof, and audits the resulting assumptions.
+
+Every heuristic service should have a bounded deterministic fallback. This
+preserves the project's no-settings, core-only default: internal versioned
+policies need not become a collection of user-facing switches. A sketch is
+still a valuable way to express knowledge about a carrier or helper; it changes
+the mathematical problem rather than tuning an opaque engine.
+
+\subsection{State ownership and a resumable transition system}
+
+A frontier node should contain the saved meta state, typed root expression,
+open obligations, dependency graph, residual-cache references, recursion
+capabilities, accumulated immutable ranking information, and an expansion
+cursor. The cursor is essential: a rule producing many alternatives must be
+suspendable without repeating all its earlier work. A node also records its
+logical predecessor and the rule instance that produced it.
+
+Global monotone data include work accounting, checked closed counterexamples,
+and successful reusable lemmas whose dependencies are explicit. A cached
+residual fact concerning an open term is not global merely because it lives
+in an \code{IO.Ref}. Separate reusable content-addressed entries from
+branch-local views of those entries. The existing snapshot machinery is a
+useful base, but its external references require this ownership audit
+\cite{transactioncode,searchcode}.
+
+The initial implementation can preserve the current depth-first order while
+exposing one transition at a time. Verify that this refactoring reproduces the
+old logical trace on deterministic-work fixtures before changing scheduling.
+Then add a persistent priority queue, with memory caps and an explicit spill,
+eviction, or resumable-depth-first policy. Eviction must not masquerade as
+exhaustion. Successful snapshots being cheap on one profile does not imply
+that retaining millions of them is cheap.
+
+\begin{lstlisting}
+while resources remain:
+    job := deterministicScheduler.next()
+    restore(job.branchState)
+    validateDependentCaches(job)
+    result := advanceOneLogicalQuantum(job)
+    match result:
+      proposal(children): enqueueWithStableIds(children)
+      blocked(dependencies): suspendUntilRelevantChange(job)
+      refuted(certificate): checkAndRecord(certificate)
+      completed(term): scheduleContractAndPublicationChecks(term)
+      proofReady(term, proof): gate(originalQuery, term, proof)
+      unknown(reason): retainOrSuspend(job, reason)
+    commitTraceEvent()
+return certifiedAnswers, frontierReceipt, incompleteJobs
+\end{lstlisting}
+A logical quantum is a bounded unit of resumable work, not necessarily one
+Lean primitive. A primitive that can perform substantial reduction needs its
+own resource boundary. Wall-clock control remains a safety limit around the
+logical schedule, not its definition.
+
+\subsection{Recommended order of implementation}
+
+\paragraph{Stage A: preserve the boundary and remove integration bottlenecks.}
+Harden the public gate against mismatched supplied proof statements. Add local
+context support to the proof-service adapter; the current closed-proposition
+portfolio explicitly excludes free variables, which would block the branch
+proofs needed by program-and-proof synthesis. Reuse Lean's indexed-induction
+operations on their supported inputs, add elementary natural-number recursion
+under explicit recursion budgets, and make single-step library lookup
+available to typed holes. Separate a certified kernel term from a compilable,
+re-elaborated presentation \cite{gatecode,searchcode,leaninduction,librarysearch}.
+
+Acceptance gates for this stage should be concrete: vector map with its given
+motive, a proof involving a local induction hypothesis, the missing elementary
+\code{Nat} lemmas, and a published recursive candidate that both rechecks and
+runs. Failure of publication must preserve the certified result while clearly
+reporting that executable publication failed. Do not use an unchecked compiled
+replacement to conceal the discrepancy.
+
+\paragraph{Stage B: observations and branch-safe reuse.}
+Split supported Boolean and propositional contracts into typed observations,
+retaining the reconstruction theorem. Store per-observation blockers and
+assignment fingerprints. Add checked counterexamples and test them early on
+later candidates. Introduce a simple observation record for closed
+first-order calls before general hole closures. Differential tests against
+the current kernel path are useful engineering evidence, but any stronger
+claim of conservative pruning must name its proof or trusted implementation.
+
+A useful milestone is fewer repeated evaluations of unchanged observations
+without changing the bounded candidate set. Measure invalidations and cache
+hits as well as elapsed time. A cache that seems fast only because it misses
+necessary invalidations is a regression, not an optimization.
+
+\paragraph{Stage C: bounded lifting with a carrier-given control.}
+Implement one explicit grammar containing result state, one extra parameter,
+a product with one auxiliary quantity, and optional state. Include observer
+and step obligations from the start. Run every benchmark twice: with the
+reference carrier supplied, and with that carrier hidden. When a problem
+fails even with the carrier supplied, improve body construction or proof
+support before blaming carrier invention.
+
+Add a finite-state conflict lower bound only where carrier cardinality is
+certified. For symbolic or polymorphic state, use conflicts to propose useful
+features, not to count values already enumerated. Connect lifting templates
+to the induction invariant interface, so a synthesized auxiliary quantity
+comes with a path to certification. This stage can benefit from the ideas in
+AutoLifter and Para without implementing their full search machinery
+\cite{autolifter,para}.
+
+\paragraph{Stage D: change search order after exposing resumable transitions.}
+Introduce the immutable cost model, deterministic tie-breaking, and a fair
+baseline frontier. Start with zero or a proved relaxed lower bound. Add goal
+ordering based on estimated domain size and dependency impact. Next introduce
+independent-component solution caches; delay general interface-relation
+tabling until simpler caches show a benefit. A successful best-first rewrite
+must justify its memory use and candidate improvements, not merely eliminate
+iterative deepening from the source code.
+
+\paragraph{Stage E: stronger recursion and proof-producing evaluation.}
+Add a typed recursive body representation and explicit realization obligations.
+A structural or well-founded call capability must have a checked decrease
+proof. Implement a small supported evaluator with certified output equality,
+then extend it with typed hole closures. Unresolved recursive values remain
+symbolic and shared across equal calls. Add angelic constraint refinement only
+when the store can distinguish an impossible relation from a failed guess.
+
+For universal contracts, first implement the induction-aligned verification
+conditions described in R6.Q2. A generated invariant template that fails is
+an invitation to search for a stronger invariant, not a reason to reject the
+program globally. Keep unsupported proof obligations visible in the outcome.
+
+\paragraph{Stage F: learned proposals only after the controls exist.}
+Evaluate fixed, recorded carrier and helper proposals against enumeration with
+the same grammar, proof budget, and full latency accounting. Add live inference
+only after this offline comparison shows a useful increase in certified
+solutions. A local model is optional; it must not become a hidden dependency
+of the core-only path. External proof tools likewise enter through explicit
+adapters with recorded assumptions and resource limits.
+
+These stages express dependencies, not calendar estimates. Stages A and B
+should proceed without waiting for a universal carrier-minimization algorithm.
+The decision to continue each later stage should be based on the ablations
+below, rather than on novelty alone.
+
+\section{Evaluation, falsification, and reproducibility}\label{sec:evaluation}
+
+\subsection{A benchmark design that diagnoses causes}
+
+Keep the reported scored suites as regression fixtures, preserving their
+outcome-category definitions. Report the thirteen unscored stretch cases as a
+separate track rather than quietly adding them to a previously saturated
+score. The edge probes should also remain visible by name. Imported literature
+corpora need deduplication by semantic task family: reverse with three slightly
+different examples is not three independent demonstrations of generalization.
+The repository's current reports are historical comparison points, not data
+reproduced in this study \cite{proposal,implementation}.
+
+For each task, record the target, contract, providers, allowed recursion
+schemes, reference carrier or motive, proof strategy, and trust profile.
+Create paired conditions that isolate the hard part: type only versus finite
+examples versus a universal property; carrier supplied versus invented;
+helpers supplied versus retrieved versus invented; trace-complete versus
+incomplete examples; and raw kernel term versus executable published result.
+This prevents an easy provider lookup from being counted as evidence of
+recursive body synthesis.
+
+Measure time to first certified answer, time to executable publication, rank
+of a reference-equivalent answer, number of distinct observed behaviors,
+number of checked refutations, peak memory, and total logical work. Report
+kernel checking and proof reconstruction separately but also include them in
+end-to-end latency. Report both a cold-start path and an already-loaded
+interactive path. Model calls, index loading, and compilation must not vanish
+from a ten-second claim merely because they run in a different process.
+
+Timed measurements should fix hardware, imported environment, toolchain,
+thread count, and cache policy. Repeat runs to show variation. Deterministic
+logical-work measurements should compare exact trace prefixes and candidate
+sets at a fixed completed prefix. These are complementary experiments; neither
+should be substituted for the other.
+
+\begin{longtable}{@{}L{30mm}L{58mm}L{64mm}@{}}
+\caption{Ablations and the hypotheses they can actually test.}\label{tab:ablations}\\
+\toprule
+Change & Compare against & Primary question\\
+\midrule
+\endfirsthead
+\toprule Change & Compare against & Primary question\\\midrule
+\endhead
+Observation cache & Cache disabled, identical expansion order & Are repeated reductions avoided without changing decided outcomes?\\[4pt]
+Queue scheduler & Resumable depth-first baseline & Does better order outweigh queue and snapshot memory?\\[4pt]
+Goal ordering & Fixed order; same rule grammar & Does dependency-aware ordering reduce branching rather than merely change answers?\\[4pt]
+Carrier inference & Carrier supplied; fixed grammar enumeration & Is carrier discovery, body filling, or proof construction the actual bottleneck?\\[4pt]
+Angelic store & Unknown calls remain stuck & Does refinement help incomplete examples while preserving bounded alternatives?\\[4pt]
+Inductive proof tier & Closed-candidate proof portfolio & Do local obligations increase certified, not just tested, successes?\\[4pt]
+Library retrieval & Curated providers; full bounded fallback & How much branching is removed, and which valid components are missed?\\[4pt]
+Learned proposals & Recorded proposals shuffled or omitted & Does guidance improve certification after its complete cost is charged?\\
+\bottomrule
+\end{longtable}
+
+\subsection{Adversarial tests for the claimed guarantees}
+
+A correctness suite should deliberately attack the interfaces. Use two
+metavariable states with identical printed targets but different universes or
+instance dictionaries. Assign a hole, evaluate, undo, and assign a different
+value under the same identifier. Exercise delayed assignments whose local
+contexts differ. Introduce an observation joining previously independent
+components. Request a proof of a contract different from the supplied proof
+type. Give a custom \code{BEq} that is not lawful equality. Offer two programs
+that agree on the current probe set and disagree on one new input.
+
+For recursion, use repeated equal calls in a constraint that demands
+inconsistent outputs, and a case where one angelic assignment fails while
+another works. Set evaluator fuel just below the amount required by a correct
+candidate and check that the result is unknown rather than false. Distinguish
+conversion failure, proof-search failure, and unsupported realization. For
+ranking, keep an unexplored state whose correct lower bound permits an answer
+better than the incumbent; verify that no optimality claim is issued.
+
+Every such test needs two checks: positive answers still pass the exact gate,
+and pruning does not remove a known valid bounded completion. The second
+check is essential because a perfectly sound acceptance gate cannot detect a
+solution that the search discarded prematurely.
+
+\subsection{Checks actually executed for this article}
+
+The package includes \code{checks/check_models.py}, a standard-library Python
+program, and its recorded \code{results.json}. All eleven checks passed.
+They are finite mathematical sanity checks and small exhaustive searches,
+not tests of Lean, Leant2, the proposed APIs, or runtime performance.
+
+The largest exhaustive negative check enumerates every one-state and
+ two-state deterministic right-fold machine over a binary alphabet with a
+Boolean observer, fixing the initial state to zero without loss under state
+renaming. On all 31 words of length at most four, the requested output is true
+exactly when length is divisible by three. All 2 one-state tables and all
+64 two-state tables fail. The three-state search finds a witness after
+3,173 tables; it does \emph{not} exhaust the three-state space. The witness
+cycles through residues $0,1,2$ and observes whether the state is zero.
+The three-state lower bound for arbitrary lengths is the context-distinction
+argument in R2.Q1, not an inference from testing alone.
+
+Other checks evaluate the ordinary reversal fold on 1,093 words, check the
+Fibonacci pair invariant for 31 inputs, and exhibit counterexamples to
+summed coupled-goal bounds, incomplete-row state counting, assignment-blind
+rollback caching, finite-probe equivalence, independent choices for repeated
+angelic calls, and machine-independent wall-clock answers. Their purpose is
+to make the article's warnings reproducible. They do not replace the written
+proofs or the implementation tests specified above.
+
+\section{Conclusions}
+
+The expert questions are productive because they identify interfaces at which
+otherwise successful methods fail to compose. The strongest answers are not
+all new algorithms. Some are existing capabilities that should be reused:
+higher-order live examples, dictionary-passing retrieval, auxiliary-function
+synthesis, and Lean's motive-construction and induction operations. Others
+are corrected specifications: finite-state minimality is not minimality of a
+Lean type; a checked positive answer is not an exhaustive search; and
+reproducible work is not identical work completed before every deadline.
+
+The proposed path is therefore to build a bounded, explicit, evidence-carrying
+system first. Keep the kernel gate, strengthen its connection to the original
+query, expose resumable transitions, make dependencies and unknown outcomes
+visible, and synthesize lifting and recursion templates with local proof
+obligations. Only then let more ambitious evaluators, tabling schemes, and
+models accelerate the same well-defined problem. The main unresolved
+empirical question is how much each addition increases useful certified
+coverage per unit of end-to-end cost. The benchmark design above makes that
+question answerable without conflating promising examples with established
+performance.

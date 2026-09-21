@@ -1,0 +1,74 @@
+\section{R3: evaluation of programs with holes}
+\label{sec:evaluation}
+
+\Q{R3.1}{Has live bidirectional evaluation reached higher-order examples or dependent types?}
+\ans The higher-order part has a concrete positive answer: Smyth's implementation supports higher-order function examples. Its simplified core presentation restricts these examples, and conflating the core with the implementation understates the result. Smyth also supports interdependent holes and avoids the trace-completeness requirement \cite{smyth}. Those facts do not establish a ready-made Lean-dependent implementation.
+
+A function example need not be an extensional equality of functions. It can be a finite tree of observations, such as requiring a function-valued result to return $w$ when later applied to $v$. This is precisely the distinction Leant2 needs for Church encodings: observe the applications actually demanded by the surrounding contract, rather than try to compare function values globally.
+
+The first serious dependent-type obstacle is not merely that a closure captures a proof. It is that the closure's \emph{type} changes under the captured substitution. A typed hole should have a contextual declaration
+\[
+  ?m:(\Gamma\vdash T),\qquad ?m[\sigma]:T[\sigma]
+\]
+where $\sigma$ is a well-typed substitution into $\Gamma$. Two occurrences of the same hole can have different instantiated target types. Constraints on their outputs must be compared in the corresponding fibers, with explicit equality evidence when a transport is needed.
+
+A useful first dependent fragment supports $\Pi$-types, ordinary indexed constructors, explicit typed substitutions, and finite observations at well-typed arguments. It need not solve arbitrary higher-order unification. An application whose unknown function and unknown argument jointly determine a result should remain a relational constraint when local backward propagation is insufficient. Generating a guessed independent example in that situation can remove valid completions.
+
+There is a second subtlety: an unevaluation rule may produce \emph{sufficient} constraints for one way of satisfying an example without characterizing \emph{all} ways. To use failure of the resulting constraints as a refutation, the alternatives must collectively cover every satisfying completion. Otherwise unevaluation is a proposal or branch-refinement mechanism, not a complete negative test. This distinction should be part of the API's evidence type.
+
+\Q{R3.2}{What incremental normalizer can support assignment and rollback?}
+\ans Demand-driven incremental-computation work, including Adapton, provides a sound architectural precedent for dependency tracking and reuse \cite{adapton}. It is not a drop-in memoized Lean normalizer with all the required backtracking semantics. Implement a small versioned observation cache before a new evaluator.
+
+Cache entries should be keyed by the observation's identity, closure environment, relevant definition environment, evaluator version, and a persistent assignment version. Each entry also stores its \emph{read set}. Invalidation must include variables already read through assignments, not just unassigned blockers.
+
+For example, in branch A let $?m=0$, so an observation evaluates to true. In branch B let the same search-level hole instead be assigned $1$, so the observation is false. In both branches the hole is assigned. A cache keyed by ``which holes are still open'' cannot distinguish them. Returning to branch A should reuse A's result, not whatever branch B most recently wrote into a global table.
+
+Use immutable assignment nodes or persistent deltas with stable version identities. A cached result is reusable when every assignment and environmental dependency in its recorded read set is unchanged. A conservative implementation invalidates the entire entry on any relevant version change; a more selective implementation validates the read-set fingerprints. Local free-variable values, universe assignments, reducibility options, and local instance evidence can all affect normalization or typing and must not disappear from the key.
+
+\begin{proposition}[Read-set cache validity]
+Let a deterministic evaluator return result $r$ while reading only entries in a recorded set $D$ of an immutable store $\rho$. If its control flow and primitive operations depend only on those reads, then any store agreeing with $\rho$ on $D$ produces the same result.
+\end{proposition}
+\begin{proof}
+Replay the evaluation steps. At each step, every read returns the same value, so the same rule and next read are selected. Induction on the finite evaluation trace yields the same result and termination point.
+\end{proof}
+
+The assumptions explain why hidden global caches, clocks, and unrecorded type-class lookup invalidate the argument. In the current transaction layer, the work ledger and several caches are \code{IO.Ref}s outside \code{Meta.SavedState}; the monotone ledger intentionally survives rollback, whereas semantic caches need explicit branch-validity rules \cite{transaction,searchcore}. Moving to best-first search should not simply attach the same mutable blocker array to every queued state.
+
+\Q{R3.3}{What is the cheapest sound fast evaluator?}
+\ans Keep the kernel-based path as the reference, and add a small typed evaluator that either produces checkable evidence or returns unknown. Do not start by reimplementing the whole kernel. Differential testing is necessary engineering evidence, but not a proof of conservative pruning.
+
+There are two useful specifications. A \emph{stable reduction} establishes that every well-typed completion of the holes has the same observed Boolean result. An \emph{abstract evaluator} computes a set of possible results satisfying
+\[
+ \{\llbracket O[p]\rrbracket:p\in\Comp(s)\}\ \subseteq\ \gamma(\widehat{\mathrm{eval}}(O,s)).
+\]
+This is an \emph{over-approximation} of possible completed behaviors. An empty intersection with the permitted outputs justifies refutation. Under-approximating successful reductions is harmless only when an actual reported reduction is proved stable under every completion; under-approximating possible behaviors is not safe for exclusion.
+
+\begin{lemma}[Substitution-stable refutation]
+Suppose a well-typed open observation reduces to \code{false} by rules that commute with every admissible completion substitution. Then it is false for every such completion.
+\end{lemma}
+\begin{proof}
+Apply the completion substitution to every step of the reduction trace. By the commuting assumption each remains a valid step, and the closed Boolean \code{false} is unchanged. Therefore the completed observation reduces to false as well.
+\end{proof}
+
+This is the theorem a fragment evaluator should establish. Start with beta reduction, constructor discrimination, projections, and selected recursor equations on known constructors. For primitives, add a small proof-producing reflective procedure or a trusted fragment theorem. Unsupported terms, exhausted fuel, and typing ambiguity produce unknown. For a performance-first prototype, let the fast evaluator only nominate possible refutations, then confirm each proposed deletion using the trusted path or a checked refutation certificate.
+
+The original \code{instantiatePartial} explicitly expands delayed assignments for reduction and notes that intermediate metavariables may not retain matching local contexts \cite{searchcore}. This is not a demonstrated counterexample, but it prevents a proof from merely assuming every intermediate term is an ordinary well-typed open Lean term. A verified replacement should carry typed substitution spines, or separately prove the relation between this reduction representation and all well-typed completions.
+
+Lean4Lean is valuable as a mechanized specification and verification effort. Its published work and 2026 project account describe ongoing metatheory and typechecker verification, not a turnkey extraction of every optimized kernel reduction path \cite{lean4lean,lean4lean2026}. Reusing a narrowly proved fragment is realistic. Treating its existence as a completed proof of a new evaluator is not.
+
+\textbf{First implementation step.} Split only contract forms whose decomposition is justified: conjunctions; Boolean conjunction equal to true; and a finite, fully known \code{List.all} expansion with a proved equivalence. Preserve the original contract and reconstruction proof. A metamorphic condition $f(x)=f(y)$ must not be turned into unrelated fixed-output examples. Store true/false/unknown separately for each resulting observation and update only invalidated entries.
+
+\Q{R3.4}{Can top-down angelic recursion have termination and completeness guarantees?}
+\ans Yes for an explicitly finite, fairly explored abstraction with correct witness handling. There is no automatic transfer of an unrestricted termination theorem from Burst to a new top-down Lean engine. Burst's correctness results have stated assumptions about its angelic-synthesis subprocedure and refinement information \cite{burst}.
+
+Distinguish three recursive-call treatments. A known observation $f(v)=w$ permits replacing that call by $w$ \emph{conditional on the contract}. A sound over-approximation permits every value that a satisfying completion could return. A guessed value is only one possible witness. Failure under one guessed value does not refute the branch.
+
+Conditional oracle facts require a different statement from unconditional stable reduction:
+\[
+  C(p)\Longrightarrow p(v)=w.
+\]
+When evaluation under these facts yields a contradiction, the sound conclusion is that no completion can satisfy $C$. It is not that the original observation is false for every arbitrary completion. Keep this dependency in the certificate. If the contract permits several outputs at $v$, use a set or relation; never select one output and silently regard it as forced.
+
+Recursive calls at equal inputs must receive compatible outputs. In a dependent result family, the compatibility equation lives at the corresponding instantiated result type. Fuel exhaustion means no conclusion. A closed candidate must be evaluated or proved against the original contract without unresolved angelic assumptions.
+
+A simple bounded completeness argument is available when there are finitely many candidate bodies and finite sound oracle domains: enumerate witnesses fairly; after a spurious candidate or witness, remove only a justified finite alternative; never repeat a removed state; and eventually check every candidate exactly. The finite search then terminates and retains every genuine solution. Infinite result domains require symbolic over-approximations or a fair increasing sequence of finite approximations, and termination of the whole increasing search is no longer guaranteed. The useful implementation target is the bounded theorem, not an unqualified global completeness claim.

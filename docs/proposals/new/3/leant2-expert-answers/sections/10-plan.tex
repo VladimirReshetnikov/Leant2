@@ -1,0 +1,108 @@
+\section{An integrated implementation plan}
+\label{sec:plan}
+
+The preceding answers favor a small set of shared services over nine largely independent research features. The central objects are a frozen query, a typed search state, an observation graph, a proposal stream, and a certificate. Carrier invention, recursion, and proof generalization become different producers of proposals. Retrieval and statistical models supply alternatives rather than bypassing these objects. Evaluation supplies either a justified refutation, a justified fact, or an explicitly incomplete signal.
+
+\subsection{Keep the semantic interfaces narrow}
+
+The following is architectural pseudocode, not code checked against Lean's metaprogramming API. In particular, the evidence fields require an implementation of the corresponding certificate checker or a clearly identified trusted invariant.
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily]
+FrozenQuery = {
+  environmentIdentity, target, contract, axiomPolicy,
+  grammarIdentity, rankingPolicy, resourcePolicy
+}
+SearchState = {
+  persistentMetaState, typedGoals, constraints,
+  observationState, logicalCost, tracePosition
+}
+ObservationResult =
+  Established(evidence)
+  | Refuted(evidence, scope)
+  | Residual(typedValue, readSet)
+  | Unknown(reason)
+Proposal = {
+  decisionPoint, syntaxOrExpression, provenance,
+  grammarMembership, deterministicPriority
+}
+RealizedCandidate = {
+  logicalProgram, optionalExecutable,
+  optionalEquivalenceProof, contractProof
+}
+\end{lstlisting}
+
+The \code{scope} of refutation matters. A reduction independent of holes may refute every completion. An oracle-based argument may refute only completions satisfying the original contract. An exhaustive small grammar test may exclude only a declared subgrammar. A timeout excludes nothing. These are different constructors or checked tags, not comments attached to an undifferentiated Boolean.
+
+There should be one path from a realized candidate to acceptance. That path reconstructs the required proposition from the frozen query, checks the program and proof, audits axioms, and records the environment. A separate path may publish an executable after its connection to the logical program is established. Neither an evaluator result nor a retrieved declaration name is a certificate by itself. A model-produced tactic script can be attempted in an isolated elaboration context, but its claims are still untrusted until checked.
+
+\subsection{Implement in dependency order}
+
+\textbf{Stage A: preserve and expose the baseline.} Add a question-independent regression harness, structured outcomes, source-pinned receipts, and explicit separation of logical certification from successful compilation. Stabilize candidate identifiers and tie-breaking. Keep the present depth-first engine as a reference implementation and a fallback. The existing continuation discipline is valuable: it provides a known comparison when the state representation changes \cite{searchcore,transaction,engine}.
+
+The first acceptance tests are qualitative. Every previously accepted program must still check against its original target and contract. An intentionally unrelated proof must be rejected by the hardened public gate. A program that cannot be compiled must not produce a misleading runtime-success message. An interrupted proof attempt must not be reported as a proof of impossibility. For strict profiles, an equality bridge using an unapproved axiom must be rejected even when its executable counterpart works.
+
+\textbf{Stage B: remove avoidable blind spots before inventing a new search engine.} Experiment with carefully bounded natural-number and indexed-family recursion, proof-side library lookup, and richer observation decomposition. In particular, the inspected \code{structuralRecursion} guard rejects indexed families before calling Lean's induction machinery; the native machinery already computes ordinary indexed motives \cite{searchcore,leaninduction}. Test \code{Vec.map} and simple \code{Nat.rec} examples first. This does not imply that removing the guard globally is safe for performance or that all indexed datatypes will work.
+
+Build proof-producing observation adapters for conjunction, Boolean conjunction, and finite list checks. Keep each observation's original proposition, its closed inputs, its dependency information, and a proof explaining the decomposition. Add a versioned cache initially for cases whose expressions and dependency closure are easy to characterize. Compare every cached result with the uncached path in a diagnostic run.
+
+\textbf{Stage C: introduce first-class search states without changing policy.} Re-express the current continuation as a deterministic state machine with an explicit stack. Demonstrate equivalent event traces under the same logical budget before replacing the stack by another frontier. Separate backtrackable state from intentionally monotone accounting. The current \code{IO.Ref} ledger is outside \code{Meta.SavedState}; a future heap of saved metavariable states must not assume those references roll back automatically \cite{transaction}.
+
+Then add a uniform-cost frontier with a zero heuristic, a proved relaxation, or a clearly heuristic scheduling policy. Preserve a fixed candidate-ranking objective separately. Benchmark frontier memory as well as node count: inexpensive persistent snapshots do not imply that retaining a large frontier has negligible cost. Add component factorization only after the dependency closure and effect-confinement conditions can be tested.
+
+\textbf{Stage D: share a bounded strengthening grammar.} Implement result carriers, one parameter arrow, small products, and \code{Option} states as one proposal source. Add a finishing function as an explicit synthesis obligation. Use sound incompatibility witnesses only for a genuine finite-state bound; otherwise use distinctions to rank proposals. Feed the same proposal mechanism into induction generalization and helper interfaces.
+
+At this stage the carrier-given track is essential. A task that remains difficult even with its reference carrier is primarily a body-search or evaluator problem. A task solved quickly with a carrier but slowly without one measures invention. Combining these scores would conceal the very distinction the architecture is supposed to improve.
+
+\textbf{Stage E: expand semantics only where a certificate path is ready.} Add typed hole closures, limited unevaluation, recursive-call capabilities, and program--proof co-synthesis one admitted fragment at a time. Each new fragment needs a simulation argument, explicit unsupported cases, and differential tests. Well-founded recursion should enter through a realization interface with equation lemmas, not through an assumption that the search interpreter and kernel are definitionally identical.
+
+\textbf{Stage F: add scalable and learned proposal sources.} Introduce refined library abstractions, then optional model guidance. The default core-only path must remain useful and reproducible without downloading a model or connecting to a service. Record exactly which alternatives came from optional sources, their grammar membership, and the deterministic order in which they were admitted. Separate a model's effect on proposal quality from its effect on total interactive latency.
+
+These stages are dependency gates, not calendar estimates. Moving to a later stage is justified by a closed test obligation and a measured bottleneck, not by completing a predetermined number of weeks.
+
+\subsection{Concrete source integration points}
+
+\begin{longtable}{@{}p{.31\linewidth}p{.63\linewidth}@{}}
+\toprule
+Inspected component & Suggested first change \\
+\midrule
+\endhead
+\path{Leant2/Core/Types.lean} & Add an uncertified-survivor outcome, query-linked certificates, and explicit distinctions between timeout and exhausted checked grammar.\\
+\path{Leant2/Accept/Gate.lean} & Derive expected types from the frozen query; distinguish logical checking from executable publication and audit any bridge proof.\\
+\path{Leant2/Native/Transaction.lean} & Classify every mutable field as branch-local, query-monotone, or externally observed; preserve deterministic trace accounting across rollback.\\
+\path{Leant2/Search/Core.lean} & Start with bounded recursion experiments, observation adapters, and dependency-aware cache keys; only then externalize the frontier.\\
+\path{Leant2/Engine.lean} & Introduce stable candidate identities, fixed ranking policy, logical epochs, and receipts that state the extent of exploration.\\
+Lean induction adapter & Wrap \code{MVarId.induction} and selected elaboration services with snapshot restoration and structured failure reasons.\\
+Library adapter & Use rigid-head lookup and \code{LibrarySuggestions.Selector}; treat hints as optional features, not a promise of example-aware retrieval.\\
+\bottomrule
+\end{longtable}
+
+The table names integration locations in inspected source, not patches applied by this report. Public APIs should hide Lean-version-sensitive details behind a small compatibility layer. The native induction and library-suggestion source inspected for this purpose is pinned to 4.34.0 \cite{leaninduction,leanlibrary}.
+
+\subsection{Experiments that can falsify the recommendations}
+
+Use three distinct task families: the repository's existing compatibility suites, the failing stretch and edge cases, and a held-out collection of small Lean definitions with their appropriate contracts. Deduplicate equivalent tasks and separate training from testing by definition family or module. Removing a target body while leaving an equivalent wrapper, its generated equation theorem, or a directly usable reference implementation in the provider set is not a meaningful synthesis test.
+
+For each task, retain the complete query, imports, allowed providers, recursion and carrier grammar, observations, reference implementation, and success criterion. Report time to a \emph{certified} result separately from time to an example-consistent survivor. Record the rank of the intended behavior where the contract underdetermines it; matching the spelling of one reference term is not necessary.
+
+\begin{longtable}{@{}p{.27\linewidth}p{.33\linewidth}p{.34\linewidth}@{}}
+\toprule
+Hypothesis & Controlled comparison & Evidence against it \\
+\midrule
+\endhead
+Per-observation caching reduces work & Same candidate trace, cached versus uncached evaluation & Cache bookkeeping outweighs avoided reductions, or branch replay disagrees.\\
+Distinctions help carrier invention & Same finite carrier grammar and term budget, different ordering & No improvement in certified solves or explored states; significant baseline regressions.\\
+Joint-state search improves control & Explicit DFS versus best-first, same admissible grammar & Frontier memory or expensive state operations erase the gain.\\
+Local proof obligations help certification & Program-first versus subtype/invariant synthesis & Proof branching dominates, or strengthened invariants exclude intended programs.\\
+Refined retrieval improves scaling & Same task and concrete checker, head-only versus refined index & Index construction and false positives dominate; recall falls without an honest grammar restriction.\\
+Model proposals justify their latency & Enumeration, recorded proposals, and live inference as separate runs & Proposals rarely add useful carriers, or end-to-end certification is worse.\\
+\bottomrule
+\end{longtable}
+
+Report certified solved counts at several wall-clock limits, but also compare runs at a fixed logical-work limit. Include peak resident memory, frontier size, evaluator invocations, invalidated cache entries, failed instance searches, proof attempts, and reason-coded timeouts. Cold-start and warm-session measurements should be separate, especially for library loading and optional inference. Use repeated runs and disclose hardware and toolchain; no universal improvement factor follows from one query profile.
+
+For correctness, add adversarial tests: two goals sharing only a universe constraint; a delayed assignment that changes an observation; two branch-local instances for the same class head; a timeout during proof reconstruction; a proposed cast across propositionally but not definitionally equal indices; and two candidates equal on all current tests but different on the next generated input. The six finite checks supplied with this report illustrate some of these distinctions, but do not replace such Lean-level regressions.
+
+\subsection{What should count as a successful next release?}
+
+A defensible next milestone is not ``general dependent synthesis solved.'' It is a source-pinned engine that preserves the existing compatibility behavior, compiles a documented family of certified recursive programs, handles a measured subset of the current edge cases, and reports its limitations precisely. Receipts should say whether the result is merely the best found, optimal for a completed cost layer, or obtained after fully exhausting a declared finite grammar.
+
+The long-term research direction is still ambitious: infer useful auxiliary state and dependent invariants while retaining a simple interactive experience. The immediate strategy is to make each new source of intelligence replaceable and each correctness claim local. That permits aggressive heuristics, including statistical ones, without confusing experimental search quality with verified logical evidence.

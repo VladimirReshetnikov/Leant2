@@ -1,0 +1,63 @@
+\section{The semantic contract before the algorithms}\label{sec:foundation}
+
+\subsection{Six guarantees that should not share one label}
+
+Fix a Lean environment $E$, a target type $T$, an optional contract $C:T\to\mathsf{Prop}$, an axiom policy $P$, and a grammar $\G$. Treat absent contracts as $C(f)=\mathsf{True}$. A successful synthesis result should identify the original query and contain a closed $f$ and a closed proof $\pi$ such that
+\[
+ E\vdash f:T,\qquad E\vdash\pi:C(f),\qquad
+ \operatorname{Axioms}_E(f,T,\pi,C(f))\subseteq P.
+\]
+Universes are part of this statement. Existing universe parameters are rigid unless the user has explicitly requested an instance. Generalizing newly inferred universe metavariables is legitimate only when the resulting declarations are checked at the advertised, jointly generalized types.
+
+This \emph{positive certification} contract is different from five other obligations: that branch pruning never discards a satisfying completion; that enumeration covers a declared grammar; that ranking optimizes the declared objective; that a receipt can be replayed against the same logical dependencies; and that the published program is executable with the advertised behavior. A final kernel check establishes none of those five automatically. It checks the particular declarations that reach it.\cite{leanmanual,implementation}
+
+\begin{definition}[Completion semantics]
+For a typed partial program $p$ in a search state $S$, let $\operatorname{Comp}_{\G}(S)$ be the well-typed, grammar-respecting substitutions for its open metavariables that satisfy all existing constraints. A completion includes compatible universe assignments and local-context substitutions, not merely textual replacements of question marks.
+\end{definition}
+
+An unconditional rejection must establish
+\begin{equation}\label{eq:stable-prune}
+ \forall\theta\in\operatorname{Comp}_{\G}(S),\quad \neg C(p\theta).
+\end{equation}
+An angelic or unevaluation step usually has a different contract. If it adds a constraint $D$, it needs at least
+\begin{equation}\label{eq:necessary-constraint}
+ \forall\theta\in\operatorname{Comp}_{\G}(S),\quad C(p\theta)\Longrightarrow D(\theta).
+\end{equation}
+If $D$ is then proved unsatisfiable over the completion space, rejection follows. Mistaking one possible angelic assignment for a necessary consequence violates this implication. Conversely, proving that a proposed constraint is sufficient for success does not, by itself, justify rejecting all completions outside it; those must remain in another search alternative.
+
+\subsection{What the inspected acceptance boundary does, and what to strengthen}
+
+The current gate performs synchronous kernel checking through \code{addDeclCore} with \code{doCheck := true}, rejects unresolved expression holes and escaped locals, generalizes remaining universe metavariables jointly, and audits the transitive axiom inventory. This is a sound architectural foundation for a small positive-certification boundary. Its public input, however, contains a caller-supplied program type and a caller-supplied proof/type pair. It does not itself take the frozen query or reconstruct the intended contract application. The inspected caller in \code{Engine.lean} does construct the contract proof type from the extracted subtype value; the observation is an API-hardening recommendation, not evidence that this caller accepts an unrelated proof.\cite{implementation}
+
+The stronger interface should take the frozen query plus candidate data, reconstruct $C(f)$ inside the boundary, and record that exact proposition in the receipt. It should also retain the checked negative certificate rather than merely returning a negative tag. The inspected contract-impossibility prepass checks its proof under the standard profile and discards the certificate in the returned outcome. A requested stricter policy must govern negative results too, or the result must explicitly say it was established under a different policy.\cite{implementation}
+
+A second boundary deserves an explicit test. The engine contains an \code{atProp} transformation and can collect candidates for a universe-specialized target in its classical lane. Such a term is checked at the specialized type, so this is not kernel unsoundness. Nevertheless, an inhabitant of $T[\ell:=0]$ is not generally an inhabitant of the original universe-polymorphic $T$. If specialization is useful as a suggestion, give it a distinct result carrying its actual type. Do not let a frontend treat it as an ordinary answer to the unspecialized query. This recommendation concerns preservation of the problem statement, independent of the merits of a classical lane.\cite{implementation}
+
+Finally, \code{instantiatePartial} explicitly permits an intermediate reduction expression whose metavariable contexts no longer match. Reduction of such an expression is not the same operation as kernel checking a well-typed declaration. Any conservativity proof for early rejection must therefore account for that transformation, or replace it with typed closures. ``The kernel reducer was called'' is not a sufficient proof of \cref{eq:stable-prune}.\cite{implementation}
+
+\subsection{A result algebra with enough information}
+
+A useful result is a structured record, not an undifferentiated success/failure Boolean. The following statuses should be distinct, whether represented as constructors or fields:
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}L{36mm}Y@{}}\toprule
+Status & Meaning\\\midrule
+Verified & A term of the frozen target and a checked proof of its exact contract.\\
+Observed & A typed candidate with recorded execution observations, but without the required contract certificate.\\
+Refuted candidate & A particular candidate fails a checked necessary condition or counterexample.\\
+Impossible & A checked proof that no term satisfies the requested type/contract, under the requested policy.\\
+Bound completed & The declared finite search was covered; unresolved verification obligations are listed separately.\\
+Budget exhausted & Search or checking was interrupted; a continuation and ledger are available.\\
+Publication status & A separate indication of successful declaration export, compilation, and execution checks.\\\bottomrule
+\end{tabularx}
+\end{center}
+
+The distinction between the middle two rows is essential. Enumerating every program in a finite grammar does not prove that none meets a universal contract if some proof attempts ended unresolved. Even ``grammar exhausted'' needs a documented meaning: exhaustion of proof terms up to a proof bound is weaker than refutation of every program in the program grammar. The current \code{Outcome} and \code{NegativeKind} already distinguish several negative categories, but do not carry all the evidence and unresolved-survivor information recommended here.\cite{implementation}
+
+A finite example contract can itself be kernel verified. Thus ``Verified'' need not mean ``universally correct for a hidden intended function.'' The user-facing description should name the contract's scope: for example, ``verified against these twelve equalities,'' or ``verified for all lists.'' Merely executing twelve tests without reconstructing their proofs belongs to the weaker observation status.
+
+\subsection{Corrections that affect the research plan}
+
+The detailed answers prove or explain several corrections. Reversal is a right fold over a list result carrier when the step may append; an efficient function carrier is an optimization, not a semantic necessity. A count of open goals is not generally an admissible remaining-cost bound. Smyth already supports higher-order examples in its implementation and removes trace completeness. Hoogle+ already represents type-class requirements through dictionaries. The transport example $n+0$ should be distinguished from $0+n$ under Lean's standard recursive definition of addition. Sorting candidates after a parallel timeout does not determine which candidates reached the set. A finite Kripke countermodel for a reified propositional problem proves nonvalidity in that reified calculus, not automatically a Lean theorem negating an arbitrary contextual target.\cite{proposal,smyth,hoogle,leanmanual}
+
+These are not reasons to abandon the proposal. They identify where a useful engineering experiment can replace a falsely universal theorem, or where an existing technique can replace an unnecessarily open-ended research dependency.

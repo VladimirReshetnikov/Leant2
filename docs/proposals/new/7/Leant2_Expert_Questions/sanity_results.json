@@ -1,0 +1,130 @@
+{
+  "scope": "Independent finite Python checks; not Lean verification or Leant2 benchmarking.",
+  "carrier_check": {
+    "contexts": [
+      "",
+      "a",
+      "b"
+    ],
+    "suffixes": [
+      "",
+      "a",
+      "b",
+      "ab"
+    ],
+    "unique_samples": {
+      "": false,
+      "a": false,
+      "b": false,
+      "aa": false,
+      "ab": true,
+      "ba": true,
+      "bb": false,
+      "aab": true,
+      "bab": true
+    },
+    "observation_rows": {
+      "": [
+        false,
+        false,
+        false
+      ],
+      "a": [
+        false,
+        false,
+        true
+      ],
+      "b": [
+        false,
+        true,
+        false
+      ],
+      "ab": [
+        true,
+        true,
+        true
+      ]
+    },
+    "incompatibility_edges": [
+      [
+        "",
+        "a"
+      ],
+      [
+        "",
+        "b"
+      ],
+      [
+        "",
+        "ab"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "ab"
+      ],
+      [
+        "b",
+        "ab"
+      ]
+    ],
+    "clique_lower_bound": 4,
+    "exhaustive_counts": [
+      {
+        "carrier_cardinality": 1,
+        "transition_seed_pairs_checked": 1,
+        "full_machines_accounted_for": 2,
+        "sample_consistent_machines": 0
+      },
+      {
+        "carrier_cardinality": 2,
+        "transition_seed_pairs_checked": 32,
+        "full_machines_accounted_for": 128,
+        "sample_consistent_machines": 0
+      },
+      {
+        "carrier_cardinality": 3,
+        "transition_seed_pairs_checked": 2187,
+        "full_machines_accounted_for": 17496,
+        "sample_consistent_machines": 0
+      }
+    ],
+    "four_state_witness": {
+      "seed": 0,
+      "transitions": [
+        1,
+        1,
+        3,
+        3,
+        2,
+        3,
+        2,
+        3
+      ],
+      "finish_true_states": [
+        3
+      ]
+    },
+    "witness_tested_words_through_length_8": 511,
+    "feature_covers_in_declared_two_feature_library": [
+      [
+        "seen_a",
+        "seen_b"
+      ]
+    ]
+  },
+  "other_checks": {
+    "partial_row_compatibility_nontransitive": true,
+    "shared_goal_true_cost": 1,
+    "sum_of_individual_bounds": 2,
+    "max_of_individual_bounds": 1,
+    "reverse_implementations_agree_on_words_through_length_8": 511,
+    "independent_angel_satisfying_choices": 2,
+    "same_call_consistent_satisfying_choices": 0,
+    "probe_equivalence_not_arbitrary_contextual_equivalence": true
+  },
+  "all_assertions_passed": true
+}

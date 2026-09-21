@@ -1,0 +1,106 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amsthm}
+\usepackage{newtxtext,newtxmath}
+\usepackage[margin=1in,headheight=15pt]{geometry}
+\usepackage{microtype,mathtools}
+\usepackage{booktabs,longtable,array,enumitem}
+\usepackage{xcolor,listings,fancyhdr}
+\usepackage[hidelinks,breaklinks]{hyperref}
+\usepackage{bookmark}
+\usepackage[nameinlink,noabbrev]{cleveref}
+\usepackage{xurl}
+\definecolor{ink}{HTML}{26332B}
+\definecolor{muted}{HTML}{526452}
+\definecolor{paper}{HTML}{F4F5EF}
+\hypersetup{pdftitle={Leant2: Answers to the Expert Questions},pdfauthor={Research and design assessment prepared for Vladimir Reshetnikov},pdfsubject={Dependent program synthesis, search, carriers, residual evaluation, recursion and certification}}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textsc{Leant2: Answers to the Expert Questions}}
+\fancyhead[R]{\small Research assessment}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\setlength{\parindent}{1.1em}
+\setlength{\parskip}{3pt}
+\setlength{\emergencystretch}{2em}
+\setcounter{tocdepth}{2}
+\setlist{nosep,leftmargin=*}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\code}[1]{\texttt{\small\detokenize{#1}}}
+\newcommand{\Lean}{Lean}
+\newcommand{\Leant}{Leant2}
+\newcommand{\Nat}{\mathbb{N}}
+\newcommand{\Bool}{\mathsf{Bool}}
+\newcommand{\Type}{\mathsf{Type}}
+\newcommand{\List}{\mathsf{List}}
+\newcommand{\Option}{\mathsf{Option}}
+\newcommand{\foldr}{\mathsf{foldr}}
+\newcommand{\para}{\mathsf{para}}
+\newcommand{\fin}{\mathsf{finish}}
+\newcommand{\step}{\mathsf{step}}
+\newcommand{\init}{\mathsf{init}}
+\newcommand{\cost}{\mathsf{cost}}
+\newcommand{\Comp}{\mathsf{Comp}}
+\newcommand{\status}[1]{\par\noindent\textbf{Assessment:} #1\par}
+\newcommand{\question}[2]{\subsection{#1. #2}\label{q:#1}}
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{theorem}[proposition]{Theorem}
+\newtheorem{corollary}[proposition]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[proposition]{Definition}
+\newtheorem{example}[proposition]{Example}
+\theoremstyle{remark}
+\newtheorem{remark}[proposition]{Remark}
+\lstset{basicstyle=\ttfamily\small,columns=fullflexible,keepspaces=true,breaklines=true,showstringspaces=false,frame=single,rulecolor=\color{muted},backgroundcolor=\color{paper},framesep=5pt,aboveskip=9pt,belowskip=9pt,tabsize=2}
+\title{\color{ink}\textbf{Leant2: Answers to the Expert Questions}\\[7pt]\large A literature-grounded design for dependent program synthesis,\\search control, auxiliary-state invention, and certification}
+\author{Research and design assessment\\Prepared for Vladimir Reshetnikov}
+\date{September 21, 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+This article answers all 31 questions in the nine research sections of
+\emph{Leant2: Design for Further Improvements}. It examines the proposal and
+selected implementation modules at repository commit
+\texttt{784664ff34e8}, checks relevant primary literature, and turns the
+questions into explicit algorithms, correctness obligations, and experiments.
+Several questions already have stronger published answers than the proposal
+acknowledges: Smyth supports higher-order examples and incomplete recursive
+examples; Hoogle+ handles type classes; auxiliary-state synthesis has concrete
+precedents in AutoLifter, Para, and auxiliary-function synthesis; and Lean
+exposes reusable motive-construction operations. Other questions need their
+premises tightened. In particular, summed goal-count heuristics are not
+necessarily admissible, finite observations do not identify a minimal carrier
+type, proof irrelevance does not license arbitrary cast erasure, and a hard
+wall-clock cutoff cannot generally preserve identical candidate sets across
+machines. The proposed architecture separates certified acceptance,
+conservative pruning, and heuristic guidance. It combines dependency-aware
+persistent search, typed residual observations, bounded lifting templates,
+proof-carrying recursion, and replayable decision traces. Mathematical
+arguments and a small executable finite-model suite support the central
+claims; no new Leant2 performance measurements or Lean-checked implementation
+are claimed.
+\end{abstract}
+\vspace{4pt}
+\noindent\textbf{Reading guide.} Sections~\ref{sec:scope}--\ref{sec:corrections}
+state the findings and evidence boundary. Sections~\ref{sec:r1}--\ref{sec:r9}
+answer the questions individually. Section~\ref{sec:architecture} gives the
+implementation plan; Section~\ref{sec:evaluation} specifies how to test it.
+Appendix~\ref{sec:coverage} maps every question to its answer.
+\clearpage
+\tableofcontents
+\clearpage
+\input{sections/01-foundations}
+\input{sections/02-search}
+\input{sections/03-carriers}
+\input{sections/04-evaluation}
+\input{sections/05-dependent}
+\input{sections/06-recursion}
+\input{sections/07-contracts}
+\input{sections/08-retrieval}
+\input{sections/09-ranking-learning}
+\input{sections/10-plan}
+\appendix
+\input{sections/11-appendices}
+\input{references}
+\end{document}

@@ -1,0 +1,50 @@
+\Needspace{13\baselineskip}
+\section{R4: Dependent motives, transports, and unfolding}\label{sec:dependent}
+
+\Q{R4.Q1}{The scope of finite motive enumeration}{Is abstracting subsets of index occurrences complete and terminating, and does the resulting family cover accumulator generalization?}
+
+\answer It is a finite, useful candidate generator, not a complete account of motive synthesis. Fix the goal syntax, a finite set of nonoverlapping candidate occurrences, and a finite collection of context-generalization choices. Enumerating their subsets terminates as a syntax-generation operation. Some generated abstractions are ill typed; some cannot be checked within the available resources. Completeness therefore means only that every member of this explicit template family is visited, with checking outcomes recorded honestly.
+
+For vector mapping, the relevant step is concrete. From a goal of the form
+\[
+ \forall n,\ (A\to B)\to\mathsf{Vec}\ A\ n\to\mathsf{Vec}\ B\ n,
+\]
+keep the element mapping available and choose the motive
+\[
+ M(n,x)=\mathsf{Vec}\ B\ n.
+\]
+The cons branch then receives an induction hypothesis at the tail's length, rather than an obligation that still mentions the original fixed length. The index abstraction makes the recursive result useful.
+
+Generalization must preserve the dependency order of local declarations. If a local value has type \code{Fin n}, abstracting $n$ while retaining the value as though its type had not changed is ill scoped. Revert dependent locals together, reintroduce the generalized telescope, and retain the corresponding substitution. For repeated or compound indices, first introduce fresh variables with suitable equalities, then perform the dependency-aware elimination. Arbitrarily replacing selected text occurrences is not enough.
+
+The family is not closed under accumulator invention. A motive may require a fresh product component, a new parameter, or a strengthened invariant that does not occur as a subexpression of the target. Combine context abstraction with the bounded carrier grammar from R2 and charge both the extra telescope and its implementation. ``All maximal occurrence subsets'' and ``all useful motives'' are different sets. A fair size-graded union of expanding template families is a defensible search promise; a fixed finite family cannot justify an unrestricted negative result.
+
+\Q{R4.Q2}{Canonical transport representation}{Should casts be normalized through heterogeneous equality or setoids, and can they be lowered only at the end?}
+
+\answer Keep explicit, typed transports in the intermediate representation. Use heterogeneous equality where it expresses a genuinely heterogeneous relation, not as a blanket replacement for well-typed terms. A setoid changes the equality problem being solved and requires every relevant operation and contract to respect that relation; it is not a generic substitute for Lean equality.
+
+A transport node should retain its source type, destination type, equality proof, and transported term. Normalize obvious identities and adjacent compositions using checked lemmas. For example, if $p:A=B$ and $q:B=C$, transport by $p$ followed by transport by $q$ agrees propositionally with transport by their composite. This is proved by equality elimination on $p$ and $q$. It supports an optimization, but does not entitle an untyped simplifier to discard endpoints.
+
+Lean's proof irrelevance identifies proofs of the same proposition. It does not equate arbitrary types or erase the typing role of their equality proofs. Runtime proof erasure, definitional equality of kernel terms, and equality of typed program meanings must remain separate layers. Charging very little for administrative proofs can improve ranking, but give generated syntax a positive enumeration grade or canonical representation so transport loops do not create infinitely many zero-cost alternatives.
+
+There is a small correction to the proposal's example. With the standard definition of natural addition, $n+0$ is definitionally $n$; the opposite orientation $0+n$ is justified by \code{Nat.zero_add}. The 4.34.0 library proves the latter by recursion. Thus \code{Vec A (n+0)} is not the intended example of an unavoidable propositional cast; \code{Vec A (0+n)} is the useful contrast.\cite{leannat}
+
+\Q{R4.Q3}{An unfolding policy informed by existing provers}{Should definitions be unfolded up front, kept opaque, or expanded on demand?}
+
+\answer Use a demand-driven transparency ladder, with a small explicit normalization vocabulary at its first level. Existing systems illustrate both useful extremes. Canonical's translation unfolds aliases of function types and reducible definitions, recursively translates definition dependencies, and explicitly warns that this can break abstraction barriers and expand the problem dramatically. CoqHammer's documented \code{sauto} options distinguish heuristic unfolding from unconditional unfolding of selected constants.\cite{canonical,sauto}
+
+For Leant2, first expose the head needed for introduction, constructor selection, or elimination. Next unfold a small set of relevant reducible aliases and the definitions used by the selected recursor or contract observation. Escalate only when a blocked unification or normalization request identifies a useful dependency. Avoid eagerly expanding every implementation in a retrieved provider's transitive closure.
+
+A reduction policy is part of search state and cache identity. A negative result under a restricted transparency or provider policy must not be reused as though it ruled out a broader search. At the same time, keep ordinary provider names available as compact terms: unfolding a definition for reasoning does not require removing it as a synthesis component. This separates semantic normalization from presentation and prevents the grammar from duplicating every term through arbitrarily many expanded aliases.
+
+On-demand unfolding is a recommendation, not a demonstrated optimum. Compare it with a fixed policy on the indexed-vector, arithmetic, and large-library probes. Measure exposed declarations, normalization steps, failed unifications, cache invalidations, and verified results. A policy that lowers unification time but multiplies candidate expressions may be a regression overall.
+
+\Q{R4.Q4}{A native Lean motive service}{Does Lean expose enough machinery to try motive abstractions cheaply and report useful failures?}
+
+\answer Yes. In the pinned Lean~4.34.0 source, \code{Lean.Meta.mkRecursorAppPrefix} explicitly constructs the recursor application through its motive, abstracting the major premise and indices from the goal. \code{getMajorTypeIndices} checks the index structure, while \code{Lean.MVarId.induction} handles reverting and reintroducing dependencies and returns \code{InductionSubgoal} records with substitutions. These are concrete building blocks, not a conjectural future API.\cite{leaninduction}
+
+Their preconditions explain the wrapper Leant2 needs. The index extractor expects suitable variable indices and rejects repeated or malformed occurrences; the recursor prefix checks the motive's target universe and elimination restrictions. A higher-level candidate service should therefore perform four operations: construct a dependency-closed generalization recipe; preprocess compound indices where necessary; invoke the native induction machinery transactionally; and inspect the resulting typed subgoals and substitutions before committing.
+
+Classify failures rather than swallowing them all as ``no solution.'' Useful categories include an unavailable or malformed recursor, compound-index preprocessing required, a missing instance, an illegal elimination from a proposition into data, an ill-typed motive, unresolved unification, and resource exhaustion. Interrupts must propagate. The API does not by itself discover which extra accumulator invariant to invent, but it can validate many cheap alternatives and give actionable diagnostics.
+
+Return a replay recipe or a snapshot-scoped result. Raw subgoal identifiers from a rolled-back context must not escape into another branch. Test the service on vector map, vector zip, dependent pairs, repeated indices, and definitions whose target family depends on the major value itself. Keep tests pinned to the toolchain because metaprogramming interfaces can change. Canonical's existing support for indexed inductive reasoning is also an important baseline: the research question is how to integrate effective motive search into Leant2's architecture, not whether such reasoning is possible in principle.\cite{canonical}

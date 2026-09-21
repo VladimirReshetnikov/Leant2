@@ -1,0 +1,81 @@
+\Needspace{13\baselineskip}
+\section{R3: Incremental evaluation of programs with holes}\label{sec:evaluation}
+
+\Q{R3.Q1}{Higher-order and dependent live evaluation}{How far does live bidirectional evaluation already extend, and where does a Lean adaptation become difficult?}
+
+\answer Higher-order support is not wholly missing from the starting literature. Core Smyth restricts its formal example language for simplicity, but the implementation supports higher-order examples and polymorphism. It also deliberately eliminates the requirement that examples describe every recursive call. These are explicit distinctions in the paper, not speculative extensions.\cite{smyth}
+
+The appropriate Lean object is a \emph{typed hole closure}, conceptually
+\[
+ (m,\rho,A,\kappa),
+\]
+where $m$ identifies the unknown expression, $\rho$ records the substitution for its local telescope, $A$ is its resulting type, and $\kappa$ records the suspended eliminations or observations. The same hole applied in different environments is one shared unknown with several constraints, not several independently fillable holes. A result of evaluating $\mathsf{map}\ ?f\ [a,b]$ can preserve the list spine while retaining two closures for the same $f$.
+
+Unevaluation should return a \emph{relation on possible completions}. From $\mathsf{cons}\ ?x\ ?xs = a::ys$, constructor injectivity supplies necessary constraints on both holes. From $g(?x)=y$ for an arbitrary $g$, no unique value for $x$ follows. Retain the equation, use a proved preimage rule, or branch over alternatives whose union covers the possibilities. A higher-order observation can constrain a function at specified arguments, but equality on those arguments is not extensional equality of functions.
+
+Dependency adds two further issues. The type of a closure can itself depend on an unknown index, and values observed under different index substitutions may require transports before comparison. Moreover, a proof argument can affect definitional reduction even when it is erased at runtime. A representation that simply drops proof fields or treats all casts as identities is not automatically a correct symbolic evaluator for Lean expressions. Use typed transport nodes with explicit endpoints, and let certified simplification remove them when possible.
+
+None of the examined live-evaluation or recursive-sketch papers supplies a drop-in conservativity theorem for Leant2's full native Lean expression language, universe handling, and delayed assignments. The first implementation should therefore support a sharply specified fragment: constructors, applications, lambdas, let bindings, projections, selected recursors, and named pure primitives with checked semantics. Outside that fragment, suspend or fall back to the existing checker. Lack of an evaluation rule is \emph{unknown}, not a refutation.
+
+\Q{R3.Q2}{Incremental normalization under backtracking}{Is there an existing model for waking computation when holes are assigned, and how should memoization survive rollback?}
+
+\answer Use dependency-triggered suspended computations and persistent cache versions. A particularly relevant recent reference is Canonical-min: its 2026 paper attaches postponed type-checking constraints to metavariables and resumes them on assignment, with push/pop behavior during search. It is a compact inhabitation/unification engine, not a verified incremental evaluator for all Lean programs; its soundness and completeness arguments concern the paper's calculus, and their full mechanization is left as future work.\cite{canonicalmin}
+
+For Leant2, each evaluated observation should return its result together with a \emph{read set}. This must include assignments already read, not just holes on which reduction stopped. Suppose observation $m=1$ is false in a branch assigning $m:=0$. After rollback, a sibling assigns $m:=1$. Reusing the old Boolean because it has no remaining blockers rejects the correct sibling. A cache keyed solely by an expression and the set of currently unassigned holes is insufficient.
+
+A defensible key consists of an expression/closure identity, environment and reduction-policy identity, and the versions of every mutable dependency read. Versions must not suffer an ABA problem: a numerical assignment counter reset by rollback can accidentally identify two different branches. Persistent state identities or monotonically fresh assignment stamps solve that problem. Local instance context, universe assignments, delayed-assignment recipes, and transparency settings belong in the dependency model where they influence evaluation.
+
+Cache entries should be immutable. Backtracking restores a root into a persistent cache graph, or retains entries whose validity predicates are checked against the current snapshot. Watchers index observations by the variables they read, so an assignment schedules only affected observations. A mutation to an unrelated goal should not invalidate all observations; a new observation added by counterexample generation must get its own cache identity.
+
+The implementation path is deliberately modest. First cache closed observation results under an exact query/environment identity. Next cache residuals within one branch. Then enable cross-branch reuse only after assignment-version and delayed-substitution tests pass. Record hits, invalidations, recomputation work, and retained memory separately. A large hit rate is not a benefit if closure retention causes memory growth that dominates the saved reductions.
+
+\Q{R3.Q3}{The cheapest conservative evaluator}{How can a faster evaluator be made provably safe for pruning, and is Lean4Lean a practical starting point?}
+
+\answer The cheapest \emph{trustworthy integration} is usually a fast proposer with a small checked negative-evidence path, not immediate replacement of the kernel reducer. Lean4Lean provides a Lean implementation of an external typechecker and an ongoing metatheoretic verification program; the paper does not justify assuming that extracting arbitrary reduction routines yields a fully proved evaluator for open Leant2 states.\cite{lean4lean}
+
+There are three sensible deployment levels. At the first, fast evaluation affects scheduling only. At the second, a fast failure proposes a compact contradiction certificate, which Lean checks before pruning. At the third, the evaluator has a proved simulation or abstract-interpretation theorem for its supported fragment, and its returned negative fact can be trusted by that theorem. Differential testing is valuable at all levels, but cannot replace the theorem required at the third.
+
+\begin{proposition}[A sufficient certificate for safe residual pruning]\label{prop:residual}
+Suppose a well-typed partial program is represented as an abstraction over a dependency-ordered telescope of holes. Suppose the checker validates, under the frozen environment and policy, a term of
+\[
+ \forall \vec h,\ D(\vec h)\to \neg C(p[\vec h]),
+\]
+where every allowed completion satisfies $D$. Then rejecting the corresponding branch preserves every contract-satisfying completion of the grammar.
+\end{proposition}
+\begin{proof}
+Substitute the hole values and their typing dependencies from any allowed completion into the checked theorem. Apply its $D$ assumption, which the completion satisfies. The conclusion is the negation of that completion's contract, so no satisfying completion is removed.
+\end{proof}
+
+This criterion explains both why neutral-hole reduction can be safe and why ill-scoped reduction intermediates deserve special attention. If the evaluator only performs substitution-stable reductions on a well-typed abstraction, a proof of a constant Boolean result can often be reconstructed cheaply. If it has first erased dependencies, guessed equalities, or unfolded a differently scoped hole, the theorem's premise has not been established. The current reduction-only delayed-assignment expansion should be tested and justified specifically at this boundary.\cite{implementation}
+
+A useful result datatype is conceptually:
+\begin{lstlisting}[caption={Proposed interface, not compiled Lean code.}]
+EvalResult :=
+  value      (typedValue, readSet)
+| suspended  (typedClosure, readSet)
+| rejectHint (diagnostic, readSet)
+| refuted    (checkedCertificate, readSet)
+| resourceExhausted
+\end{lstlisting}
+Only \code{refuted} eliminates a branch in the conservative lane. A \code{rejectHint} can trigger a cheaper replay with native reduction or move the branch later in a heuristic lane; it cannot support a negative completeness claim.
+
+Observation extraction also needs a contract. To refute $C$, it is enough to check a necessary condition $C\Rightarrow C_i$. To accept by collecting proofs of $C_i$, one needs the converse implication from their conjunction to $C$. Splitting conjunctions is straightforward; splitting an arbitrary Boolean combinator or higher-order library predicate requires its actual semantics. Do not replace a user-defined Boolean equality test by mathematical equality unless the required law is proved. Conversely, a contract explicitly written using that Boolean test must be checked with that exact dictionary, even if the dictionary is unconventional.
+
+The test suite should stress open terms, repeated hole applications, universe substitutions, indexed constructors, casts, delayed assignments, local instances, and sibling rollback. Agreement on a hundred thousand closed constructor terms could miss the principal failures of an incremental search evaluator. A tested fragment with conservative fallback is a useful deliverable long before a fully verified universal evaluator.
+
+\Q{R3.Q4}{Angelic top-down search and bounded completeness}{Can a top-down angelic evaluator obtain useful termination or completeness guarantees comparable to bottom-up recursive synthesis?}
+
+\answer Yes, relative to a finite concrete search space and a sound approximation of its recursive behavior. Burst shows how angelic execution can be combined with strengthening and resynthesis; its bottom-up representation shares sets of candidate programs rather than independently committing a body at each call.\cite{burst} A top-down implementation must preserve that global sharing by constraints on common holes.
+
+Maintain a symbolic application record for a recursive call or unknown function application. Calls known to have equal inputs must have compatible outputs. Unequal-looking symbolic inputs must not be assumed unequal without justification. An observed value for a recursive call is an assumption derived from the submitted specification, when applicable, not the result of executing the unknown implementation. Calls outside the observation set may remain unconstrained. That is a safe overapproximation, though possibly a weak one.
+
+\begin{theorem}[Finite relative completeness of checked refinement]\label{thm:finite-refine}
+Let $F$ be a finite set of concrete well-typed candidates. Assume candidate verification terminates and decides the specified finite observations. Suppose every refinement preserves all candidates in $F$ satisfying those observations, and every unsuccessful completed iteration removes at least its selected failing concrete candidate. If selection does not permanently omit any remaining candidate, the procedure terminates with a satisfying candidate or correctly reports that none exists in $F$.
+\end{theorem}
+\begin{proof}
+A satisfying candidate is never removed. Every unsuccessful completed iteration strictly decreases the finite remaining set, so there are at most $|F|$ such iterations. If the set becomes empty, no satisfying candidate originally existed; otherwise selection and deciding verification eventually produce one.
+\end{proof}
+
+This elementary theorem is useful because it exposes hidden assumptions. A finite set of guessed angelic return values is an \emph{underapproximation} unless it is known to cover all realizations in $F$. Unsatisfiability over such a guessed set does not refute the unrestricted branch. A timeout inside the angelic solver does not establish unsatisfiability. Rejecting one failed angelic assignment does not reject all assignments. For an infinite grammar, fair enumeration and eventual successful checking provide a semidecision guarantee, not termination on failure.
+
+The proposed Leant2 design should combine top-down typed holes with a small bottom-up pool of reusable closed expressions and behavioral summaries. Keep the typed realizations behind every summary. As observations grow, split the summaries or regenerate alternatives rather than discarding their provenance. The essential issue is not whether the outer loop is called top-down or bottom-up; it is whether its approximations include all relevant realizations and whether refinement facts are valid for every realization they eliminate.

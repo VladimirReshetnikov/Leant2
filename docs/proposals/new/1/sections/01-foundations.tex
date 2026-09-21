@@ -1,0 +1,146 @@
+\section{Scope, evidence, and the main recommendation}\label{sec:scope}
+
+The target is not a generic theorem prover. It is a Lean-native synthesizer
+that accepts a type and an optional behavioral contract, produces inhabitants,
+and checks the resulting program and evidence against a trust profile.
+That purpose makes the interaction between data construction, proof search,
+and evaluation more important than any one technique in isolation.
+
+The repository was inspected at commit
+\begin{center}\small\texttt{784664ff34e819422510a4d470ab07fe48bb736b}.\end{center}
+The main evidence is the complete set of research sections in
+\code{docs/proposals/11-further-improvements}, the implementation notes, and
+selected source modules for construction search, acceptance, and transactional
+state. The proposal's benchmark and profile figures
+refer to an earlier measured commit, \code{33cec8b}, using Lean 4.34.0 on one
+Windows workstation. Those figures are treated as reported results, not as
+measurements repeated for this article \cite{repo,proposal,implementation}.
+
+The proposal reports complete outcome-category agreement on its scored Leant
+suites, while identifying thirteen unscored Church-operation stretch cases
+and additional failures just outside the corpus. That is evidence that the
+existing search is useful and that the saturated baseline is insufficient
+for choosing future algorithms. It is not evidence that all those failures
+have the same cause or that a rewrite will improve them. Likewise, the reported
+45\% residual-evaluation cost and 1\% snapshot cost come from a particular
+contract-heavy profile, not a universal cost model \cite{proposal}.
+
+The central recommendation is to retain the current kernel-based acceptance
+boundary while making three distinctions architectural rather than informal:
+\emph{what may be proposed}, \emph{what may be pruned}, and \emph{what may be
+claimed}. An arbitrary carrier guess can be useful. An arbitrary carrier
+refutation can silently remove the only solution. A checked program is useful
+without being the smallest program, the intended program, or a proof of
+nonexistence of alternatives. A stronger engine needs to represent these
+differences explicitly.
+
+\subsection{Kinds of conclusion used in this article}
+A \emph{published result} is attributed to a primary paper or an official
+implementation. A \emph{derived claim} is accompanied by an argument and
+its assumptions. An \emph{engineering recommendation} is a proposed change,
+not a measured improvement. A \emph{bounded guarantee} names the language,
+resources, and decision procedures within which it holds. An unanswered
+empirical question is accompanied by an experiment rather than a guessed
+number.
+
+The mathematical propositions below are ordinary written proofs, not Lean
+formalizations. The accompanying Python program checks finite examples and
+small exhaustive models; it neither executes Leant2 nor validates Lean's
+kernel. The distinction matters especially for higher-order unification,
+partial evaluation, and performance: the proposed adaptations have not been
+implemented or benchmarked here.
+
+\section{Corrections that change the plan}\label{sec:corrections}
+
+\paragraph{Higher-order examples are not an unfilled Smyth feature.}
+The Smyth paper explicitly distinguishes a first-order presentation of its
+core calculus from an implementation supporting higher-order function examples.
+It also removes the requirement that users supply trace-complete examples.
+Thus the proposal's statements that Smyth's unevaluation is simply first-order
+and that it shares the trace-completeness requirement should be revised.
+Full dependent-type support remains a separate adaptation \cite{smyth}.
+
+\paragraph{Auxiliary-state invention has substantial precedents.}
+AutoLifter synthesizes auxiliary computations and combiners for
+algorithmic lifting; Eguchi, Kobayashi, and Tsukada synthesize auxiliary
+function types in templates; Para uses paramorphism-based synthesis
+templates. None is a drop-in solution to the exact Lean problem, but together
+they invalidate a broad conclusion that the literature does not address
+auxiliary state or types \cite{autolifter,eguchi,para}.
+
+\paragraph{Type classes already occur in type-guided abstraction refinement.}
+Hoogle+'s Section~2.5 explicitly uses dictionary passing. The unresolved part
+is the interaction with Lean's dependent signatures, universes, local
+instances, and computational dictionaries, not the basic possibility of
+representing class constraints in a synthesis net \cite{hoogleplus}.
+
+\paragraph{Indexed induction is partly an integration problem.}
+Canonical explicitly supports indexed inductive types and generalized
+induction. In Lean 4.34.0, \code{Lean.Meta.mkRecursorAppPrefix} constructs a
+motive by abstraction, and \code{MVarId.induction} already reverts indices and
+the major premise with their dependencies. Leant2 must still select useful
+extra generalizations, but it should not reimplement this existing machinery
+as though it were absent \cite{canonical,leaninduction}.
+
+\paragraph{Several proposed guarantees need stronger hypotheses.}
+One unit per unfinished goal can overestimate remaining search cost.
+Different partial observation rows need not describe different states.
+Values already enumerated for a carrier are not an upper bound on its possible
+values. Ranking after parallel lanes stop does not restore candidates that a
+slower lane never generated. These are mathematical issues, not tuning
+questions; counterexamples and corrected guarantees are given below.
+
+\paragraph{Two concrete examples should be replaced.}
+Ordinary list reversal is a right fold into \emph{the result type}:
+\[
+ \mathsf{reverse}(xs)=\foldr\,(\lambda a\,r.\ r\mathbin{+\!+}[a])\,[]\,xs.
+\]
+The issue is the availability and cost of the step, not the nonexistence of
+such a carrier. Also, for Lean's usual natural-number addition, $n+0$ reduces
+definitionally to $n$; use $0+n$ with symbolic $n$, or a commuted addition,
+to illustrate a genuine propositional index transport. These observations
+are used in the carrier and transport designs, respectively \cite{leanprelude}.
+
+\section{The semantic contract of the search}\label{sec:semantic}
+
+Fix an imported environment $E$, a local telescope $\Gamma$, a target type
+$T$, and a contract $C:T\to\mathsf{Prop}$. Open terms are interpreted with a
+metavariable state $\sigma$, including universe assignments and delayed
+constraints. Write $\Comp_B(p,\sigma)$ for the well-typed completions admitted
+by an explicitly specified bounded grammar $B$. Omitting $B$ means all
+admissible completions under the chosen language and trust policy.
+
+\begin{definition}[Three independent obligations]
+\emph{Acceptance soundness} requires an accepted $t$ and $\pi$ to check as
+$t:T$ and $\pi:C(t)$ in the intended environment. \emph{Conservative pruning}
+requires
+\[
+ \mathsf{reject}(p,\sigma)\Longrightarrow
+ \forall t\in\Comp(p,\sigma),\ \neg C(t).
+ \tag{1}\label{eq:pruning}
+\]
+\emph{Optimality} requires that the returned answer minimize a specified
+objective over a specified candidate set. Neither of the first two
+obligations implies the third.
+\end{definition}
+
+A bounded rejection may replace $\Comp$ by $\Comp_B$, but its receipt must then
+name $B$. A failed tactic invocation does not establish \eqref{eq:pruning}.
+A timeout does not establish bounded exhaustion. A passing test establishes
+that test, not an untested universal contract. These distinctions should
+survive all the way to the result algebra and user interface.
+
+The inspected gate synchronously checks declarations, generalizes universes
+jointly over the program and proof, and audits their transitive axiom closure.
+Its proof type is supplied by its caller. This is a reasonable internal API
+under a trusted caller invariant, but an externally exposed synthesis service
+should take the original query and reconstruct $C(t)$ inside the gate. Checking
+an arbitrary supplied proof type would not by itself establish the requested
+contract. This is an API-hardening recommendation, not a demonstrated
+end-to-end defect in the current callers \cite{gatecode}.
+
+Three result forms should therefore be distinct: a certified solution;
+a checked impossibility proof or a genuinely exhausted, named finite search;
+and an incomplete search with unrefuted survivors. Evidence supporting a
+finite contract is still a fully valid proof of \emph{that finite contract}.
+It simply does not identify the unstated intended algorithm.
