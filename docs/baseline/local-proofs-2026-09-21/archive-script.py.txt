@@ -1,0 +1,439 @@
+"""Archive clean, unchanged local-proof milestone evidence after both full runs.
+
+Before the first run, after the final source commit/build:
+  python scratch/archive_local_proof_validation.py --capture-inputs --expected-total 813
+After both complete run_all invocations (without --skip-build):
+  python scratch/archive_local_proof_validation.py --expected-total 813
+
+The total is derived from the captured manifests: 811 before the original E8
+Fin/transitivity promotions or 813 after both promotions. --expected-total is an
+optional additional assertion, never an override of the fixture expectations.
+Default run folders are baseline-out/local-proofs-10000 and -5000, with sibling
+.log files. --run-prefix, --snapshot, and --destination support an explicitly
+named retry without deleting or overwriting any existing evidence.
+
+Capture writes only ignored scratch. Archive mode first validates everything,
+stages complete byte-preserving copies in scratch, then creates the destination.
+It never rewrites original receipts or replaces an existing archive.
+"""
+from __future__ import annotations
+
+import argparse
+from collections import Counter
+from datetime import datetime, timezone
+import hashlib
+import json
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import zipfile
+
+ROOT = Path(__file__).resolve().parents[1]
+DESTINATION = ROOT / "docs/baseline/local-proofs-2026-09-21"
+SNAPSHOT = ROOT / "scratch/local-proof-validation-inputs.json"
+RUN_PREFIX = ROOT / "baseline-out/local-proofs"
+EXE = ROOT / ".lake/build/bin/leant2.exe"
+BUDGETS = (10000, 5000)
+BASE_TOTALS = {"baseline": 278, "recursive": 9, "church": 28, "context": 95,
+               "corpus": 350, "session": 6, "results": 10}
+MANIFESTS = {"extended": "tests/benchmarks/extended.json",
+             "recursion-gates": "tests/benchmarks/recursion.json",
+             "local-proofs": "tests/benchmarks/local-proofs.json"}
+ATTRIBUTES = b"""# Preserve the exact bytes identified by manifest.json, including CRLF.
+.gitattributes -text
+*.json -text whitespace=cr-at-eol
+*.log -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+*.txt -text whitespace=cr-at-eol
+*.zip binary
+"""
+
+sys.path.insert(0, str(ROOT / "tools"))
+import repl_protocol
+import run_extended
+import run_results
+import run_all
+import run_session
+
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
+def sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def read_json(path: Path):
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_json(path: Path, payload):
+    path.write_bytes((json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
+
+
+def git(*args, cwd=ROOT) -> str:
+    return subprocess.check_output(["git", *args], cwd=cwd, text=True, encoding="utf-8").strip()
+
+
+def validation_plan():
+    expected = dict(BASE_TOTALS)
+    manifests = {}
+    for name, relative in MANIFESTS.items():
+        cases = run_extended.load_cases(ROOT / relative)
+        required = sum(case["expect"] != "open" for case in cases)
+        opened = sum(case["expect"] == "open" for case in cases)
+        expected[name] = required
+        manifests[name] = {"path": relative, "required": required, "open": opened,
+                           "case_ids": [case["id"] for case in cases]}
+        if name == "extended":
+            expected_open = {"probe09_max", "probe10_drop_zeros", "probe11_tree_inorder"}
+            current_open = {case["id"] for case in cases if case["expect"] == "open"}
+            require(current_open in (expected_open, expected_open | {"probe14_fin", "probe16_le_trans"}),
+                    "E8 must retain three open tasks, with Fin/transitivity promoted together or neither")
+            require(len(cases) == 29 and sum(case["expect"] == "none" for case in cases) == 4,
+                    "E8 must preserve all 29 cases and four False controls")
+        elif name == "recursion-gates":
+            require((required, opened) == (5, 0) and
+                    sum(case["expect"] == "candidate" for case in cases) == 3,
+                    "recursion manifest must retain three candidates and two False controls")
+        elif name == "local-proofs":
+            require((required, opened) == (6, 0) and
+                    sum(case["expect"] == "candidate" for case in cases) == 5,
+                    "local-proof manifest must retain five candidates and one False control")
+    require([name for name, _ in run_all.HARNESSES] == list(expected),
+            "run_all must route the ten expected tiers in order")
+    for name, cmd in run_all.HARNESSES:
+        if name in MANIFESTS:
+            wanted = ["tools/run_extended.py"]
+            if name != "extended":
+                wanted += ["--manifest", MANIFESTS[name]]
+            require(cmd == wanted, f"run_all routes the wrong manifest for {name}")
+    total = sum(expected.values())
+    require(total in (811, 813), f"unexpected local-proof checkpoint denominator {total}")
+    return {"expected_totals": expected, "expected_total": total, "manifests": manifests,
+            "harnesses": [[name, cmd] for name, cmd in run_all.HARNESSES]}
+
+
+def expected_modules(source_names):
+    """Derive required compiled modules from committed runtime and test sources."""
+    out = set()
+    for name in source_names:
+        if not name.endswith(".lean"):
+            continue
+        if name in {"Leant2.lean", "Main.lean"} or name.startswith("Leant2/"):
+            out.add(str(Path(name).with_suffix(".olean")).replace("\\", "/"))
+        elif name == "tests/Leant2Tests.lean" or name.startswith("tests/Leant2Tests/"):
+            out.add(str(Path(name.removeprefix("tests/")).with_suffix(".olean")).replace("\\", "/"))
+    return sorted(out)
+
+
+def collect_inputs():
+    require(not git("status", "--porcelain"), "archive/snapshot requires a clean working tree")
+    source_names = subprocess.check_output(
+        ["git", "ls-files", "-z", "--", "*.lean", "*.py", "tests/benchmarks/*.json",
+         "lean-toolchain", "lakefile.toml", "lakefile.lean", "lake-manifest.json", ".gitattributes"],
+        cwd=ROOT).decode("utf-8").split("\0")
+    sources = {name: sha(ROOT / name) for name in sorted(filter(None, source_names))}
+    for name in ("Leant2/Proof/Local.lean", "Leant2/Native/Transaction.lean",
+                 "tests/Leant2Tests/LocalProof.lean", "tests/Leant2Tests/Cancellation.lean",
+                 "tools/run_results.py", *MANIFESTS.values()):
+        require(name in sources, f"required milestone source is not committed: {name}")
+    library = ROOT / ".lake/build/lib/lean"
+    module_paths = {path for pattern in ("*.olean", "*.olean.private", "*.olean.server")
+                    for path in library.rglob(pattern)}
+    require(module_paths, "no compiled project modules found")
+    for name in expected_modules(sources):
+        require(library / name in module_paths, f"required built module is missing: {name}")
+    modules = {path.relative_to(ROOT).as_posix(): sha(path) for path in sorted(module_paths)}
+    external_roots = {"leant": Path("C:/Leant"), "vendored_djex": Path("C:/Leant/lib/Djex")}
+    external_revisions = {name: {"path": str(path), "revision": git("rev-parse", "HEAD", cwd=path),
+                                  "working_tree_dirty": bool(git("status", "--porcelain", cwd=path))}
+                          for name, path in external_roots.items()}
+    external_files = set(Path("C:/Leant/test").glob("synth-*.txt"))
+    external_files.update(Path("C:/Leant/test").glob("synth-*.golden"))
+    for folder in (Path("C:/Leant/test-church"), Path("C:/Leant/lib/Djex/test-church")):
+        for pattern in ("*.py", "*.json"):
+            external_files.update(folder.rglob(pattern))
+    church_manifest = Path("C:/Leant/lib/Djex/test-church/manifest.json")
+    external_files.add(church_manifest.parent.parent / read_json(church_manifest)["source"])
+    plan = validation_plan()
+    script = Path(__file__).resolve()
+    return {"revision": git("rev-parse", "HEAD"),
+            "toolchain": (ROOT / "lean-toolchain").read_text(encoding="utf-8").strip(),
+            "executable": str(EXE.resolve()), "executable_sha256": sha(EXE),
+            "source_sha256": sources, "module_sha256": modules,
+            "required_module_paths": expected_modules(sources), "validation_plan": plan,
+            "archive_script": str(script), "archive_script_sha256": sha(script),
+            "external_repositories": external_revisions,
+            "external_input_sha256": {str(path.resolve()): sha(path) for path in sorted(external_files)}}
+
+
+def shared_receipt_checks(receipt, budget, snapshot, name):
+    inputs = snapshot["inputs"]
+    require(receipt["success"] is True and receipt["failures"] == [], f"{name}: failed receipt")
+    require(receipt["revision"] == inputs["revision"], f"{name}: wrong source revision")
+    require(receipt["working_tree_dirty"] is False, f"{name}: receipt was captured from dirty source")
+    require(receipt["executable_changed_during_run"] is False, f"{name}: executable changed")
+    require(receipt["executable_sha256"] == inputs["executable_sha256"], f"{name}: wrong executable hash")
+    require(Path(receipt["executable"]).resolve() == EXE.resolve(), f"{name}: different executable path")
+    require(receipt["budget_ms"] == budget, f"{name}: wrong budget")
+    require(datetime.fromisoformat(receipt["created_utc"]) >= datetime.fromisoformat(snapshot["created_utc"]),
+            f"{name}: receipt predates the input snapshot")
+
+
+def validate_extended(folder, filename, manifest_path, budget, snapshot, required_count, open_count):
+    receipt = read_json(folder / filename)
+    shared_receipt_checks(receipt, budget, snapshot, filename)
+    require(Path(receipt["manifest"]).resolve() == manifest_path.resolve(), f"{filename}: wrong manifest")
+    require(receipt["manifest_sha256"] == sha(manifest_path), f"{filename}: wrong manifest hash")
+    fixtures = run_extended.load_cases(manifest_path)
+    rows = receipt["results"]
+    require([row["id"] for row in rows] == [case["id"] for case in fixtures], f"{filename}: incomplete cases")
+    require(receipt["capabilities_and_controls"] == {"passed": required_count, "total": required_count},
+            f"{filename}: wrong required denominator")
+    require(receipt["open"]["total"] == open_count, f"{filename}: wrong open denominator")
+    for case, row in zip(fixtures, rows):
+        name = f"{filename}/{case['id']}"
+        require(row["expectation"] == case["expect"], f"{name}: expectation mismatch")
+        require(row["transcript"] == run_extended.transcript(case), f"{name}: different query/replay input")
+        require(row["returncode"] == 0 and row["stderr"] == "", f"{name}: process failure or stderr")
+        classified = run_extended.classify(case, row["stdout"], row["stderr"], row["returncode"])
+        for key in ("passed", "outcome", "candidate", "replayed", "query_elapsed_ms"):
+            require(row[key] == classified[key], f"{name}: inconsistent {key}")
+        require(row["passed"] is True, f"{name}: failed reclassification")
+    opened = [row for row in rows if row["expectation"] == "open"]
+    require(receipt["open"]["solved"] == sum(row["outcome"] == "solved" for row in opened),
+            f"{filename}: incorrect open solved count")
+    return dict(Counter(row["outcome"] for row in opened))
+
+
+def validate_results(folder, budget, snapshot):
+    receipt = read_json(folder / "results/receipt.json")
+    shared_receipt_checks(receipt, budget, snapshot, "results/receipt.json")
+    require(receipt["harness_sha256"] == sha(ROOT / "tools/run_results.py"), "wrong result harness hash")
+    require(receipt["passed"] == receipt["total"] == 10, "wrong result suite denominator")
+    cases = run_results.cases()
+    require([row["id"] for row in receipt["results"]] == [case.name for case in cases], "incomplete result cases")
+    for case, row in zip(cases, receipt["results"]):
+        prefix = folder / "results" / case.name
+        source = case.source + ":quit\n"
+        require(row["transcript"] == source, f"results/{case.name}: changed transcript")
+        for suffix, value in ((".in", source), (".out", row["stdout"]), (".stderr", row["stderr"])):
+            require(prefix.with_suffix(suffix).read_text(encoding="utf-8") == value,
+                    f"results/{case.name}: raw {suffix} differs from receipt")
+        expected_queries = [line for line in source.splitlines() if line.startswith(":synth")]
+        parsed = repl_protocol.parse(row["stdout"], row["stderr"], 0, expected_queries,
+                                     allowed_outside_errors=len(case.errors))
+        require(row["passed"] is True and row["problems"] == [] and run_results.check(case, parsed) == [],
+                f"results/{case.name}: failed reclassification")
+        require(row["stderr"] == "", f"results/{case.name}: stderr")
+        require(row["expected_diagnostics"] == len(case.errors), f"results/{case.name}: wrong diagnostic scope")
+
+
+def raw_session_plan():
+    # One input/output/stderr triple per process. Derive variable test suites
+    # from their actual cases rather than an obsolete fixed stream count.
+    sessions = {name: 0 for name in ("recursive", "context", "corpus",
+                                    "church/church", "church/extended", "church/partial")}
+    for name, _, _ in run_session.cases():
+        sessions[f"session/{name}"] = 1 if name == "rejected-entry" else 0
+    for case in run_results.cases():
+        sessions[f"results/{case.name}"] = len(case.errors)
+    return sessions
+
+
+def validate_raw_sessions(folder):
+    sessions = raw_session_plan()
+    empty_query_sessions = {f"results/{case.name}" for case in run_results.cases()
+                            if not any(line.startswith(":synth") for line in case.source.splitlines())}
+    expected = set(sessions)
+    for suffix in (".in", ".stderr"):
+        actual = {path.relative_to(folder).with_suffix("").as_posix()
+                  for path in folder.rglob(f"*{suffix}")}
+        require(actual == expected,
+                f"raw {suffix} inventory differs: missing={sorted(expected-actual)}, extra={sorted(actual-expected)}")
+    audits = {}
+    for name, allowed_errors in sessions.items():
+        prefix = folder / name
+        source = prefix.with_suffix(".in").read_text(encoding="utf-8")
+        stdout = prefix.with_suffix(".out").read_text(encoding="utf-8")
+        stderr = prefix.with_suffix(".stderr").read_bytes()
+        require(stderr == b"", f"{name}: nonempty retained stderr")
+        queries = [line.rstrip() for line in source.splitlines() if line.startswith(":synth")]
+        require(queries or name in empty_query_sessions, f"{name}: raw input contains no synthesis queries")
+        parsed = repl_protocol.parse(stdout, "", 0, queries, allowed_outside_errors=allowed_errors)
+        require(parsed.healthy, f"{name}: raw protocol failure: {parsed.problems}")
+        audits[name] = {"queries": len(queries), "allowed_outside_diagnostics": allowed_errors,
+                        "outcomes": dict(Counter(query.outcome for query in parsed.queries))}
+    return audits
+
+
+def run_folder(prefix, budget):
+    return Path(f"{prefix}-{budget}")
+
+
+def run_output_hashes(prefix):
+    out = {}
+    for budget in BUDGETS:
+        folder = run_folder(prefix, budget)
+        require(folder.is_dir(), f"missing completed run folder: {folder}")
+        out[str(budget)] = {path.relative_to(folder).as_posix(): sha(path)
+                            for path in sorted(folder.rglob("*")) if path.is_file()}
+        out[f"{budget}-outer-log"] = sha(Path(f"{folder}.log"))
+    return out
+
+
+def validate_run(budget, snapshot, prefix):
+    folder = run_folder(prefix, budget)
+    plan = snapshot["inputs"]["validation_plan"]
+    expected_totals = plan["expected_totals"]
+    summary = read_json(folder / "summary.json")
+    require(summary["budget_ms"] == budget, "wrong aggregate budget")
+    rows = summary["harnesses"]
+    require([row["harness"] for row in rows] == list(expected_totals) and
+            {row["harness"]: row["total"] for row in rows} == expected_totals,
+            "aggregate tiers/denominators must match the complete captured ten-suite plan")
+    require(sum(row["total"] for row in rows) == plan["expected_total"], "incorrect aggregate denominator")
+    require(all(row["ok"] is True and row["returncode"] == 0 and row["passed"] == row["total"]
+                for row in rows), "one or more harnesses failed")
+    for name, expected in expected_totals.items():
+        text = (folder / f"{name}.log").read_text(encoding="utf-8")
+        require(re.findall(r"(?m)^TOTAL (\d+)/(\d+)\s*$", text) == [(str(expected), str(expected))],
+                f"{name}: missing, duplicate, or incorrect log total")
+    build = (folder / "build.log").read_text(encoding="utf-8")
+    require("Build completed successfully" in build, "complete successful build log is required")
+    outer = Path(f"{folder}.log").read_text(encoding="utf-8")
+    require(re.search(r"(?m)^build: ok in ", outer) is not None, "outer log does not record a successful build")
+    for name, expected in expected_totals.items():
+        require(f"| {name} | {expected}/{expected} |" in outer, f"outer log missing final table row {name}")
+    raw_sessions = validate_raw_sessions(folder)
+    open_outcomes = {}
+    for name, manifest in plan["manifests"].items():
+        open_outcomes[name] = validate_extended(folder, f"{name}.json", ROOT / manifest["path"],
+                                                budget, snapshot, manifest["required"], manifest["open"])
+    validate_results(folder, budget, snapshot)
+    baseline = read_json(folder / "baseline/summary.json")
+    require(len(baseline) == expected_totals["baseline"] and all(row["ok"] for row in baseline),
+            "baseline receipt incomplete")
+    baseline_inputs = {path.stem for path in Path("C:/Leant/test").glob("synth-*.txt")}
+    baseline_outputs = {path.stem for path in (folder / "baseline").glob("*.out")}
+    require(baseline_inputs == baseline_outputs == {row["fixture"] for row in baseline},
+            "baseline raw fixture inventory differs")
+    return {"extended_open_outcomes": open_outcomes["extended"], "manifest_open_outcomes": open_outcomes,
+            "stderr_files": len(raw_sessions), "raw_sessions": raw_sessions,
+            "raw_files": len([path for path in folder.rglob("*") if path.is_file()])}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--capture-inputs", action="store_true")
+    parser.add_argument("--expected-total", type=int, choices=(811, 813),
+                        help="assert the manifest-derived denominator; does not alter expectations")
+    parser.add_argument("--run-prefix", type=Path, default=RUN_PREFIX,
+                        help="full-run directory prefix; budgets and sibling .log are appended")
+    parser.add_argument("--snapshot", type=Path, default=SNAPSHOT)
+    parser.add_argument("--destination", type=Path, default=DESTINATION)
+    parser.add_argument("--validate-only", action="store_true",
+                        help="verify the completed runs without creating an archive")
+    args = parser.parse_args()
+    require(not (args.capture_inputs and args.validate_only), "choose capture or validation, not both")
+    prefix = args.run_prefix.resolve()
+    snapshot_path = args.snapshot.resolve()
+    destination = args.destination.resolve()
+    inputs = collect_inputs()
+    total = inputs["validation_plan"]["expected_total"]
+    if args.expected_total is not None:
+        require(total == args.expected_total,
+                f"fixture denominator {total} differs from requested {args.expected_total}")
+    if args.capture_inputs:
+        require(not snapshot_path.exists(), f"refusing to overwrite existing input snapshot: {snapshot_path}")
+        require(not destination.exists(), f"refusing to replace an existing archive: {destination}")
+        for budget in BUDGETS:
+            folder = run_folder(prefix, budget)
+            require(not folder.exists() and not Path(f"{folder}.log").exists(),
+                    f"capture requires unused run paths, avoiding stale receipts: {folder}")
+        snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+        write_json(snapshot_path, {"schema_version": 2, "created_utc": datetime.now(timezone.utc).isoformat(),
+                                   "run_prefix": str(prefix), "destination": str(destination),
+                                   "budgets_ms": list(BUDGETS), "inputs": inputs})
+        print(f"Captured pre-run inputs for {inputs['revision']} ({total} checks): {snapshot_path}")
+        return
+    require(snapshot_path.is_file(), "capture clean input hashes before starting the full runs")
+    snapshot = read_json(snapshot_path)
+    require(snapshot["schema_version"] == 2, "wrong input snapshot schema")
+    require(snapshot["run_prefix"] == str(prefix) and snapshot["destination"] == str(destination) and
+            snapshot["budgets_ms"] == list(BUDGETS), "paths or budgets differ from the captured run plan")
+    require(snapshot["inputs"] == inputs, "source, executable, modules, or external fixtures changed since snapshot")
+    require(not destination.exists(), f"refusing to replace an existing archive: {destination}")
+    audited_at = datetime.now(timezone.utc).isoformat()
+    output_hashes = run_output_hashes(prefix)
+    audit = {budget: validate_run(budget, snapshot, prefix) for budget in BUDGETS}
+    require(collect_inputs() == inputs, "validation inputs changed while auditing completed runs")
+    require(run_output_hashes(prefix) == output_hashes, "run artifacts changed while validating")
+    if args.validate_only:
+        print(json.dumps({"validated": str(prefix), "revision": inputs["revision"],
+                          "total_per_budget": total, "budgets_ms": list(BUDGETS)}, indent=2))
+        return
+    with tempfile.TemporaryDirectory(prefix="local-proof-archive-", dir=ROOT / "scratch") as temporary:
+        staging = Path(temporary) / "archive"
+        staging.mkdir()
+        (staging / ".gitattributes").write_bytes(ATTRIBUTES)
+        shutil.copyfile(snapshot_path, staging / "input-snapshot.json")
+        shutil.copyfile(Path(__file__), staging / "archive-script.py.txt")
+        write_json(staging / "post-run-inputs.json", {"schema_version": 2, "created_utc": audited_at,
+                                                     "inputs": inputs})
+        for budget in BUDGETS:
+            folder = run_folder(prefix, budget)
+            originals = {"summary.json": "summary.json", "extended.json": "extended.json",
+                         "recursion-gates.json": "recursion-gates.json", "local-proofs.json": "local-proofs.json",
+                         "results.json": "results/receipt.json"}
+            for target, source in originals.items():
+                shutil.copyfile(folder / source, staging / f"{budget}-{target}")
+                require(sha(folder / source) == sha(staging / f"{budget}-{target}"), "receipt bytes changed")
+            shutil.copyfile(Path(f"{folder}.log"), staging / f"{budget}-run.log")
+            require(sha(Path(f"{folder}.log")) == sha(staging / f"{budget}-run.log"), "outer log bytes changed")
+            raw_files = {path.relative_to(folder).as_posix(): sha(path)
+                         for path in sorted(folder.rglob("*")) if path.is_file()}
+            archive_path = staging / f"{budget}-raw.zip"
+            with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+                for relative in raw_files:
+                    archive.write(folder / relative, relative)
+            with zipfile.ZipFile(archive_path) as archive:
+                require(archive.testzip() is None, "ZIP CRC verification failed")
+                require(set(archive.namelist()) == set(raw_files), "ZIP file inventory differs")
+                require(all(hashlib.sha256(archive.read(name)).hexdigest() == digest
+                            for name, digest in raw_files.items()), "ZIP bytes differ from original outputs")
+            audit[budget]["raw_sha256"] = raw_files
+        require(collect_inputs() == inputs, "validation inputs changed while archiving")
+        require(run_output_hashes(prefix) == output_hashes, "run artifacts changed while archiving")
+        manifest = {"kind": "validation_receipts_not_standalone_synthesis_replay",
+                    "created_utc": datetime.now(timezone.utc).isoformat(),
+                    "tested_revision": inputs["revision"], "working_tree_clean_during_runs": True,
+                    "input_snapshot": "input-snapshot.json", "post_run_inputs": "post-run-inputs.json",
+                    "input_hashes_unchanged_before_and_after": True, "toolchain": inputs["toolchain"],
+                    "executable_sha256": inputs["executable_sha256"],
+                    "source_sha256": inputs["source_sha256"], "module_sha256": inputs["module_sha256"],
+                    "module_artifacts": len(inputs["module_sha256"]),
+                    "required_module_paths": inputs["required_module_paths"],
+                    "external_repositories": inputs["external_repositories"],
+                    "external_input_sha256": inputs["external_input_sha256"],
+                    "budgets_ms": list(BUDGETS), "expected_totals": inputs["validation_plan"]["expected_totals"],
+                    "expected_total": total, "archive_script": "archive-script.py.txt",
+                    "archive_script_sha256": sha(Path(__file__)), "run_audit": audit,
+                    "files": {path.name: sha(path) for path in sorted(staging.iterdir())},
+                    "byte_policy": "Local .gitattributes disables text conversion for itself, JSON receipts, logs, and the archived script; ZIPs are binary.",
+                    "hash_scope": "files excludes this manifest and any later narrative README"}
+        write_json(staging / "manifest.json", manifest)
+        shutil.copytree(staging, destination)
+        require(all(sha(destination / path.name) == sha(path) for path in staging.iterdir()),
+                "published archive differs from validated staging bytes")
+    print(json.dumps({"archived": str(destination), "revision": inputs["revision"],
+                      "files": len(list(destination.iterdir())), "total_per_budget": total}, indent=2))
+
+
+if __name__ == "__main__":
+    main()

@@ -225,8 +225,12 @@ python tools/run_extended.py --manifest tests/benchmarks/local-proofs.json --bud
 The focused implementation run passed all six gates and both original
 Fin/transitivity probes. These dirty-tree receipts justify their promotion;
 they are not a complete acceptance receipt for the recorded parent revision.
-The new ten-harness, 813-check configuration still requires a clean-source
-aggregate checkpoint. Focused Lean tests separately exercise dependency
+The subsequent clean-source [local-proof checkpoint](local-proofs-2026-09-21/README.md)
+at `914680d` passed **813/813** across all ten harnesses at both 10,000 and
+5,000 ms/query. Its E8 suite passed 26/26 and the local-proof suite passed
+6/6 at each budget; the three remaining E8 searches were unsolved. The archive
+retains complete raw runs and verifies pre/post input hashes. Focused Lean
+tests separately exercise dependency
 rigidity, extraction and replay, auxiliary-theorem handling, cancellation,
 rollback, and resource-exhaustion behavior.
 

@@ -280,12 +280,23 @@ induction, publication, and result-binding tests. The
 [induction checkpoint](baseline/induction-2026-09-21/README.md) archives both
 runs and verifies their source, executable, module, and input hashes against
 a pre-run snapshot. Five extended open searches and thirteen Church stretch
-cases remain unsolved. These scores include overlapping synthesis goals with
+cases were unsolved at that checkpoint. These scores include overlapping synthesis goals with
 different acceptance checks, not 805 distinct benchmark problems. The targeted
 legacy manual transcript now evaluates bare `it * 10` and refreshed `it2`
 successfully. The Option call in `synth-prove` still omits the two explicit
 type arguments required by its requested type, matching an error already
 present in Leant's golden transcript; it is not a stale result binding.
+
+Implementation commit `914680d` passed **813/813 required checks across ten
+harnesses at both budgets**. The [local-proof checkpoint](baseline/local-proofs-2026-09-21/README.md)
+adds the two required original Fin/transitivity probes and six independent
+local-proof gates. The full Lean build includes adversarial proof extraction,
+original-environment replay, cancellation and state rollback, and classical
+universe-specialization checks. Both runs preserve the same source, executable,
+compiled modules, and external inputs. The three remaining E8 searches and
+thirteen Church stretch searches remain unsolved; neither group contributes
+to the fixed score. The legacy baseline's documented ordinary Option-call
+error is unchanged and outside its synthesis-category score.
 
 Historical measurements remain in `docs/baseline/`, labeled by their own
 revisions and budgets. These acceptance runs and profiling parity tests are

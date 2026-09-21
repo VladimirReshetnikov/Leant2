@@ -134,7 +134,7 @@ The archived induction and result-binding checkpoint, implementation commit
 `555236a`, passed **805/805 required checks across nine harnesses at both
 budgets**. [The new checkpoint receipts](docs/baseline/induction-2026-09-21/README.md)
 include complete raw outputs and hashes captured before the runs. Five extended
-searches and thirteen Church stretch cases remain unsolved. The checks include
+searches and thirteen Church stretch cases were unsolved at that checkpoint. The checks include
 repeated goals tested at different boundaries; 805 is not a count of distinct
 benchmark problems.
 
@@ -145,16 +145,17 @@ Each query runs in a fresh session; a reported candidate must bind at the
 requested type and pass executable replay. This is the initial local E8
 benchmark work, not a port of the external synthesis benchmark collections.
 
-The next local-proof slice passes focused checks for `Fin (n + 1)`, natural
-order transitivity, local contradictions, and a supplied list-length induction
-hypothesis. Fin and transitivity are now required in the original E8 suite;
-the six separate local-proof gates bring the configured aggregate to 813
-checks across ten harnesses. A complete clean-source aggregate run for this
-slice remains pending; the 805-check archive above records the preceding
-implementation.
+The current [local-proof and cancellation checkpoint](docs/baseline/local-proofs-2026-09-21/README.md),
+implementation commit `914680d`, passed **813/813 checks across ten harnesses
+at both 10 s and 5 s per query**. Fin and transitivity are now required in the
+original E8 suite; six separate gates cover those goals, local contradictions,
+a supplied list-length induction hypothesis, and a False-contract control.
+The archive preserves complete outputs and verifies source, executable,
+compiled-module, and external-input hashes against a pre-run snapshot.
+Three E8 searches and thirteen Church stretch cases remain unsolved.
 
 The Church harness imports the specifications from Leant's vendored Djex
-directory (`C:\Leant\lib\Djex	est-church`), so every `:synth` carries the
+directory (`C:\Leant\lib\Djex\test-church`), so every `:synth` carries the
 spec's exhaustive `check_<op> f = true` contract.
 
 Diagnostics: `set_option leant2.trace true` enables profiling and prints lane

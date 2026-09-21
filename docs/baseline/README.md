@@ -43,3 +43,20 @@ hashes. All five remaining E8 searches and thirteen Church stretch searches
 were unsolved at both budgets. The checkpoint distinguishes search coverage
 from indexed executable-presentation coverage and documents the one remaining
 ordinary-command type error in the legacy baseline.
+
+## Local proofs and cancellation checkpoint
+
+The [local-proof checkpoint](local-proofs-2026-09-21/README.md) validates
+implementation commit `914680d` at both 10 s and 5 s per query:
+**813/813 required checks across ten harnesses** at each budget. Fin and
+order transitivity are required E8 cases, leaving three open searches.
+Six separate gates exercise local arithmetic proofs, contradictions, a supplied
+induction hypothesis, and certified rejection of a False contract.
+
+The full Lean build also verifies isolated proof extraction/replay, native
+cancellation rollback, deferred typeclass inputs, and classical specialization
+of flexible query universes. Both complete raw runs, pre/post input snapshots,
+all receipt and ZIP hashes, and the exact archive helper are preserved.
+The three E8 open searches and thirteen Church stretch searches remain
+unsolved. The denominator includes goals checked at different boundaries;
+this is not a count of 813 distinct synthesis problems.

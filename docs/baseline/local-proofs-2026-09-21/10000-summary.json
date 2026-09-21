@@ -1,0 +1,85 @@
+{
+  "budget_ms": 10000,
+  "harnesses": [
+    {
+      "harness": "baseline",
+      "passed": 278,
+      "total": 278,
+      "seconds": 78.88458561897278,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "recursive",
+      "passed": 9,
+      "total": 9,
+      "seconds": 3.575269937515259,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "church",
+      "passed": 28,
+      "total": 28,
+      "seconds": 156.16407084465027,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "context",
+      "passed": 95,
+      "total": 95,
+      "seconds": 6.215107202529907,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "corpus",
+      "passed": 350,
+      "total": 350,
+      "seconds": 14.26064133644104,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "session",
+      "passed": 6,
+      "total": 6,
+      "seconds": 14.013184547424316,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "results",
+      "passed": 10,
+      "total": 10,
+      "seconds": 23.132871627807617,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "extended",
+      "passed": 26,
+      "total": 26,
+      "seconds": 101.2704827785492,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "recursion-gates",
+      "passed": 5,
+      "total": 5,
+      "seconds": 12.501678466796875,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "local-proofs",
+      "passed": 6,
+      "total": 6,
+      "seconds": 14.886887550354004,
+      "returncode": 0,
+      "ok": true
+    }
+  ]
+}
