@@ -1,0 +1,4 @@
+# Preserve the exact bytes covered by manifest.json across Git checkouts.
+*.json -text whitespace=cr-at-eol
+*.log -text whitespace=cr-at-eol
+*.zip -text

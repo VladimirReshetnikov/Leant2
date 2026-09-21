@@ -15,3 +15,14 @@ commit it was produced from and the per-query budget.
 
 The `.log` file lists per-fixture scores and any failures; the `summary.json`
 file lists every query with its golden and observed categories.
+
+## P1 implementation checkpoint
+
+The [2026-09-21 checkpoint](p1-2026-09-21/README.md) validates implementation
+commit `87ed037` at both 10 s and 5 s per query: **787/787 scored
+cases** in all seven harnesses at each budget. It includes the new 29-session
+extended suite (21 required capabilities/controls, eight open searches),
+complete raw logs, and source/executable hashes. The eight extended open
+searches and thirteen Church stretch searches remain unsolved. The checkpoint
+also records the difference between baseline outcome scoring and execution
+of ordinary commands or newly returned results.

@@ -160,12 +160,16 @@ rewrite. Compilation therefore gets executable equations while kernel
 reduction and the recorded axiom inventory continue to refer to the original
 term. Displayed supported recursors use `match` and local recursive functions.
 
-This covers list recursion, natural recursors, polymorphic terms and ordinary
-user-defined trees. It does not add natural recursion to the search grammar.
-Indexed/mutual recursor adapters and providers without executable code can
-still require a noncomputable binding, which is now explicitly reported
-without post-acceptance compiler errors. Realization metadata is registered
-for result definitions so subsequent simplification can unfold them.
+Validated cases include list and Nat recursors, polymorphic map and
+identity, a custom binary tree, nested recursion, and printed-source round
+trips that check for variable capture. This does not add natural recursion to
+the search grammar. Indexed/mutual recursor adapters and providers without
+executable code can still require a noncomputable binding, which is now
+explicitly reported without post-acceptance compiler errors. Cancellation
+and runtime exceptions still propagate. Realization metadata is registered
+for result definitions so subsequent simplification can unfold them. Existing
+`it1`, `it2`, ... names are preserved across queries; fresh-session replay is
+required to avoid referring to an earlier binding with the same name.
 
 ## Initial next-phase coverage
 
@@ -182,9 +186,17 @@ the precise measurement and replay boundaries.
 
 ## Measured
 
-Historical measurements are in `docs/baseline/` (see the README for their
-revisions and budgets). The 2026-09-18 implementation also passed every scored
-case with the budget halved to 5 s. Partial operations Leant's ledger never
-accepted (`foldl1`, `maximumBy`, ...) are reported as stretch cases separately
-from the acceptance denominator. New implementation receipts must establish
-their own scores; historical results do not validate the current source.
+Implementation commit `87ed037` passed **787/787 scored cases** across
+all seven harnesses at both 10 s and 5 s per query, with clean working trees
+and an unchanged executable. The [2026-09-21 checkpoint](baseline/p1-2026-09-21/README.md)
+records the full results and raw transcripts. The eight extended open
+searches and thirteen historical Church stretch searches remain unsolved at
+both budgets; neither is counted in the required denominator. The baseline
+checks synthesis outcome categories, while the extended suite independently
+checks first-result binding and replay. Three ordinary-command errors in the
+legacy transcripts remain outside that baseline score.
+
+Historical measurements remain in `docs/baseline/`, labeled by their own
+revisions and budgets. These acceptance runs and profiling parity tests are
+not controlled performance measurements and do not establish a node-cost
+target or a general speedup.

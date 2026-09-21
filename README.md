@@ -51,12 +51,16 @@ tests, and the `leant2` REPL executable.
   noncomputable.
 - `Leant2/Engine.lean`: the adaptive lanes under one wall-clock budget
   (constructive, refutation, deeper constructive, classical, deeper
-  refutation). There are no engine switches and no user settings.
+  refutation). There is no engine-selection switch; legacy `:set` commands
+  are ignored.
 - `Leant2/Frontend/Command.lean`: `#leant2 T`, `#leant2 f : T where P`,
   `#leant2_check`, `#leant2_none`; results are bound as `it1`, `it2`, ...
+  Existing result names are preserved, so use a fresh session when replaying
+  a newly returned result.
 - `Main.lean`: the compatibility REPL that consumes Leant transcripts
   (`:synth`, `:set` ignored, `:reset`, `:undo`, `:{ ... :}` blocks,
-  `:providers`, `:prove`, declarations, `#eval`).
+  `:providers`, `:prove`, declarations, `#eval`). Comment-only input is
+  ignored without consuming an undo entry.
 
 ### The baseline
 
@@ -78,7 +82,7 @@ each case once (Leant ran them per engine):
 
 ```bash
 python tools/run_recursive.py --budget 10000   # Leant test-recursive, 9 cases
-python tools/run_church.py --budget 10000      # Leant test-church behavior probes, 21 cases
+python tools/run_church.py --budget 10000      # Leant test-church, 28 scored probes + 13 open stretch cases
 python tools/run_context.py --budget 10000     # Leant test-behavioral simplification + test-context production, products, selections, constructors, universes, scheduling: 95 cases
 python tools/run_corpus.py --budget 10000      # Leant test-church signature corpus, 350 type-only queries
 python tools/run_session.py                    # Leant session provider-identity suite (blocks, :undo, rejected declarations)
@@ -98,9 +102,13 @@ complete, and reject diagnostics even after a candidate has been printed.
 Literal `False` controls require a certified contract refutation; silence
 and timeouts do not pass them.
 
-All five passed in full on 2026-09-18 (recursive 9/9, Church probes 28/28
-scored plus 13 stretch cases Leant never accepted, context 95/95, corpus
-350/350, session 6/6) with a 10 s budget per query.
+On 2026-09-21, all seven harnesses passed **787/787 scored cases** at both
+10 s and 5 s per query on implementation commit `87ed037`. The eight
+extended open searches and thirteen Church stretch searches remain unsolved
+at both budgets. [The checkpoint receipts](docs/baseline/p1-2026-09-21/README.md)
+include complete logs, source/executable hashes, and the precise score
+boundaries. In particular, the baseline score does not validate every
+ordinary command in the legacy transcripts.
 
 The new [extended suite](docs/baseline/extended.md) reconstructs the sixteen
 probes in proposal 11, adds nine Lean-core examples and four negative

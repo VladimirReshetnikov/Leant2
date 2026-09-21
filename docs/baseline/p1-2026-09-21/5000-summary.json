@@ -1,0 +1,61 @@
+{
+  "budget_ms": 5000,
+  "harnesses": [
+    {
+      "harness": "baseline",
+      "passed": 278,
+      "total": 278,
+      "seconds": 80.89665913581848,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "recursive",
+      "passed": 9,
+      "total": 9,
+      "seconds": 3.773909330368042,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "church",
+      "passed": 28,
+      "total": 28,
+      "seconds": 99.41279935836792,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "context",
+      "passed": 95,
+      "total": 95,
+      "seconds": 9.36599087715149,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "corpus",
+      "passed": 350,
+      "total": 350,
+      "seconds": 13.50976037979126,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "session",
+      "passed": 6,
+      "total": 6,
+      "seconds": 14.219952583312988,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "extended",
+      "passed": 21,
+      "total": 21,
+      "seconds": 100.2477707862854,
+      "returncode": 0,
+      "ok": true
+    }
+  ]
+}

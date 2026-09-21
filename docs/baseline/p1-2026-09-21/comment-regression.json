@@ -1,0 +1,121 @@
+{
+  "executable": "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\.lake\\build\\bin\\leant2.exe",
+  "executable_sha256": "4f117362d299f7988a4c276a7b222e4ea750b9398f287abc1327307af4c1795c",
+  "cases": [
+    {
+      "case": "nospace_line_comment",
+      "stdin": "--comment\n:quit\n",
+      "returncode": 0,
+      "stdout": "λ> :quit\n",
+      "stderr": "",
+      "errors": [],
+      "expect_error": false,
+      "ok": true
+    },
+    {
+      "case": "nospace_block_comment",
+      "stdin": "/-comment-/\n:quit\n",
+      "returncode": 0,
+      "stdout": "λ> :quit\n",
+      "stderr": "",
+      "errors": [],
+      "expect_error": false,
+      "ok": true
+    },
+    {
+      "case": "nospace_nested_block_comment",
+      "stdin": "/-outer /-inner-/ comment-/\n:quit\n",
+      "returncode": 0,
+      "stdout": "λ> :quit\n",
+      "stderr": "",
+      "errors": [],
+      "expect_error": false,
+      "ok": true
+    },
+    {
+      "case": "nospace_unterminated_block_comment",
+      "stdin": "/-incomplete\n:quit\n",
+      "returncode": 0,
+      "stdout": "error: unterminated comment\nλ> :quit\n",
+      "stderr": "",
+      "errors": [
+        "error: unterminated comment"
+      ],
+      "expect_error": true,
+      "ok": true
+    },
+    {
+      "case": "standalone_comment",
+      "stdin": "-- standalone comment\n:quit\n",
+      "returncode": 0,
+      "stdout": "λ> :quit\n",
+      "stderr": "",
+      "errors": [],
+      "expect_error": false,
+      "ok": true
+    },
+    {
+      "case": "three_comments",
+      "stdin": "-- first\n-- second\n-- third\n:quit\n",
+      "returncode": 0,
+      "stdout": "λ> :quit\n",
+      "stderr": "",
+      "errors": [],
+      "expect_error": false,
+      "ok": true
+    },
+    {
+      "case": "block_comment_no_final_newline",
+      "stdin": ":{\n-- standalone comment\n:}\n:quit\n",
+      "returncode": 0,
+      "stdout": "λ> :{\nλ> :}\nλ> :quit\n",
+      "stderr": "",
+      "errors": [],
+      "expect_error": false,
+      "ok": true
+    },
+    {
+      "case": "block_comment_with_final_newline",
+      "stdin": ":{\n-- standalone comment\n\n:}\n:quit\n",
+      "returncode": 0,
+      "stdout": "λ> :{\nλ> :}\nλ> :quit\n",
+      "stderr": "",
+      "errors": [],
+      "expect_error": false,
+      "ok": true
+    },
+    {
+      "case": "declaration_trailing_comment",
+      "stdin": "def exampleValue : Nat := 7 -- trailing comment\n#eval exampleValue\n:quit\n",
+      "returncode": 0,
+      "stdout": "7\nλ> :quit\n",
+      "stderr": "",
+      "errors": [],
+      "expect_error": false,
+      "ok": true
+    },
+    {
+      "case": "block_comment_syntax",
+      "stdin": "/- complete comment -/\n:quit\n",
+      "returncode": 0,
+      "stdout": "λ> :quit\n",
+      "stderr": "",
+      "errors": [],
+      "expect_error": false,
+      "ok": true
+    },
+    {
+      "case": "unterminated_block_comment",
+      "stdin": "/- incomplete comment\n:quit\n",
+      "returncode": 0,
+      "stdout": "error: unterminated comment\nλ> :quit\n",
+      "stderr": "",
+      "errors": [
+        "error: unterminated comment"
+      ],
+      "expect_error": true,
+      "ok": true
+    }
+  ],
+  "executable_unchanged": true
+}
