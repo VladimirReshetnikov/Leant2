@@ -325,6 +325,17 @@ evaluation benefits ordinary fallback too. Four runs with composition took
 1,080–1,679 ms; four without it took 5,049–5,787 ms. These are fixture-specific
 total query times, not first-candidate timing or a general performance claim.
 
+The subsequent clean-source [tree-composition checkpoint](tree-composition-2026-09-21/README.md)
+at `313a441` passed **824/824 across all twelve harnesses** at both 10,000 and
+5,000 ms/query. All 29 original E8 cases and all three new tree gates passed
+their required checks. Positive cases passed typed and executable replay,
+with the new positive tree gates also proving their universal constructor
+equations. Both complete raw runs and unchanged
+pre/post source, module, executable, and external-input hashes are archived.
+All thirteen unscored Church stretch cases remain bounded misses at both
+budgets. The full checkpoint establishes acceptance at the committed source;
+the development ablation above remains a separate fixture-specific measurement.
+
 ## Source provenance
 
 Article cases cite

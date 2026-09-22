@@ -1,0 +1,101 @@
+{
+  "budget_ms": 5000,
+  "harnesses": [
+    {
+      "harness": "baseline",
+      "passed": 278,
+      "total": 278,
+      "seconds": 77.4101333618164,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "recursive",
+      "passed": 9,
+      "total": 9,
+      "seconds": 4.300366401672363,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "church",
+      "passed": 28,
+      "total": 28,
+      "seconds": 98.05294108390808,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "context",
+      "passed": 95,
+      "total": 95,
+      "seconds": 7.34520149230957,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "corpus",
+      "passed": 350,
+      "total": 350,
+      "seconds": 24.467617750167847,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "session",
+      "passed": 6,
+      "total": 6,
+      "seconds": 13.882412195205688,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "results",
+      "passed": 10,
+      "total": 10,
+      "seconds": 27.17151641845703,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "extended",
+      "passed": 29,
+      "total": 29,
+      "seconds": 85.97349309921265,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "recursion-gates",
+      "passed": 5,
+      "total": 5,
+      "seconds": 13.578831911087036,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "local-proofs",
+      "passed": 6,
+      "total": 6,
+      "seconds": 19.068381309509277,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "guard-gates",
+      "passed": 5,
+      "total": 5,
+      "seconds": 18.02781581878662,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "tree-composition",
+      "passed": 3,
+      "total": 3,
+      "seconds": 10.1187002658844,
+      "returncode": 0,
+      "ok": true
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+build: ok in 0s
+baseline: 278/278 in 77s
+recursive: 9/9 in 4s
+church: 28/28 in 98s
+context: 95/95 in 7s
+corpus: 350/350 in 24s
+session: 6/6 in 14s
+results: 10/10 in 27s
+extended: 29/29 in 86s
+extended: OPEN 0/0 solved
+recursion-gates: 5/5 in 14s
+recursion-gates: OPEN 0/0 solved
+local-proofs: 6/6 in 19s
+local-proofs: OPEN 0/0 solved
+guard-gates: 5/5 in 18s
+guard-gates: OPEN 0/0 solved
+tree-composition: 3/3 in 10s
+tree-composition: OPEN 0/0 solved
+
+| Harness | Score | Time |
+| --- | --- | --- |
+| baseline | 278/278 | 77 s |
+| recursive | 9/9 | 4 s |
+| church | 28/28 | 98 s |
+| context | 95/95 | 7 s |
+| corpus | 350/350 | 24 s |
+| session | 6/6 | 14 s |
+| results | 10/10 | 27 s |
+| extended | 29/29 | 86 s |
+| recursion-gates | 5/5 | 14 s |
+| local-proofs | 6/6 | 19 s |
+| guard-gates | 5/5 | 18 s |
+| tree-composition | 3/3 | 10 s |

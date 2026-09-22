@@ -102,8 +102,9 @@ check of their exact original contract before ordinary proof construction.
 Stuck checks retain proof search, and rejecting one computed proof still
 allows an alternate proof to pass the trust profile. Tree inorder and a
 second binary-tree traversal pass public synthesis, universal constructor
-equations, and held-out execution at both existing budgets. These focused
-development results do not extend the complete acceptance checkpoint below.
+equations, and held-out execution at both existing budgets. The complete
+tree-composition checkpoint below archives these results with all other
+required harnesses.
 
 ### The baseline
 
@@ -184,7 +185,7 @@ compiled-module, and external-input hashes against a pre-run snapshot.
 Three E8 searches and thirteen Church stretch cases were unsolved at that
 checkpoint.
 
-The latest complete [constructive guard checkpoint](docs/baseline/guards-2026-09-21/README.md),
+The archived [constructive guard checkpoint](docs/baseline/guards-2026-09-21/README.md),
 implementation commit `ce31d3a`, passes **820/820 required checks across eleven
 harnesses at both 10 s and 5 s per query**. Maximum and drop-zero are required
 E8 probes; five separate guard gates include universal post-checks for maximum,
@@ -192,8 +193,18 @@ minimum, and drop-zero. Empty-provider Lean fixtures separately verify native
 guarded recursion, exact-term publication, and printed-source equivalence.
 The archive preserves complete raw runs and unchanged pre/post input hashes.
 Tree inorder was the only open E8 search at that checkpoint; the thirteen
-Church stretch cases were also unsolved. The newer focused tree results above
-are separate from this archived 820-check run.
+Church stretch cases were also unsolved.
+
+The latest complete [tree-composition checkpoint](docs/baseline/tree-composition-2026-09-21/README.md),
+implementation commit `313a441`, passes **824/824 required checks across twelve
+harnesses at both 10 s and 5 s per query**. All 29 original E8 sessions are
+required and passing. Three additional tree gates verify universal constructor
+equations, held-out execution on two binary datatypes, and an impossible-contract
+control. Both full runs preserve the same source, executable, compiled modules,
+and external fixtures; the archive contains complete raw outputs and checked
+pre/post hashes. The thirteen unscored Church stretch searches remain bounded
+misses. These counts include repeated goals checked at different boundaries,
+and are not a count of distinct synthesis problems.
 
 The Church harness imports the specifications from Leant's vendored Djex
 directory (`C:\Leant\lib\Djex\test-church`), so every `:synth` carries the

@@ -79,3 +79,21 @@ acceptance gates, not distinct problems or total queries. Tree inorder and
 the thirteen Church stretch searches remain bounded misses at this checkpoint.
 The archive also preserves and independently checks the legacy baseline's
 two intentional preflight diagnostics and one unscored Option-call error.
+
+## Tree composition and closed-contract checkpoint
+
+The [tree-composition checkpoint](tree-composition-2026-09-21/README.md) validates
+implementation commit `313a441` at both 10 s and 5 s per query:
+**824/824 required checks across twelve harnesses** at each budget. All 29
+original E8 cases now pass as required checks. Three separate tree gates add
+universal constructor equations and held-out execution for two binary datatypes,
+plus certified rejection of a literal-False contract.
+
+Public searches retain ordinary providers, including `List.append`. Native
+tests separately establish composition-route permissions, transaction behavior,
+and executable publication of a known recursor term. The archive preserves
+117 raw artifacts and 837 synthesis query records per budget, with identical
+pre/post source, executable, compiled-module, and external-fixture hashes.
+The thirteen Church stretch cases remain unscored bounded misses. Prior
+checkpoint archives are unchanged; score, total query count, and unique
+benchmark count remain distinct quantities.

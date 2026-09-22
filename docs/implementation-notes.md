@@ -408,6 +408,20 @@ both budgets. The public drop-zero candidate reuses `List.filter` with a
 synthesized guard predicate; the provider-free fixture establishes the
 separate recursive construction capability.
 
+Implementation commit `313a441` passed **824/824 required checks across twelve
+harnesses at both budgets**. The [tree-composition checkpoint](baseline/tree-composition-2026-09-21/README.md)
+includes all 29 original E8 cases and three additional tree gates. The positive
+public gates check universal constructor equations and held-out execution with
+ordinary providers, including `List.append`; separate native tests establish
+the bounded tier's permissions and publication of a supplied recursor term.
+The two runs preserve identical pre/post hashes for 130 source/configuration
+files, 32 compiled module artifacts, the executable, and 350 external fixtures.
+Each run retains 117 raw artifacts and 837 synthesis query records. The required
+score counts 824 acceptance checks, with overlapping goals and 13 unscored
+Church stretch queries; all thirteen remain bounded misses at both budgets.
+The legacy baseline's two intended preflight diagnostics and one unscored
+ordinary Option-call error are independently checked at their query boundaries.
+
 Historical measurements remain in `docs/baseline/`, labeled by their own
 revisions and budgets. These acceptance runs and profiling parity tests are
 not controlled performance measurements and do not establish a node-cost

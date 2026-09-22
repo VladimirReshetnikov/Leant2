@@ -1,0 +1,40 @@
+# Tree composition and closed-contract checkpoint
+
+Both complete runs passed **824/824 required checks across 12 families** at the clean source revision `313a4415543af5ce633bc0496c3cd28f7a468b29`, using `leanprover/lean4:v4.34.0`. Each run records a successful full build. The query budgets were 10,000 and 5,000 ms. These are cooperative search budgets; whole-query elapsed time can exceed them.
+
+| Family | 10,000 ms/query | 5,000 ms/query | Scored obligation |
+| --- | ---: | ---: | --- |
+| baseline | 278/278 | 278/278 | Historical synthesis outcome categories |
+| recursive | 9/9 | 9/9 | Recursive behavior queries |
+| church | 28/28 | 28/28 | Contracted probes and impossible controls; stretch cases excluded |
+| context | 95/95 | 95/95 | Contexts, universes, scheduling, and contracts |
+| corpus | 350/350 | 350/350 | Type-only Church signatures |
+| session | 6/6 | 6/6 | Provider identity, filtering, comments, and undo |
+| results | 10/10 | 10/10 | Result refresh, evaluation, namespaces, failure rollback, and undo |
+| extended | 29/29 | 29/29 | 25 typed/replayed results; 4 certified impossible controls |
+| recursion-gates | 5/5 | 5/5 | 3 typed/replayed results; 2 certified impossible controls; positive cases include kernel checks |
+| local-proofs | 6/6 | 6/6 | 5 typed/replayed results; 1 certified impossible controls; positive cases include kernel checks |
+| guard-gates | 5/5 | 5/5 | 3 typed/replayed results; 2 certified impossible controls; positive cases include kernel checks |
+| tree-composition | 3/3 | 3/3 | 2 typed/replayed results; 1 certified impossible controls; positive cases include kernel checks |
+| **Total** | **824/824** | **824/824** | **12 families** |
+
+All **29 original E8 cases are now required: 25 positive cases and four impossible controls, with zero open cases**. The original tree query retains its original finite contract. The **three additional tree-composition gates** comprise two positive searches and one literal-`False` control; they are a separate family, not three more original E8 cases. The positive gates add universal constructor equations and held-out executable observations, including a second binary datatype whose values occur at tips. See the [tree fixture](../../../tests/benchmarks/tree-composition.json) and [extended benchmark scope](../extended.md).
+
+Public tree searches use the default curated providers, including **`List.append`**. Only the fresh datatype is declared before synthesis; named traversal implementations, reference terms, equation lemmas, and diagnostic witnesses are withheld. Public success establishes the exact typed result, finite contract, independent equations, and executable observations. It does not identify which internal search tier produced that result or establish synthesis with an empty provider inventory.
+
+The compiled [branch-composition unit tests](../../../tests/Leant2Tests/BranchComposition.lean) cover bounded construction and transaction behavior. Separate [actual-search-route tests](../../../tests/Leant2Tests/BranchCompositionIntegration.lean) observe the scoped hook during ordinary search rather than calling the helper directly. [Tree publication tests](../../../tests/Leant2Tests/TreePublication.lean) start from a supplied known native recursor term and check the kernel gate, compilation, printed-source replay, equations, and execution; they are publication evidence, not unassisted synthesis evidence. These test scopes are distinct from the public benchmark scores.
+
+The [closed-contract tests](../../../tests/Leant2Tests/ClosedContracts.lean) cover the early check of the actual closed native-instantiated root subtype program against the exact original contract, supplied deciders, and fallback. A proved contract still requires acceptance by the unchanged continuation and kernel gate. If that proof is rejected downstream, the transaction restores the branch and ordinary proof search remains available, including an alternative proof acceptable under a stricter axiom policy. Local contexts, stuck decisions, incomplete roots, and disabled proof-portfolio cases keep their existing paths. The [implementation notes](../../implementation-notes.md) describe these limits and separate the focused development ablation; this archive makes no general speedup or necessity claim.
+
+
+At **10,000 ms/query**, the complete raw ZIP contains **117 files** (22 `.in`, 8 `.json`, 13 `.log`, 52 `.out`, 22 `.stderr`), **22 retained command-input sessions**, and **22 empty stderr files**. The independent boundary audit counts **837 synthesis records**: 278 baseline queries, 511 queries in retained sessions, and 48 manifest queries. Church stretch results are **0/13 solved**, with 13 bounded misses (13 `refuted`); they are excluded from the required score.
+
+At **5,000 ms/query**, the complete raw ZIP contains **117 files** (22 `.in`, 8 `.json`, 13 `.log`, 52 `.out`, 22 `.stderr`), **22 retained command-input sessions**, and **22 empty stderr files**. The independent boundary audit counts **837 synthesis records**: 278 baseline queries, 511 queries in retained sessions, and 48 manifest queries. Church stretch results are **0/13 solved**, with 13 bounded misses (13 `refuted`); they are excluded from the required score.
+
+The baseline transcripts deliberately contain **two scored preflight diagnostics** for ill-typed/unknown contract expressions in `synth-behavior`, plus **one unscored post-query application-type error** from an `Option` call in `synth-prove`. The latter lies after its synthesis end marker and is excluded from synthesis scoring. The audit rejects any drift from those exact boundaries. Expected rejected provider declarations in session/results fixtures are checked against each fixture's permitted outside-query diagnostics. Church provider setup has no unexpected comment/setup diagnostics. Thus the complete raw archive is not described as diagnostic-free. Bounded Church stretch outcomes describe these configured searches, not mathematical impossibility of the underlying tasks.
+
+The [manifest](manifest.json) binds the pre-run [input snapshot](input-snapshot.json) to identical [post-run inputs](post-run-inputs.json): **130 tracked source/configuration hashes**, **32 compiled module-artifact hashes**, and **350 external fixture-file hashes**. External repository revisions and dirty flags are recorded separately; this does not claim the external checkouts were clean. The executable SHA-256 is `983767a87a1cf9a455b8e01e52a6d24406f0b42ae49f33365955221e0a35932d`. The archive preserves the frozen [wrapper](archive-script.py.txt) and both pinned dependencies ([base auditor](base-archive-script.py.txt), [audit utilities](base-finish-script.py.txt)); their exact hashes are recorded in the manifest.
+
+The [10-second summary](10000-summary.json), [5-second summary](5000-summary.json), detailed manifest/results receipts, outer logs, and complete [10-second raw ZIP](10000-raw.zip) / [5-second raw ZIP](5000-raw.zip) preserve the original bytes. Every manifest-covered artifact, ZIP CRC, ZIP member hash, copied receipt, raw query boundary, and required score is checked before this narrative is created. Counts of synthesis records differ from scored obligations because some sessions contain several queries and Church stretch queries are unscored. The archive-local `.gitattributes` protects evidence bytes; this README is ordinary Git text and is outside the manifest hash scope.
+
+The prior [p1-2026-09-21](../p1-2026-09-21/README.md), [induction-2026-09-21](../induction-2026-09-21/README.md), [local-proofs-2026-09-21](../local-proofs-2026-09-21/README.md), [guards-2026-09-21](../guards-2026-09-21/README.md) archives remain unchanged in tracked content and manifest-covered bytes. This checkpoint supplements them. It contains validation receipts and source/input fingerprints, not a standalone executable replay bundle; external fixtures and the recorded Lean toolchain are still needed to rerun synthesis. No separate Python-test count or reference-validation run is inferred from the full-run summaries.
