@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "scope": "All bundle files except this manifest, plus immutable relative origin dependencies. Integrity hashes are not an independent signature.",
+  "files": {
+    ".gitattributes": {
+      "bytes": 29,
+      "sha256": "730a35ae3d558080083c3103d9ac8100c3f6561678092abe341701dfa331eb1d"
+    },
+    "audit.json": {
+      "bytes": 950,
+      "sha256": "f9d50ef2a0983b49ba1be5bc1261049a51b4cc9642b43e79a671f883f4793530"
+    },
+    "foldr1/stderr.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "foldr1/stdout.bin": {
+      "bytes": 1053,
+      "sha256": "543fa4d82911a5cd47e69f3eeda84936a698e5a3c12efef9457e02ec1dac01d5"
+    },
+    "foldr1.lean": {
+      "bytes": 7342,
+      "sha256": "5d7e6fb1b28c2e14f9b8072f2c5e7b67b66a72bea9b3902585295ed05f7d3e6c"
+    },
+    "README.md": {
+      "bytes": 4739,
+      "sha256": "466335089c616d81a1798b4ac9cc4c859b9b8a0e14a64f5e3cffa77a13364d0a"
+    },
+    "receipt.json": {
+      "bytes": 7172,
+      "sha256": "ca46e17b46088a29d981b3370f4213afc08b3719987c1a28d33298e14bbda85d"
+    },
+    "replay_carrier_sources.py.txt": {
+      "bytes": 4980,
+      "sha256": "91a1f1c62aaec923660a64424ac087d81f7470f902d606ab744c0bdfcfeafdc2"
+    },
+    "test_bundle.py": {
+      "bytes": 6422,
+      "sha256": "29f8f0e6456e590d78ac37e7649f503dae2c0cc7995c7e2440cf6e61206b177c"
+    },
+    "verify_bundle.py": {
+      "bytes": 10489,
+      "sha256": "a471d63b8632b4d43c796681dca29bd499ef14d201c71d7ee016bf2c17805780"
+    }
+  },
+  "origin_dependencies": {
+    "SHA256.json": "5a9d1c0d4ea5e4cd877a43209d7e2f28c0d4f59bf6755eae8e0640db5d013d93",
+    "verify_bundle.py": "07dd1a9e0bc9968b84ed31aa15373511dd85b499a0240d3cd33794baf1dfb160",
+    "run_probe.py": "f99093a3fed8860c592b66a55e52cbd586d4526a452e9e9971271109be896222",
+    "Probe.lean": "bfb979d865713392839c360436db316962f778fc277b2d95708fb332f3d0a304",
+    "evidence.zip": "2cd669b7236ce1806aa2a47d4a0b1c40bc65bf584e5bdd9e69c72fba530f23a2"
+  }
+}

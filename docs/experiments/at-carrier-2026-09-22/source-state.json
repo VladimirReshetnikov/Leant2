@@ -1,0 +1,264 @@
+{
+  "scope": "Post-experiment read-only source comparison; no exact implementation commit or rebuild claim.",
+  "head_at_packaging": "9abfb3610caa5a31769a54e3b9c1c4be8c819069",
+  "working_tree_dirty": true,
+  "recorded_sources_equal_working_tree_at_packaging": true,
+  "recorded_source_files": {
+    "lake-manifest.json": {
+      "size_bytes": 144,
+      "sha256": "f9e57b36aa5de5aeb18a1f011713076fc7b21e3a0cef19b9ae69fd7939d659ed"
+    },
+    "lakefile.toml": {
+      "size_bytes": 337,
+      "sha256": "60a9fb06100ebbdb802a8a4940283bf4a91e0adf3a39a499584010f370c5fb88"
+    },
+    "lean-toolchain": {
+      "size_bytes": 26,
+      "sha256": "744874093261c1854638246b978f088eae15414b0f636ac08481a088a7aaa867"
+    },
+    "Leant2/Accept/Gate.lean": {
+      "size_bytes": 6670,
+      "sha256": "c306a254a31dc8ac352873a6dc56f14b93049cb4e2ec3ce7607d8c622d5be749"
+    },
+    "Leant2/API.lean": {
+      "size_bytes": 11574,
+      "sha256": "e7715eaaacda585ecc39d84cf82e29a9266741dcfeab32e7728d6a41c3ab8485"
+    },
+    "Leant2/Behavior/Observations.lean": {
+      "size_bytes": 9197,
+      "sha256": "1a66b6b5a57a63857a3106967fd86415769facc96de4587463ccb4c5272cfefe"
+    },
+    "Leant2/Core/Types.lean": {
+      "size_bytes": 3562,
+      "sha256": "9c23fb4568363eba24c405e8d257e267c97a0b1d86ddb2fc80ef76383b598548"
+    },
+    "Leant2/Engine.lean": {
+      "size_bytes": 24920,
+      "sha256": "6bfd855b9af39dd34926f71822ead4c9facb3b67651bc30c7ccb0bf52e8a5d95"
+    },
+    "Leant2/Frontend/Command.lean": {
+      "size_bytes": 9932,
+      "sha256": "939946136559383d2a63f5ae2308e56b1d18ad835676296a2e865887f2620cc6"
+    },
+    "Leant2/Frontend/Local.lean": {
+      "size_bytes": 5357,
+      "sha256": "6d70a6e879a23f13ba0af05981d4935bcdc15654c7582f058b09448cfd2af11a"
+    },
+    "Leant2/Frontend/Presentation.lean": {
+      "size_bytes": 15080,
+      "sha256": "25ff0612cb06e1a3c6f3a514608ccc5f92bb6dea9b1326071f36f3f8378777ef"
+    },
+    "Leant2/Frontend/Results.lean": {
+      "size_bytes": 4452,
+      "sha256": "23a4fa1b20ee1cfa3f1175c9c958eaa35618d66fe70b81f873812c0d0d97b237"
+    },
+    "Leant2/Frontend/Sketch/Prepare.lean": {
+      "size_bytes": 14130,
+      "sha256": "1cb4ff7a645ecbb839bbd2d233ac2c9e5dad72dd1d542b044f9b91d121c89e03"
+    },
+    "Leant2/Frontend/Sketch/Projection.lean": {
+      "size_bytes": 13650,
+      "sha256": "ccc1eb6037812fde1b50ab61e41ca3d8603b5e9ef1dff99290cc3801b52e31ca"
+    },
+    "Leant2/Frontend/Sketch/Run.lean": {
+      "size_bytes": 14831,
+      "sha256": "64e25bdd40c471fc9520cb15280e84bf4aa7000aa5c87d431df451d89835bb3c"
+    },
+    "Leant2/Frontend/Sketch.lean": {
+      "size_bytes": 2850,
+      "sha256": "5fb9f8b8a2d616a636c550eaa119f87b89190bb7a9d10e06abc7b5c4a468ea4b"
+    },
+    "Leant2/Frontend/Suggestion.lean": {
+      "size_bytes": 3425,
+      "sha256": "88148d83bed5b95149cda8137af0e5fabda61106bf545a3539bf65570f2cbcb6"
+    },
+    "Leant2/Frontend/Term.lean": {
+      "size_bytes": 6392,
+      "sha256": "bb604782423b8804de33429d23fb67bce1eeac292a491cdb8be722843687ce4c"
+    },
+    "Leant2/Native/Export.lean": {
+      "size_bytes": 1298,
+      "sha256": "3126a120ac723fc162ca4a226a261d35c472288aa8b2fbb3dd3b704cd799238d"
+    },
+    "Leant2/Native/Profile.lean": {
+      "size_bytes": 4635,
+      "sha256": "2ddb7689a51e2c7a88feda1bce35935453a79605901d2080e1a2ed34a6eabbaa"
+    },
+    "Leant2/Native/Pruning.lean": {
+      "size_bytes": 3497,
+      "sha256": "7d988ff8d8935269be9ec2417ee673e2407d12f20e8e91663a77f85c0b7d6e9e"
+    },
+    "Leant2/Native/Transaction.lean": {
+      "size_bytes": 7679,
+      "sha256": "3db71f0434279d24c5ec9e1eaff291308e73f1b7e736ce5c5442897673e6042d"
+    },
+    "Leant2/Proof/Local.lean": {
+      "size_bytes": 10780,
+      "sha256": "4738f2623ee311b7616782730c45a64caa097bd7b326be69f582a29cec94e9fd"
+    },
+    "Leant2/Search/Core.lean": {
+      "size_bytes": 65213,
+      "sha256": "61a88cb2649a0a66fcbe2c554a0d7924822fb6168ddc01e84663c0301297e890"
+    },
+    "Leant2.lean": {
+      "size_bytes": 242,
+      "sha256": "9e5c1b27bcd69dd001e4534b88a384fd4919bad79e2a838a748e0e5bd8c5bb90"
+    },
+    "Main.lean": {
+      "size_bytes": 7966,
+      "sha256": "78ffaad5c7b962b0db59946a92d5c9b6ac4585b4d19d420bf7f8713acedc7508"
+    },
+    "tests/Leant2Tests/AcceptanceAlternatives.lean": {
+      "size_bytes": 4353,
+      "sha256": "cfa77b92565b45fd91f5cf31a67fd2d979ca0814d1a751e79239b3ef85591fdc"
+    },
+    "tests/Leant2Tests/Basic.lean": {
+      "size_bytes": 1306,
+      "sha256": "e91a39da6bc2fa4a12def155c600b959f9fb3417cfe6db23772a216d66760126"
+    },
+    "tests/Leant2Tests/BranchComposition.lean": {
+      "size_bytes": 13841,
+      "sha256": "e5ed844fa428a720fd914f6de4615642330011c56685079e91b2519a4965a3db"
+    },
+    "tests/Leant2Tests/BranchCompositionIntegration.lean": {
+      "size_bytes": 11859,
+      "sha256": "2e9c80c20cc24fff576791130c2bb9e6c358b6fb255a8e65deb1d43571252a11"
+    },
+    "tests/Leant2Tests/Cancellation.lean": {
+      "size_bytes": 11664,
+      "sha256": "7604c10f6eaeb7b5babbc0926aab68a10991640ece6d165d209467b20c8b7ba3"
+    },
+    "tests/Leant2Tests/Classical.lean": {
+      "size_bytes": 5026,
+      "sha256": "d611988648c6c84a3a7750f729f752e0b642ad1c247316abe3e7baa9d594cc0b"
+    },
+    "tests/Leant2Tests/ClosedContracts.lean": {
+      "size_bytes": 14397,
+      "sha256": "d39eff892cae4a2b902ca0b71068dd30ed3f149dd3b0502fbd6107493970f562"
+    },
+    "tests/Leant2Tests/ContractRefutation.lean": {
+      "size_bytes": 15915,
+      "sha256": "150e473e734be4a89e8e97bd5921a60f88a92c61966b91f20748d067da4fbac4"
+    },
+    "tests/Leant2Tests/Contracts.lean": {
+      "size_bytes": 2038,
+      "sha256": "e373b75202f079d63051229ec589fe46fab02dd36885dd5613242d3eb3cad7c1"
+    },
+    "tests/Leant2Tests/Frontends.lean": {
+      "size_bytes": 4501,
+      "sha256": "364413917b4c940f0bed983872ee3b0c23f02dfe4405a4abfc133d5e8ac7d4fc"
+    },
+    "tests/Leant2Tests/Guards.lean": {
+      "size_bytes": 27499,
+      "sha256": "47a89492e178d1e403db8abbcfef2100b9e83519254c50cc375824b6056b4c1f"
+    },
+    "tests/Leant2Tests/IndexedPresentation.lean": {
+      "size_bytes": 9468,
+      "sha256": "64ab739652068c1eb857a66050c4d907bc21c3bc148166a070dcc5b623011ecf"
+    },
+    "tests/Leant2Tests/IndexedRecursion.lean": {
+      "size_bytes": 7145,
+      "sha256": "0a4d643d49b76e0e0b0aa3770471e81751a0bea326b5a1e049aef714db880d5b"
+    },
+    "tests/Leant2Tests/InitializedEnumeration.lean": {
+      "size_bytes": 13805,
+      "sha256": "6f56fb87da66a63d1177fa23921347f5da3817df4d107d711a45a9a705d9c717"
+    },
+    "tests/Leant2Tests/LibraryAPI.lean": {
+      "size_bytes": 22838,
+      "sha256": "a706720e523e3b7afcd90ec0158509cadfb692b47b54bc2c1a1a0fd8d57aed91"
+    },
+    "tests/Leant2Tests/LocalProof.lean": {
+      "size_bytes": 22483,
+      "sha256": "e64c63aca2bd9b20f60f0230068ace7f01e1726a60e87394bccf232c234b7fa8"
+    },
+    "tests/Leant2Tests/LocalQuery.lean": {
+      "size_bytes": 7415,
+      "sha256": "89c22a2df25a72d09cfcfe5882fd0c9cf6c9493040e6f838e8967bf7cf84b420"
+    },
+    "tests/Leant2Tests/Observations.lean": {
+      "size_bytes": 8521,
+      "sha256": "21de0bfd73285f2c68ef3c7dd771d1846e98099d8592b2019621a06a9f0204b2"
+    },
+    "tests/Leant2Tests/Presentation.lean": {
+      "size_bytes": 5934,
+      "sha256": "8fc53f81ab94f4a54312bf123dd897eba8b02e29da2bc08b4c9b2ddd47c43d8b"
+    },
+    "tests/Leant2Tests/Profile.lean": {
+      "size_bytes": 11840,
+      "sha256": "e4c49b6df1d4ec1e5868a4885913208e63a3da9ab8263bd6bc0dbcae8a19c18c"
+    },
+    "tests/Leant2Tests/Providers.lean": {
+      "size_bytes": 2350,
+      "sha256": "913ca2762f7759e8c785a9a170951aabc2d1478440b4be173a28b9c0ccbe716e"
+    },
+    "tests/Leant2Tests/PruningProfiles.lean": {
+      "size_bytes": 15109,
+      "sha256": "d500c65180d43cc783c814d72d54a91e67d6d159a00474f0df83cea6490733ec"
+    },
+    "tests/Leant2Tests/Recursion.lean": {
+      "size_bytes": 990,
+      "sha256": "640483dcfc5ef2d207c2fd350923a607376148f3c068aa2f3163cc2167b85707"
+    },
+    "tests/Leant2Tests/Results.lean": {
+      "size_bytes": 6493,
+      "sha256": "6b233bca40805a20b9814d6788427b879ee5131c8cf1e74633478ba87f2ad149"
+    },
+    "tests/Leant2Tests/ScopedBudget.lean": {
+      "size_bytes": 15799,
+      "sha256": "37899cffc789c23d9a5d5799ff55679b2b1b073aadfd036d0c7e880202062097"
+    },
+    "tests/Leant2Tests/Sketch.lean": {
+      "size_bytes": 12015,
+      "sha256": "29954e987719ebed57a120f5d8ec0c2197d1e911992c062a8caf49ff0859c474"
+    },
+    "tests/Leant2Tests/SketchCommand.lean": {
+      "size_bytes": 6379,
+      "sha256": "ffcb167d0ff07be011680c4b0285564e88f6c68aa5b236b67c805b40d43a7862"
+    },
+    "tests/Leant2Tests/SketchPreparation.lean": {
+      "size_bytes": 15477,
+      "sha256": "4abf068da6ddfaa6c44f8587f8ea4cb4700d051710c8e52b2ca0ae8129c2ce6c"
+    },
+    "tests/Leant2Tests/SketchProjection.lean": {
+      "size_bytes": 26852,
+      "sha256": "29bdd5f718ad21c2d05c7104b7eaa02b3c7147eb0d6d6e77fa4ff1dd20c48b7f"
+    },
+    "tests/Leant2Tests/SketchProjectionIntegration.lean": {
+      "size_bytes": 11587,
+      "sha256": "45d815efef068812b4afad44e45786f00b552aa8cef21547e8b5155c13c1284e"
+    },
+    "tests/Leant2Tests/Substrate.lean": {
+      "size_bytes": 3478,
+      "sha256": "c322850a6e38d0b56998dbfcc99aa9e5f98f48a66370c3c5603a3e338adfbc9f"
+    },
+    "tests/Leant2Tests/Suggestion.lean": {
+      "size_bytes": 8238,
+      "sha256": "26dc610fb7e8e6b7a7b7429bbac0f716f115f55c0be480be679289ac9b73b2cb"
+    },
+    "tests/Leant2Tests/Support/ResultEffects.lean": {
+      "size_bytes": 288,
+      "sha256": "7fd80c4850c1579f96ac6438cde8c9d04dfcdad266354f1455c0275ff23741f7"
+    },
+    "tests/Leant2Tests/Support/SketchEffects.lean": {
+      "size_bytes": 983,
+      "sha256": "022ab03141d97043c1620360b8fad1335778b67c0a250db793e3f53defd56831"
+    },
+    "tests/Leant2Tests/TermPresentation.lean": {
+      "size_bytes": 8572,
+      "sha256": "05822da98a13372ec2b5e03c7868394ca6898b648de03c4ae4ea6ae984e84842"
+    },
+    "tests/Leant2Tests/TreePublication.lean": {
+      "size_bytes": 5706,
+      "sha256": "7c56b2b0b3e83439386b465da82bfeec610d26d29b46ae348cbe17991791641c"
+    },
+    "tests/Leant2Tests.lean": {
+      "size_bytes": 1132,
+      "sha256": "62a7bc17e09b224d5c5d084071c9734d33a573d2b295bc77e0443e34a84347f6"
+    },
+    "tests/sketches/reference-controls.lean": {
+      "size_bytes": 876,
+      "sha256": "3df77ec5105f746eb383499ce36eb2acac7a7c20544626c29205518fabc24a6c"
+    }
+  }
+}

@@ -186,8 +186,13 @@ choice. The [sketch guide](docs/sketches.md) explains hole ownership,
 original-universe replay, axiom profiles, cancellation, and the supported
 boundary. The focused [projection experiment](docs/experiments/sketch-projection-2026-09-22/README.md)
 completes the supplied-Option foldr1 sketch at both budgets with its original
-type and all 36 observations. This covers one of thirteen proposed carrier-given
-Church cases; the full set and proposal E2 remain open.
+type and all 36 observations. The separate [at experiment](docs/experiments/at-carrier-2026-09-22/README.md)
+completes an `Int → A` carrier sketch using only the original integer branch
+primitive, preserving the original type and all 168 observations. Both actual
+printed programs also compile and execute their complete original checkers in
+separate Lean-only processes. These cover two of thirteen proposed carrier-given
+Church cases; eleven counterparts and proposal E2 remain open. All thirteen
+original unassisted Church stretch searches remain a separate open track.
 
 ### Calling synthesis from a metaprogram
 
@@ -262,7 +267,7 @@ The preceding [API checkpoint](docs/baseline/library-api-2026-09-21/README.md)
 retains its original 832-check scope and revision `9ec21c8`.
 The later projection increment separately passes an 87-job aggregate native
 build, including early-pruning/backtracking, dependent-context, profile,
-fallback, and cancellation tests. Its focused carrier result does not change
+fallback, and cancellation tests. Its focused carrier results do not change
 the external denominator or replace the complete archived run.
 The 8 frontend cases require 13 fresh Lean processes:
 8 original stages, 3 independent replays of actual tactic suggestions in

@@ -1,0 +1,63 @@
+{
+  "experiment": "sketch-at-experiment-01",
+  "source_case_id": "church_case_033",
+  "observation_count": 168,
+  "created_utc": "2026-09-22T15:05:37.221842+00:00",
+  "completed_utc": "2026-09-22T15:06:35.567369+00:00",
+  "status": "accepted_both_budgets",
+  "experiment_valid": true,
+  "inputs_unchanged": true,
+  "native_processes": 3,
+  "controls_axiom_free": 11,
+  "synthesis_queries": 2,
+  "raw_stream_files": 6,
+  "stdout_bytes": 7404,
+  "empty_stderr_files": 3,
+  "runs": [
+    {
+      "budget_ms": 5000,
+      "process_elapsed_ms": 5240,
+      "classification": "accepted",
+      "actual_outcome": "verified candidates=1",
+      "api_elapsed_ms": 1169,
+      "ledger": {
+        "ruleApplications": 533,
+        "unifications": 1736,
+        "proofAttempts": 239,
+        "candidates": 1,
+        "rejected": 237
+      }
+    },
+    {
+      "budget_ms": 10000,
+      "process_elapsed_ms": 5095,
+      "classification": "accepted",
+      "actual_outcome": "verified candidates=1",
+      "api_elapsed_ms": 1186,
+      "ledger": {
+        "ruleApplications": 533,
+        "unifications": 1736,
+        "proofAttempts": 239,
+        "candidates": 1,
+        "rejected": 237
+      }
+    }
+  ],
+  "candidate": "fun A d =>\n  (fun step init n xs => xs (Int → A) step init n) (fun a a_1 a_2 => BehaviorPartialNumeric.intCase A a_2 d a a_1)\n    fun a => d",
+  "candidate_utf8_sha256": "560ccb7f9bd06a618c13042027b55667b00c664772e79bd542cb9f198db75c2d",
+  "program_type": "(church0 : Type) → church0 → Int → ((church1 : Type) → (church0 → church1 → church1) → church1 → church1) → church0",
+  "direct_program_constants": [
+    "Int",
+    "BehaviorPartialNumeric.intCase"
+  ],
+  "transitive_program_dependencies_reviewed": 135,
+  "same_printed_candidate_across_budgets": true,
+  "fingerprint_counts": {
+    "source_files": 64,
+    "local_module_files": 60,
+    "toolchain_module_files": 12592,
+    "toolchain_native_files": 20,
+    "frozen_probe_files": 6,
+    "original_provenance_files": 11
+  }
+}

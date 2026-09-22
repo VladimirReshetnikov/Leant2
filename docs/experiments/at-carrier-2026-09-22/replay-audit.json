@@ -1,0 +1,22 @@
+{
+  "operation": "at",
+  "origin_experiment": "sketch-at-experiment-01",
+  "observation_count": 168,
+  "origin_budgets_ms": [
+    5000,
+    10000
+  ],
+  "same_printed_target_and_program": true,
+  "source_reconstructed_from_original_raw_outputs": true,
+  "imports": [
+    "Lean"
+  ],
+  "native_processes": 1,
+  "process_elapsed_ms": 3074,
+  "axiom_free_audits": 2,
+  "compiled_original_observations_executed_true": 168,
+  "source_sha256": "6a2eb06d0ce0bc73b6a324a1f3a62298c6417356adf63c52948ab778d98e1e72",
+  "stdout_bytes": 1042,
+  "stderr_bytes": 0,
+  "other_operation_in_shared_receipt": "context only; not audited by this bundle"
+}

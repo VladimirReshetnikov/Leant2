@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-22T15:05:37.221842+00:00",
+  "status": "accepted_both_budgets",
+  "controls": {
+    "returncode": 0,
+    "timed_out": false,
+    "interrupted": false,
+    "launch_error": false,
+    "command": [
+      "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+      "--json",
+      "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\scratch\\next-sketch\\at-probe\\Controls.lean"
+    ],
+    "process_timeout_seconds": 120,
+    "process_elapsed_ms": 5841,
+    "cleanup": null,
+    "source_sha256_before": "7803ea6cb985b6b5cc6949b558ff0f0359bdaf3f39c823178f7be986ce8bf8e3",
+    "source_sha256_after": "7803ea6cb985b6b5cc6949b558ff0f0359bdaf3f39c823178f7be986ce8bf8e3",
+    "lean_sha256_before": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+    "lean_sha256_after": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+    "artifact_paths_relative_to": "top-level receipt directory",
+    "stdout": {
+      "file": "controls/stdout.bin",
+      "bytes": 3915,
+      "sha256": "809198e696c6a9a3e09468823a191e48a173b615d8225797185ce269893c7450"
+    },
+    "stderr": {
+      "file": "controls/stderr.bin",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "classification": "controls_passed",
+    "problems": [],
+    "audited_control_declarations": [
+      "BehaviorPartialControl.witness_at",
+      "BehaviorPartialControl.witness_at_passes",
+      "BehaviorPartialControl.primitiveWitness_at",
+      "BehaviorPartialControl.primitiveWitness_at_passes",
+      "BehaviorPartialControl.wrong_at_always_default",
+      "BehaviorPartialControl.wrong_at_always_default_rejected",
+      "BehaviorPartialControl.wrong_at_ignores_index",
+      "BehaviorPartialControl.wrong_at_ignores_index_rejected",
+      "BehaviorPartialNumeric.intCase",
+      "BehaviorPartialNumeric.integer_branches",
+      "BehaviorPartialNumeric.boolean_branches"
+    ],
+    "diagnostic_count": 11
+  },
+  "probes": [
+    {
+      "budget_ms": 5000,
+      "returncode": 0,
+      "timed_out": false,
+      "interrupted": false,
+      "launch_error": false,
+      "command": [
+        "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+        "--json",
+        "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\scratch\\next-sketch\\at-probe\\Probe.lean"
+      ],
+      "process_timeout_seconds": 120,
+      "process_elapsed_ms": 5240,
+      "cleanup": null,
+      "source_sha256_before": "15af484e366bd054403c319c8b6a2ff4f2814ad727a81dda1010f3555b8c956e",
+      "source_sha256_after": "15af484e366bd054403c319c8b6a2ff4f2814ad727a81dda1010f3555b8c956e",
+      "lean_sha256_before": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+      "lean_sha256_after": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+      "artifact_paths_relative_to": "top-level receipt directory",
+      "stdout": {
+        "file": "probe-5000/stdout.bin",
+        "bytes": 1744,
+        "sha256": "238f21e5ac2d39bac6a7a2d4736abf15f895c6c6280afcdff9d07db894908aaf"
+      },
+      "stderr": {
+        "file": "probe-5000/stderr.bin",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "classification": "accepted",
+      "problems": [],
+      "actual_outcome": "verified candidates=1",
+      "ledger": {
+        "ruleApplications": 533,
+        "unifications": 1736,
+        "proofAttempts": 239,
+        "candidates": 1,
+        "rejected": 237
+      },
+      "api_elapsed_ms": 1169,
+      "preparation_report": [
+        "{ depth := 1,\n  holes := #[{ sourceName := Lean.Name.mkNum (Lean.Name.mkStr (Lean.Name.mkStr (Lean.Name.mkNum `step.«_@».scratch.«next-sketch».«at-probe».Probe 535795207) \"_hygCtx\") \"_hyg\") 2,\n               depth := 1,\n               locals := 2 },\n             { sourceName := Lean.Name.mkNum (Lean.Name.mkStr (Lean.Name.mkStr (Lean.Name.mkNum `init.«_@».scratch.«next-sketch».«at-probe».Probe 535795207) \"_hygCtx\") \"_hyg\") 2,\n               depth := 1,\n               locals := 2 }],\n  delayedWrappers := 2,\n  unresolvedBeforeConsumer := 4 }"
+      ],
+      "diagnostic_count": 1,
+      "transcript_transport": "lean_information_envelope"
+    },
+    {
+      "budget_ms": 10000,
+      "returncode": 0,
+      "timed_out": false,
+      "interrupted": false,
+      "launch_error": false,
+      "command": [
+        "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+        "--json",
+        "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\scratch\\next-sketch\\at-probe\\Probe.lean"
+      ],
+      "process_timeout_seconds": 120,
+      "process_elapsed_ms": 5095,
+      "cleanup": null,
+      "source_sha256_before": "15af484e366bd054403c319c8b6a2ff4f2814ad727a81dda1010f3555b8c956e",
+      "source_sha256_after": "15af484e366bd054403c319c8b6a2ff4f2814ad727a81dda1010f3555b8c956e",
+      "lean_sha256_before": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+      "lean_sha256_after": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+      "artifact_paths_relative_to": "top-level receipt directory",
+      "stdout": {
+        "file": "probe-10000/stdout.bin",
+        "bytes": 1745,
+        "sha256": "cc95210743d0ad7099c783633b909e984fc6c09808938eb6872f0e2c47e2d918"
+      },
+      "stderr": {
+        "file": "probe-10000/stderr.bin",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "classification": "accepted",
+      "problems": [],
+      "actual_outcome": "verified candidates=1",
+      "ledger": {
+        "ruleApplications": 533,
+        "unifications": 1736,
+        "proofAttempts": 239,
+        "candidates": 1,
+        "rejected": 237
+      },
+      "api_elapsed_ms": 1186,
+      "preparation_report": [
+        "{ depth := 1,\n  holes := #[{ sourceName := Lean.Name.mkNum (Lean.Name.mkStr (Lean.Name.mkStr (Lean.Name.mkNum `step.«_@».scratch.«next-sketch».«at-probe».Probe 535795207) \"_hygCtx\") \"_hyg\") 2,\n               depth := 1,\n               locals := 2 },\n             { sourceName := Lean.Name.mkNum (Lean.Name.mkStr (Lean.Name.mkStr (Lean.Name.mkNum `init.«_@».scratch.«next-sketch».«at-probe».Probe 535795207) \"_hygCtx\") \"_hyg\") 2,\n               depth := 1,\n               locals := 2 }],\n  delayedWrappers := 2,\n  unresolvedBeforeConsumer := 4 }"
+      ],
+      "diagnostic_count": 1,
+      "transcript_transport": "lean_information_envelope"
+    }
+  ],
+  "failures": [],
+  "source_case_id": "church_case_033",
+  "observation_count": 168,
+  "budgets_ms": [
+    5000,
+    10000
+  ],
+  "original_church_sha256_normalized": "782e4edaa5bf813e30e39ae02d52278ab0566315ebc521401a947b98c44cfd11",
+  "original_spec_sha256": "2cb1b1b23eb2fa9338455094178e02de6055a1f8e78201b35a2619ed29d15d85",
+  "native_slot_handoff_confirmed": true,
+  "build_performed": false,
+  "build_verification": "Not performed; exact source/artifact fingerprints are not a rebuild.",
+  "environment_values_persisted": false,
+  "runtime_setup": "Direct pinned Lean; isolated Lean-only controls; only local prebuilt modules for probe; no package dependencies.",
+  "source_mutation_performed": false,
+  "inputs_unchanged": true,
+  "skipped_budgets_ms": [],
+  "experiment_valid": true,
+  "all_budgets_accepted": true,
+  "exit_code": 0,
+  "completed_utc": "2026-09-22T15:06:35.567369+00:00"
+}

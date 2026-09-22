@@ -1,0 +1,24 @@
+{
+  "operation": "foldr1",
+  "origin_experiment": "sketch-foldr1-experiment-03",
+  "origin_budgets_ms": [
+    5000,
+    10000
+  ],
+  "same_actual_printed_target_and_program": true,
+  "source_reconstructed_from_both_accepted_raw_outputs": true,
+  "imports": [
+    "Lean"
+  ],
+  "native_processes": 1,
+  "process_elapsed_ms": 12278,
+  "axiom_free_audits": 2,
+  "compiled_original_observations_executed_true": 36,
+  "source_sha256": "5d7e6fb1b28c2e14f9b8072f2c5e7b67b66a72bea9b3902585295ed05f7d3e6c",
+  "stdout_bytes": 1053,
+  "stderr_bytes": 0,
+  "program_utf8_sha256": "19425e63c37ff5f5a6f39258a5a8cf2c81ff4ba16b870d22cf19482d0dd8a86d",
+  "program_type_utf8_sha256": "13ae02513c54276931f38fc851ee81f97f36db9a39c00f728f56eecd37cc792d",
+  "lean_executable_sha256": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+  "other_operations_in_shared_receipt": "context only; not audited or claimed by this bundle"
+}

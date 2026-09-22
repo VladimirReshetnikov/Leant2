@@ -608,9 +608,27 @@ within the experiment. A same-build ablation with only
 both budgets, with unchanged recorded inputs. This is a bounded focused result, not a general
 performance claim or a new full 839-case archive.
 
+The separate [foldr1 source replay](experiments/foldr1-source-replay-2026-09-22/README.md)
+reconstructs the actual printed program and target from both budget runs. A
+fresh Lean-only process compiles that source, proves its complete original
+contract without axioms, and executes all 36 original observations.
+
+The [at carrier experiment](experiments/at-carrier-2026-09-22/README.md)
+preserves `church_case_033`'s original supplied-default type, binder order and
+all 168 observations. A fixed `Int → A` carrier and two holes use precisely the
+original `BehaviorPartialNumeric.intCase` as the sole explicit provider. Both
+budgets produce the same accepted expression with axiom-free original-target
+and whole-contract replay: 533 rules, 1736 unifications, 239 proof attempts,
+one candidate and 237 rejected complete proposals, in 1169 and 1186 API ms.
+An independent Lean-only process also compiles the actual printed target and
+program, proves the original contract without axioms, and executes all 168
+observations. This case has no projection-disabled ablation. The bundle keeps
+its original three-process experiment separate from the additional replay.
+
 This is the initial closed command for E2. All thirteen original open Church
 stretch searches remain unscored, and the full set of thirteen proposed
-carrier-given completions remains to be established separately. Contextual contract lifting,
+carrier-given completions has two verified finite-contract results and eleven
+counterparts still to establish. Contextual contract lifting,
 term/definition sketch syntax, arbitrary dependent sketches, carrier invention,
 and editor actions remain open.
 

@@ -1,0 +1,5689 @@
+{
+  "status": "UNVALIDATED_NOT_COMPILED_NOT_SYNTHESIZED",
+  "generation_only": true,
+  "operation": "at",
+  "source_case_id": "church_case_033",
+  "source_line": 270,
+  "source_signature": "Int -> List a -> a",
+  "source_sha256_normalized": "782e4edaa5bf813e30e39ae02d52278ab0566315ebc521401a947b98c44cfd11",
+  "spec_path": "C:\\Leant\\lib\\Djex\\test-church\\behavior_partial_spec.py",
+  "spec_sha256_bytes": "2cb1b1b23eb2fa9338455094178e02de6055a1f8e78201b35a2619ed29d15d85",
+  "manifest_sha256_bytes": "0c2954eeb36811ea065aba86187d09cd8761529de1acefd5111ccf088b189ed9",
+  "original_lean_type_without_inserted_default": "(∀ (church0 : Type), (Int → ((∀ (church1 : Type), ((church0 → (church1 → church1)) → (church1 → church1))) → church0)))",
+  "exact_established_defaulted_lean_type": "(∀ (church0 : Type), (church0 → (Int → ((∀ (church1 : Type), ((church0 → (church1 → church1)) → (church1 → church1))) → church0))))",
+  "exact_contract": "BehaviorPartial.check_at (f) = true",
+  "observation_count": 168,
+  "observations": [
+    {
+      "id": "at_int_0_0_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": -2,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_0_0_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": -1,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_0_0_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 0,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_0_0_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 1,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_0_0_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 2,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_0_0_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 3,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_0_0_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 9,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_0_1_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": -2,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_1_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": -1,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_1_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": -5,
+      "haskell_expected": "((-5) :: Prelude.Int)",
+      "lean_expected": "((-5) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 0,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_1_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 1,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_1_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 2,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_1_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 3,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_1_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 9,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_2_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": -2,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_2_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": -1,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_2_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": 2,
+      "haskell_expected": "((2) :: Prelude.Int)",
+      "lean_expected": "((2) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 0,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_2_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": -3,
+      "haskell_expected": "((-3) :: Prelude.Int)",
+      "lean_expected": "((-3) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 1,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_2_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": 4,
+      "haskell_expected": "((4) :: Prelude.Int)",
+      "lean_expected": "((4) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 2,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_2_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 3,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_2_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 9,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_3_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": -2,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_3_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": -1,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_3_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": 4,
+      "haskell_expected": "((4) :: Prelude.Int)",
+      "lean_expected": "((4) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 0,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_3_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": 7,
+      "haskell_expected": "((7) :: Prelude.Int)",
+      "lean_expected": "((7) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 1,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_3_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 2,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_3_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 3,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_0_3_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "index": 9,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_0_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": -2,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_1_0_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": -1,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_1_0_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 0,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_1_0_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 1,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_1_0_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 2,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_1_0_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 3,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_1_0_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 9,
+        "list": []
+      }
+    },
+    {
+      "id": "at_int_1_1_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": -2,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_1_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": -1,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_1_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": -5,
+      "haskell_expected": "((-5) :: Prelude.Int)",
+      "lean_expected": "((-5) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 0,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_1_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 1,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_1_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 2,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_1_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 3,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_1_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 9,
+        "list": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_2_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": -2,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_2_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": -1,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_2_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": 2,
+      "haskell_expected": "((2) :: Prelude.Int)",
+      "lean_expected": "((2) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 0,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_2_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": -3,
+      "haskell_expected": "((-3) :: Prelude.Int)",
+      "lean_expected": "((-3) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 1,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_2_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": 4,
+      "haskell_expected": "((4) :: Prelude.Int)",
+      "lean_expected": "((4) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 2,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_2_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 3,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_2_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([(2),(-3),(4)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([(2),(-3),(4)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 9,
+        "list": [
+          2,
+          -3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_3_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": -2,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_3_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": -1,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_3_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": 4,
+      "haskell_expected": "((4) :: Prelude.Int)",
+      "lean_expected": "((4) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 0,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_3_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": 7,
+      "haskell_expected": "((7) :: Prelude.Int)",
+      "lean_expected": "((7) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 1,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_3_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 2,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_3_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 3,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_int_1_3_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([(4),(7)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([(4),(7)] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "index": 9,
+        "list": [
+          4,
+          7
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_0_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": -2,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_0_0_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": -1,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_0_0_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 0,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_0_0_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 1,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_0_0_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 2,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_0_0_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 3,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_0_0_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 9,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_0_1_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": -2,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_1_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": -1,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_1_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 0,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_1_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 1,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_1_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 2,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_1_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 3,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_1_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 9,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_2_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": -2,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_2_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": -1,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_2_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 0,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_2_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 1,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_2_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 2,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_2_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 3,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_2_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 9,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_3_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": -2,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_3_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": -1,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_3_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 0,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_3_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 1,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_3_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 2,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_3_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 3,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_3_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 9,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_4_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": -2,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_4_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": -1,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_4_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 0,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_4_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 1,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_4_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 2,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_4_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 3,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_0_4_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "index": 9,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_0_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": -2,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_1_0_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": -1,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_1_0_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 0,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_1_0_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 1,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_1_0_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 2,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_1_0_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 3,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_1_0_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 9,
+        "list": []
+      }
+    },
+    {
+      "id": "at_bool_1_1_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": -2,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_1_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": -1,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_1_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 0,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_1_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 1,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_1_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 2,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_1_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 3,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_1_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 9,
+        "list": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_2_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": -2,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_2_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": -1,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_2_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 0,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_2_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 1,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_2_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 2,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_2_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 3,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_2_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 9,
+        "list": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_3_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": -2,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_3_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": -1,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_3_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 0,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_3_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 1,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_3_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 2,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_3_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 3,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_3_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([true,false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 9,
+        "list": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_4_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": -2,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_4_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": -1,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_4_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 0,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_4_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 1,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_4_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 2,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_4_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 3,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_bool_1_4_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([Prelude.False,Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([false,true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "index": 9,
+        "list": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_0_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": -2,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_0_0_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": -1,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_0_0_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 0,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_0_0_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 1,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_0_0_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 2,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_0_0_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 3,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_0_0_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 9,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_0_1_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": -2,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_1_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": -1,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_1_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        1,
+        false
+      ],
+      "haskell_expected": "(((1),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((1),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 0,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_1_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 1,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_1_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 2,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_1_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 3,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_1_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 9,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_2_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": -2,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_2_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": -1,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_2_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        2,
+        true
+      ],
+      "haskell_expected": "(((2),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((2),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 0,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_2_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -1,
+        false
+      ],
+      "haskell_expected": "(((-1),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-1),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 1,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_2_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 2,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_2_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 3,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_0_2_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((-99),false) : (Int × Bool))",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -99,
+        false
+      ],
+      "haskell_expected": "(((-99),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-99),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99,
+          false
+        ],
+        "index": 9,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_0_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": -2,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_1_0_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": -1,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_1_0_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 0,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_1_0_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 1,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_1_0_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 2,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_1_0_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 3,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_1_0_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 9,
+        "list": []
+      }
+    },
+    {
+      "id": "at_mixed_1_1_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": -2,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_1_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": -1,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_1_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        1,
+        false
+      ],
+      "haskell_expected": "(((1),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((1),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 0,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_1_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 1,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_1_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 2,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_1_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 3,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_1_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([((1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([((1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 9,
+        "list": [
+          [
+            1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_2_neg2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((-2) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((-2) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": -2,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_2_neg1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((-1) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((-1) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": -1,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_2_0",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((0) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((0) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        2,
+        true
+      ],
+      "haskell_expected": "(((2),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((2),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 0,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_2_1",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((1) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((1) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        -1,
+        false
+      ],
+      "haskell_expected": "(((-1),Prelude.False) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((-1),false) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 1,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_2_2",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((2) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((2) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 2,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_2_3",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((3) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((3) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 3,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "id": "at_mixed_1_2_9",
+      "source_case_id": "church_case_033",
+      "haskell_type_arguments": [
+        "(Prelude.Int, Prelude.Bool)"
+      ],
+      "lean_type_arguments": [
+        "(Int × Bool)"
+      ],
+      "haskell_arguments": [
+        "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+        "((9) :: Prelude.Int)",
+        "(partialEnc ([((2),Prelude.True),((-1),Prelude.False)] :: [(Prelude.Int, Prelude.Bool)]))"
+      ],
+      "lean_arguments": [
+        "(((99),true) : (Int × Bool))",
+        "((9) : Int)",
+        "(BehaviorPartial.enc ([((2),true),((-1),false)] : (List (Int × Bool))))"
+      ],
+      "expected_native": [
+        99,
+        true
+      ],
+      "haskell_expected": "(((99),Prelude.True) :: (Prelude.Int, Prelude.Bool))",
+      "lean_expected": "(((99),true) : (Int × Bool))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99,
+          true
+        ],
+        "index": 9,
+        "list": [
+          [
+            2,
+            true
+          ],
+          [
+            -1,
+            false
+          ]
+        ]
+      }
+    }
+  ],
+  "profile": "strictConstructive",
+  "explicit_query_providers": [
+    "BehaviorPartialNumeric.intCase"
+  ],
+  "original_provider_inventory": {
+    "haskell": [
+      {
+        "name": "partialIntCase",
+        "type": "forall r. Int -> r -> r -> (Int -> r) -> r",
+        "definition": "\\n negative zero positive -> if n < 0 then negative else if n == 0 then zero else positive (n - 1)"
+      }
+    ],
+    "lean": [
+      {
+        "name": "BehaviorPartialNumeric.intCase",
+        "type": "∀ R : Type, Int → R → R → (Int → R) → R",
+        "definition": "fun _ n negative zero positive => if n < 0 then negative else if n = 0 then zero else positive (n - 1)"
+      }
+    ],
+    "discovery": "off; exact explicit allowlist only",
+    "rationale": "A generic negative/zero/positive-predecessor Int eliminator. A Church list can fold to Int -> a; no list selector or target implementation is supplied."
+  },
+  "exact_primitive_source": [
+    "namespace BehaviorPartialNumeric",
+    "def intCase : ∀ R : Type, Int → R → R → (Int → R) → R := fun _ n negative zero positive => if n < 0 then negative else if n = 0 then zero else positive (n - 1)",
+    "end BehaviorPartialNumeric"
+  ],
+  "carrier": "Int → A",
+  "open_holes_in_source_order": [
+    "step",
+    "init"
+  ],
+  "hole_local_context": [
+    "A : Type",
+    "d : A"
+  ],
+  "excluded_hole_locals": [
+    "n : Int",
+    "xs : CList A"
+  ],
+  "budgets_ms": [
+    5000,
+    10000
+  ],
+  "budget_environment_variable": "LEANT2_SKETCH_PROBE_BUDGET_MS",
+  "max_candidates": 1,
+  "grace_ms": 0,
+  "control_declarations": [
+    "BehaviorPartialControl.witness_at",
+    "BehaviorPartialControl.witness_at_passes",
+    "BehaviorPartialControl.primitiveWitness_at",
+    "BehaviorPartialControl.primitiveWitness_at_passes",
+    "BehaviorPartialControl.wrong_at_always_default",
+    "BehaviorPartialControl.wrong_at_always_default_rejected",
+    "BehaviorPartialControl.wrong_at_ignores_index",
+    "BehaviorPartialControl.wrong_at_ignores_index_rejected",
+    "BehaviorPartialNumeric.intCase",
+    "BehaviorPartialNumeric.integer_branches",
+    "BehaviorPartialNumeric.boolean_branches"
+  ],
+  "original_reference_and_wrong_control_declarations": [
+    "BehaviorPartialControl.witness_at",
+    "BehaviorPartialControl.witness_at_passes",
+    "BehaviorPartialControl.primitiveWitness_at",
+    "BehaviorPartialControl.primitiveWitness_at_passes",
+    "BehaviorPartialControl.wrong_at_always_default",
+    "BehaviorPartialControl.wrong_at_always_default_rejected",
+    "BehaviorPartialControl.wrong_at_ignores_index",
+    "BehaviorPartialControl.wrong_at_ignores_index_rejected"
+  ],
+  "primitive_control_declarations": [
+    "BehaviorPartialNumeric.intCase",
+    "BehaviorPartialNumeric.integer_branches",
+    "BehaviorPartialNumeric.boolean_branches"
+  ],
+  "exact_known_carrier_witness": "fun A d n xs => xs (Int → A) (fun x rest i => BehaviorPartialNumeric.intCase A i d x (fun previous => rest previous)) (fun _ => d) n",
+  "wrong_control_names": [
+    "always_default",
+    "ignores_index"
+  ],
+  "control_import_policy": "Controls.lean must never be imported into Probe.lean or its process",
+  "probe_sha256": "15af484e366bd054403c319c8b6a2ff4f2814ad727a81dda1010f3555b8c956e",
+  "controls_sha256": "7803ea6cb985b6b5cc6949b558ff0f0359bdaf3f39c823178f7be986ce8bf8e3",
+  "template_sha256": "571ad32b662240be66de33fafeb6fe3e16ad7449f6597f22f4e9ad0aae699535",
+  "generator_sha256": "9e8075373014ac9384468b8c15f320c15eb6b3484871c110fffbe35245703e7d"
+}

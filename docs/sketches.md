@@ -185,11 +185,22 @@ completion whose program and full original contract proof independently replay
 with no axioms. The earlier unchanged probe had bounded misses at both budgets.
 Disabling only projection on the current build also produces valid bounded
 misses at both budgets; this paired check retains the same query and providers.
-This is one carrier-given result, separate from the thirteen original open
-Church searches and from a complete external regression checkpoint.
+The [actual printed foldr1 source](experiments/foldr1-source-replay-2026-09-22/README.md)
+also compiles in a separate Lean-only process, proves its original contract
+without axioms, and executes all 36 observations successfully.
+
+The independent [at experiment](experiments/at-carrier-2026-09-22/README.md)
+preserves the original supplied-default type and all 168 observations. Its
+fixed `Int → A` carrier has two holes, with only the original integer branch
+primitive supplied explicitly. Both budgets accept an axiom-free completion;
+the actual printed program also compiles and executes all 168 observations in
+a separate Lean-only process. No projection-disabled ablation is claimed for
+this case. These are two carrier-given results, separate from the thirteen
+original open Church searches and from a complete external regression checkpoint.
 
 This first closed command does not close proposal E2. All thirteen original
 Church stretch searches remain a separate open-search track; the full set of
-thirteen proposed carrier-given completions remains to be established independently.
+thirteen proposed carrier-given completions has two verified finite-contract
+results and eleven counterparts still to establish independently.
 Contextual contract lifting, term/definition sketch syntax, arbitrary dependent
 sketches, carrier invention, and editor code actions remain later work.

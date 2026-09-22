@@ -1,0 +1,199 @@
+{
+  "scope": "fresh Lean-only replay of actual printed candidate and original finite checker",
+  "generator_sha256": "91a1f1c62aaec923660a64424ac087d81f7470f902d606ab744c0bdfcfeafdc2",
+  "reference_implementation_imported": false,
+  "synthesis_imported": false,
+  "runs": [
+    {
+      "operation": "foldr1",
+      "observation_count": 36,
+      "origin_experiment": "sketch-foldr1-experiment-03",
+      "origin_budgets_ms": [
+        5000,
+        10000
+      ],
+      "same_printed_target_and_program": true,
+      "passed": true,
+      "source": "foldr1.lean",
+      "process": {
+        "returncode": 0,
+        "timed_out": false,
+        "interrupted": false,
+        "launch_error": false,
+        "command": [
+          "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+          "--json",
+          "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\sketch-carrier-source-replay-01\\foldr1.lean"
+        ],
+        "process_timeout_seconds": 120,
+        "process_elapsed_ms": 12278,
+        "cleanup": null,
+        "source_sha256_before": "5d7e6fb1b28c2e14f9b8072f2c5e7b67b66a72bea9b3902585295ed05f7d3e6c",
+        "source_sha256_after": "5d7e6fb1b28c2e14f9b8072f2c5e7b67b66a72bea9b3902585295ed05f7d3e6c",
+        "lean_sha256_before": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+        "lean_sha256_after": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+        "artifact_paths_relative_to": "top-level receipt directory",
+        "stdout": {
+          "file": "foldr1/stdout.bin",
+          "bytes": 1053,
+          "sha256": "543fa4d82911a5cd47e69f3eeda84936a698e5a3c12efef9457e02ec1dac01d5"
+        },
+        "stderr": {
+          "file": "foldr1/stderr.bin",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "diagnostics": [
+        {
+          "caption": "",
+          "data": "'ActualCarrierReplay.program' does not depend on any axioms",
+          "endPos": {
+            "column": 6,
+            "line": 36
+          },
+          "fileName": "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\sketch-carrier-source-replay-01\\foldr1.lean",
+          "isSilent": false,
+          "keepFullRange": false,
+          "kind": "[anonymous]",
+          "pos": {
+            "column": 0,
+            "line": 36
+          },
+          "severity": "information"
+        },
+        {
+          "caption": "",
+          "data": "'ActualCarrierReplay.originalContract' does not depend on any axioms",
+          "endPos": {
+            "column": 6,
+            "line": 37
+          },
+          "fileName": "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\sketch-carrier-source-replay-01\\foldr1.lean",
+          "isSilent": false,
+          "keepFullRange": false,
+          "kind": "[anonymous]",
+          "pos": {
+            "column": 0,
+            "line": 37
+          },
+          "severity": "information"
+        },
+        {
+          "caption": "",
+          "data": "ALL_36_ORIGINAL_OBSERVATIONS_EXECUTED_TRUE\n",
+          "endPos": {
+            "column": 5,
+            "line": 38
+          },
+          "fileName": "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\sketch-carrier-source-replay-01\\foldr1.lean",
+          "isSilent": false,
+          "keepFullRange": false,
+          "kind": "[anonymous]",
+          "pos": {
+            "column": 0,
+            "line": 38
+          },
+          "severity": "information"
+        }
+      ],
+      "parser_problems": []
+    },
+    {
+      "operation": "at",
+      "observation_count": 168,
+      "origin_experiment": "sketch-at-experiment-01",
+      "origin_budgets_ms": [
+        5000,
+        10000
+      ],
+      "same_printed_target_and_program": true,
+      "passed": true,
+      "source": "at.lean",
+      "process": {
+        "returncode": 0,
+        "timed_out": false,
+        "interrupted": false,
+        "launch_error": false,
+        "command": [
+          "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+          "--json",
+          "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\sketch-carrier-source-replay-01\\at.lean"
+        ],
+        "process_timeout_seconds": 120,
+        "process_elapsed_ms": 3074,
+        "cleanup": null,
+        "source_sha256_before": "6a2eb06d0ce0bc73b6a324a1f3a62298c6417356adf63c52948ab778d98e1e72",
+        "source_sha256_after": "6a2eb06d0ce0bc73b6a324a1f3a62298c6417356adf63c52948ab778d98e1e72",
+        "lean_sha256_before": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+        "lean_sha256_after": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+        "artifact_paths_relative_to": "top-level receipt directory",
+        "stdout": {
+          "file": "at/stdout.bin",
+          "bytes": 1042,
+          "sha256": "1d779f33d696a37589dcab64dfc8139c942e52432f6fc76011bf59f95564b278"
+        },
+        "stderr": {
+          "file": "at/stderr.bin",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "diagnostics": [
+        {
+          "caption": "",
+          "data": "'ActualCarrierReplay.program' does not depend on any axioms",
+          "endPos": {
+            "column": 6,
+            "line": 38
+          },
+          "fileName": "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\sketch-carrier-source-replay-01\\at.lean",
+          "isSilent": false,
+          "keepFullRange": false,
+          "kind": "[anonymous]",
+          "pos": {
+            "column": 0,
+            "line": 38
+          },
+          "severity": "information"
+        },
+        {
+          "caption": "",
+          "data": "'ActualCarrierReplay.originalContract' does not depend on any axioms",
+          "endPos": {
+            "column": 6,
+            "line": 39
+          },
+          "fileName": "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\sketch-carrier-source-replay-01\\at.lean",
+          "isSilent": false,
+          "keepFullRange": false,
+          "kind": "[anonymous]",
+          "pos": {
+            "column": 0,
+            "line": 39
+          },
+          "severity": "information"
+        },
+        {
+          "caption": "",
+          "data": "ALL_168_ORIGINAL_OBSERVATIONS_EXECUTED_TRUE\n",
+          "endPos": {
+            "column": 5,
+            "line": 40
+          },
+          "fileName": "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\sketch-carrier-source-replay-01\\at.lean",
+          "isSilent": false,
+          "keepFullRange": false,
+          "kind": "[anonymous]",
+          "pos": {
+            "column": 0,
+            "line": 40
+          },
+          "severity": "information"
+        }
+      ],
+      "parser_problems": []
+    }
+  ],
+  "success": true
+}

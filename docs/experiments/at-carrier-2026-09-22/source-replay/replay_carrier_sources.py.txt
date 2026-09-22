@@ -1,0 +1,94 @@
+"""Replay actual accepted printed terms in fresh Lean-only processes."""
+from pathlib import Path
+import hashlib
+import importlib.util
+import json
+import re
+import sys
+
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+ROOT = Path(__file__).resolve().parents[2]
+LEAN = Path("C:/Users/vresh/.elan/toolchains/leanprover--lean4---v4.34.0/bin/lean.exe")
+OUT = ROOT / "baseline-out/sketch-carrier-source-replay-01"
+OUT.mkdir(exist_ok=False)
+
+rows = []
+for operation, namespace, experiment, count in [
+    ("foldr1", "Foldr1CarrierProbe", "sketch-foldr1-experiment-03", 36),
+    ("at", "AtCarrierProbe", "sketch-at-experiment-01", 168),
+]:
+    here = ROOT / f"scratch/next-sketch/{operation}-probe"
+    spec = importlib.util.spec_from_file_location(f"replay_{operation}_wrapper", here / "run_probe.py")
+    wrapper = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(wrapper)
+    run = ROOT / "baseline-out" / experiment
+    top = json.loads((run / "receipt.json").read_text(encoding="utf-8"))
+    assert top["experiment_valid"] and top["all_budgets_accepted"] and top["inputs_unchanged"]
+    records = []
+    for budget in (5000, 10000):
+        envelope = json.loads((run / f"probe-{budget}/stdout.bin").read_text(encoding="utf-8"))
+        diagnostics, blocks, problems = wrapper.parse_output(envelope["data"])
+        assert not diagnostics and not problems
+        values = {}
+        for key, value in blocks:
+            assert key not in values
+            values[key] = value
+        assert values["PROBE_ACCEPTED"] == f"exact_type_and_all_{count}_observations_replayed"
+        records.append((values["PROBE_PROGRAM_TYPE"], values["PROBE_PROGRAM"]))
+    assert records[0] == records[1], "budget runs printed different target/program pairs"
+    target, program = records[0]
+    original = (here / "Probe.lean").read_text(encoding="utf-8")
+    prefix, _ = original.split(f"\nnamespace {namespace}\n", 1)
+    assert prefix.count("import Leant2.Frontend.Sketch.Run") == 1
+    prefix = prefix.replace("import Leant2.Frontend.Sketch.Run", "import Lean", 1)
+    prefix = re.sub(r"\n/-!.*?-/\n", "\n", prefix, count=1, flags=re.S)
+    source = prefix + f'''
+
+/- Actual printed target and program from both accepted budget runs. The checker
+above is copied from the unchanged original probe; no synthesis engine or
+reference implementation is imported. -/
+set_option maxHeartbeats 0
+namespace ActualCarrierReplay
+def program : {target} :=
+  {program}
+theorem originalContract : BehaviorPartial.check_{operation} program = true := by decide
+#print axioms program
+#print axioms originalContract
+#eval do
+  if BehaviorPartial.check_{operation} program then
+    IO.println "ALL_{count}_ORIGINAL_OBSERVATIONS_EXECUTED_TRUE"
+  else
+    throw (IO.userError "actual printed program failed compiled original observations")
+end ActualCarrierReplay
+'''
+    assert re.findall(r"^import (.+)$", source, re.M) == ["Lean"]
+    path = OUT / f"{operation}.lean"
+    path.write_text(source, encoding="utf-8", newline="\n")
+    raw, process = wrapper.run_native(LEAN, path, OUT / operation, 120, None)
+    diagnostics, blocks, problems = wrapper.parse_output(raw["stdout"].decode("utf-8"))
+    expected = {
+        "'ActualCarrierReplay.program' does not depend on any axioms",
+        "'ActualCarrierReplay.originalContract' does not depend on any axioms",
+        f"ALL_{count}_ORIGINAL_OBSERVATIONS_EXECUTED_TRUE",
+    }
+    passed = (raw["returncode"] == 0 and not raw["stderr"] and not raw["timed_out"]
+              and not raw["interrupted"] and not raw["launch_error"] and not blocks and not problems
+              and len(diagnostics) == 3 and all(d["severity"] == "information" for d in diagnostics)
+              and {d["data"].strip() for d in diagnostics} == expected
+              and process["source_sha256_before"] == process["source_sha256_after"]
+              and process["lean_sha256_before"] == process["lean_sha256_after"])
+    rows.append({"operation": operation, "observation_count": count,
+                 "origin_experiment": experiment, "origin_budgets_ms": [5000, 10000],
+                 "same_printed_target_and_program": True, "passed": passed,
+                 "source": path.name, "process": process,
+                 "diagnostics": diagnostics, "parser_problems": problems})
+    print(f"{'PASS' if passed else 'FAIL'} {operation}: actual printed source, original contract, compiled execution", flush=True)
+    if not passed:
+        break
+
+receipt = {"scope": "fresh Lean-only replay of actual printed candidate and original finite checker",
+           "generator_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+           "reference_implementation_imported": False, "synthesis_imported": False,
+           "runs": rows, "success": len(rows) == 2 and all(row["passed"] for row in rows)}
+(OUT / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+raise SystemExit(0 if receipt["success"] else 1)
