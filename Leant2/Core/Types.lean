@@ -42,10 +42,16 @@ inductive NegativeKind where
   | budgetExhausted
   deriving Repr, BEq, Inhabited
 
-/-- One accepted candidate: closed program with its type and universe
-parameters (remaining level metavariables are generalized by the gate),
-closed proof of the contract (trivial when there is no contract), and the
-audited axiom inventory. -/
+/-- One accepted candidate: closed program with its actual checked type and
+universe parameters (remaining level metavariables are generalized by the
+gate), closed proof of the contract (trivial when there is no contract), and
+the audited axiom inventory. A classical universe specialization is recorded
+at its specialized type; it need not inhabit the original query type.
+
+For an impossibility certificate, `program` is the refutation and
+`programType` is its negative statement. The separate `proof` field is then
+`True.intro`, not the refutation. `classical` records the presence of
+`Classical.choice`; other axioms can occur even when it is false. -/
 structure Accepted where
   program : Expr
   programType : Expr
@@ -55,7 +61,15 @@ structure Accepted where
   classical : Bool
   deriving Inhabited
 
-/-- Outcome of one query (Section 3.3, restricted to what is implemented). -/
+/-- Outcome of one query (Section 3.3, restricted to what is implemented).
+Verified outcomes contain at least one candidate. Semantic negatives
+(`impossible` and `contractImpossible`) carry `some` checked certificate;
+bounded negatives carry `none`. `refutedAll` reports rejected proposals,
+not a proof that the target or contract is universally impossible.
+
+These are engine invariants, not restrictions enforced by this datatype.
+The public `synthesize` boundary checks candidate/certificate transport and
+rejects malformed semantic outcomes with an exception. -/
 inductive Outcome where
   | verified (cands : Array Accepted) (ledger : Ledger)
   | refutedAll (rejected : Nat) (ledger : Ledger)

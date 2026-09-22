@@ -12,6 +12,8 @@ import Leant2Tests.Suggestion
 import Leant2Tests.Frontends
 import Leant2Tests.Results
 import Leant2Tests.LocalProof
+import Leant2Tests.ContractRefutation
+import Leant2Tests.LibraryAPI
 import Leant2Tests.Cancellation
 import Leant2Tests.ScopedBudget
 import Leant2Tests.BranchComposition

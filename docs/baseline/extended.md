@@ -373,11 +373,14 @@ hashes. The archive independently rechecks stage sources, actual suggestions,
 diagnostics, exits, exact raw inventories, and secondary raw-outcome/provider
 history scoring. Historical checkpoint counts above retain their own scope.
 
-Upfront raw-engine contract refutations currently use `.standard` rather than
-the query's requested profile and discard their accepted certificate.
-Strict-profile negative certification is pending. The expected-type frontends
-use `.standard` and do not expose behavioral contracts; their acceptance checks
-are unaffected by this profile mismatch.
+The later library-API implementation changes upfront raw-engine contract
+refutation to use the requested profile and retain a portable certificate.
+The [library API guide](../library-api.md) describes its current validation
+status, certificate fields, and the remaining limits of the proof portfolio.
+The `69221f1` archive above predates this correction: that implementation used
+`.standard` for the upfront check and discarded its accepted certificate.
+Its expected-type frontends use `.standard` and do not expose behavioral
+contracts, so those historical frontend gates did not test this policy gap.
 
 ## Source provenance
 

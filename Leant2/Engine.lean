@@ -1,6 +1,7 @@
 import Lean
 import Leant2.Core.Types
 import Leant2.Native.Transaction
+import Leant2.Native.Export
 import Leant2.Search.Core
 import Leant2.Accept.Gate
 /-!
@@ -15,14 +16,16 @@ namespace Leant2
 
 open Lean Meta Elab
 
-/-- A frozen query: a closed target type and an optional contract
-`fun (f : T) => P f`. -/
+/-- A closed target type and an optional contract `fun (f : T) => P f`.
+The lower-level `runQuery` also supports the command frontend's unresolved
+universe placeholders. The public `synthesize` API requires frozen input. -/
 structure Query where
   target : Expr
   contract : Option Expr := none
   profile : Profile := .standard
   providers : Array Name := #[]
-  /-- Wall-clock budget in milliseconds. -/
+  /-- Cooperative search/lane budget in milliseconds, not a hard wall-clock
+  timeout for the whole call, including preparation, proof checks, and ranking. -/
   budgetMs : Nat := 20000
   maxCandidates : Nat := 12
   /-- After the first accepted candidate, keep enumerating for this long. -/
@@ -189,6 +192,98 @@ def rankCandidates (cands : Array Accepted) : MetaM (Array Accepted) := do
     out := out.push c
   return out
 
+private initialize refutationExportLimitExceptionId : InternalExceptionId ←
+  registerInternalExceptionId `leant2RefutationExportLimit
+
+/-- Refutation workers may create declarations and mutate native caches. A
+complete snapshot also prevents such changes escaping successful extraction. -/
+private def restoringRefutation (action : MetaM α) : MetaM α := do
+  let coreState ← getThe Core.State
+  let metaState ← getThe Meta.State
+  try action finally
+    modifyThe Meta.State fun _ => metaState
+    modifyThe Core.State fun _ => coreState
+
+/-- Preserve axiom-free contradictions before simplification constructs
+propositional equalities. Failed assumption probes cannot affect the portfolio. -/
+private def proveContractNegation (goal : MVarId) : MetaM Bool := do
+  let proof? ← restoringRefutation do
+    forallTelescopeReducing (← goal.getType) fun xs target => do
+      for x in xs.reverse do
+        if ← isDefEq (← inferType x) target then
+          return some (← mkLambdaFVars xs x)
+      return none
+  if let some proof := proof? then
+    goal.assign proof
+    return true
+  tacticProve goal
+
+/-- Try one bounded upfront refutation, returning a portable certificate under
+the query's policy. Remaining universe placeholders are generalized once to
+rigid parameters before proving the exact negative statement; expression holes
+and unresolved universe equations are conservatively refused.
+
+The proof callback is an internal testing seam. All speculative state is
+restored, including on success, while the one proof-attempt charge survives.
+Only new theorem bodies are exported, with a shared finite expansion bound;
+the authoritative gate runs afterward in the original environment. -/
+def tryRefuteContract? (q : Query) (ledger : IO.Ref Ledger)
+    (prove : MVarId → MetaM Bool := proveContractNegation) : MetaM (Option Accepted) := do
+  let some contract := q.contract | return none
+  Core.checkInterrupted
+  -- withNewMCtxDepth clears postponed equations, so inspect the caller's
+  -- constraints before entering that scope rather than silently dropping them.
+  unless (← getPostponed).isEmpty do return none
+  restoringRefutation <| withNewMCtxDepth <| withCurrHeartbeats do
+    withTheReader Core.Context (fun context => { context with maxHeartbeats := 20000 * 1000 }) do
+    tryCatchRuntimeEx (do
+      Core.checkInterrupted
+      let negative ← withLocalDecl `f .default q.target fun f =>
+        -- Preserve the original statement's syntax for its axiom audit:
+        -- beta reduction could erase dependencies in the contract's domain.
+        mkForallFVars #[f] (mkApp (mkConst ``Not) (mkApp contract f))
+      let negative ← instantiateMVars negative
+      if negative.hasExprMVar || negative.hasFVar || negative.hasLooseBVars || negative.hasSorry then
+        return none
+      let ([negative], levels) ← generalizeLevels [negative] | return none
+      check negative
+      unless ← isProp negative do return none
+      let checkResources : MetaM Unit := do
+        Core.checkInterrupted
+        checkSystem "leant2.contractRefutation"
+      checkResources
+      ledger.modify fun work => { work with proofAttempts := work.proofAttempts + 1 }
+      let original ← getEnv
+      let proof? ← restoringRefutation do
+        let goal ← mkFreshExprMVar negative .syntheticOpaque
+        modifyThe Core.State fun state => { state with messages := {} }
+        let success ← prove goal.mvarId!
+        checkResources
+        unless success && (← goal.mvarId!.isAssignedOrDelayedAssigned) do return none
+        if (← getThe Core.State).messages.hasErrors then return none
+        let proof ← instantiateMVars goal
+        let remaining ← IO.mkRef 64
+        let proof ← Native.inlineNewTheorems original (← getEnv) remaining checkResources
+          (.internal refutationExportLimitExceptionId) proof
+        if proof.hasExprMVar || proof.hasLevelMVar || proof.hasFVar ||
+            proof.hasLooseBVars || proof.hasSorry then return none
+        unless (collectLevelParams {} proof).params.toList.all levels.contains do return none
+        return some proof
+      let some proof := proof? | return none
+      checkResources
+      -- `negative` is the same frozen statement used by the worker. Rebuilding
+      -- it from raw level placeholders here could change the certificate.
+      let accepted ← gate q.profile proof negative none
+      checkResources
+      return match accepted with | .ok certificate => some certificate | .error _ => none)
+      (fun ex => do
+        Core.checkInterrupted
+        if ex.isMaxHeartbeat || ex.isMaxRecDepth then return none
+        if let .internal id _ := ex then
+          if id == refutationExportLimitExceptionId then return none
+        if isInterrupt ex then throw ex
+        return none)
+
 /-- Run the whole pipeline for one query. -/
 def runQuery (q : Query) : MetaM Outcome :=
   -- heartbeats are replaced by the wall-clock deadline of each lane
@@ -314,27 +409,8 @@ def runQuery (q : Query) : MetaM Outcome :=
   let remaining : MetaM Nat := do return deadline - (min deadline (← IO.monoMsNow))
   -- 0. a contract no program can satisfy (`where False`, `... ∧ False`): its
   -- negation is proved once, for every program, before any search
-  if let some c := q.contract then
-    let negTy ← withLocalDecl `f .default q.target fun f => do
-      mkForallFVars #[f] (mkApp (mkConst ``Not) (c.beta #[f]))
-    -- bounded by heartbeats: this is a quick check, not a lane
-    let proved ← withoutModifyingState do
-      withCurrHeartbeats do
-        withTheReader Core.Context (fun c => { c with maxHeartbeats := 20000 * 1000 }) do
-          tryCatchRuntimeEx (do
-            let mv ← mkFreshExprMVar negTy
-            let ok ← tacticProve mv.mvarId!
-            let pf ← instantiateMVars mv
-            if !ok || pf.hasMVar then return false
-            match ← gate .standard pf negTy none with
-            | .ok _ => return true
-            | .error _ => return false)
-            (fun e => do
-              if e.isMaxHeartbeat || e.isMaxRecDepth then return false
-              if isInterrupt e then throw e
-              return false)
-    if proved then
-      return .negative .contractImpossible none (← ledger.get)
+  if let some certificate ← tryRefuteContract? q ledger then
+    return .negative .contractImpossible (some certificate) (← ledger.get)
   -- constructive depths; a later lane resumes at the first depth the earlier one did not finish
   let constructiveDepths := [2, 3, 4, 5, 6, 7, 9, 12]
   let completed ← IO.mkRef 0

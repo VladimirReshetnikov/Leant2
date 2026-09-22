@@ -1,5 +1,6 @@
 import Leant2.Native.Transaction
 import Leant2.Accept.Gate
+import Leant2.Native.Export
 
 /-!
 Bounded proof search in the original local context.
@@ -131,15 +132,8 @@ checks also protect against malformed cyclic or excessively large exports. -/
 private def inlineAuxiliaryTheorems (originalEnv : Environment) (proof : Expr) : SearchM Expr := do
   let speculativeEnv ← getEnv
   let remaining ← IO.mkRef 64
-  Core.transform proof (pre := fun e => do
-    let .const name levels := e | return .continue
-    if originalEnv.contains name then return .done e
-    let some (.thmInfo info) := speculativeEnv.find? name | return .done e
-    checkDeadline
-    let fuel ← remaining.get
-    if fuel == 0 then throw (.internal auxiliaryLimitExceptionId)
-    remaining.set (fuel - 1)
-    return .visit (info.value.instantiateLevelParams info.levelParams levels))
+  Native.inlineNewTheorems originalEnv speculativeEnv remaining checkDeadline
+    (.internal auxiliaryLimitExceptionId) proof
 
 private def probeTier (cfg : Config) (frozen : FrozenGoal) (tier : Tier) : SearchM Result :=
   classify <| restoring <| withBudget cfg.tacticHeartbeats do

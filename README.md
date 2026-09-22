@@ -58,6 +58,10 @@ tests, and the `leant2` REPL executable.
   (constructive, refutation, deeper constructive, classical, deeper
   refutation). There is no engine-selection switch; legacy `:set` commands
   are ignored.
+- `Leant2/API.lean`: `Leant2.synthesize` accepts closed elaborated queries and
+  returns native candidates or refutation certificates under an explicit axiom
+  profile. It restores caller Core/Meta state and replays exported evidence in
+  the original environment without publishing or compiling results.
 - `Leant2/Native/Transaction.lean`: cancellation-safe rollback and owned
   cooperative quotas for speculative search tiers. Failed scopes restore
   native state without refunding work; successful stop requests survive
@@ -137,11 +141,15 @@ engine lane found an answer to a specialized type. Local hypotheses are accepted
 premises; global axioms must pass the standard Lean axiom profile. This is
 stricter than the command and REPL frontends' project-relative profile.
 
-One raw-engine limitation concerns upfront contract refutations: that path checks
-its proof under `.standard` rather than the query's requested profile, then
-discards the certificate. Strict-profile negative certification remains pending.
-The new expected-type frontends use `.standard` and do not expose behavioral
-contracts, so that profile mismatch does not affect their acceptance checks.
+Upfront contract refutations now check the query's requested axiom profile and
+return a certificate that replays after temporary tactic state is restored.
+Focused native checks cover strict, standard, and project-relative policies.
+The upfront portfolio can find a proof that the requested policy rejects;
+rejection falls back to ordinary search and does not establish that no permitted
+proof exists.
+This correction follows the archived `69221f1` checkpoint, whose raw-engine
+path used `.standard` and discarded the certificate. The expected-type frontends
+continue to use `.standard` and do not expose behavioral contracts.
 
 Use explicit universe parameters when Lean would otherwise generalize them
 only after elaborating the body: `def id (A : Sort u) (x : A) : A := synth%`
@@ -156,6 +164,20 @@ the same checked compiler adapters used by command publication. The tactic's
 synthesis can still report that no replayable suggestion was available.
 These are type-directed frontends; contextual behavioral-contract syntax,
 partial-program sketches, and editor code actions remain future work.
+
+### Calling synthesis from a metaprogram
+
+The [library API guide](docs/library-api.md) documents
+`Leant2.synthesize : Query → MetaM Outcome`, available through `import Leant2.API`.
+It accepts closed elaborated inputs, uses an explicit provider
+inventory and axiom profile, restores caller Core/Meta state, and returns native
+checked expressions without publishing or compiling results. Callers must
+inspect each candidate's actual `programType` and contract proof, including
+possible universe specialization. Input errors, bounded misses, certified
+negatives, and output-validation failures have distinct meanings. The full native
+build passes all 68 jobs; focused tests and the guide's exact example pass.
+The latest complete 832-check archive
+below predates this API and remains attributed to `69221f1`.
 
 ### The baseline
 
@@ -288,4 +310,3 @@ The `lane.search` root covers search and acceptance callbacks, not whole-query
 setup or result publication; inclusive rows overlap. Ordinary searches do not
 collect profiling timers. `set_option leant2.traceNodes true` prints every program
 checked against the contract, plus observation statuses and cache reuse.
-

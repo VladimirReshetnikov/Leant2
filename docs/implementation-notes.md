@@ -147,13 +147,21 @@ built. What is built covers the whole corpus:
   exhausted search.
 - **Upfront refutation.** Before any search, `forall f, not (P f)` is tried
   with the tactic portfolio under a small heartbeat budget; success is the
-  outcome "provably no program satisfies the contract". This raw-engine path
-  currently checks the proof under `.standard` instead of the query's requested
-  profile and discards the accepted certificate. Strict-profile negative
-  certification remains pending; the outcome must not be presented as a retained
-  certificate validated under an arbitrary caller-selected profile. The new
-  expected-type frontends use `.standard` and expose no behavioral-contract
-  syntax, so their acceptance gates are unaffected by that profile mismatch.
+  outcome "provably no program satisfies the contract", with a retained
+  `Accepted` certificate. The exact negative statement is frozen once: existing
+  universe assignments are instantiated and remaining placeholders become
+  rigid parameters without assigning the caller's holes. Fresh theorem bodies
+  may be copied before full Core/Meta rollback; the proof then passes the kernel
+  gate in the original environment under `query.profile`. Expression holes or
+  pending universe equations conservatively skip this probe. One proof attempt
+  is charged when the worker starts and survives failure or policy rejection.
+  The bounded portfolio may find only a proof forbidden by the profile;
+  rejection then falls through to ordinary search, without claiming that no
+  permitted proof exists.
+  Focused native checks cover strict/standard/project-relative policies,
+  portable certificates, raw universe placeholders, extraction, and cancellation.
+  The preceding archived `69221f1` path used `.standard` and discarded evidence;
+  that historical acceptance result is not evidence for this correction.
 - Conjuncts without a decider (quantified statements) fall to the tactic
   portfolio `first | rfl | decide | simp | omega` on the closed program.
 
@@ -327,6 +335,51 @@ contract refutation restores state and receives a fresh heartbeat origin.
 Candidates are sorted by (unused explicit inputs, eliminators, size) and
 de-duplicated by printed form. Instance binders do not count as inputs.
 There is no learned or frequency-based ranking.
+
+## Library API boundary
+
+`Leant2.synthesize : Query → MetaM Outcome` adds a closed-input library boundary
+over the lower-level `runQuery`. Input preparation instantiates existing
+assignments, then rejects unresolved expression/universe holes, escaped locals,
+loose bound variables, sorry, ill-typed targets/contracts, unknown providers,
+and a zero candidate limit. Named universe parameters remain supported. Search
+runs with an empty local context and local-instance array at a fresh metavariable
+depth. This boundary does not replace the command frontend's flexible-universe
+query preparation or the term/tactic frontend's local-context closure policy.
+
+The explicit provider array supplies ordinary heads; native rules, instances,
+and proof automation remain available. No curated/session inventory is added
+automatically. A returned candidate retains its actual `programType`, which
+may reflect the engine's `Prop` specialization. Transport checks both program
+and proof at their captured types and re-audits them under `query.profile` in
+the original environment. Public output must also match the original target and
+contract together, or their simultaneous zero-universe substitution. The program
+and proof are independently replayed against that chosen pair. Specialization
+may affect only a universe parameter in the contract, leaving `programType`
+unchanged. Consumers needing the original query must therefore replay both the
+original target and its applied contract. Specialized evidence is not silently
+promoted to the original polymorphic query.
+
+The API restores complete caller Core/Meta snapshots on every exit and publishes
+no aliases, declarations, compiler adapters, or executable definitions. Newly
+created theorem bodies may be copied before restoration; fresh axioms, opaque
+values, and data definitions cannot escape that way. A failed export or replay
+raises an output-validation exception after restoration, distinct from malformed
+input and bounded search failure. Semantic negatives require a present
+certificate checked at the original refutation statement and selected profile;
+the refutation is `certificate.program`, while its auxiliary `proof` field is
+the trivial True witness. Budgeted misses carry no impossibility certificate.
+Trace IO and work already performed are not undone by state restoration.
+
+Focused native API, local-proof, and contract-refutation tests pass, including
+actual `Prop` specialization, contract-only specialization, invalid-output
+rejection, auxiliary theorem export, and interruption after search mutations.
+The aggregate `lake build Leant2 Leant2Tests leant2` passes all 68 jobs.
+The [library guide](library-api.md) records the full contract and an exact
+example that compiled and ran successfully. The latest complete 832-check archive
+remains evidence for `69221f1`, before this slice; it is not relabelled as API
+acceptance. Budgets remain cooperative, including the existing separate setup,
+proof, ranking, and export work outside the search deadline.
 
 ## Publication of accepted results (proposal 11, E1)
 
