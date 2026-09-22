@@ -120,7 +120,7 @@ The historical source bibliographies themselves are recoverable at their
 pinned Git blobs. No source-only citation identity is silently lost merely
 because its old key is absent from the maintained TeX.
 
-## Semantic coverage and remaining gates
+## Semantic coverage and completion gates
 
 Topic integration is recorded separately:
 
@@ -143,3 +143,9 @@ they need not remain competing current deliverables.
 This worker performed no directory deletion, no document build, and no Git
 publication. The byte/hash findings above are verified current-state results;
 original report claims remain explicitly historical.
+
+The coordinator subsequently completed the global and topic reviews, retired
+all nine packages, rebuilt both maintained PDFs, inspected every rendered page,
+and published the integration. The
+[completion record](validation-2026-09-22/README.md) records those separate
+gates and their exact artifact identities.

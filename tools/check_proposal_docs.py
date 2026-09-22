@@ -139,6 +139,24 @@ def main() -> int:
         errors.append(f"Incoming bibliography key has no disposition: {key}")
     counts["incoming_bibliography_keys"] = len(incoming_bibkeys)
 
+    receipt_path = MAINTAINED / "integration/validation-2026-09-22/receipt.json"
+    if receipt_path.is_file():
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        for artifact in receipt["artifacts"]:
+            path = ROOT / artifact["pdf"]
+            if hashlib.sha256(path.read_bytes()).hexdigest() != artifact["pdf_sha256"]:
+                errors.append(f"Published PDF differs from review receipt: {artifact['pdf']}")
+            for source in artifact["tex_inputs"]:
+                actual_blob = subprocess.run(
+                    ["git", "hash-object", "--path", source["path"], str(ROOT / source["path"])],
+                    cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
+                if actual_blob != source["git_blob"]:
+                    errors.append(f"TeX source changed since PDF review: {source['path']}")
+        for log in receipt["build"]["logs"]:
+            if hashlib.sha256((ROOT / log["path"]).read_bytes()).hexdigest() != log["sha256"]:
+                errors.append(f"Archived build log changed: {log['path']}")
+        counts["reviewed_artifacts"] = len(receipt["artifacts"])
+
     markdown_files = [ROOT / "README.md", PROPOSALS / "README.md"]
     for directory in [PROPOSALS / "10-unified-proposal", MAINTAINED]:
         markdown_files.extend(directory.rglob("*.md"))

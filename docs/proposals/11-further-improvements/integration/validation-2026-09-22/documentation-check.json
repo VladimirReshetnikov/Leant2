@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "counts": {
+    "10-unified-proposal": {
+      "tex_files": 16,
+      "labels": 128,
+      "bibliography_entries": 27
+    },
+    "11-further-improvements": {
+      "tex_files": 19,
+      "labels": 114,
+      "bibliography_entries": 82
+    },
+    "active_questions": 33,
+    "inventory": {
+      "original_files": 97,
+      "preserved_files": 28,
+      "incoming_files_remaining": 0
+    },
+    "incoming_bibliography_keys": 129,
+    "reviewed_artifacts": 2,
+    "markdown_files": 13
+  },
+  "errors": [],
+  "scope": "Source references, question IDs, local links and archived evidence; no Lean proof or engine validation."
+}

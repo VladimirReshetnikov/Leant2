@@ -1,0 +1,417 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.2) (preloaded format=pdflatex.fmt)
+entering extended mode
+(Leant2.tex
+LaTeX2e <2025-11-01>
+L3 programming layer <2026-03-20>
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/base\article.cls
+Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/base\size11.clo))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/base\fontenc.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/base\inputenc.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/lm\lmodern.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/microtype\microtype.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/graphics\keyval.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/etoolbox\etoolbox.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/microtype\microtype-pdf
+tex.def)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/microtype\microtype.cfg
+))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geometry.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/iftex\ifvtex.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/iftex\iftex.sty))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geometry.cfg))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsmath.sty
+For additional information on amsmath, use the `?' option.
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amstext.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsgen.sty))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsbsy.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsopn.sty))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\amssymb.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\amsfonts.sty))
+ (C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/amscls\amsthm.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/mathtools\mathtools.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/tools\calc.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/mathtools\mhsetup.sty))
+ (C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/booktabs\booktabs.sty)
+ (C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/tools\longtable.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/tools\tabularx.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/tools\array.sty))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/xcolor\xcolor.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\color.cfg)
+
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/graphics-def\pdftex.def
+)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/graphics\mathcolor.ltx)
+) (C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphicx.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphics.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/graphics\trig.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\graphics.c
+fg)))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/pgf/frontendlayer\tikz.
+sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/pgf/basiclayer\pgf.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/pgf/utilities\pgfrcs.st
+y
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfutil
+-common.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfutil
+-latex.def)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfrcs.
+code.tex
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf\pgf.revision.tex)
+))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/pgf/basiclayer\pgfcore.
+sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/pgf/systemlayer\pgfsys.
+sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+s.code.tex
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfkeys
+.code.tex
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfkeys
+libraryfiltered.code.tex))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgf.c
+fg)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+s-pdftex.def
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+s-common-pdf.def)))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+ssoftpath.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+sprotocol.code.tex))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+e.code.tex
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmath.code
+.tex
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathutil.
+code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathparse
+r.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.basic.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.trigonometric.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.random.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.comparison.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.base.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.round.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.misc.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.integerarithmetics.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathcalc.
+code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfloat
+.code.tex))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfint.code.
+tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epoints.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epathconstruct.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epathusage.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+escopes.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+egraphicstate.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+etransformations.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+equick.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eobjects.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epathprocessing.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+earrows.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eshade.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eimage.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eexternal.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+elayers.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+etransparency.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epatterns.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+erdf.code.tex)))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodule
+shapes.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodule
+plot.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/pgf/compatibility\pgfco
+mp-version-0-65.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/pgf/compatibility\pgfco
+mp-version-1-18.sty))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/pgf/utilities\pgffor.st
+y
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/pgf/utilities\pgfkeys.s
+ty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfkeys
+.code.tex))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/pgf/math\pgfmath.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmath.code
+.tex))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgffor.
+code.tex))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z\tikz.code.tex
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/libraries\pgflibr
+aryplothandlers.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodule
+matrix.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z/libraries\tikzlibrarytopaths.code.tex)))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/libraries\pgflibr
+aryarrows.meta.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z/libraries\tikzlibrarypositioning.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z/libraries\tikzlibraryfit.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z/libraries\tikzlibrarycalc.code.tex)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/enumitem\enumitem.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/listings\listings.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstpatch.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstmisc.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/listings\listings.cfg))
+==> First Aid for listings.sty no longer applied!
+    Expected:
+        2024/09/23 1.10c (Carsten Heinz)
+    but found:
+        2025/11/14 1.11b (Carsten Heinz)
+    so I'm assuming it got fixed.
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/fancyhdr\fancyhdr.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/needspace\needspace.sty
+) (C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/xurl\xurl.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/url\url.sty))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hyperref.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/kvsetkeys\kvsetkeys.sty
+)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/kvdefinekeys\kvdefine
+keys.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pdfescape\pdfescape.s
+ty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/ltxcmds\ltxcmds.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/pdftexcmds\pdftexcmds
+.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/infwarerr\infwarerr.s
+ty)))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/hycolor\hycolor.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\nameref.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/refcount\refcount.sty)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/gettitlestring\gettit
+lestring.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/kvoptions\kvoptions.sty
+)))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/stringenc\stringenc.s
+ty) (C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\pd1enc.def
+) (C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/intcalc\intcalc.sty
+) (C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\puenc.def)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/bitset\bitset.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/bigintcalc\bigintcalc
+.sty)))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hpdftex.def
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/rerunfilecheck\rerunfil
+echeck.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/generic/uniquecounter\uniquec
+ounter.sty)))
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/bookmark\bookmark.sty
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3backend-pdf
+tex.def)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/bookmark\bkm-pdftex.def
+)) (C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/lm\t1lmr.fd)
+(C:/Users\vresh\.codex\worktrees\1e92\Leant2\baseline-out\proposal-doc-build-01
+\architecture\Leant2.aux)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/microtype\mt-cmr.cfg)
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\supp-pdf.mk
+ii
+[Loading MPS to PDF converter (version 2006.09.02).]
+)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\epstopdf-b
+ase.sty
+
+Package epstopdf Warning: Shell escape feature is not enabled.
+
+
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/00miktex\epstopdf-sys.c
+fg)) (C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/lm\ot1lmr.fd)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/lm\omllmm.fd)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/lm\omslmsy.fd)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/lm\omxlmex.fd)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.fd)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/microtype\mt-msa.cfg)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsb.fd)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/microtype\mt-msb.cfg)
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/lm\t1lmtt.fd) [1{C:/Use
+rs/vresh/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}{C:/Users/vresh/AppDa
+ta/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-ec.enc}]
+(C:/Users\vresh\.codex\worktrees\1e92\Leant2\baseline-out\proposal-doc-build-01
+\architecture\Leant2.toc [2] [3] [4]) [5] (sections/01-scope-baseline.tex
+[6] [7{C:/Users/vresh/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-mathi
+t.enc}{C:/Users/vresh/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-maths
+y.enc}{C:/Users/vresh/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-rm.en
+c}]
+Underfull \hbox (badness 2726) in paragraph at lines 60--61
+\T1/lmr/m/n/10.95 (+20) ev-ery can-di-date in Lean, but its search runs in Djex
+ over a se-ri-al-ized frag-ment
+[8]
+Underfull \hbox (badness 5893) in paragraph at lines 77--78
+[]\T1/lmr/bx/n/10.95 (+20) Two sound-ness pit-falls \T1/lmr/m/n/10.95 (+20) doc
+-u-mented in \T1/lmtt/m/n/10.95 docs/IDEAS-FROM-LEANT-DJEX.md \T1/lmr/m/n/10.95
+ (+20) and
+) (sections/02-decisions-problem.tex [9] [10]
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/lm\ts1lmr.fd) [11{C:/Us
+ers/vresh/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-mathex.enc}{C:/Us
+ers/vresh/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-ts1.enc}])
+(sections/03-state-search.tex [12] [13] [14] [15]
+Underfull \hbox (badness 1038) in paragraph at lines 107--108
+\T1/lmr/m/n/10.95 (+20) Every lane ex-poses a bounded step, \T1/lmtt/m/n/10.95 
+step : Origin -> Task -> Quantum -> WorkerM
+[16]) (sections/04-construction.tex [17] [18] [19] [20] [21])
+(sections/05-recursion.tex [22] [23]) (sections/06-behavior.tex [24] [25]
+[26]) (sections/07-acceptance-deployment.tex [27] [28] [29])
+(sections/alg-search.tex [30]
+Underfull \hbox (badness 3492) in paragraph at lines 12--13
+[]\T1/lmtt/m/n/10.95 apply \T1/lmr/m/n/10.95 (+20) con-fig-u-ra-tion: P2, P5, P
+6, P7, P9 pass \T1/lmtt/m/n/10.95 newGoals := .all\T1/lmr/m/n/10.95 (+20) ; P1 
+adds
+
+Underfull \hbox (badness 10000) in paragraph at lines 12--13
+\T1/lmtt/m/n/10.95 synthAssignedInstances := false\T1/lmr/m/n/10.95 (+20) ; P3 
+passes \T1/lmtt/m/n/10.95 newGoals := .all, approx :=
+[31]
+Underfull \hbox (badness 1264) in paragraph at lines 88--89
+\T1/lmtt/m/n/10.95 runRule \T1/lmr/m/n/10.95 (+20) re-turns ex-actly one of \T1
+/lmtt/m/n/10.95 progress\T1/lmr/m/n/10.95 (+20) , \T1/lmtt/m/n/10.95 solved\T1/
+lmr/m/n/10.95 (+20) , \T1/lmtt/m/n/10.95 blocked(deps)\T1/lmr/m/n/10.95 (+20) ,
+ \T1/lmtt/m/n/10.95 rejected(cert?)\T1/lmr/m/n/10.95 (+20) ,
+
+Underfull \hbox (badness 2435) in paragraph at lines 88--89
+\T1/lmtt/m/n/10.95 unsupportedByLane(feature, k) \T1/lmr/m/n/10.95 (+20) is rou
+ted with its con-tin-u-a-tion \T1/lmtt/m/n/10.95 k \T1/lmr/m/n/10.95 (+20) to a
+n-other lane;
+[32] [33]
+Underfull \hbox (badness 2310) in paragraph at lines 184--185
+\T1/lmtt/m/n/10.95 goal.apply (<- mkConstWithFreshMVarLevels ctor) \T1/lmr/m/n/
+10.95 (+20) with the con-struc-tors read from
+[34] [35] [36] [37] [38] [39]) (sections/alg-elim-retrieval.tex [40] [41]
+[42] [43] [44] [45] [46] [47] [48]) (sections/alg-recursion.tex [49] [50]
+[51]
+Underfull \hbox (badness 3838) in paragraph at lines 108--109
+\T1/lmr/m/n/10.95 (+20) For lists the in-stan-ti-ated mi-nor premises are ex-ac
+tly the types of P8's checked
+[52] [53] [54] [55] [56] [57]
+(C:\Users\vresh\AppData\Local\Programs\MiKTeX\tex/latex/lm\ot1lmss.fd)
+Underfull \hbox (badness 10000) in paragraph at lines 350--351
+\T1/lmr/m/n/10.95 (+20) The fam-ily is \T1/lmtt/m/n/10.95 Vec.nil : Vec A 0 \T1
+/lmr/m/n/10.95 (+20) and \T1/lmtt/m/n/10.95 Vec.cons : A -> Vec A n -> Vec A (n
+ +
+[58] [59]
+Underfull \hbox (badness 6876) in paragraph at lines 426--427
+\T1/lmtt/m/n/10.95 certifiedAppend \T1/lmr/m/n/10.95 (+20) (P5), \T1/lmtt/m/n/1
+0.95 fold_contract\T1/lmr/m/n/10.95 (+20) , \T1/lmtt/m/n/10.95 certifiedRecurso
+r\T1/lmr/m/n/10.95 (+20) , \T1/lmtt/m/n/10.95 indexFold_correct
+) (sections/alg-behavior.tex [60] [61] [62] [63] [64] [65]
+Underfull \hbox (badness 1635) in paragraph at lines 240--241
+\T1/lmtt/m/n/10.95 (quoted circuit) \T1/lmr/m/n/10.95 (+20) as the im-ple-men-t
+a-tion and proves \T1/lmtt/m/n/10.95 verify_sound\T1/lmr/m/n/10.95 (+20) , \T1/
+lmtt/m/n/10.95 all_found\T1/lmr/m/n/10.95 (+20) , and
+[66] [67] [68] [69] [70] [71]) (sections/alg-scheduling.tex [72]
+Underfull \hbox (badness 1173) in paragraph at lines 35--36
+\T1/lmr/m/n/10.95 (+20) (Sec-tion [][]13[][]) can turn it into an out-come. P1'
+s \T1/lmtt/m/n/10.95 Yield/Blocked/Finished \T1/lmr/m/n/10.95 (+20) and P4's
+[73] [74] [75] [76] [77] [78] [79] [80] [81]) (sections/alg-acceptance.tex
+[82] [83] [84] [85] [86] [87] [88] [89] [90] [91]
+Underfull \hbox (badness 4084) in paragraph at lines 403--404
+[]\T1/lmr/bx/n/10.95 (+20) P7's ad-di-tions\T1/lmr/m/n/10.95 (+20) . In-de-pen-
+dent uni-verse pa-ram-e-ters spe-cial-ized to equal ones:
+
+Underfull \hbox (badness 1024) in paragraph at lines 403--404
+\T1/lmtt/m/n/10.95 universeSpecialized\T1/lmr/m/n/10.95 (+20) . Strict-implicit
+ binders and de-pen-dent fields shar-ing a wit-
+[92]) (sections/08-evidence-evaluation-roadmap.tex [93] [94] [95]
+Underfull \hbox (badness 1286) in paragraph at lines 66--67
+\T1/lmtt/m/n/10.95 synth-djinn-providers\T1/lmr/m/n/10.95 (+20) , \T1/lmtt/m/n/
+10.95 synth-quantified-provider\T1/lmr/m/n/10.95 (+20) , and all rank-N and Chu
+rch
+
+Underfull \hbox (badness 1990) in paragraph at lines 69--70
+\T1/lmr/m/n/10.95 (+20) Contract de-com-poser with re-con-struc-tion terms, cer
+-ti-fied do-main plu-g-ins on the
+[96]) (sections/09-appendices.tex [97] [98] [99] [100]) [101]
+Underfull \hbox (badness 4391) in paragraph at lines 125--126
+\T1/lmtt/m/n/10 docs/synth-internals.md\T1/lmr/m/n/10 (+20) , \T1/lmtt/m/n/10 d
+ocs/behavioral-synthesis.md\T1/lmr/m/n/10 (+20) , \T1/lmtt/m/n/10 docs/SYNTHESI
+S_PROPOSAL.md\T1/lmr/m/n/10 (+20) ,
+
+Underfull \hbox (badness 3068) in paragraph at lines 128--129
+[]\T1/lmr/m/n/10 (+20) V. Reshet-nikov et al. \T1/lmr/m/it/10 (+20) Forge: a ce
+rtificate-producing proof-planning layer above Lean's
+
+Underfull \hbox (badness 1675) in paragraph at lines 129--130
+[]\T1/lmr/m/n/10 (+20) Proposal 01, \T1/lmr/m/it/10 (+20) Leant2: A Lean-Native
+ Ar-chi-tec-ture for Proof-Carrying Pro-gram Syn-the-sis\T1/lmr/m/n/10 (+20) ,
+
+Underfull \hbox (badness 10000) in paragraph at lines 131--132
+[]\T1/lmr/m/n/10 (+20) Proposal 03, \T1/lmr/m/it/10 (+20) Leant2: Lean-Native S
+yn-the-sis of Pro-grams and Their Con-tracts\T1/lmr/m/n/10 (+20) ,
+
+Underfull \hbox (badness 10000) in paragraph at lines 132--133
+[]\T1/lmr/m/n/10 (+20) Proposal 04, \T1/lmr/m/it/10 (+20) Leant2: Na-tive De-pe
+n-dent Pro-gram Syn-the-sis in Lean\T1/lmr/m/n/10 (+20) ,
+
+Underfull \hbox (badness 1077) in paragraph at lines 133--134
+[]\T1/lmr/m/n/10 (+20) Proposal 05, \T1/lmr/m/it/10 (+20) Leant2: Na-tive Depen
+dent-Type and Be-hav-ioral Pro-gram Syn-the-sis in Lean\T1/lmr/m/n/10 (+20) ,
+
+Underfull \hbox (badness 10000) in paragraph at lines 136--137
+[]\T1/lmr/m/n/10 (+20) Proposal 08, \T1/lmr/m/it/10 (+20) Leant2: Lean-Native, 
+Contract-Directed Pro-gram Syn-the-sis\T1/lmr/m/n/10 (+20) ,
+
+Underfull \hbox (badness 10000) in paragraph at lines 137--138
+[]\T1/lmr/m/n/10 (+20) Proposal 09, \T1/lmr/m/it/10 (+20) Leant2: Na-tive De-pe
+n-dent Pro-gram Syn-the-sis in Lean \T1/lmr/m/n/10 (+20) (de-sign),
+[102] [103]
+(C:/Users\vresh\.codex\worktrees\1e92\Leant2\baseline-out\proposal-doc-build-01
+\architecture\Leant2.aux) )
+(see the transcript file for additional information)<C:/Users/vresh/AppData/Loc
+al/Programs/MiKTeX/fonts/type1/public/lm/lmbx10.pfb><C:/Users/vresh/AppData/Loc
+al/Programs/MiKTeX/fonts/type1/public/lm/lmbx12.pfb><C:/Users/vresh/AppData/Loc
+al/Programs/MiKTeX/fonts/type1/public/lm/lmcsc10.pfb><C:/Users/vresh/AppData/Lo
+cal/Programs/MiKTeX/fonts/type1/public/lm/lmex10.pfb><C:/Users/vresh/AppData/Lo
+cal/Programs/MiKTeX/fonts/type1/public/lm/lmmi10.pfb><C:/Users/vresh/AppData/Lo
+cal/Programs/MiKTeX/fonts/type1/public/lm/lmmi6.pfb><C:/Users/vresh/AppData/Loc
+al/Programs/MiKTeX/fonts/type1/public/lm/lmmi8.pfb><C:/Users/vresh/AppData/Loca
+l/Programs/MiKTeX/fonts/type1/public/lm/lmr10.pfb><C:/Users/vresh/AppData/Local
+/Programs/MiKTeX/fonts/type1/public/lm/lmr12.pfb><C:/Users/vresh/AppData/Local/
+Programs/MiKTeX/fonts/type1/public/lm/lmr6.pfb><C:/Users/vresh/AppData/Local/Pr
+ograms/MiKTeX/fonts/type1/public/lm/lmr8.pfb><C:/Users/vresh/AppData/Local/Prog
+rams/MiKTeX/fonts/type1/public/lm/lmri10.pfb><C:/Users/vresh/AppData/Local/Prog
+rams/MiKTeX/fonts/type1/public/lm/lmri8.pfb><C:/Users/vresh/AppData/Local/Progr
+ams/MiKTeX/fonts/type1/public/lm/lmss10.pfb><C:/Users/vresh/AppData/Local/Progr
+ams/MiKTeX/fonts/type1/public/lm/lmsy10.pfb><C:/Users/vresh/AppData/Local/Progr
+ams/MiKTeX/fonts/type1/public/lm/lmsy8.pfb><C:/Users/vresh/AppData/Local/Progra
+ms/MiKTeX/fonts/type1/public/lm/lmtk10.pfb><C:/Users/vresh/AppData/Local/Progra
+ms/MiKTeX/fonts/type1/public/lm/lmtt10.pfb><C:/Users/vresh/AppData/Local/Progra
+ms/MiKTeX/fonts/type1/public/lm/lmtt9.pfb><C:/Users/vresh/AppData/Local/Program
+s/MiKTeX/fonts/type1/public/lm/lmtti10.pfb><C:/Users/vresh/AppData/Local/Progra
+ms/MiKTeX/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
+Output written on C:/Users\vresh\.codex\worktrees\1e92\Leant2\baseline-out\prop
+osal-doc-build-01\architecture\Leant2.pdf (103 pages, 1354882 bytes).
+Transcript written on C:/Users\vresh\.codex\worktrees\1e92\Leant2\baseline-out\
+proposal-doc-build-01\architecture\Leant2.log.

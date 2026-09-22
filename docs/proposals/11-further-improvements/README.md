@@ -36,6 +36,9 @@ without claiming a fresh external verification of every bibliographic fact.
 
 ## Integration and preserved evidence
 
+- [Completion and validation record](integration/validation-2026-09-22/README.md):
+  both final PDFs, exact source/artifact hashes, preserved build logs and full
+  page-review coverage.
 - [Source inventory](integration/sources.json): all **97 original files**,
   original Git blobs and hashes, destinations and dispositions, pinned to
   `5c3a53c22c18e6acd8ff17eb0902ce4da354518a`.

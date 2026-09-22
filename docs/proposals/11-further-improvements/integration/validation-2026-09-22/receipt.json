@@ -1,0 +1,376 @@
+{
+  "schema": 1,
+  "date": "2026-09-22",
+  "integration_commit": "29b796df2610e8222c23ea1bc065301a63ff95f1",
+  "source_inventory_revision": "5c3a53c22c18e6acd8ff17eb0902ce4da354518a",
+  "scope": "Proposal integration, document build/render review and preserved Python model evidence. No native Lean, formalization, current API survey or engine-performance acceptance.",
+  "integration": {
+    "packages": 9,
+    "original_files": 97,
+    "preserved_evidence_files": 28,
+    "retired_incoming_files": 97,
+    "historical_questions": 31,
+    "incoming_answer_instances": 279,
+    "new_active_questions": 33,
+    "canonical_bibliography_entries": 82,
+    "incoming_bibliography_keys_accounted": 129
+  },
+  "artifacts": [
+    {
+      "directory": "10-unified-proposal",
+      "pdf": "docs/proposals/10-unified-proposal/Leant2.pdf",
+      "pdf_bytes": 1354882,
+      "pdf_sha256": "9e00503269a584cbb9ea60de0a2da8a1f0c853e18d8f0c6067936744473d9502",
+      "pages": 103,
+      "tex_inputs": [
+        {
+          "path": "docs/proposals/10-unified-proposal/Leant2.tex",
+          "checkout_sha256": "272280befab240700c3f1abd0f65662e2a4be85472ac33ef3260730a2a03c07c",
+          "git_blob": "54dd1dbe4ef1245df362210f317018416d9ab7ae"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/01-scope-baseline.tex",
+          "checkout_sha256": "b6ad4f1c7a1d64715096cad61bb49c22336bc7cb0cf6a31e989a7c06a22ed55a",
+          "git_blob": "b80555ef628248c00da3bc53d29b7d63a15c991a"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/02-decisions-problem.tex",
+          "checkout_sha256": "1a954cc3e5f2ae8c212e64a28eea76e44f15cf3b756099718023d74d38f8ca3b",
+          "git_blob": "57477e676d3e02454fd11c272e9323973cbe6eb4"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/03-state-search.tex",
+          "checkout_sha256": "e4a4477883b05d1d81d7e0ff83982eb55b24908261d7afb4a81c3599647b54c3",
+          "git_blob": "548af5a077ad162e417825fc6a22332534dfbc7e"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/04-construction.tex",
+          "checkout_sha256": "6d0f04dc4eca0891ab0a4d7f78b9c3d0f80a0c831ea8ba14d098ed8cda936ad6",
+          "git_blob": "fea89f20b455580924e149215fe1ddf414dcd732"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/05-recursion.tex",
+          "checkout_sha256": "2fa07a71393a31fc6fae4c0dd3d02afdc326ad3c8ec5e0592d3e61dca5e1ddc4",
+          "git_blob": "f0971bc189be0a7b481150340c42321134460d4a"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/06-behavior.tex",
+          "checkout_sha256": "3c09981c040588ecccdcdadf49a4458c68d520dbba4ea5eb6e450a6d06d5dc14",
+          "git_blob": "c7580285ba60da084f1eb5b053e5b153572af41e"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/07-acceptance-deployment.tex",
+          "checkout_sha256": "08a7e41b8d5fb6c06519c41a48af61322ff94ecf41a6d1085570e2c4c8e7e780",
+          "git_blob": "21f529f163281b4e2e141404a31f34e021f32ade"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/08-evidence-evaluation-roadmap.tex",
+          "checkout_sha256": "ea394134f9f5cf3416505dfac29b3f382a778712d46d76b52ca1356c092dc852",
+          "git_blob": "c75fe7e1ddd6c00bec0d669ada1edb34a7af4318"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/09-appendices.tex",
+          "checkout_sha256": "eeed958289461e4bcfdbe01d23fa9f4fb55032338122d37ae2c80385ea085bcb",
+          "git_blob": "5d550363ae8e67b1b34f87b7b9b44d5b4c239e88"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/alg-acceptance.tex",
+          "checkout_sha256": "1a90ae407c745cba9484d3256a688782d5019e6575313e03b013c0c1ef6791ae",
+          "git_blob": "e85eb7c9a5599e24fa010121de2311d259ed7a5a"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/alg-behavior.tex",
+          "checkout_sha256": "a2373c7337c750c32c6a1c21d075a7dfe38222b32726e9239fb2aebdd505463c",
+          "git_blob": "fcb3e1cab408596792e48fe1bfced84c0c091c6f"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/alg-elim-retrieval.tex",
+          "checkout_sha256": "fabe5cc7227eb30f50dc5510f8c7ee39543ec2a23af498ec75a760010a838448",
+          "git_blob": "a9a7c401e79a8a9f9dd53944386a71f9135fa161"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/alg-recursion.tex",
+          "checkout_sha256": "5e2dac4f66f8edbffc907e8c7536b4b34ead8799178297f31b08802d3d005305",
+          "git_blob": "754fb839a06669865b3e3161d884582596a58507"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/alg-scheduling.tex",
+          "checkout_sha256": "9ae9c4cd5c9a7d8a3c5838e9123fde464affab6961bc3e86882eb5d97eb3fc46",
+          "git_blob": "d39018a0c0bac6d050bdeee63d8b0580953e08c1"
+        },
+        {
+          "path": "docs/proposals/10-unified-proposal/sections/alg-search.tex",
+          "checkout_sha256": "f8f266719947fda8b0c5c16cbf9586b4ba7cbd89b92bceac9ac7463933c3841b",
+          "git_blob": "43efcea036b644d4ad1e9eb982ac4055477b6c60"
+        }
+      ],
+      "final_log_findings": {
+        "overfull": 0,
+        "underfull": 25,
+        "undefined": 0,
+        "multiply_defined": 0
+      },
+      "final_log_sha256": "40007c5c3bd733b1b64d2a910c91902ec75374dabd07448bf5f9bc70eee31c9d"
+    },
+    {
+      "directory": "11-further-improvements",
+      "pdf": "docs/proposals/11-further-improvements/Leant2-next.pdf",
+      "pdf_bytes": 957309,
+      "pdf_sha256": "55bb3fde941895f8211b8e687d949768b9e54dfdadde289799594ff881adc5d8",
+      "pages": 77,
+      "tex_inputs": [
+        {
+          "path": "docs/proposals/11-further-improvements/Leant2-next.tex",
+          "checkout_sha256": "9eadb02d9027e19662a864f131528d1b47309d6df86f1c0273c4e9b88a7fe305",
+          "git_blob": "74ae6c2f506aec3964d67ab2875b974353de9220"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/preamble.tex",
+          "checkout_sha256": "bfea653ca47165b85274a5e3ca78d6c82d1859ea46779c4f09154835cd9e441c",
+          "git_blob": "21e258bbe446157efb0086d8e66a699beb6b8330"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/01-evidence.tex",
+          "checkout_sha256": "b787e82dff1530b18dbe5e45be4b74ba9231a0a590d056765b8ffc035740be05",
+          "git_blob": "e8aa0fde658f9069c9b02d9967e45e6cb6a6014b"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/02-classification.tex",
+          "checkout_sha256": "90d84f4f20259a5cac7d37a6df827e4a8c5c641388e2f1853014992f95aa9707",
+          "git_blob": "2f663c127beede50fa323978f70831145486c502"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/02a-semantics.tex",
+          "checkout_sha256": "4503f482da47cc6ad5ae5d400ebf1a22228f97f1327eb6b87e5bcfafa466d587",
+          "git_blob": "94c9663fe07f88c3906bf081c7dbf8f727efb66a"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/03-engineering.tex",
+          "checkout_sha256": "ec0e3beca4c2a6dde98170cec239f0b74e60a70437ea8a6d26af749b5921a566",
+          "git_blob": "25b424cf1336d66284570faf916963f6961351ac"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/04-adaptation.tex",
+          "checkout_sha256": "392d0883275cc54722b48084803fe1c57628a367d9bf539f1c7cc4a27167f8ce",
+          "git_blob": "fdf86739c8ad850352d7156faf03e26e0ddec211"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/05-search.tex",
+          "checkout_sha256": "30b95bb305995d027f8962b3b4b3920252154f8a1b15785764f2cd857593896a",
+          "git_blob": "f54fbfc8ec7f856a7182a64494d09f3392703687"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/06-carriers.tex",
+          "checkout_sha256": "86f9b1cf1b45d8c51cd565a4b9182359755dbb2356add7d588d661c4fd49711b",
+          "git_blob": "7a03dc376ff670d529957fa9127c9a3f6f83a362"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/07-evaluation.tex",
+          "checkout_sha256": "3f463662c3b3679a042355050584e26161da33e1d3341362e2f746e900923b41",
+          "git_blob": "22eaa7c209b70e766336eb0ce6ad7c820709b762"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/08-dependent.tex",
+          "checkout_sha256": "12f0cd0152b527fbff53be4d6c820fdf11564c47d082816f5e48ee5bb9614894",
+          "git_blob": "9d3791c301d0087cac68a6bdfbef2f49e7b7ea79"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/09-recursion.tex",
+          "checkout_sha256": "b00b353ce981cb1a8fabd2b332af28d0659a0cb36ce4bb2da5dab438d887fb8c",
+          "git_blob": "2303ff2299289ba2c300c62a122bd8a4e176e68a"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/10-contracts.tex",
+          "checkout_sha256": "3df183b2c6169188c8947a052d95d6bcd8e562d027b3131b6c76ad6d8bddb224",
+          "git_blob": "1b5a8aeb593b164c76fbde9a59bcb1e77d1eb945"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/11-retrieval.tex",
+          "checkout_sha256": "5f06c804668dccce697102da676438c94cc7af14cccff2e340dafa9c8f3d7912",
+          "git_blob": "36c4d78b088b318af497667b010020fc88e5b449"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/12-ranking.tex",
+          "checkout_sha256": "35d00fab5ec0e5bfceab5a2c1cb0ac21eb02b96df2a458377ce27bee7899aab3",
+          "git_blob": "eb77f1a8f642aef40a7092ff76f27f607c94605b"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/14-roadmap.tex",
+          "checkout_sha256": "17f4cd909121624c5da824f6627fbfb9905755ba22d769facf098a74aa6ec27a",
+          "git_blob": "d60caf015bd47818d432f20388fd7b371f8faa04"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/15-experts.tex",
+          "checkout_sha256": "a8ae24081c910aca0161625c95158ebbf0fe48cf86215e3884a0406570970109",
+          "git_blob": "9bfae5dcebd59a61733343670ee7e7fd1a07e1fe"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/16-references.tex",
+          "checkout_sha256": "928b87f9690af9cd3d58cd7e1e05d047efaf0a4c5a62d3e2dc2c6ea46b6f66e9",
+          "git_blob": "36a4820cef6505cffda50a4c169f21b63a9e8da7"
+        },
+        {
+          "path": "docs/proposals/11-further-improvements/sections/17-integration.tex",
+          "checkout_sha256": "68eb3900940e4bfccee243243df91061e2169696c0fcef18c1f265fea7067dbb",
+          "git_blob": "d5c24936c4e169edbf32b45f5d79d3815c22ca86"
+        }
+      ],
+      "final_log_findings": {
+        "overfull": 0,
+        "underfull": 5,
+        "undefined": 0,
+        "multiply_defined": 0
+      },
+      "final_log_sha256": "dd3d83d45dab3f1435c7fc351a444360c1bee3fba7ccd858624699ba2759eeb1"
+    }
+  ],
+  "build": {
+    "engine": "MiKTeX pdfTeX-1.40.29 (MiKTeX 26.2)",
+    "flags": [
+      "-interaction=nonstopmode",
+      "-halt-on-error",
+      "-no-shell-escape"
+    ],
+    "final_serial_pass_exit_codes": {
+      "architecture": [
+        0,
+        0,
+        0
+      ],
+      "improvements": [
+        0,
+        0,
+        0
+      ]
+    },
+    "retained_notices": [
+      "underfull spacing",
+      "epstopdf shell escape disabled",
+      "architecture longtable infinite glue ignored",
+      "improvements h float adjusted to ht"
+    ],
+    "logs": [
+      {
+        "path": "docs/proposals/11-further-improvements/integration/validation-2026-09-22/architecture-pass-1.log",
+        "sha256": "b0fd8f0ea0bb42e543e3995ac79938a2bf5f2ff14f9d3d5db84fb354b6e2e56d"
+      },
+      {
+        "path": "docs/proposals/11-further-improvements/integration/validation-2026-09-22/architecture-pass-2.log",
+        "sha256": "b0fd8f0ea0bb42e543e3995ac79938a2bf5f2ff14f9d3d5db84fb354b6e2e56d"
+      },
+      {
+        "path": "docs/proposals/11-further-improvements/integration/validation-2026-09-22/architecture-pass-3.log",
+        "sha256": "b0fd8f0ea0bb42e543e3995ac79938a2bf5f2ff14f9d3d5db84fb354b6e2e56d"
+      },
+      {
+        "path": "docs/proposals/11-further-improvements/integration/validation-2026-09-22/architecture-tex.log",
+        "sha256": "40007c5c3bd733b1b64d2a910c91902ec75374dabd07448bf5f9bc70eee31c9d"
+      },
+      {
+        "path": "docs/proposals/11-further-improvements/integration/validation-2026-09-22/improvements-pass-1.log",
+        "sha256": "98e2d035912a412627efa2822a93adab57aa574efae2240110c5e3f7271e4e34"
+      },
+      {
+        "path": "docs/proposals/11-further-improvements/integration/validation-2026-09-22/improvements-pass-2.log",
+        "sha256": "3e8a15aec73a1fca7e7612150a296c7bcfe9ab89d8a2d4ba0fb534575048bd96"
+      },
+      {
+        "path": "docs/proposals/11-further-improvements/integration/validation-2026-09-22/improvements-pass-3.log",
+        "sha256": "3e8a15aec73a1fca7e7612150a296c7bcfe9ab89d8a2d4ba0fb534575048bd96"
+      },
+      {
+        "path": "docs/proposals/11-further-improvements/integration/validation-2026-09-22/improvements-tex.log",
+        "sha256": "dd3d83d45dab3f1435c7fc351a444360c1bee3fba7ccd858624699ba2759eeb1"
+      }
+    ]
+  },
+  "visual_review": {
+    "architecture": {
+      "pages": 103,
+      "all_pages_inspected": true,
+      "contact_sheet_count": 9,
+      "render_dpi": 80,
+      "full_page_inspections": [
+        1,
+        16,
+        45,
+        53,
+        62,
+        63,
+        76,
+        77,
+        81,
+        84,
+        85,
+        86,
+        97,
+        98,
+        99,
+        100
+      ]
+    },
+    "improvements": {
+      "pages": 77,
+      "all_pages_inspected": true,
+      "contact_sheet_count": 13,
+      "render_max_dimension_pixels": 1100,
+      "final_full_page_inspections": [
+        9,
+        10,
+        11,
+        12,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "earlier_full_page_inspections": [
+        1,
+        6,
+        7,
+        9,
+        10,
+        11,
+        12,
+        13,
+        20,
+        21,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        37,
+        40,
+        41,
+        45,
+        48,
+        49,
+        58,
+        62,
+        68,
+        69,
+        71,
+        72,
+        75,
+        76,
+        77
+      ],
+      "repaired_findings": [
+        "work-items table lone continuation row",
+        "result-algebra orphaned heading",
+        "recipe listing heading/caption collision and split"
+      ]
+    },
+    "result": "PASS at recorded review scales; no material clipping, overlap, missing glyphs or broken tables found"
+  },
+  "model_rerun": "docs/proposals/11-further-improvements/evidence/rerun-2026-09-22/receipt.json",
+  "documentation_check": "docs/proposals/11-further-improvements/integration/validation-2026-09-22/documentation-check.json",
+  "checkout_hash_note": "Raw SHA-256 values identify exact built source bytes. Git blob IDs identify normalized source contents independently of checkout line-ending conversion."
+}
