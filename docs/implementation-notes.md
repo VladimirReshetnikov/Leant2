@@ -376,9 +376,11 @@ actual `Prop` specialization, contract-only specialization, invalid-output
 rejection, auxiliary theorem export, and interruption after search mutations.
 The aggregate `lake build Leant2 Leant2Tests leant2` passes all 68 jobs.
 The [library guide](library-api.md) records the full contract and an exact
-example that compiled and ran successfully. The latest complete 832-check archive
-remains evidence for `69221f1`, before this slice; it is not relabelled as API
-acceptance. Budgets remain cooperative, including the existing separate setup,
+example that compiled and ran successfully. The
+[API checkpoint](baseline/library-api-2026-09-21/README.md) verifies `9ec21c8`
+with all 832 external checks at both budgets and the aggregate native build.
+The earlier frontend archive remains tied to `69221f1`.
+Budgets remain cooperative, including the existing separate setup,
 proof, ranking, and export work outside the search deadline.
 
 ## Publication of accepted results (proposal 11, E1)
@@ -582,6 +584,21 @@ and provider-session inputs and rescores their raw outcomes against the captured
 expectations, including exact provider histories. This additional semantic audit
 does not infer success from an old green summary and is separate from protocol
 and denominator checks. Earlier archives retain their original scope.
+
+Implementation commit `9ec21c8` passed **832/832 required external checks
+across 13 harnesses at both 10 s and 5 s per search**. The
+[API checkpoint](baseline/library-api-2026-09-21/README.md) repeats the complete
+suite after the isolated library API and profile-respecting refutation changes.
+The aggregate build passes 68 jobs, including API/refutation regression modules;
+native test cases are not added to the external 832-check denominator.
+
+Both runs retain the 837 legacy synthesis-query records and the separate
+8 frontend cases/13 fresh-process stages per budget, including 3 actual
+suggestion replays and 2 expected-error stages. Source, both executables,
+all recorded compiled modules, and external fixture fingerprints are unchanged
+before and after. The archive independently rechecks raw outcomes, provider
+histories, generated replay files, diagnostics, exits, and exact ZIP contents.
+The six earlier archives retain their own revisions and evidence boundaries.
 
 Historical measurements remain in `docs/baseline/`, labeled by their own
 revisions and budgets. These acceptance runs and profiling parity tests are

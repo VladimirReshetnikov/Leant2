@@ -382,6 +382,21 @@ The `69221f1` archive above predates this correction: that implementation used
 Its expected-type frontends use `.standard` and do not expose behavioral
 contracts, so those historical frontend gates did not test this policy gap.
 
+## Library API regression checkpoint
+
+The [API checkpoint](library-api-2026-09-21/README.md) repeats all **832/832
+external checks across 13 families at both 10,000 and 5,000 ms** on `9ec21c8`,
+after the portable, profile-respecting contract-refutation correction. The full
+native build passes 68 jobs, including the API and refutation tests. The new
+native cases are not an additional external harness or denominator increment.
+
+The same 837 legacy synthesis-query records and 8 frontend cases/13 process
+stages are retained at each budget. Native executable, source, module, and
+external-fixture hashes match before and after; raw outcomes, session provider
+histories, actual suggestions, fresh Lean-only replays, diagnostics and exits
+are independently re-audited. The earlier frontend archive above remains
+evidence for `69221f1`, with its original scope.
+
 ## Source provenance
 
 Article cases cite

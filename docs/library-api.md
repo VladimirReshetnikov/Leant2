@@ -2,12 +2,12 @@
 
 The full library, native test, and executable build passes all 68 jobs.
 Focused API, local-proof, and contract-refutation checks pass, and the exact
-example below has compiled and run successfully. The latest complete
-acceptance archive remains the
-[832-check frontend checkpoint](baseline/frontends-2026-09-21/README.md), tested
-at `69221f14dc87992c48a3f45f8abb9e99b2bfb963`. That archive predates this API and
-the profile-respecting contract-refutation correction; it does not establish
-acceptance of either change.
+example below has compiled and run successfully. The complete
+[API checkpoint](baseline/library-api-2026-09-21/README.md), tested at
+`9ec21c81471a10dd72e56a1f330d502cfb19465d`, passes 832/832 external checks across
+13 harnesses at both 10,000 and 5,000 ms. The API's native regression tests belong
+to the aggregate build gate, separately from those external checks. The earlier
+frontend archive remains evidence for `69221f1` and its original scope.
 
 `Leant2.synthesize : Query → MetaM Outcome` accepts a closed, elaborated query
 and returns native Lean expressions. Import `Leant2.API` for this entry point;
@@ -220,7 +220,7 @@ auxiliary theorem export, profile checks, invalid negative certificates, and
 interruption after search has mutated state. The exact example above produces
 `checked term: fun A x => x` when compiled with the library.
 
-The six existing acceptance archives remain tied to their original revisions
-and scopes. Focused API tests, compilation of this example, broader regression
-tests, and complete acceptance runs are separate evidence claims; these API
-checks do not add a new family to the historical 832-check denominator.
+The six earlier acceptance archives remain tied to their original revisions
+and scopes. The API checkpoint records the new complete external runs and
+aggregate native build; focused API tests and compilation of the exact example
+remain separate, explicitly identified evidence.

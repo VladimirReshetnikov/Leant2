@@ -1,0 +1,477 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-22T03:14:19.775395+00:00",
+  "revision": "9ec21c81471a10dd72e56a1f330d502cfb19465d",
+  "working_tree_dirty": false,
+  "budget_ms": 5000,
+  "lean_executable": "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+  "lean_executable_sha256": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+  "module_sha256": {
+    ".lake/build/lib/lean/Leant2/Accept/Gate.olean": "a61bda3911839b2eb4c659f0f725fea91e7ea6922d1876e9918cd6ba4fea024a",
+    ".lake/build/lib/lean/Leant2/API.olean": "56984997000dfd09e76917ad17e68b74649bc72e1311027ecf9a905064220728",
+    ".lake/build/lib/lean/Leant2/Behavior/Observations.olean": "fedb4e31859ff7907b6fd8714a8a1f920b5e411df08ef141c841511a0511ab8f",
+    ".lake/build/lib/lean/Leant2/Core/Types.olean": "6805b6e7b8852d111ea0a1f8416c3dae0dade01ce49fa6daa7d09c7c0f345ea5",
+    ".lake/build/lib/lean/Leant2/Engine.olean": "0a4c3be6ac2ff0d51826e3588fc8fa0bf8ad071a15467c7907ca94923e8654e3",
+    ".lake/build/lib/lean/Leant2/Frontend/Command.olean": "8ff463ef010ac99ef06796a3972f437dbbc8d8e0c4e6b0d415303d6e05b23176",
+    ".lake/build/lib/lean/Leant2/Frontend/Local.olean": "06862a62e7061e779f42b45297fc4196ee0715128d7cfe6e60064651e18e1261",
+    ".lake/build/lib/lean/Leant2/Frontend/Presentation.olean": "332dc94ec266bbc1290cb65aa7fe90e17c5bab86b5499b5d7f2d709a89d0bf58",
+    ".lake/build/lib/lean/Leant2/Frontend/Results.olean": "57634e7de7450819de3bd105b0777951f9589d006a859b6dabcb08bcf4cdf446",
+    ".lake/build/lib/lean/Leant2/Frontend/Suggestion.olean": "85d29265e5ea1084d2a660286793f2109a87c91f246e9e80d8691e8dded286f6",
+    ".lake/build/lib/lean/Leant2/Frontend/Term.olean": "80de2eeaa450942bf7100176a5ee499636864bc236e85d148184eae527b90b6a",
+    ".lake/build/lib/lean/Leant2/Native/Export.olean": "7ac04ba2e53113be3e3eb34305b0e60041e9f384f28739430ec58365805c7def",
+    ".lake/build/lib/lean/Leant2/Native/Profile.olean": "58f5afa8476de0d9eb653d2d9d77d90b512a51bfdee00a9c5bbf4f4ba3ef9a22",
+    ".lake/build/lib/lean/Leant2/Native/Transaction.olean": "6fd23d4f8beab7a35f7b7be2ab934925c4d6423adc36e0b3973a2f24e1b86ca8",
+    ".lake/build/lib/lean/Leant2/Proof/Local.olean": "101405d8afc76d130b48d2cef02429421ffc7cee77a44d886fa8f4319001458b",
+    ".lake/build/lib/lean/Leant2/Search/Core.olean": "f51c4440d7188f7be905fde4965f4bd3530ec8cee23353c1008acbf98ff1f62f",
+    ".lake/build/lib/lean/Leant2.olean": "5c8355e73ca29afd52a1fc2a4d2c9e55ce3acacd67f66a4c1386182ccbd2a79b",
+    ".lake/build/lib/lean/Leant2Tests/Basic.olean": "0a5b76f741b16362574c31498e9fcfae20e32ba25c0c433211db37983e2e3800",
+    ".lake/build/lib/lean/Leant2Tests/BranchComposition.olean": "fe5fa3a7b63fa54b7865844a051fa57cfce181c99208bf24dde5f03fcca2204d",
+    ".lake/build/lib/lean/Leant2Tests/BranchCompositionIntegration.olean": "20ced2a14116050b9bb57d59275c5bf0a351a21ca11864d934a5da348a0e9ba1",
+    ".lake/build/lib/lean/Leant2Tests/Cancellation.olean": "82d1ead50d725eb0f2998ad17c61df018dba3fa700c3d72c67dab35c6cc4d2d6",
+    ".lake/build/lib/lean/Leant2Tests/Classical.olean": "918cdc623278b0252f57594e75c38ccd81d4ad2d0407c42724666c77582f256b",
+    ".lake/build/lib/lean/Leant2Tests/ClosedContracts.olean": "b2a9f54c051da55965b717c8ec1e48da45508be00b1bfa3751e8181fece75fe6",
+    ".lake/build/lib/lean/Leant2Tests/ContractRefutation.olean": "b4d4861f084b2b9da11b7be3c4cfb47608f97380d5d20d8eff34399e51292586",
+    ".lake/build/lib/lean/Leant2Tests/Contracts.olean": "207c90565f8cb5a5a24fcd9a55cd88009c7315ef19807a99dababcce5ff4d3e7",
+    ".lake/build/lib/lean/Leant2Tests/Frontends.olean": "eaebafbe6091be52aac45390f6b925f0a1962ead0636c8216b5c587bc9a7840a",
+    ".lake/build/lib/lean/Leant2Tests/Guards.olean": "c00e4e2a62e541dbb3ea664af2d99f0d5beb199dfe178eaa844778c9020dc7ee",
+    ".lake/build/lib/lean/Leant2Tests/IndexedPresentation.olean": "0015092d9e7d544d3ca047c2995a9b6e84b4550684d60e908e800218cf358ebf",
+    ".lake/build/lib/lean/Leant2Tests/IndexedRecursion.olean": "95fac818aee98a28d592a9b2b55aa46deef3d996fb985b0d11b909d2811539b5",
+    ".lake/build/lib/lean/Leant2Tests/LibraryAPI.olean": "ee4673ce6bb69eef94e9afbdb6c370335a814dd384e4a94ca7aa65b1acdd0bba",
+    ".lake/build/lib/lean/Leant2Tests/LocalProof.olean": "9f9c744d3c96a7bb58893dcc43acbaf78a829616e7f0e0020a2b1924c670d69a",
+    ".lake/build/lib/lean/Leant2Tests/LocalQuery.olean": "162c5517bf630f5dd566b086501608458ae9ba06d9513774d034e2f77c58e76a",
+    ".lake/build/lib/lean/Leant2Tests/Observations.olean": "4f78eae3ec8cd2452160d191dcac52ef4ed40833b1382f8fe6fc07370377fc33",
+    ".lake/build/lib/lean/Leant2Tests/Presentation.olean": "8cccc72152b08d23c2bc1f7b80d3b1abd92911150c3c1a0e7e2971c38b38f982",
+    ".lake/build/lib/lean/Leant2Tests/Profile.olean": "c5405ee62bd0775803530497627e866e2988243e620bd73cd3ee92676a35613d",
+    ".lake/build/lib/lean/Leant2Tests/Providers.olean": "4a68226042b626e9a317f3e2278db627124c9b5d9ad6a0fe3d60fb3886fea5c0",
+    ".lake/build/lib/lean/Leant2Tests/Recursion.olean": "2c0c4c6095c64ac4c14000a0ba4ec989e8cbef07b86659958b8931be5820e008",
+    ".lake/build/lib/lean/Leant2Tests/Results.olean": "51ec461026eb73c5c371685165fae64bbd78fa5b0eac1b21c722c039012ce675",
+    ".lake/build/lib/lean/Leant2Tests/ScopedBudget.olean": "5e1e2f8ef45c74c1f200609b71d957f29b2d2cef8962a4bd12c207e81e844567",
+    ".lake/build/lib/lean/Leant2Tests/Substrate.olean": "500a73ae940f34053e1667cbbc098cbdfbbb97520da6ada8574d929b05a96d81",
+    ".lake/build/lib/lean/Leant2Tests/Suggestion.olean": "9a0be5f1bae31511b9c3f3a6295383707d5ed9be0363a265ae506a64ab381cf2",
+    ".lake/build/lib/lean/Leant2Tests/Support/ResultEffects.olean": "42ecdd7dad85a94e0dc4d9a2313a61a6c1f66a958a4b922860682f23eb48f412",
+    ".lake/build/lib/lean/Leant2Tests/TermPresentation.olean": "708440800934b8a00f70442a1dd9a6c6df63190418f6d88dd1a10387d8378f94",
+    ".lake/build/lib/lean/Leant2Tests/TreePublication.olean": "caa3d312095de90a5daf15e37f17e17e584cee84f5fe4c25b44d8fb3a98d9841",
+    ".lake/build/lib/lean/Leant2Tests.olean": "1dadb753543c759342005a66c747099ebac347706f3c4af4f7c638f0fc935447",
+    ".lake/build/lib/lean/Main.olean": "192951eca2660e14bcac0af8ca40dd74b4b1c45eadcefaed5f8cd8793919d354"
+  },
+  "source_sha256": {
+    "lake-manifest.json": "f9e57b36aa5de5aeb18a1f011713076fc7b21e3a0cef19b9ae69fd7939d659ed",
+    "lakefile.toml": "60a9fb06100ebbdb802a8a4940283bf4a91e0adf3a39a499584010f370c5fb88",
+    "lean-toolchain": "744874093261c1854638246b978f088eae15414b0f636ac08481a088a7aaa867",
+    "Leant2/Accept/Gate.lean": "c306a254a31dc8ac352873a6dc56f14b93049cb4e2ec3ce7607d8c622d5be749",
+    "Leant2/API.lean": "e7715eaaacda585ecc39d84cf82e29a9266741dcfeab32e7728d6a41c3ab8485",
+    "Leant2/Behavior/Observations.lean": "0103cb809c1f7b7dd9443f85e7149f99c5c0768d5ad077e21e3004d5ef5f5ec7",
+    "Leant2/Core/Types.lean": "22b7ea390487837254d487a73d7798b3570bda3615bba01da62d62d037b2c1cd",
+    "Leant2/Engine.lean": "b8d2c7cd17056110354bb14df7f31d1ab7e1ca5abbd24efda13b2933051f6529",
+    "Leant2/Frontend/Command.lean": "939946136559383d2a63f5ae2308e56b1d18ad835676296a2e865887f2620cc6",
+    "Leant2/Frontend/Local.lean": "6d70a6e879a23f13ba0af05981d4935bcdc15654c7582f058b09448cfd2af11a",
+    "Leant2/Frontend/Presentation.lean": "25ff0612cb06e1a3c6f3a514608ccc5f92bb6dea9b1326071f36f3f8378777ef",
+    "Leant2/Frontend/Results.lean": "23a4fa1b20ee1cfa3f1175c9c958eaa35618d66fe70b81f873812c0d0d97b237",
+    "Leant2/Frontend/Suggestion.lean": "88148d83bed5b95149cda8137af0e5fabda61106bf545a3539bf65570f2cbcb6",
+    "Leant2/Frontend/Term.lean": "bb604782423b8804de33429d23fb67bce1eeac292a491cdb8be722843687ce4c",
+    "Leant2/Native/Export.lean": "3126a120ac723fc162ca4a226a261d35c472288aa8b2fbb3dd3b704cd799238d",
+    "Leant2/Native/Profile.lean": "2ddb7689a51e2c7a88feda1bce35935453a79605901d2080e1a2ed34a6eabbaa",
+    "Leant2/Native/Transaction.lean": "3db71f0434279d24c5ec9e1eaff291308e73f1b7e736ce5c5442897673e6042d",
+    "Leant2/Proof/Local.lean": "4738f2623ee311b7616782730c45a64caa097bd7b326be69f582a29cec94e9fd",
+    "Leant2/Search/Core.lean": "535dfdb958589342c552ae8dbea7feb0e839697ef0b2ab3009d95539e104239c",
+    "Leant2.lean": "bb01128307e24e2d82299cdf3fd2a5e8db0cdb285181cc3066b15dd1e0ebef15",
+    "Main.lean": "78ffaad5c7b962b0db59946a92d5c9b6ac4585b4d19d420bf7f8713acedc7508",
+    "tests/Leant2Tests/Basic.lean": "e91a39da6bc2fa4a12def155c600b959f9fb3417cfe6db23772a216d66760126",
+    "tests/Leant2Tests/BranchComposition.lean": "e5ed844fa428a720fd914f6de4615642330011c56685079e91b2519a4965a3db",
+    "tests/Leant2Tests/BranchCompositionIntegration.lean": "2e9c80c20cc24fff576791130c2bb9e6c358b6fb255a8e65deb1d43571252a11",
+    "tests/Leant2Tests/Cancellation.lean": "7604c10f6eaeb7b5babbc0926aab68a10991640ece6d165d209467b20c8b7ba3",
+    "tests/Leant2Tests/Classical.lean": "d611988648c6c84a3a7750f729f752e0b642ad1c247316abe3e7baa9d594cc0b",
+    "tests/Leant2Tests/ClosedContracts.lean": "d39eff892cae4a2b902ca0b71068dd30ed3f149dd3b0502fbd6107493970f562",
+    "tests/Leant2Tests/ContractRefutation.lean": "150e473e734be4a89e8e97bd5921a60f88a92c61966b91f20748d067da4fbac4",
+    "tests/Leant2Tests/Contracts.lean": "e373b75202f079d63051229ec589fe46fab02dd36885dd5613242d3eb3cad7c1",
+    "tests/Leant2Tests/Frontends.lean": "364413917b4c940f0bed983872ee3b0c23f02dfe4405a4abfc133d5e8ac7d4fc",
+    "tests/Leant2Tests/Guards.lean": "47a89492e178d1e403db8abbcfef2100b9e83519254c50cc375824b6056b4c1f",
+    "tests/Leant2Tests/IndexedPresentation.lean": "64ab739652068c1eb857a66050c4d907bc21c3bc148166a070dcc5b623011ecf",
+    "tests/Leant2Tests/IndexedRecursion.lean": "0a4d643d49b76e0e0b0aa3770471e81751a0bea326b5a1e049aef714db880d5b",
+    "tests/Leant2Tests/LibraryAPI.lean": "a706720e523e3b7afcd90ec0158509cadfb692b47b54bc2c1a1a0fd8d57aed91",
+    "tests/Leant2Tests/LocalProof.lean": "e64c63aca2bd9b20f60f0230068ace7f01e1726a60e87394bccf232c234b7fa8",
+    "tests/Leant2Tests/LocalQuery.lean": "89c22a2df25a72d09cfcfe5882fd0c9cf6c9493040e6f838e8967bf7cf84b420",
+    "tests/Leant2Tests/Observations.lean": "21de0bfd73285f2c68ef3c7dd771d1846e98099d8592b2019621a06a9f0204b2",
+    "tests/Leant2Tests/Presentation.lean": "8fc53f81ab94f4a54312bf123dd897eba8b02e29da2bc08b4c9b2ddd47c43d8b",
+    "tests/Leant2Tests/Profile.lean": "e4c49b6df1d4ec1e5868a4885913208e63a3da9ab8263bd6bc0dbcae8a19c18c",
+    "tests/Leant2Tests/Providers.lean": "913ca2762f7759e8c785a9a170951aabc2d1478440b4be173a28b9c0ccbe716e",
+    "tests/Leant2Tests/Recursion.lean": "640483dcfc5ef2d207c2fd350923a607376148f3c068aa2f3163cc2167b85707",
+    "tests/Leant2Tests/Results.lean": "6b233bca40805a20b9814d6788427b879ee5131c8cf1e74633478ba87f2ad149",
+    "tests/Leant2Tests/ScopedBudget.lean": "37899cffc789c23d9a5d5799ff55679b2b1b073aadfd036d0c7e880202062097",
+    "tests/Leant2Tests/Substrate.lean": "c322850a6e38d0b56998dbfcc99aa9e5f98f48a66370c3c5603a3e338adfbc9f",
+    "tests/Leant2Tests/Suggestion.lean": "26dc610fb7e8e6b7a7b7429bbac0f716f115f55c0be480be679289ac9b73b2cb",
+    "tests/Leant2Tests/Support/ResultEffects.lean": "7fd80c4850c1579f96ac6438cde8c9d04dfcdad266354f1455c0275ff23741f7",
+    "tests/Leant2Tests/TermPresentation.lean": "05822da98a13372ec2b5e03c7868394ca6898b648de03c4ae4ea6ae984e84842",
+    "tests/Leant2Tests/TreePublication.lean": "7c56b2b0b3e83439386b465da82bfeec610d26d29b46ae348cbe17991791641c",
+    "tests/Leant2Tests.lean": "99559e5bb17fc757ba61dfd02ccd429781e30a1c859123959f47bedfb74a5011"
+  },
+  "toolchain": "leanprover/lean4:v4.34.0",
+  "harness_sha256": "4ecb01f3a14f3386803aaae3c91b11681bbbdef0f417befe570bb3b0577ba922",
+  "fixture_sha256": {
+    "cases.json": "1e178d99631df6d29417c2dff5198ed1826d97d6403991beae493c57727b59a5",
+    "tactic-false.lean.in": "38f232b05dc2a6e8af9422df0e0080fa7a84557944ed4a0b208bb26bcfa9e713",
+    "tactic-indexed-map.lean.in": "5105cb08c49c4951a5f76e2746e14b46a056b61cf9393177bb02c534afe56caf",
+    "tactic-local-data.lean.in": "83a7c2d99bc6ac48058581932467bbaffcf14d404680d362db26c7c5cda6fb1d",
+    "tactic-local-proof.lean.in": "bfc2fad25ff8f5764832f90cdc2b5134471b2633d038561e77614ac787c01b32",
+    "term-delayed-type.lean.in": "8829b6658596e9964e1a6f62d0dbd52b48096e0631ea1c7d2ab393d378751883",
+    "term-false.lean.in": "2825fc5adeb7aa789e3c84b18317d19a09ebc8b465779d8fd1427752927119b3",
+    "term-lets-instances.lean.in": "d2047dfd79d917e1a99e1794e94e8abab001e6d178d17234f98bddfa984d8157",
+    "term-local-context.lean.in": "57be64ac524802021049e3f5246ed6d6c96e0a9d7c83d8fc735356a02498e92b"
+  },
+  "inputs_changed_during_run": false,
+  "build_performed": false,
+  "build_verification": "Not performed by this runner; source and prebuilt artifacts are fingerprinted, not rebuilt.",
+  "passed": 8,
+  "total": 8,
+  "success": true,
+  "failures": [],
+  "results": [
+    {
+      "id": "term-local-context",
+      "passed": true,
+      "stages": [
+        {
+          "stage": "original",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\term-local-context\\original.lean"
+          ],
+          "source": "import Leant2\nset_option leant2.budgetMs 5000\nset_option linter.unusedVariables false\nuniverse u v\nnamespace FrontendCase\ndef selected {A : Sort u} (F : A → Sort v) (x : A) (hx : F x) : F x := synth%\ntheorem proof (P Q : Prop) (hp : P) (h : P → Q) : Q := synth%\nexample {A : Sort u} (F : A → Sort v) (x : A) (hx : F x) : selected F x hx = hx := rfl\n#eval if selected (fun _ : Nat => Nat) 4 17 == 17 then \"FRONTEND_VALUE_OK\" else \"FRONTEND_VALUE_FAILED\"\nend FrontendCase\n\nopen Lean Elab Command in\nrun_cmd do\n  for name in [``FrontendCase.selected, ``FrontendCase.proof] do\n    let ci ← getConstInfo name\n    let some value := ci.value? (allowOpaque := true) | throwError \"frontend result has no checked value\"\n    if ci.type.hasMVar || ci.type.hasLevelMVar || ci.type.hasFVar || ci.type.hasSorry ||\n        value.hasMVar || value.hasLevelMVar || value.hasFVar || value.hasSorry then\n      throwError \"frontend result contains a hole, free variable, or sorry\"\n    for axiomName in (← collectAxioms name) do\n      unless axiomName ∈ [``propext, ``Classical.choice, ``Quot.sound] do\n        throwError \"frontend result uses a nonstandard axiom: {axiomName}\"\n  logInfo \"FRONTEND_AUDIT_term-local-context_OK\"\n",
+          "source_sha256": "2076e27ad63c7b1b7b00d53417b2c7a043610bb1cbbd1458c10aadef58315153",
+          "stdout": "{\"caption\":\"\",\"data\":\"\\\"FRONTEND_VALUE_OK\\\"\",\"endPos\":{\"column\":5,\"line\":9},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\term-local-context\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":9},\"severity\":\"information\"}\n{\"caption\":\"\",\"data\":\"FRONTEND_AUDIT_term-local-context_OK\",\"endPos\":{\"column\":7,\"line\":13},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\term-local-context\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":13},\"severity\":\"information\"}\n",
+          "stderr": "",
+          "returncode": 0,
+          "elapsed_ms": 2579,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": null,
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0,
+            "information": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "tactic-local-data",
+      "passed": true,
+      "stages": [
+        {
+          "stage": "original",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\tactic-local-data\\original.lean"
+          ],
+          "source": "import Leant2\nset_option leant2.budgetMs 5000\nset_option linter.unusedVariables false\nnamespace FrontendCase\ndef selected (A B : Type) (x : A) (f : A → B) : B := by\n  leant2\nexample (A B : Type) (x : A) (f : A → B) : selected A B x f = f x := rfl\n#eval if selected Nat Bool 4 (fun n => n == 4) then \"FRONTEND_VALUE_OK\" else \"FRONTEND_VALUE_FAILED\"\nend FrontendCase\n\nopen Lean Elab Command in\nrun_cmd do\n  for name in [``FrontendCase.selected] do\n    let ci ← getConstInfo name\n    let some value := ci.value? (allowOpaque := true) | throwError \"frontend result has no checked value\"\n    if ci.type.hasMVar || ci.type.hasLevelMVar || ci.type.hasFVar || ci.type.hasSorry ||\n        value.hasMVar || value.hasLevelMVar || value.hasFVar || value.hasSorry then\n      throwError \"frontend result contains a hole, free variable, or sorry\"\n    for axiomName in (← collectAxioms name) do\n      unless axiomName ∈ [``propext, ``Classical.choice, ``Quot.sound] do\n        throwError \"frontend result uses a nonstandard axiom: {axiomName}\"\n  logInfo \"FRONTEND_AUDIT_tactic-local-data_OK\"\n",
+          "source_sha256": "c5af9428530ede8f73b22fad0f8d3e9ddd1ffa0ec3b450a478dc7660897c3d83",
+          "stdout": "{\"caption\":\"\",\"data\":\"Try this:\\n  [apply] exact (fun A B x f => f x) A B x f\",\"endPos\":{\"column\":8,\"line\":6},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-local-data\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":2,\"line\":6},\"severity\":\"information\"}\n{\"caption\":\"\",\"data\":\"\\\"FRONTEND_VALUE_OK\\\"\",\"endPos\":{\"column\":5,\"line\":8},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-local-data\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":8},\"severity\":\"information\"}\n{\"caption\":\"\",\"data\":\"FRONTEND_AUDIT_tactic-local-data_OK\",\"endPos\":{\"column\":7,\"line\":12},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-local-data\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":12},\"severity\":\"information\"}\n",
+          "stderr": "",
+          "returncode": 0,
+          "elapsed_ms": 2516,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": "exact (fun A B x f => f x) A B x f",
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0,
+            "information": 3
+          }
+        },
+        {
+          "stage": "suggestion-replay",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\tactic-local-data\\suggestion-replay.lean"
+          ],
+          "source": "import Lean\nset_option linter.unusedVariables false\nnamespace FrontendCase\ndef selected (A B : Type) (x : A) (f : A → B) : B := by\n  exact (fun A B x f => f x) A B x f\nexample (A B : Type) (x : A) (f : A → B) : selected A B x f = f x := rfl\n#eval if selected Nat Bool 4 (fun n => n == 4) then \"FRONTEND_VALUE_OK\" else \"FRONTEND_VALUE_FAILED\"\nend FrontendCase\n\nopen Lean Elab Command in\nrun_cmd do\n  for name in [``FrontendCase.selected] do\n    let ci ← getConstInfo name\n    let some value := ci.value? (allowOpaque := true) | throwError \"frontend result has no checked value\"\n    if ci.type.hasMVar || ci.type.hasLevelMVar || ci.type.hasFVar || ci.type.hasSorry ||\n        value.hasMVar || value.hasLevelMVar || value.hasFVar || value.hasSorry then\n      throwError \"frontend result contains a hole, free variable, or sorry\"\n    for axiomName in (← collectAxioms name) do\n      unless axiomName ∈ [``propext, ``Classical.choice, ``Quot.sound] do\n        throwError \"frontend result uses a nonstandard axiom: {axiomName}\"\n  logInfo \"FRONTEND_AUDIT_tactic-local-data_OK\"\n",
+          "source_sha256": "d2b475c4f7f7872fdbdd08f270274c6742dfc84cae8f3f08fe4c545521dcb533",
+          "stdout": "{\"caption\":\"\",\"data\":\"\\\"FRONTEND_VALUE_OK\\\"\",\"endPos\":{\"column\":5,\"line\":7},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-local-data\\\\suggestion-replay.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":7},\"severity\":\"information\"}\n{\"caption\":\"\",\"data\":\"FRONTEND_AUDIT_tactic-local-data_OK\",\"endPos\":{\"column\":7,\"line\":11},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-local-data\\\\suggestion-replay.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":11},\"severity\":\"information\"}\n",
+          "stderr": "",
+          "returncode": 0,
+          "elapsed_ms": 2471,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": null,
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0,
+            "information": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "tactic-local-proof",
+      "passed": true,
+      "stages": [
+        {
+          "stage": "original",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\tactic-local-proof\\original.lean"
+          ],
+          "source": "import Leant2\nset_option leant2.budgetMs 5000\nset_option linter.unusedVariables false\nnamespace FrontendCase\ntheorem selected (P Q : Prop) (hp : P) (h : P → Q) : Q ∧ True := by\n  constructor\n  · leant2\n  · trivial\nexample (P Q : Prop) (hp : P) (h : P → Q) : Q := (selected P Q hp h).1\nend FrontendCase\n\nopen Lean Elab Command in\nrun_cmd do\n  for name in [``FrontendCase.selected] do\n    let ci ← getConstInfo name\n    let some value := ci.value? (allowOpaque := true) | throwError \"frontend result has no checked value\"\n    if ci.type.hasMVar || ci.type.hasLevelMVar || ci.type.hasFVar || ci.type.hasSorry ||\n        value.hasMVar || value.hasLevelMVar || value.hasFVar || value.hasSorry then\n      throwError \"frontend result contains a hole, free variable, or sorry\"\n    for axiomName in (← collectAxioms name) do\n      unless axiomName ∈ [``propext, ``Classical.choice, ``Quot.sound] do\n        throwError \"frontend result uses a nonstandard axiom: {axiomName}\"\n  logInfo \"FRONTEND_AUDIT_tactic-local-proof_OK\"\n",
+          "source_sha256": "74fbee237b9c20911f5156957d7cb8ef1320807b346acfc1f54f84f25798da2a",
+          "stdout": "{\"caption\":\"\",\"data\":\"Try this:\\n  [apply] exact (fun P Q hp h => h hp) P Q hp h\",\"endPos\":{\"column\":10,\"line\":7},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-local-proof\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":4,\"line\":7},\"severity\":\"information\"}\n{\"caption\":\"\",\"data\":\"FRONTEND_AUDIT_tactic-local-proof_OK\",\"endPos\":{\"column\":7,\"line\":13},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-local-proof\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":13},\"severity\":\"information\"}\n",
+          "stderr": "",
+          "returncode": 0,
+          "elapsed_ms": 2432,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": "exact (fun P Q hp h => h hp) P Q hp h",
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0,
+            "information": 2
+          }
+        },
+        {
+          "stage": "suggestion-replay",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\tactic-local-proof\\suggestion-replay.lean"
+          ],
+          "source": "import Lean\nset_option linter.unusedVariables false\nnamespace FrontendCase\ntheorem selected (P Q : Prop) (hp : P) (h : P → Q) : Q ∧ True := by\n  constructor\n  · exact (fun P Q hp h => h hp) P Q hp h\n  · trivial\nexample (P Q : Prop) (hp : P) (h : P → Q) : Q := (selected P Q hp h).1\nend FrontendCase\n\nopen Lean Elab Command in\nrun_cmd do\n  for name in [``FrontendCase.selected] do\n    let ci ← getConstInfo name\n    let some value := ci.value? (allowOpaque := true) | throwError \"frontend result has no checked value\"\n    if ci.type.hasMVar || ci.type.hasLevelMVar || ci.type.hasFVar || ci.type.hasSorry ||\n        value.hasMVar || value.hasLevelMVar || value.hasFVar || value.hasSorry then\n      throwError \"frontend result contains a hole, free variable, or sorry\"\n    for axiomName in (← collectAxioms name) do\n      unless axiomName ∈ [``propext, ``Classical.choice, ``Quot.sound] do\n        throwError \"frontend result uses a nonstandard axiom: {axiomName}\"\n  logInfo \"FRONTEND_AUDIT_tactic-local-proof_OK\"\n",
+          "source_sha256": "52e25e42a65b872eb76b8872a0bd5ed2d63db1acbb0b4b2bc677a9d14fe423b6",
+          "stdout": "{\"caption\":\"\",\"data\":\"FRONTEND_AUDIT_tactic-local-proof_OK\",\"endPos\":{\"column\":7,\"line\":12},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-local-proof\\\\suggestion-replay.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":12},\"severity\":\"information\"}\n",
+          "stderr": "",
+          "returncode": 0,
+          "elapsed_ms": 2105,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": null,
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0,
+            "information": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "term-delayed-type",
+      "passed": true,
+      "stages": [
+        {
+          "stage": "original",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\term-delayed-type\\original.lean"
+          ],
+          "source": "import Leant2\nset_option leant2.budgetMs 5000\nset_option linter.unusedVariables false\nnamespace FrontendCase\n-- The explicit implicit A is shared by both binders; separate `_` annotations\n-- would leave independent holes. No result or first-argument annotation fixes A:\n-- the later Nat argument must supply the delayed constraint for synthesis.\ndef selected := (fun {A : Type} (x y : A) => (x, y)) synth% (7 : Nat)\nexample : Nat × Nat := selected\nexample : selected.2 = 7 := rfl\n-- Any well-typed first component is valid; do not assume the synthesizer selects zero.\n#eval if selected.2 == 7 then \"FRONTEND_VALUE_OK\" else \"FRONTEND_VALUE_FAILED\"\nend FrontendCase\n\nopen Lean Elab Command in\nrun_cmd do\n  for name in [``FrontendCase.selected] do\n    let ci ← getConstInfo name\n    let some value := ci.value? (allowOpaque := true) | throwError \"frontend result has no checked value\"\n    if ci.type.hasMVar || ci.type.hasLevelMVar || ci.type.hasFVar || ci.type.hasSorry ||\n        value.hasMVar || value.hasLevelMVar || value.hasFVar || value.hasSorry then\n      throwError \"frontend result contains a hole, free variable, or sorry\"\n    for axiomName in (← collectAxioms name) do\n      unless axiomName ∈ [``propext, ``Classical.choice, ``Quot.sound] do\n        throwError \"frontend result uses a nonstandard axiom: {axiomName}\"\n  logInfo \"FRONTEND_AUDIT_term-delayed-type_OK\"\n",
+          "source_sha256": "576f44e82bd6afea1d30f062697e9961d1d2e64aaf3ccdcff5d200efd6b650de",
+          "stdout": "{\"caption\":\"\",\"data\":\"\\\"FRONTEND_VALUE_OK\\\"\",\"endPos\":{\"column\":5,\"line\":12},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\term-delayed-type\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":12},\"severity\":\"information\"}\n{\"caption\":\"\",\"data\":\"FRONTEND_AUDIT_term-delayed-type_OK\",\"endPos\":{\"column\":7,\"line\":16},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\term-delayed-type\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":16},\"severity\":\"information\"}\n",
+          "stderr": "",
+          "returncode": 0,
+          "elapsed_ms": 2463,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": null,
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0,
+            "information": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "term-lets-instances",
+      "passed": true,
+      "stages": [
+        {
+          "stage": "original",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\term-lets-instances\\original.lean"
+          ],
+          "source": "import Leant2\nset_option leant2.budgetMs 5000\nset_option linter.unusedVariables false\nnamespace FrontendCase\ndef selected {A : Type} (F : A → Type) (x : A) (hx : F x) : F x :=\n  let y := x\n  (fun h : F y => let witness := h; synth%) hx\nclass Pick (A : Type) where\n  value : A\ndef fromInstance (A : Type) [outer : Pick A] : A :=\n  letI : Pick A := outer\n  synth%\nexample {A : Type} (F : A → Type) (x : A) (hx : F x) : selected F x hx = hx := rfl\nexample (A : Type) (inst : Pick A) : @fromInstance A inst = inst.value := rfl\n#eval if selected (fun _ : Nat => Nat) 8 31 == 31 && @fromInstance Nat ⟨17⟩ == 17 then \"FRONTEND_VALUE_OK\" else \"FRONTEND_VALUE_FAILED\"\nend FrontendCase\n\nopen Lean Elab Command in\nrun_cmd do\n  for name in [``FrontendCase.selected, ``FrontendCase.fromInstance] do\n    let ci ← getConstInfo name\n    let some value := ci.value? (allowOpaque := true) | throwError \"frontend result has no checked value\"\n    if ci.type.hasMVar || ci.type.hasLevelMVar || ci.type.hasFVar || ci.type.hasSorry ||\n        value.hasMVar || value.hasLevelMVar || value.hasFVar || value.hasSorry then\n      throwError \"frontend result contains a hole, free variable, or sorry\"\n    for axiomName in (← collectAxioms name) do\n      unless axiomName ∈ [``propext, ``Classical.choice, ``Quot.sound] do\n        throwError \"frontend result uses a nonstandard axiom: {axiomName}\"\n  logInfo \"FRONTEND_AUDIT_term-lets-instances_OK\"\n",
+          "source_sha256": "1ffc9bf19ca72d20193cdd6800ce97c2045dc3c361e558d1d8992c09830ed399",
+          "stdout": "{\"caption\":\"\",\"data\":\"\\\"FRONTEND_VALUE_OK\\\"\",\"endPos\":{\"column\":5,\"line\":15},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\term-lets-instances\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":15},\"severity\":\"information\"}\n{\"caption\":\"\",\"data\":\"FRONTEND_AUDIT_term-lets-instances_OK\",\"endPos\":{\"column\":7,\"line\":19},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\term-lets-instances\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":19},\"severity\":\"information\"}\n",
+          "stderr": "",
+          "returncode": 0,
+          "elapsed_ms": 2775,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": null,
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0,
+            "information": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "tactic-indexed-map",
+      "passed": true,
+      "stages": [
+        {
+          "stage": "original",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\tactic-indexed-map\\original.lean"
+          ],
+          "source": "import Leant2\nset_option leant2.budgetMs 5000\nset_option linter.unusedVariables false\nnamespace FrontendCase\ninductive Vec (A : Type) : Nat → Type where\n  | nil : Vec A 0\n  | cons {n : Nat} : A → Vec A n → Vec A (n + 1)\ndef selected : ∀ (A B : Type), (A → B) → ∀ n, Vec A n → Vec B n := by\n  leant2\nexample (A B : Type) (f : A → B) : selected A B f 0 .nil = .nil := rfl\nexample (A B : Type) (f : A → B) (n : Nat) (x : A) (xs : Vec A n) :\n    selected A B f (n + 1) (.cons x xs) = .cons (f x) (selected A B f n xs) := rfl\n#eval if (match selected Nat Bool (fun n => n == 0) 3 (.cons 0 (.cons 7 (.cons 0 .nil))) with\n    | .cons a (.cons b (.cons c .nil)) => a && !b && c) &&\n    (match selected Bool Nat (fun b => if b then 2 else 9) 3 (.cons false (.cons true (.cons false .nil))) with\n    | .cons a (.cons b (.cons c .nil)) => a == 9 && b == 2 && c == 9)\n  then \"FRONTEND_VALUE_OK\" else \"FRONTEND_VALUE_FAILED\"\nend FrontendCase\n\nopen Lean Elab Command in\nrun_cmd do\n  for name in [``FrontendCase.selected] do\n    let ci ← getConstInfo name\n    let some value := ci.value? (allowOpaque := true) | throwError \"frontend result has no checked value\"\n    if ci.type.hasMVar || ci.type.hasLevelMVar || ci.type.hasFVar || ci.type.hasSorry ||\n        value.hasMVar || value.hasLevelMVar || value.hasFVar || value.hasSorry then\n      throwError \"frontend result contains a hole, free variable, or sorry\"\n    for axiomName in (← collectAxioms name) do\n      unless axiomName ∈ [``propext, ``Classical.choice, ``Quot.sound] do\n        throwError \"frontend result uses a nonstandard axiom: {axiomName}\"\n  logInfo \"FRONTEND_AUDIT_tactic-indexed-map_OK\"\n",
+          "source_sha256": "27af39fb0f38ddbf661f6a2b78b6ecefd839ce3bdab7d8eba8d8a3f10843cea8",
+          "stdout": "{\"caption\":\"\",\"data\":\"Try this:\\n  [apply] exact fun (A : Type) => fun (B : Type) => fun (a : A → B) => fun (n : Nat) => fun (a_1 : Vec A n) =>\\n    let rec loop2530 : {a : Nat} → Vec A a → Vec B a :=\\n      @fun value0 value1 =>\\n        (match value1 with\\n        | @FrontendCase.Vec.nil _ => Vec.nil\\n        | @FrontendCase.Vec.cons _ field0 field1 field2 => Vec.cons (a field1) (loop2530 field2));\\n    @loop2530 n a_1\",\"endPos\":{\"column\":8,\"line\":9},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-indexed-map\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":2,\"line\":9},\"severity\":\"information\"}\n{\"caption\":\"\",\"data\":\"\\\"FRONTEND_VALUE_OK\\\"\",\"endPos\":{\"column\":5,\"line\":13},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-indexed-map\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":13},\"severity\":\"information\"}\n{\"caption\":\"\",\"data\":\"FRONTEND_AUDIT_tactic-indexed-map_OK\",\"endPos\":{\"column\":7,\"line\":21},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-indexed-map\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":21},\"severity\":\"information\"}\n",
+          "stderr": "",
+          "returncode": 0,
+          "elapsed_ms": 3239,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": "exact fun (A : Type) => fun (B : Type) => fun (a : A → B) => fun (n : Nat) => fun (a_1 : Vec A n) =>\n  let rec loop2530 : {a : Nat} → Vec A a → Vec B a :=\n    @fun value0 value1 =>\n      (match value1 with\n      | @FrontendCase.Vec.nil _ => Vec.nil\n      | @FrontendCase.Vec.cons _ field0 field1 field2 => Vec.cons (a field1) (loop2530 field2));\n  @loop2530 n a_1",
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0,
+            "information": 3
+          }
+        },
+        {
+          "stage": "suggestion-replay",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\tactic-indexed-map\\suggestion-replay.lean"
+          ],
+          "source": "import Lean\nset_option linter.unusedVariables false\nnamespace FrontendCase\ninductive Vec (A : Type) : Nat → Type where\n  | nil : Vec A 0\n  | cons {n : Nat} : A → Vec A n → Vec A (n + 1)\ndef selected : ∀ (A B : Type), (A → B) → ∀ n, Vec A n → Vec B n := by\n  exact fun (A : Type) => fun (B : Type) => fun (a : A → B) => fun (n : Nat) => fun (a_1 : Vec A n) =>\n    let rec loop2530 : {a : Nat} → Vec A a → Vec B a :=\n      @fun value0 value1 =>\n        (match value1 with\n        | @FrontendCase.Vec.nil _ => Vec.nil\n        | @FrontendCase.Vec.cons _ field0 field1 field2 => Vec.cons (a field1) (loop2530 field2));\n    @loop2530 n a_1\nexample (A B : Type) (f : A → B) : selected A B f 0 .nil = .nil := rfl\nexample (A B : Type) (f : A → B) (n : Nat) (x : A) (xs : Vec A n) :\n    selected A B f (n + 1) (.cons x xs) = .cons (f x) (selected A B f n xs) := rfl\n#eval if (match selected Nat Bool (fun n => n == 0) 3 (.cons 0 (.cons 7 (.cons 0 .nil))) with\n    | .cons a (.cons b (.cons c .nil)) => a && !b && c) &&\n    (match selected Bool Nat (fun b => if b then 2 else 9) 3 (.cons false (.cons true (.cons false .nil))) with\n    | .cons a (.cons b (.cons c .nil)) => a == 9 && b == 2 && c == 9)\n  then \"FRONTEND_VALUE_OK\" else \"FRONTEND_VALUE_FAILED\"\nend FrontendCase\n\nopen Lean Elab Command in\nrun_cmd do\n  for name in [``FrontendCase.selected] do\n    let ci ← getConstInfo name\n    let some value := ci.value? (allowOpaque := true) | throwError \"frontend result has no checked value\"\n    if ci.type.hasMVar || ci.type.hasLevelMVar || ci.type.hasFVar || ci.type.hasSorry ||\n        value.hasMVar || value.hasLevelMVar || value.hasFVar || value.hasSorry then\n      throwError \"frontend result contains a hole, free variable, or sorry\"\n    for axiomName in (← collectAxioms name) do\n      unless axiomName ∈ [``propext, ``Classical.choice, ``Quot.sound] do\n        throwError \"frontend result uses a nonstandard axiom: {axiomName}\"\n  logInfo \"FRONTEND_AUDIT_tactic-indexed-map_OK\"\n",
+          "source_sha256": "a7a2fd8562e4e51f1f6833f2ab0f80f2389322266997a8cd3d5f0ccd46cd9ce1",
+          "stdout": "{\"caption\":\"\",\"data\":\"\\\"FRONTEND_VALUE_OK\\\"\",\"endPos\":{\"column\":5,\"line\":18},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-indexed-map\\\\suggestion-replay.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":18},\"severity\":\"information\"}\n{\"caption\":\"\",\"data\":\"FRONTEND_AUDIT_tactic-indexed-map_OK\",\"endPos\":{\"column\":7,\"line\":26},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-indexed-map\\\\suggestion-replay.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":26},\"severity\":\"information\"}\n",
+          "stderr": "",
+          "returncode": 0,
+          "elapsed_ms": 2282,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": null,
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0,
+            "information": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "term-false",
+      "passed": true,
+      "stages": [
+        {
+          "stage": "original",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\term-false\\original.lean"
+          ],
+          "source": "import Leant2\nset_option leant2.budgetMs 5000\nset_option linter.unusedVariables false\nnamespace FrontendCase\ntheorem checkedRejection : True := by\n  fail_if_success\n    have impossible : False := synth%\n  trivial\nend FrontendCase\n\nopen Lean Elab Command in\nrun_cmd do\n  for name in [``FrontendCase.checkedRejection] do\n    let ci ← getConstInfo name\n    let some value := ci.value? (allowOpaque := true) | throwError \"frontend result has no checked value\"\n    if ci.type.hasMVar || ci.type.hasLevelMVar || ci.type.hasFVar || ci.type.hasSorry ||\n        value.hasMVar || value.hasLevelMVar || value.hasFVar || value.hasSorry then\n      throwError \"frontend result contains a hole, free variable, or sorry\"\n    for axiomName in (← collectAxioms name) do\n      unless axiomName ∈ [``propext, ``Classical.choice, ``Quot.sound] do\n        throwError \"frontend result uses a nonstandard axiom: {axiomName}\"\n  logInfo \"FRONTEND_AUDIT_term-false_OK\"\n",
+          "source_sha256": "96d51ed1d31a87c2dde0e79316933f4dff3355fe54b8cd0e8afb55b3b6e49ba8",
+          "stdout": "{\"caption\":\"\",\"data\":\"FRONTEND_AUDIT_term-false_OK\",\"endPos\":{\"column\":7,\"line\":12},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\term-false\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":12},\"severity\":\"information\"}\n",
+          "stderr": "",
+          "returncode": 0,
+          "elapsed_ms": 2502,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": null,
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0,
+            "information": 1
+          }
+        },
+        {
+          "stage": "negative-error",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\term-false\\negative-error.lean"
+          ],
+          "source": "import Leant2\nset_option leant2.budgetMs 5000\ndef deliberatelyRejected : False := synth%\n",
+          "source_sha256": "497a8a03865d82150db7225a148dd83240c71eb2bbf03b0024c7dd9a7d9f3fca",
+          "stdout": "{\"caption\":\"\",\"data\":\"leant2: synthesis failed: no term found at the expected type within the search bounds\",\"endPos\":{\"column\":42,\"line\":3},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\term-false\\\\negative-error.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":36,\"line\":3},\"severity\":\"error\"}\n",
+          "stderr": "",
+          "returncode": 1,
+          "elapsed_ms": 2373,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": null,
+          "diagnostics": {
+            "errors": 1,
+            "warnings": 0,
+            "information": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "tactic-false",
+      "passed": true,
+      "stages": [
+        {
+          "stage": "original",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\tactic-false\\original.lean"
+          ],
+          "source": "import Leant2\nset_option leant2.budgetMs 5000\nset_option linter.unusedVariables false\nnamespace FrontendCase\ntheorem checkedRejection : True := by\n  fail_if_success\n    have impossible : False := by\n      leant2\n  trivial\nend FrontendCase\n\nopen Lean Elab Command in\nrun_cmd do\n  for name in [``FrontendCase.checkedRejection] do\n    let ci ← getConstInfo name\n    let some value := ci.value? (allowOpaque := true) | throwError \"frontend result has no checked value\"\n    if ci.type.hasMVar || ci.type.hasLevelMVar || ci.type.hasFVar || ci.type.hasSorry ||\n        value.hasMVar || value.hasLevelMVar || value.hasFVar || value.hasSorry then\n      throwError \"frontend result contains a hole, free variable, or sorry\"\n    for axiomName in (← collectAxioms name) do\n      unless axiomName ∈ [``propext, ``Classical.choice, ``Quot.sound] do\n        throwError \"frontend result uses a nonstandard axiom: {axiomName}\"\n  logInfo \"FRONTEND_AUDIT_tactic-false_OK\"\n",
+          "source_sha256": "0341c39009c1768effd3c83cebe2fb9cec4dcc005ecbbddabb89fe9af2880d48",
+          "stdout": "{\"caption\":\"\",\"data\":\"FRONTEND_AUDIT_tactic-false_OK\",\"endPos\":{\"column\":7,\"line\":13},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-false\\\\original.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":0,\"line\":13},\"severity\":\"information\"}\n",
+          "stderr": "",
+          "returncode": 0,
+          "elapsed_ms": 2417,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": null,
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0,
+            "information": 1
+          }
+        },
+        {
+          "stage": "negative-error",
+          "command": [
+            "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+            "--json",
+            "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\baseline-out\\library-api-checkpoint-5000\\frontends\\tactic-false\\negative-error.lean"
+          ],
+          "source": "import Leant2\nset_option leant2.budgetMs 5000\ndef deliberatelyRejected : False := by leant2\n",
+          "source_sha256": "3040c6c62b11369ea331d9e4bb424f99861a714a41f193face403731ed5dcb5c",
+          "stdout": "{\"caption\":\"\",\"data\":\"leant2: synthesis failed: no term found at the expected type within the search bounds\",\"endPos\":{\"column\":45,\"line\":3},\"fileName\":\"C:\\\\Users\\\\vresh\\\\.codex\\\\worktrees\\\\52df\\\\Leant2\\\\baseline-out\\\\library-api-checkpoint-5000\\\\frontends\\\\tactic-false\\\\negative-error.lean\",\"isSilent\":false,\"keepFullRange\":false,\"kind\":\"[anonymous]\",\"pos\":{\"column\":39,\"line\":3},\"severity\":\"error\"}\n",
+          "stderr": "",
+          "returncode": 1,
+          "elapsed_ms": 2423,
+          "timed_out": false,
+          "passed": true,
+          "problems": [],
+          "suggestion": null,
+          "diagnostics": {
+            "errors": 1,
+            "warnings": 0,
+            "information": 0
+          }
+        }
+      ]
+    }
+  ]
+}

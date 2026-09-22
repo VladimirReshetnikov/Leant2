@@ -176,8 +176,9 @@ inspect each candidate's actual `programType` and contract proof, including
 possible universe specialization. Input errors, bounded misses, certified
 negatives, and output-validation failures have distinct meanings. The full native
 build passes all 68 jobs; focused tests and the guide's exact example pass.
-The latest complete 832-check archive
-below predates this API and remains attributed to `69221f1`.
+The [API checkpoint](docs/baseline/library-api-2026-09-21/README.md) also
+passes all 832 external checks at both budgets on `9ec21c8`. Native API tests
+belong to the build gate and do not increase that external denominator.
 
 ### The baseline
 
@@ -226,9 +227,10 @@ Literal `False` controls require a certified contract refutation; silence
 and timeouts do not pass them.
 
 The configured aggregate contains **832 required checks across 13 harnesses**,
-and the [frontend checkpoint](docs/baseline/frontends-2026-09-21/README.md)
+and the [API checkpoint](docs/baseline/library-api-2026-09-21/README.md)
 passes all of them at both 5 s and 10 s per search on implementation commit
-`69221f1`. The 8 frontend cases require 13 fresh Lean processes:
+`9ec21c8`. Its aggregate build includes the new API and refutation tests.
+The 8 frontend cases require 13 fresh Lean processes:
 8 original stages, 3 independent replays of actual tactic suggestions in
 files importing only Lean, and 2 separate expected-error stages. These process
 counts are separate from the 837 retained legacy synthesis-query records at
@@ -263,7 +265,7 @@ The new [extended suite](docs/baseline/extended.md) reconstructs the sixteen
 probes in proposal 11, adds nine Lean-core examples and four negative
 controls. All 29 sessions are now required after focused validation of the
 last open tree-inorder case; they pass in both the historical 824-check
-tree checkpoint and the current 832-check frontend checkpoint.
+tree checkpoint and the current 832-check API checkpoint.
 Each query runs in a fresh session; a reported candidate must bind at the
 requested type and pass executable replay. This is the initial local E8
 benchmark work, not a port of the external synthesis benchmark collections.

@@ -118,3 +118,28 @@ session provider histories. All 29 E8 cases remain required; Church stretches
 remain unscored, with actual outcomes recorded separately. The five earlier
 checkpoint archives are unchanged, with their original revisions and evidence
 boundaries. Required checks are not a count of distinct synthesis problems.
+
+## Isolated library API and certified refutation checkpoint
+
+The [API checkpoint](library-api-2026-09-21/README.md) validates implementation
+commit `9ec21c8`: **832/832 external checks across 13 harnesses at both 10 s
+and 5 s per search**. The aggregate native build passes 68 jobs, including
+the API and contract-refutation regression modules. Those native tests are
+separate from the unchanged external-family denominator.
+
+The API checks exported programs and proofs in the caller's original environment,
+restores native state, and distinguishes malformed inputs, bounded misses,
+certified negatives, and output-validation failures. Upfront refutation honors
+the selected axiom policy and retains its certificate. Focused checks also cover
+original and specialized query pairs, contract-only specialization, auxiliary
+theorem export, original-statement axiom dependencies, and cancellation after
+real search work. The exact library guide example was compiled independently.
+
+Both full runs preserve source, executable, native-module, and external-fixture
+fingerprints. Complete raw logs, pre/post snapshots, receipts, actual tactic
+suggestions and Lean-only replays, and audited ZIP hashes are retained. Each
+budget has 837 legacy synthesis-query records, plus 8 frontend cases requiring
+13 process stages. These counts overlap in the problems tested; they do not
+describe 832 distinct synthesis problems. All 29 E8 cases remain required;
+Church stretch outcomes remain unscored and are recorded separately. The six
+earlier archives are unchanged.
