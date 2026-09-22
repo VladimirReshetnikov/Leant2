@@ -1,0 +1,164 @@
+{
+  "experiments": {
+    "sketch-foldr1-experiment-02": {
+      "created_utc": "2026-09-22T04:58:23.175112+00:00",
+      "completed_utc": "2026-09-22T04:59:16.008073+00:00",
+      "status": "bounded_miss",
+      "experiment_valid": true,
+      "inputs_unchanged": true,
+      "controls_axiom_free": 11,
+      "runs": [
+        {
+          "budget_ms": 5000,
+          "process_elapsed_ms": 7657,
+          "classification": "bounded_miss",
+          "actual_outcome": "refutedAll rejected=7951",
+          "api_elapsed_ms": 5163,
+          "ledger": {
+            "ruleApplications": 13168,
+            "unifications": 26768,
+            "proofAttempts": 8083,
+            "candidates": 0,
+            "rejected": 7951
+          }
+        },
+        {
+          "budget_ms": 10000,
+          "process_elapsed_ms": 12620,
+          "classification": "bounded_miss",
+          "actual_outcome": "refutedAll rejected=15423",
+          "api_elapsed_ms": 10241,
+          "ledger": {
+            "ruleApplications": 25153,
+            "unifications": 49759,
+            "proofAttempts": 15659,
+            "candidates": 0,
+            "rejected": 15423
+          }
+        }
+      ],
+      "fingerprint_counts": {
+        "source_files": 61,
+        "local_module_files": 57,
+        "toolchain_module_files": 12592,
+        "toolchain_native_files": 20,
+        "frozen_probe_files": 6,
+        "original_provenance_files": 11
+      }
+    },
+    "sketch-foldr1-experiment-03": {
+      "created_utc": "2026-09-22T14:54:52.492451+00:00",
+      "completed_utc": "2026-09-22T14:55:52.629642+00:00",
+      "status": "accepted_both_budgets",
+      "experiment_valid": true,
+      "inputs_unchanged": true,
+      "controls_axiom_free": 11,
+      "runs": [
+        {
+          "budget_ms": 5000,
+          "process_elapsed_ms": 6621,
+          "classification": "accepted",
+          "actual_outcome": "verified candidates=1",
+          "api_elapsed_ms": 3934,
+          "ledger": {
+            "ruleApplications": 1774,
+            "unifications": 5863,
+            "proofAttempts": 432,
+            "candidates": 1,
+            "rejected": 419
+          }
+        },
+        {
+          "budget_ms": 10000,
+          "process_elapsed_ms": 6576,
+          "classification": "accepted",
+          "actual_outcome": "verified candidates=1",
+          "api_elapsed_ms": 3943,
+          "ledger": {
+            "ruleApplications": 1774,
+            "unifications": 5863,
+            "proofAttempts": 432,
+            "candidates": 1,
+            "rejected": 419
+          }
+        }
+      ],
+      "fingerprint_counts": {
+        "source_files": 64,
+        "local_module_files": 60,
+        "toolchain_module_files": 12592,
+        "toolchain_native_files": 20,
+        "frozen_probe_files": 6,
+        "original_provenance_files": 11
+      }
+    }
+  },
+  "same_frozen_query_provenance_and_toolchain": true,
+  "same_printed_candidate_across_accepted_budgets": true,
+  "candidate": "fun A d combine =>\n  (fun step init finish xs => finish (xs (Option A) step init))\n    (fun a a_1 => some (Option.casesOn a_1 a fun val => combine a val)) none fun a => Option.casesOn a d fun val => val",
+  "candidate_utf8_sha256": "19425e63c37ff5f5a6f39258a5a8cf2c81ff4ba16b870d22cf19482d0dd8a86d",
+  "changed_source_files": {
+    "Leant2/Core/Types.lean": {
+      "before": {
+        "size_bytes": 3545,
+        "sha256": "22b7ea390487837254d487a73d7798b3570bda3615bba01da62d62d037b2c1cd"
+      },
+      "after": {
+        "size_bytes": 3562,
+        "sha256": "9c23fb4568363eba24c405e8d257e267c97a0b1d86ddb2fc80ef76383b598548"
+      }
+    },
+    "Leant2/Frontend/Sketch/Projection.lean": {
+      "before": null,
+      "after": {
+        "size_bytes": 13650,
+        "sha256": "ccc1eb6037812fde1b50ab61e41ca3d8603b5e9ef1dff99290cc3801b52e31ca"
+      }
+    },
+    "Leant2/Frontend/Sketch/Run.lean": {
+      "before": {
+        "size_bytes": 11594,
+        "sha256": "6185eceaa429ba93623ccaf8d4055300c5a3f95ea7d2dee9257ef136d3621af0"
+      },
+      "after": {
+        "size_bytes": 14831,
+        "sha256": "64e25bdd40c471fc9520cb15280e84bf4aa7000aa5c87d431df451d89835bb3c"
+      }
+    },
+    "Leant2/Search/Core.lean": {
+      "before": {
+        "size_bytes": 64737,
+        "sha256": "6e1b629cb59ca031802585492c5bcc5a511c5086663fbea8f73b12686cdb9535"
+      },
+      "after": {
+        "size_bytes": 65213,
+        "sha256": "61a88cb2649a0a66fcbe2c554a0d7924822fb6168ddc01e84663c0301297e890"
+      }
+    },
+    "tests/Leant2Tests.lean": {
+      "before": {
+        "size_bytes": 1049,
+        "sha256": "561fb28d4b131fd56e5a9e1c917e75791162fe399083078fb77508e2e0685133"
+      },
+      "after": {
+        "size_bytes": 1132,
+        "sha256": "62a7bc17e09b224d5c5d084071c9734d33a573d2b295bc77e0443e34a84347f6"
+      }
+    },
+    "tests/Leant2Tests/SketchProjection.lean": {
+      "before": null,
+      "after": {
+        "size_bytes": 26852,
+        "sha256": "29bdd5f718ad21c2d05c7104b7eaa02b3c7147eb0d6d6e77fa4ff1dd20c48b7f"
+      }
+    },
+    "tests/Leant2Tests/SketchProjectionIntegration.lean": {
+      "before": null,
+      "after": {
+        "size_bytes": 11587,
+        "sha256": "45d815efef068812b4afad44e45786f00b552aa8cef21547e8b5155c13c1284e"
+      }
+    }
+  },
+  "changed_local_module_artifact_count": 15
+}

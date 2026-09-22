@@ -16,6 +16,8 @@ import Leant2Tests.ContractRefutation
 import Leant2Tests.LibraryAPI
 import Leant2Tests.InitializedEnumeration
 import Leant2Tests.SketchPreparation
+import Leant2Tests.SketchProjection
+import Leant2Tests.SketchProjectionIntegration
 import Leant2Tests.Sketch
 import Leant2Tests.SketchCommand
 import Leant2Tests.AcceptanceAlternatives

@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-09-22T14:54:52.492451+00:00",
+  "status": "accepted_both_budgets",
+  "controls": {
+    "returncode": 0,
+    "timed_out": false,
+    "interrupted": false,
+    "launch_error": false,
+    "command": [
+      "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+      "--json",
+      "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\scratch\\next-sketch\\foldr1-probe\\Controls.lean"
+    ],
+    "process_timeout_seconds": 120,
+    "process_elapsed_ms": 3075,
+    "cleanup": null,
+    "source_sha256_before": "d309b659f10e83b826e3e4a420b8ca730abde2e6eb8731776c444771141e68cc",
+    "source_sha256_after": "d309b659f10e83b826e3e4a420b8ca730abde2e6eb8731776c444771141e68cc",
+    "lean_sha256_before": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+    "lean_sha256_after": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+    "artifact_paths_relative_to": "top-level receipt directory",
+    "stdout": {
+      "file": "controls/stdout.bin",
+      "bytes": 4025,
+      "sha256": "003885991c70012fb044c57d3783d921aeffdceda936b392841cd9996ead8658"
+    },
+    "stderr": {
+      "file": "controls/stderr.bin",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "classification": "controls_passed",
+    "problems": [],
+    "audited_control_declarations": [
+      "BehaviorPartialControl.witness_foldr1",
+      "BehaviorPartialControl.witness_foldr1_passes",
+      "BehaviorPartialControl.wrong_foldr1_always_default",
+      "BehaviorPartialControl.wrong_foldr1_always_default_rejected",
+      "BehaviorPartialControl.wrong_foldr1_wrong_association",
+      "BehaviorPartialControl.wrong_foldr1_wrong_association_rejected",
+      "BehaviorPartialControl.wrong_foldr1_default_is_seed",
+      "BehaviorPartialControl.wrong_foldr1_default_is_seed_rejected",
+      "Foldr1CarrierControl.carrierReference",
+      "Foldr1CarrierControl.carrierReference_passes",
+      "Foldr1CarrierControl.carrierReference_enc"
+    ],
+    "diagnostic_count": 11
+  },
+  "probes": [
+    {
+      "budget_ms": 5000,
+      "returncode": 0,
+      "timed_out": false,
+      "interrupted": false,
+      "launch_error": false,
+      "command": [
+        "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+        "--json",
+        "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\scratch\\next-sketch\\foldr1-probe\\Probe.lean"
+      ],
+      "process_timeout_seconds": 120,
+      "process_elapsed_ms": 6621,
+      "cleanup": null,
+      "source_sha256_before": "bfb979d865713392839c360436db316962f778fc277b2d95708fb332f3d0a304",
+      "source_sha256_after": "bfb979d865713392839c360436db316962f778fc277b2d95708fb332f3d0a304",
+      "lean_sha256_before": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+      "lean_sha256_after": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+      "artifact_paths_relative_to": "top-level receipt directory",
+      "stdout": {
+        "file": "probe-5000/stdout.bin",
+        "bytes": 2122,
+        "sha256": "38a66ee5aad20045db855e71d00ee1432df3be7b3c703af5ee10bfb501367ed0"
+      },
+      "stderr": {
+        "file": "probe-5000/stderr.bin",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "classification": "accepted",
+      "problems": [],
+      "actual_outcome": "verified candidates=1",
+      "ledger": {
+        "ruleApplications": 1774,
+        "unifications": 5863,
+        "proofAttempts": 432,
+        "candidates": 1,
+        "rejected": 419
+      },
+      "api_elapsed_ms": 3934,
+      "preparation_report": [
+        "{ depth := 1,\n  holes := #[{ sourceName := Lean.Name.mkNum (Lean.Name.mkStr (Lean.Name.mkStr (Lean.Name.mkNum `step.«_@».scratch.«next-sketch».«foldr1-probe».Probe 201297814) \"_hygCtx\") \"_hyg\") 2,\n               depth := 1,\n               locals := 3 },\n             { sourceName := Lean.Name.mkNum (Lean.Name.mkStr (Lean.Name.mkStr (Lean.Name.mkNum `init.«_@».scratch.«next-sketch».«foldr1-probe».Probe 201297814) \"_hygCtx\") \"_hyg\") 2,\n               depth := 1,\n               locals := 3 },\n             { sourceName := Lean.Name.mkNum (Lean.Name.mkStr (Lean.Name.mkStr (Lean.Name.mkNum `finish.«_@».scratch.«next-sketch».«foldr1-probe».Probe 201297814) \"_hygCtx\") \"_hyg\") 2,\n               depth := 1,\n               locals := 3 }],\n  delayedWrappers := 3,\n  unresolvedBeforeConsumer := 6 }"
+      ],
+      "diagnostic_count": 1,
+      "transcript_transport": "lean_information_envelope"
+    },
+    {
+      "budget_ms": 10000,
+      "returncode": 0,
+      "timed_out": false,
+      "interrupted": false,
+      "launch_error": false,
+      "command": [
+        "C:\\Users\\vresh\\.elan\\toolchains\\leanprover--lean4---v4.34.0\\bin\\lean.exe",
+        "--json",
+        "C:\\Users\\vresh\\.codex\\worktrees\\52df\\Leant2\\scratch\\next-sketch\\foldr1-probe\\Probe.lean"
+      ],
+      "process_timeout_seconds": 120,
+      "process_elapsed_ms": 6576,
+      "cleanup": null,
+      "source_sha256_before": "bfb979d865713392839c360436db316962f778fc277b2d95708fb332f3d0a304",
+      "source_sha256_after": "bfb979d865713392839c360436db316962f778fc277b2d95708fb332f3d0a304",
+      "lean_sha256_before": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+      "lean_sha256_after": "a8040e2cab341c12116ab591fed9f761816f5f6b08554f6cc1680e86dfbba0a2",
+      "artifact_paths_relative_to": "top-level receipt directory",
+      "stdout": {
+        "file": "probe-10000/stdout.bin",
+        "bytes": 2123,
+        "sha256": "0fed3076da004be866a68b7a65511b1462991eb6a0fde8f48e302ec06e6a1434"
+      },
+      "stderr": {
+        "file": "probe-10000/stderr.bin",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "classification": "accepted",
+      "problems": [],
+      "actual_outcome": "verified candidates=1",
+      "ledger": {
+        "ruleApplications": 1774,
+        "unifications": 5863,
+        "proofAttempts": 432,
+        "candidates": 1,
+        "rejected": 419
+      },
+      "api_elapsed_ms": 3943,
+      "preparation_report": [
+        "{ depth := 1,\n  holes := #[{ sourceName := Lean.Name.mkNum (Lean.Name.mkStr (Lean.Name.mkStr (Lean.Name.mkNum `step.«_@».scratch.«next-sketch».«foldr1-probe».Probe 201297814) \"_hygCtx\") \"_hyg\") 2,\n               depth := 1,\n               locals := 3 },\n             { sourceName := Lean.Name.mkNum (Lean.Name.mkStr (Lean.Name.mkStr (Lean.Name.mkNum `init.«_@».scratch.«next-sketch».«foldr1-probe».Probe 201297814) \"_hygCtx\") \"_hyg\") 2,\n               depth := 1,\n               locals := 3 },\n             { sourceName := Lean.Name.mkNum (Lean.Name.mkStr (Lean.Name.mkStr (Lean.Name.mkNum `finish.«_@».scratch.«next-sketch».«foldr1-probe».Probe 201297814) \"_hygCtx\") \"_hyg\") 2,\n               depth := 1,\n               locals := 3 }],\n  delayedWrappers := 3,\n  unresolvedBeforeConsumer := 6 }"
+      ],
+      "diagnostic_count": 1,
+      "transcript_transport": "lean_information_envelope"
+    }
+  ],
+  "failures": [],
+  "source_case_id": "church_case_039",
+  "observation_count": 36,
+  "budgets_ms": [
+    5000,
+    10000
+  ],
+  "original_church_sha256_normalized": "782e4edaa5bf813e30e39ae02d52278ab0566315ebc521401a947b98c44cfd11",
+  "original_spec_sha256": "2cb1b1b23eb2fa9338455094178e02de6055a1f8e78201b35a2619ed29d15d85",
+  "build_performed": false,
+  "build_verification": "Not performed; exact source/artifact fingerprints are not a rebuild.",
+  "environment_values_persisted": false,
+  "runtime_setup": "Direct pinned Lean; isolated Lean-only controls; only local prebuilt modules for probe; no package dependencies.",
+  "source_mutation_performed": false,
+  "inputs_unchanged": true,
+  "skipped_budgets_ms": [],
+  "experiment_valid": true,
+  "all_budgets_accepted": true,
+  "exit_code": 0,
+  "completed_utc": "2026-09-22T14:55:52.629642+00:00"
+}

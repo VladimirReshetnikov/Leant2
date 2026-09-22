@@ -1,0 +1,62 @@
+{
+  "scope": "Separate supporting native build and public/documentation receipt checks; not a new full 839-case archive or remote CI result. Raw artifacts retained in evidence.zip.",
+  "serial_build": {
+    "directory": "sketch-projection-serial-02",
+    "module_count": 60,
+    "native_invocations": 61,
+    "aggregate_jobs": 87,
+    "all_returncodes_zero": true,
+    "before_after_sources_equal": true,
+    "sources_equal_accepted_experiment_snapshot": true
+  },
+  "public_sketch_gates": [
+    {
+      "directory": "sketch-projection-public-5000-01",
+      "budget_ms": 5000,
+      "passed": 7,
+      "required": 7,
+      "public_processes": 10,
+      "reference_processes": 1,
+      "recorded_native_exits_match_expected_success_or_preflight_failure": true,
+      "before_after_inputs_equal": true
+    },
+    {
+      "directory": "sketch-projection-public-10000-01",
+      "budget_ms": 10000,
+      "passed": 7,
+      "required": 7,
+      "public_processes": 10,
+      "reference_processes": 1,
+      "recorded_native_exits_match_expected_success_or_preflight_failure": true,
+      "before_after_inputs_equal": true
+    }
+  ],
+  "public_cross_budget_inputs_equal": true,
+  "public_source_and_module_hashes_equal_accepted_experiment": true,
+  "documentation_examples": {
+    "examples": [
+      {
+        "source": "scratch\\next-sketch\\Guide.lean",
+        "source_sha256": "67f95b6dd146c5685a25948ca8c8a7e1792593f95873f371fd5fb44ae07a6423",
+        "returncode": 0,
+        "expected_queries": 2,
+        "accepted_outcomes": 2,
+        "source_diagnostics": 2,
+        "elapsed_seconds": 2.6254863999783993,
+        "success": true
+      },
+      {
+        "source": "scratch\\next-sketch\\ReadmeSketch.lean",
+        "source_sha256": "9adf659cdc476c801f4dfeb4d1288a88858fdb23bf41c0ffa338c45a72642afe",
+        "returncode": 0,
+        "expected_queries": 1,
+        "accepted_outcomes": 1,
+        "source_diagnostics": 1,
+        "elapsed_seconds": 2.539486800029408,
+        "success": true
+      }
+    ],
+    "success": true
+  },
+  "audit_limit": "Public stage classifications summarized and expected native status checked; the full inherited multi-family archive auditor was not run on these focused outputs."
+}

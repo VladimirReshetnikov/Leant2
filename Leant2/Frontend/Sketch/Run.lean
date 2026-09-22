@@ -1,5 +1,6 @@
 import Leant2.API
 import Leant2.Frontend.Sketch.Prepare
+import Leant2.Frontend.Sketch.Projection
 
 /-! Completion of an owned, closed sketch. The supplied expression is the real
 root of every pass; all program holes and the whole-contract proof share one
@@ -80,6 +81,56 @@ private def orderHoles (holes : Array OwnedHole) : MetaM (Array OwnedHole) := do
     return (hole, arity)
   return (keyed.insertionSort fun a b => a.2 < b.2).map Prod.fst
 
+/-- Observe only at an original owned-hole boundary, after a preceding whole
+hole has been completed. Search-created children remain outside this hook's
+eligibility test. Unsupported projections preserve ordinary search; native
+resource, cancellation, and unrelated internal exceptions retain identity. -/
+private def pruneOwnedHole (projection : Projection.State) (profile : Profile)
+    (contract : Expr) (observations : Array Observation) (goal : MVarId) : SearchM Bool := do
+  unless projection.prepared.holes.any (·.pending == goal) do return false
+  unless ← projection.prepared.holes.anyM (fun hole => hole.pending.isAssigned) do
+    return false
+  let context ← read
+  let observe : MetaM Bool := do
+    let report ← Projection.observe projection profile contract observations
+      (checkDeadline.run context)
+    context.observationReport.set report
+    return report.refuted
+  return ← tryCatchRuntimeEx observe fun exception => do
+    if Leant2.isInterrupt exception || exception.isMaxHeartbeat || exception.isMaxRecDepth then
+      throw exception
+    return false
+
+/-- Optional setup runs only for an eligible sketch, inside its lane budget.
+Observations must be portable closed schemas before their preparation state is
+restored. Unsupported setup retains the original completion path. -/
+private def prepareProjection? (prepared : Prepared) (contract : Expr)
+    (check : MetaM Unit) : MetaM (Option (Projection.State × Array Observation)) := do
+  let originalCore ← getThe Core.State
+  let originalMeta ← getThe Meta.State
+  let prepare : MetaM (Option (Projection.State × Array Observation)) := do
+    try
+      check
+      let some projection ← Projection.tryBuild prepared check | return none
+      let observations ← mkObservations contract prepared.expected
+      check
+      let observations ← observations.mapM fun observation => do
+        let predicate ← instantiateMVars observation.predicate
+        let decider ← observation.decider.mapM instantiateMVars
+        unless complete predicate && decider.all complete do
+          throwError "sketch projection: observation schema is not closed and frozen"
+        return { observation with predicate, decider }
+      check
+      if observations.isEmpty then return none
+      return some (projection, observations)
+    finally
+      modifyThe Meta.State fun _ => originalMeta
+      modifyThe Core.State fun _ => originalCore
+  tryCatchRuntimeEx prepare fun exception => do
+    if Leant2.isInterrupt exception || exception.isMaxHeartbeat || exception.isMaxRecDepth then
+      throw exception
+    return none
+
 private def runPrepared (query : Query) (prepared : Prepared)
     (originalCore : Core.State) (originalMeta : Meta.State) : MetaM Outcome :=
   withLCtx {} #[] <| withTheReader Core.Context (fun context =>
@@ -103,8 +154,8 @@ private def runPrepared (query : Query) (prepared : Prepared)
       providers, profile := query.profile, pruningEvidenceCache := some pruningEvidenceCache
       typeFrontier := frontier, contract := query.contract, residual
       recursionFirst := query.contract.isSome
-      -- Exact closed-root checks remain active. Partial closure expansion is
-      -- not yet justified for the source elaborator's graph shapes.
+      -- Native closed-root checks remain active. The separate owned-hole
+      -- projection does not enable generic partial closure expansion.
       skip := "residual" :: skip }
     let orderedHoles ← orderHoles prepared.holes
     let preparedCore ← getThe Core.State
@@ -170,7 +221,17 @@ private def runPrepared (query : Query) (prepared : Prepared)
           grace.set (some ((← IO.monoMsNow) + query.graceMs))
         if (← found.get).size ≥ query.maxCandidates then return true
         return (← IO.monoMsNow) > (← grace.get).getD 0
-    withLane ledger refuted grace timedOut query.budgetMs (name := "sketch") fun context =>
+    withLane ledger refuted grace timedOut query.budgetMs (name := "sketch") fun context => do
+      let configuration ← if prepared.holes.size < 2 || skip.contains "sketchProjection" then
+          pure configuration
+        else match query.contract with
+          | none => pure configuration
+          | some contract => do
+            let projection? ← prepareProjection? prepared contract (checkDeadline.run context)
+            match projection? with
+            | none => pure configuration
+            | some (projection, observations) => pure { configuration with
+                partialPruner := some (pruneOwnedHole projection query.profile contract observations) }
       enumerateInitialized context configuration initializePass accept
         (do return !(← found.get).isEmpty) [2, 3, 4, 5, 6, 7, 9, 12] completed
     let candidates ← found.get

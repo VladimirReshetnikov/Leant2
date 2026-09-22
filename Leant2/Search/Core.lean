@@ -68,6 +68,11 @@ structure SearchConfig where
   residual : Array (Expr × Option Expr) := #[]
   /-- Finer necessary conditions used only to prune partial programs. -/
   observations : Array Observation := #[]
+  /-- Optional query-owned pruning before expanding an unassigned goal. The
+  callback must preserve native state and justify every `true`; unsupported
+  shapes return `false`. It receives the current scoped resource context.
+  Ordinary queries leave this absent. -/
+  partialPruner : Option (MVarId → SearchM Bool) := none
   /-- The root hole of the current pass (a `Subtype` when a contract is present). -/
   root : Option MVarId := none
   /-- Rules disabled for experiments (`leant2.skipRules`). -/
@@ -922,6 +927,10 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     let depth := goal.depth
     if ← g.isAssigned then return ← search cfg leaf splits rest
     checkDeadline
+    if let some prune := cfg.partialPruner then
+      let refuted ← timed "prune.goal" (prune g)
+      checkDeadline
+      if refuted then return false
     g.withContext do
     let target ← timed "entry" (do instantiateMVars (← g.getType))
     -- Preserve genuine local lets in closed frontend telescopes. Reducing the

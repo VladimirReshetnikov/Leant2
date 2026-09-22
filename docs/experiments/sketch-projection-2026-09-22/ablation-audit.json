@@ -1,0 +1,37 @@
+{
+  "status": "bounded_miss",
+  "inputs_unchanged": true,
+  "experiment_valid": true,
+  "same_source_modules_toolchain_query_as_accepted03": true,
+  "only_native_probe_option": "-Dleant2.skipRules=sketchProjection",
+  "runs": [
+    {
+      "budget_ms": 5000,
+      "process_elapsed_ms": 7618,
+      "classification": "bounded_miss",
+      "actual_outcome": "refutedAll rejected=4939",
+      "api_elapsed_ms": 5136,
+      "ledger": {
+        "ruleApplications": 8285,
+        "unifications": 17283,
+        "proofAttempts": 5019,
+        "candidates": 0,
+        "rejected": 4939
+      }
+    },
+    {
+      "budget_ms": 10000,
+      "process_elapsed_ms": 12616,
+      "classification": "bounded_miss",
+      "actual_outcome": "refutedAll rejected=8290",
+      "api_elapsed_ms": 10189,
+      "ledger": {
+        "ruleApplications": 13699,
+        "unifications": 27781,
+        "proofAttempts": 8422,
+        "candidates": 0,
+        "rejected": 8290
+      }
+    }
+  ]
+}

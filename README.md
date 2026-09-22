@@ -180,10 +180,14 @@ where
 
 The fixed fold remains part of the result; search fills its step and seed in
 one backtracking continuation. Accepted completions bind the usual `it1`,
-`it2`, ... aliases. The [sketch guide](docs/sketches.md) explains hole ownership,
+`it2`, ... aliases. For supported contexts, observations can reject a completed
+earlier hole while later holes remain open, allowing search to reconsider that
+choice. The [sketch guide](docs/sketches.md) explains hole ownership,
 original-universe replay, axiom profiles, cancellation, and the supported
-boundary. This initial closed command does not establish all thirteen proposed
-carrier-given Church completions or complete proposal E2.
+boundary. The focused [projection experiment](docs/experiments/sketch-projection-2026-09-22/README.md)
+completes the supplied-Option foldr1 sketch at both budgets with its original
+type and all 36 observations. This covers one of thirteen proposed carrier-given
+Church cases; the full set and proposal E2 remain open.
 
 ### Calling synthesis from a metaprogram
 
@@ -256,6 +260,10 @@ commit `c69f484`. Each run includes the successful 83-job aggregate build;
 build jobs may be cached and are separate from the external case count.
 The preceding [API checkpoint](docs/baseline/library-api-2026-09-21/README.md)
 retains its original 832-check scope and revision `9ec21c8`.
+The later projection increment separately passes an 87-job aggregate native
+build, including early-pruning/backtracking, dependent-context, profile,
+fallback, and cancellation tests. Its focused carrier result does not change
+the external denominator or replace the complete archived run.
 The 8 frontend cases require 13 fresh Lean processes:
 8 original stages, 3 independent replays of actual tactic suggestions in
 files importing only Lean, and 2 separate expected-error stages. These process

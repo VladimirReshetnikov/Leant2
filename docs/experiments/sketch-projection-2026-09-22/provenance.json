@@ -1,0 +1,1274 @@
+{
+  "status": "UNVALIDATED_NOT_COMPILED_NOT_SYNTHESIZED",
+  "generation_only": true,
+  "operation": "foldr1",
+  "source_case_id": "church_case_039",
+  "source_line": 295,
+  "source_signature": "_ -> List a -> a",
+  "source_sha256_normalized": "782e4edaa5bf813e30e39ae02d52278ab0566315ebc521401a947b98c44cfd11",
+  "spec_path": "C:\\Leant\\lib\\Djex\\test-church\\behavior_partial_spec.py",
+  "spec_sha256_bytes": "2cb1b1b23eb2fa9338455094178e02de6055a1f8e78201b35a2619ed29d15d85",
+  "original_lean_type_without_inserted_default": "(∀ (church0 : Type), ((church0 → (church0 → church0)) → ((∀ (church1 : Type), ((church0 → (church1 → church1)) → (church1 → church1))) → church0)))",
+  "exact_established_defaulted_lean_type": "(∀ (church0 : Type), (church0 → ((church0 → (church0 → church0)) → ((∀ (church1 : Type), ((church0 → (church1 → church1)) → (church1 → church1))) → church0))))",
+  "exact_contract": "BehaviorPartial.check_foldr1 (f) = true",
+  "observation_count": 36,
+  "observations": [
+    {
+      "id": "foldr1_int_0_0_subtract",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "(\\x y -> x - y)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "(fun x y => x - y)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "list": [],
+        "combine": "subtract"
+      }
+    },
+    {
+      "id": "foldr1_int_0_0_affine",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "(\\x y -> 2*x + y)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "(fun x y => 2*x + y)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": -99,
+      "haskell_expected": "((-99) :: Prelude.Int)",
+      "lean_expected": "((-99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "list": [],
+        "combine": "affine"
+      }
+    },
+    {
+      "id": "foldr1_int_0_1_subtract",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "(\\x y -> x - y)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "(fun x y => x - y)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": -5,
+      "haskell_expected": "((-5) :: Prelude.Int)",
+      "lean_expected": "((-5) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "list": [
+          -5
+        ],
+        "combine": "subtract"
+      }
+    },
+    {
+      "id": "foldr1_int_0_1_affine",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "(\\x y -> 2*x + y)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "(fun x y => 2*x + y)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": -5,
+      "haskell_expected": "((-5) :: Prelude.Int)",
+      "lean_expected": "((-5) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "list": [
+          -5
+        ],
+        "combine": "affine"
+      }
+    },
+    {
+      "id": "foldr1_int_0_2_subtract",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "(\\x y -> x - y)",
+        "(partialEnc ([(8),(3),(1)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "(fun x y => x - y)",
+        "(BehaviorPartial.enc ([(8),(3),(1)] : (List Int)))"
+      ],
+      "expected_native": 6,
+      "haskell_expected": "((6) :: Prelude.Int)",
+      "lean_expected": "((6) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "list": [
+          8,
+          3,
+          1
+        ],
+        "combine": "subtract"
+      }
+    },
+    {
+      "id": "foldr1_int_0_2_affine",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "(\\x y -> 2*x + y)",
+        "(partialEnc ([(8),(3),(1)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "(fun x y => 2*x + y)",
+        "(BehaviorPartial.enc ([(8),(3),(1)] : (List Int)))"
+      ],
+      "expected_native": 23,
+      "haskell_expected": "((23) :: Prelude.Int)",
+      "lean_expected": "((23) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "list": [
+          8,
+          3,
+          1
+        ],
+        "combine": "affine"
+      }
+    },
+    {
+      "id": "foldr1_int_0_3_subtract",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "(\\x y -> x - y)",
+        "(partialEnc ([(2),(-3),(4),(1)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "(fun x y => x - y)",
+        "(BehaviorPartial.enc ([(2),(-3),(4),(1)] : (List Int)))"
+      ],
+      "expected_native": 8,
+      "haskell_expected": "((8) :: Prelude.Int)",
+      "lean_expected": "((8) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "list": [
+          2,
+          -3,
+          4,
+          1
+        ],
+        "combine": "subtract"
+      }
+    },
+    {
+      "id": "foldr1_int_0_3_affine",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((-99) :: Prelude.Int)",
+        "(\\x y -> 2*x + y)",
+        "(partialEnc ([(2),(-3),(4),(1)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((-99) : Int)",
+        "(fun x y => 2*x + y)",
+        "(BehaviorPartial.enc ([(2),(-3),(4),(1)] : (List Int)))"
+      ],
+      "expected_native": 7,
+      "haskell_expected": "((7) :: Prelude.Int)",
+      "lean_expected": "((7) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": -99,
+        "list": [
+          2,
+          -3,
+          4,
+          1
+        ],
+        "combine": "affine"
+      }
+    },
+    {
+      "id": "foldr1_int_1_0_subtract",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "(\\x y -> x - y)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "(fun x y => x - y)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "list": [],
+        "combine": "subtract"
+      }
+    },
+    {
+      "id": "foldr1_int_1_0_affine",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "(\\x y -> 2*x + y)",
+        "(partialEnc ([] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "(fun x y => 2*x + y)",
+        "(BehaviorPartial.enc ([] : (List Int)))"
+      ],
+      "expected_native": 99,
+      "haskell_expected": "((99) :: Prelude.Int)",
+      "lean_expected": "((99) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "list": [],
+        "combine": "affine"
+      }
+    },
+    {
+      "id": "foldr1_int_1_1_subtract",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "(\\x y -> x - y)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "(fun x y => x - y)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": -5,
+      "haskell_expected": "((-5) :: Prelude.Int)",
+      "lean_expected": "((-5) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "list": [
+          -5
+        ],
+        "combine": "subtract"
+      }
+    },
+    {
+      "id": "foldr1_int_1_1_affine",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "(\\x y -> 2*x + y)",
+        "(partialEnc ([(-5)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "(fun x y => 2*x + y)",
+        "(BehaviorPartial.enc ([(-5)] : (List Int)))"
+      ],
+      "expected_native": -5,
+      "haskell_expected": "((-5) :: Prelude.Int)",
+      "lean_expected": "((-5) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "list": [
+          -5
+        ],
+        "combine": "affine"
+      }
+    },
+    {
+      "id": "foldr1_int_1_2_subtract",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "(\\x y -> x - y)",
+        "(partialEnc ([(8),(3),(1)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "(fun x y => x - y)",
+        "(BehaviorPartial.enc ([(8),(3),(1)] : (List Int)))"
+      ],
+      "expected_native": 6,
+      "haskell_expected": "((6) :: Prelude.Int)",
+      "lean_expected": "((6) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "list": [
+          8,
+          3,
+          1
+        ],
+        "combine": "subtract"
+      }
+    },
+    {
+      "id": "foldr1_int_1_2_affine",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "(\\x y -> 2*x + y)",
+        "(partialEnc ([(8),(3),(1)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "(fun x y => 2*x + y)",
+        "(BehaviorPartial.enc ([(8),(3),(1)] : (List Int)))"
+      ],
+      "expected_native": 23,
+      "haskell_expected": "((23) :: Prelude.Int)",
+      "lean_expected": "((23) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "list": [
+          8,
+          3,
+          1
+        ],
+        "combine": "affine"
+      }
+    },
+    {
+      "id": "foldr1_int_1_3_subtract",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "(\\x y -> x - y)",
+        "(partialEnc ([(2),(-3),(4),(1)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "(fun x y => x - y)",
+        "(BehaviorPartial.enc ([(2),(-3),(4),(1)] : (List Int)))"
+      ],
+      "expected_native": 8,
+      "haskell_expected": "((8) :: Prelude.Int)",
+      "lean_expected": "((8) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "list": [
+          2,
+          -3,
+          4,
+          1
+        ],
+        "combine": "subtract"
+      }
+    },
+    {
+      "id": "foldr1_int_1_3_affine",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Int"
+      ],
+      "lean_type_arguments": [
+        "Int"
+      ],
+      "haskell_arguments": [
+        "((99) :: Prelude.Int)",
+        "(\\x y -> 2*x + y)",
+        "(partialEnc ([(2),(-3),(4),(1)] :: [Prelude.Int]))"
+      ],
+      "lean_arguments": [
+        "((99) : Int)",
+        "(fun x y => 2*x + y)",
+        "(BehaviorPartial.enc ([(2),(-3),(4),(1)] : (List Int)))"
+      ],
+      "expected_native": 7,
+      "haskell_expected": "((7) :: Prelude.Int)",
+      "lean_expected": "((7) : Int)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": 99,
+        "list": [
+          2,
+          -3,
+          4,
+          1
+        ],
+        "combine": "affine"
+      }
+    },
+    {
+      "id": "foldr1_bool_0_0_implication",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "(\\x y -> Prelude.not x || y)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "(fun x y => (!x) || y)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "list": [],
+        "combine": "implication"
+      }
+    },
+    {
+      "id": "foldr1_bool_0_1_implication",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "(\\x y -> Prelude.not x || y)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "(fun x y => (!x) || y)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "list": [
+          false
+        ],
+        "combine": "implication"
+      }
+    },
+    {
+      "id": "foldr1_bool_0_2_implication",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "(\\x y -> Prelude.not x || y)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "(fun x y => (!x) || y)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "list": [
+          true
+        ],
+        "combine": "implication"
+      }
+    },
+    {
+      "id": "foldr1_bool_0_3_implication",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.False :: Prelude.Bool)",
+        "(\\x y -> Prelude.not x || y)",
+        "(partialEnc ([Prelude.False,Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(false : Bool)",
+        "(fun x y => (!x) || y)",
+        "(BehaviorPartial.enc ([false,true,false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": false,
+        "list": [
+          false,
+          true,
+          false
+        ],
+        "combine": "implication"
+      }
+    },
+    {
+      "id": "foldr1_bool_1_0_implication",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "(\\x y -> Prelude.not x || y)",
+        "(partialEnc ([] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "(fun x y => (!x) || y)",
+        "(BehaviorPartial.enc ([] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "list": [],
+        "combine": "implication"
+      }
+    },
+    {
+      "id": "foldr1_bool_1_1_implication",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "(\\x y -> Prelude.not x || y)",
+        "(partialEnc ([Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "(fun x y => (!x) || y)",
+        "(BehaviorPartial.enc ([false] : (List Bool)))"
+      ],
+      "expected_native": false,
+      "haskell_expected": "(Prelude.False :: Prelude.Bool)",
+      "lean_expected": "(false : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "list": [
+          false
+        ],
+        "combine": "implication"
+      }
+    },
+    {
+      "id": "foldr1_bool_1_2_implication",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "(\\x y -> Prelude.not x || y)",
+        "(partialEnc ([Prelude.True] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "(fun x y => (!x) || y)",
+        "(BehaviorPartial.enc ([true] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "list": [
+          true
+        ],
+        "combine": "implication"
+      }
+    },
+    {
+      "id": "foldr1_bool_1_3_implication",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "Prelude.Bool"
+      ],
+      "lean_type_arguments": [
+        "Bool"
+      ],
+      "haskell_arguments": [
+        "(Prelude.True :: Prelude.Bool)",
+        "(\\x y -> Prelude.not x || y)",
+        "(partialEnc ([Prelude.False,Prelude.True,Prelude.False] :: [Prelude.Bool]))"
+      ],
+      "lean_arguments": [
+        "(true : Bool)",
+        "(fun x y => (!x) || y)",
+        "(BehaviorPartial.enc ([false,true,false] : (List Bool)))"
+      ],
+      "expected_native": true,
+      "haskell_expected": "(Prelude.True :: Prelude.Bool)",
+      "lean_expected": "(true : Bool)",
+      "decode": "identity",
+      "native_inputs": {
+        "default": true,
+        "list": [
+          false,
+          true,
+          false
+        ],
+        "combine": "implication"
+      }
+    },
+    {
+      "id": "foldr1_list_payload_0_0_append",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "[Prelude.Int]"
+      ],
+      "lean_type_arguments": [
+        "(List Int)"
+      ],
+      "haskell_arguments": [
+        "([(-99)] :: [Prelude.Int])",
+        "(\\x y -> x ++ y)",
+        "(partialEnc ([] :: [[Prelude.Int]]))"
+      ],
+      "lean_arguments": [
+        "([(-99)] : (List Int))",
+        "(fun x y => x ++ y)",
+        "(BehaviorPartial.enc ([] : (List (List Int))))"
+      ],
+      "expected_native": [
+        -99
+      ],
+      "haskell_expected": "([(-99)] :: [Prelude.Int])",
+      "lean_expected": "([(-99)] : (List Int))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99
+        ],
+        "list": [],
+        "combine": "append"
+      }
+    },
+    {
+      "id": "foldr1_list_payload_0_0_reverse_left",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "[Prelude.Int]"
+      ],
+      "lean_type_arguments": [
+        "(List Int)"
+      ],
+      "haskell_arguments": [
+        "([(-99)] :: [Prelude.Int])",
+        "(\\x y -> Prelude.reverse x ++ y)",
+        "(partialEnc ([] :: [[Prelude.Int]]))"
+      ],
+      "lean_arguments": [
+        "([(-99)] : (List Int))",
+        "(fun x y => x.reverse ++ y)",
+        "(BehaviorPartial.enc ([] : (List (List Int))))"
+      ],
+      "expected_native": [
+        -99
+      ],
+      "haskell_expected": "([(-99)] :: [Prelude.Int])",
+      "lean_expected": "([(-99)] : (List Int))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99
+        ],
+        "list": [],
+        "combine": "reverse_left"
+      }
+    },
+    {
+      "id": "foldr1_list_payload_0_1_append",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "[Prelude.Int]"
+      ],
+      "lean_type_arguments": [
+        "(List Int)"
+      ],
+      "haskell_arguments": [
+        "([(-99)] :: [Prelude.Int])",
+        "(\\x y -> x ++ y)",
+        "(partialEnc ([[(1)]] :: [[Prelude.Int]]))"
+      ],
+      "lean_arguments": [
+        "([(-99)] : (List Int))",
+        "(fun x y => x ++ y)",
+        "(BehaviorPartial.enc ([[(1)]] : (List (List Int))))"
+      ],
+      "expected_native": [
+        1
+      ],
+      "haskell_expected": "([(1)] :: [Prelude.Int])",
+      "lean_expected": "([(1)] : (List Int))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99
+        ],
+        "list": [
+          [
+            1
+          ]
+        ],
+        "combine": "append"
+      }
+    },
+    {
+      "id": "foldr1_list_payload_0_1_reverse_left",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "[Prelude.Int]"
+      ],
+      "lean_type_arguments": [
+        "(List Int)"
+      ],
+      "haskell_arguments": [
+        "([(-99)] :: [Prelude.Int])",
+        "(\\x y -> Prelude.reverse x ++ y)",
+        "(partialEnc ([[(1)]] :: [[Prelude.Int]]))"
+      ],
+      "lean_arguments": [
+        "([(-99)] : (List Int))",
+        "(fun x y => x.reverse ++ y)",
+        "(BehaviorPartial.enc ([[(1)]] : (List (List Int))))"
+      ],
+      "expected_native": [
+        1
+      ],
+      "haskell_expected": "([(1)] :: [Prelude.Int])",
+      "lean_expected": "([(1)] : (List Int))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99
+        ],
+        "list": [
+          [
+            1
+          ]
+        ],
+        "combine": "reverse_left"
+      }
+    },
+    {
+      "id": "foldr1_list_payload_0_2_append",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "[Prelude.Int]"
+      ],
+      "lean_type_arguments": [
+        "(List Int)"
+      ],
+      "haskell_arguments": [
+        "([(-99)] :: [Prelude.Int])",
+        "(\\x y -> x ++ y)",
+        "(partialEnc ([[(1)],[(2),(3)],[(4)]] :: [[Prelude.Int]]))"
+      ],
+      "lean_arguments": [
+        "([(-99)] : (List Int))",
+        "(fun x y => x ++ y)",
+        "(BehaviorPartial.enc ([[(1)],[(2),(3)],[(4)]] : (List (List Int))))"
+      ],
+      "expected_native": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "haskell_expected": "([(1),(2),(3),(4)] :: [Prelude.Int])",
+      "lean_expected": "([(1),(2),(3),(4)] : (List Int))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99
+        ],
+        "list": [
+          [
+            1
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            4
+          ]
+        ],
+        "combine": "append"
+      }
+    },
+    {
+      "id": "foldr1_list_payload_0_2_reverse_left",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "[Prelude.Int]"
+      ],
+      "lean_type_arguments": [
+        "(List Int)"
+      ],
+      "haskell_arguments": [
+        "([(-99)] :: [Prelude.Int])",
+        "(\\x y -> Prelude.reverse x ++ y)",
+        "(partialEnc ([[(1)],[(2),(3)],[(4)]] :: [[Prelude.Int]]))"
+      ],
+      "lean_arguments": [
+        "([(-99)] : (List Int))",
+        "(fun x y => x.reverse ++ y)",
+        "(BehaviorPartial.enc ([[(1)],[(2),(3)],[(4)]] : (List (List Int))))"
+      ],
+      "expected_native": [
+        1,
+        3,
+        2,
+        4
+      ],
+      "haskell_expected": "([(1),(3),(2),(4)] :: [Prelude.Int])",
+      "lean_expected": "([(1),(3),(2),(4)] : (List Int))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          -99
+        ],
+        "list": [
+          [
+            1
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            4
+          ]
+        ],
+        "combine": "reverse_left"
+      }
+    },
+    {
+      "id": "foldr1_list_payload_1_0_append",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "[Prelude.Int]"
+      ],
+      "lean_type_arguments": [
+        "(List Int)"
+      ],
+      "haskell_arguments": [
+        "([(99)] :: [Prelude.Int])",
+        "(\\x y -> x ++ y)",
+        "(partialEnc ([] :: [[Prelude.Int]]))"
+      ],
+      "lean_arguments": [
+        "([(99)] : (List Int))",
+        "(fun x y => x ++ y)",
+        "(BehaviorPartial.enc ([] : (List (List Int))))"
+      ],
+      "expected_native": [
+        99
+      ],
+      "haskell_expected": "([(99)] :: [Prelude.Int])",
+      "lean_expected": "([(99)] : (List Int))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99
+        ],
+        "list": [],
+        "combine": "append"
+      }
+    },
+    {
+      "id": "foldr1_list_payload_1_0_reverse_left",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "[Prelude.Int]"
+      ],
+      "lean_type_arguments": [
+        "(List Int)"
+      ],
+      "haskell_arguments": [
+        "([(99)] :: [Prelude.Int])",
+        "(\\x y -> Prelude.reverse x ++ y)",
+        "(partialEnc ([] :: [[Prelude.Int]]))"
+      ],
+      "lean_arguments": [
+        "([(99)] : (List Int))",
+        "(fun x y => x.reverse ++ y)",
+        "(BehaviorPartial.enc ([] : (List (List Int))))"
+      ],
+      "expected_native": [
+        99
+      ],
+      "haskell_expected": "([(99)] :: [Prelude.Int])",
+      "lean_expected": "([(99)] : (List Int))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99
+        ],
+        "list": [],
+        "combine": "reverse_left"
+      }
+    },
+    {
+      "id": "foldr1_list_payload_1_1_append",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "[Prelude.Int]"
+      ],
+      "lean_type_arguments": [
+        "(List Int)"
+      ],
+      "haskell_arguments": [
+        "([(99)] :: [Prelude.Int])",
+        "(\\x y -> x ++ y)",
+        "(partialEnc ([[(1)]] :: [[Prelude.Int]]))"
+      ],
+      "lean_arguments": [
+        "([(99)] : (List Int))",
+        "(fun x y => x ++ y)",
+        "(BehaviorPartial.enc ([[(1)]] : (List (List Int))))"
+      ],
+      "expected_native": [
+        1
+      ],
+      "haskell_expected": "([(1)] :: [Prelude.Int])",
+      "lean_expected": "([(1)] : (List Int))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99
+        ],
+        "list": [
+          [
+            1
+          ]
+        ],
+        "combine": "append"
+      }
+    },
+    {
+      "id": "foldr1_list_payload_1_1_reverse_left",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "[Prelude.Int]"
+      ],
+      "lean_type_arguments": [
+        "(List Int)"
+      ],
+      "haskell_arguments": [
+        "([(99)] :: [Prelude.Int])",
+        "(\\x y -> Prelude.reverse x ++ y)",
+        "(partialEnc ([[(1)]] :: [[Prelude.Int]]))"
+      ],
+      "lean_arguments": [
+        "([(99)] : (List Int))",
+        "(fun x y => x.reverse ++ y)",
+        "(BehaviorPartial.enc ([[(1)]] : (List (List Int))))"
+      ],
+      "expected_native": [
+        1
+      ],
+      "haskell_expected": "([(1)] :: [Prelude.Int])",
+      "lean_expected": "([(1)] : (List Int))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99
+        ],
+        "list": [
+          [
+            1
+          ]
+        ],
+        "combine": "reverse_left"
+      }
+    },
+    {
+      "id": "foldr1_list_payload_1_2_append",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "[Prelude.Int]"
+      ],
+      "lean_type_arguments": [
+        "(List Int)"
+      ],
+      "haskell_arguments": [
+        "([(99)] :: [Prelude.Int])",
+        "(\\x y -> x ++ y)",
+        "(partialEnc ([[(1)],[(2),(3)],[(4)]] :: [[Prelude.Int]]))"
+      ],
+      "lean_arguments": [
+        "([(99)] : (List Int))",
+        "(fun x y => x ++ y)",
+        "(BehaviorPartial.enc ([[(1)],[(2),(3)],[(4)]] : (List (List Int))))"
+      ],
+      "expected_native": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "haskell_expected": "([(1),(2),(3),(4)] :: [Prelude.Int])",
+      "lean_expected": "([(1),(2),(3),(4)] : (List Int))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99
+        ],
+        "list": [
+          [
+            1
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            4
+          ]
+        ],
+        "combine": "append"
+      }
+    },
+    {
+      "id": "foldr1_list_payload_1_2_reverse_left",
+      "source_case_id": "church_case_039",
+      "haskell_type_arguments": [
+        "[Prelude.Int]"
+      ],
+      "lean_type_arguments": [
+        "(List Int)"
+      ],
+      "haskell_arguments": [
+        "([(99)] :: [Prelude.Int])",
+        "(\\x y -> Prelude.reverse x ++ y)",
+        "(partialEnc ([[(1)],[(2),(3)],[(4)]] :: [[Prelude.Int]]))"
+      ],
+      "lean_arguments": [
+        "([(99)] : (List Int))",
+        "(fun x y => x.reverse ++ y)",
+        "(BehaviorPartial.enc ([[(1)],[(2),(3)],[(4)]] : (List (List Int))))"
+      ],
+      "expected_native": [
+        1,
+        3,
+        2,
+        4
+      ],
+      "haskell_expected": "([(1),(3),(2),(4)] :: [Prelude.Int])",
+      "lean_expected": "([(1),(3),(2),(4)] : (List Int))",
+      "decode": "identity",
+      "native_inputs": {
+        "default": [
+          99
+        ],
+        "list": [
+          [
+            1
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            4
+          ]
+        ],
+        "combine": "reverse_left"
+      }
+    }
+  ],
+  "profile": "strictConstructive",
+  "explicit_query_providers": [],
+  "original_provider_inventory": {
+    "haskell": [],
+    "lean": [],
+    "discovery": "off; exact explicit allowlist only",
+    "rationale": "The target already supplies its binary operation, and the Church list supplies iteration. No numeric or reduction provider is needed."
+  },
+  "carrier": "Option A",
+  "open_holes_in_source_order": [
+    "step",
+    "init",
+    "finish"
+  ],
+  "budgets_ms": [
+    5000,
+    10000
+  ],
+  "budget_environment_variable": "LEANT2_SKETCH_PROBE_BUDGET_MS",
+  "control_declarations": [
+    "BehaviorPartialControl.witness_foldr1",
+    "BehaviorPartialControl.witness_foldr1_passes",
+    "BehaviorPartialControl.wrong_foldr1_always_default",
+    "BehaviorPartialControl.wrong_foldr1_always_default_rejected",
+    "BehaviorPartialControl.wrong_foldr1_wrong_association",
+    "BehaviorPartialControl.wrong_foldr1_wrong_association_rejected",
+    "BehaviorPartialControl.wrong_foldr1_default_is_seed",
+    "BehaviorPartialControl.wrong_foldr1_default_is_seed_rejected"
+  ],
+  "control_import_policy": "Controls.lean must never be imported into Probe.lean or its process",
+  "probe_sha256": "bfb979d865713392839c360436db316962f778fc277b2d95708fb332f3d0a304",
+  "controls_sha256": "d309b659f10e83b826e3e4a420b8ca730abde2e6eb8731776c444771141e68cc",
+  "template_sha256": "4db780e6590909ca0ea7ec7f404263e49cf5365102f113bc50bbe98c9b58c4b0"
+}

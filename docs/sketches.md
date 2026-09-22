@@ -71,14 +71,28 @@ universal, unlike the finite fold observations above.
 Sketch search uses only the original universes. It does not fall
 back to an unconstrained query. Completion depth measures the expressions
 invented for the holes; the supplied body is guidance. The search grammar and
-preparation bounds remain finite, and partial residual pruning is disabled for
-these source-created closure graphs.
+preparation bounds remain finite.
 
 Holes with fewer function arguments are tried first, with source order breaking
 ties. The whole-contract proof follows all program holes. This helps a small
 initializer constrain a larger step while retaining every provider and the
 same joint backtracking continuation. It is a search-order heuristic, not a
 completeness guarantee.
+
+For a sketch with at least two holes, a completed earlier hole can sometimes
+refute an observation before later holes are filled. This optional check uses
+a typed, closed abstraction of the original sketch. Unfinished holes remain
+unknown functions over their original local contexts, including when search
+has assigned a hole a body that still contains unfinished children. A false
+observation can then reject the current branch and reconsider the earlier
+completion. A satisfied observation never accepts a partial program.
+
+This projection currently supports frozen ordinary binder contexts. Original
+let/have or auxiliary declarations, and unsupported native graph shapes,
+leave ordinary completion available. Generic partial closure expansion remains
+disabled for sketches. The experimental option
+`set_option leant2.skipRules "sketchProjection"` disables just the new projection
+check; it does not change final whole-contract checking.
 
 ## Results, failure, and trust
 
@@ -96,7 +110,9 @@ theorems can be expanded for transport; fresh axioms,
 definitions, and opaque values cannot silently escape into accepted results.
 
 A false decision may discard a completion only when its predicate/decider
-dependencies obey the selected policy. Forbidden false evidence is
+dependencies obey the selected policy. The partial projection also audits the
+unreduced original contract and every completed hole retained in its view.
+Forbidden false evidence is
 inconclusive, leaving ordinary proof search available. Unsafe declarations
 cannot authorize pruning, even when their axiom inventory is empty. This check
 governs pruning; accepted programs and proofs still pass the kernel gate.
@@ -145,7 +161,7 @@ Native regressions separately cover preparation and closure ownership,
 initialized continuation, exact original-query replay, axiom profiles,
 caller-state restoration, and alias rollback, including real cancellation
 after publication. They belong to the native build gate rather than the
-external case denominator. The final aggregate build passes 83 jobs, and the
+external case denominator. The archived source's aggregate build passes 83 jobs, and the
 exact examples in this guide and the root README compile with accepted sketch
 outcomes. The archive independently reconstructs each actual emitted term and
 replay source, rechecks diagnostics and process exits, and preserves exact raw
@@ -153,8 +169,27 @@ outputs. Earlier focused checks remain separate evidence. See the
 [implementation notes](implementation-notes.md) for the maintained validation
 boundary and the remaining work.
 
+The later projection increment passes the full 87-job aggregate native build.
+Its component matrix has 27 named checks, including asymmetric dependent
+`Fin` contexts and native/projected agreement. Integration tests separately
+observe a wrong first hole being refuted while the second remains open,
+then backtracking to exact whole-contract acceptance. They also check
+projection-disabled equivalence, unsupported-let fallback, scoped quotas,
+and real cancellation.
+
+The focused [foldr1 projection experiment](experiments/sketch-projection-2026-09-22/README.md)
+uses the unchanged original supplied-default type, all 36 observations, a fixed
+`Option A` carrier, and three open holes. With no explicit providers and the
+strict constructive profile, the 5000-ms and 10000-ms runs both synthesize a
+completion whose program and full original contract proof independently replay
+with no axioms. The earlier unchanged probe had bounded misses at both budgets.
+Disabling only projection on the current build also produces valid bounded
+misses at both budgets; this paired check retains the same query and providers.
+This is one carrier-given result, separate from the thirteen original open
+Church searches and from a complete external regression checkpoint.
+
 This first closed command does not close proposal E2. All thirteen original
-Church stretch searches remain a separate open-search track; the proposed
-thirteen carrier-given completions also remain to be established independently.
+Church stretch searches remain a separate open-search track; the full set of
+thirteen proposed carrier-given completions remains to be established independently.
 Contextual contract lifting, term/definition sketch syntax, arbitrary dependent
 sketches, carrier invention, and editor code actions remain later work.

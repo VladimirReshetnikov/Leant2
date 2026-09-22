@@ -531,10 +531,31 @@ prepared expression as its actual root. Each depth restores the same complete
 prepared snapshot. Program holes are ordered stably by telescope arity, followed
 by the one whole-contract proof. All providers and every owned goal remain
 available; a failed complete contract backtracks across the entire continuation.
-Partial residual pruning is disabled for these native closure graphs, while
+Generic partial closure expansion is disabled for these native graphs, while
 exact closed-root evaluation remains available. Both initialized and ordinary
 enumeration deduplicate programs only after acceptance, preserving different
 proofs of a program after an axiom-profile rejection.
+
+For two or more holes, the optional `Sketch.Projection` component builds a
+closed skeleton parameterized by the original hole interfaces. Construction
+uniformly extends the owned native contexts with fresh, closed interface
+parameters, checks their assignments, instantiates the real delayed closures,
+and independently kernel-checks the resulting abstraction. The original
+Core/Meta state is restored after construction and each observation check.
+Only completed original hole bodies are substituted, closed over their frozen
+original contexts. A body containing an unfinished search child stays opaque.
+
+The query-owned `SearchConfig.partialPruner` runs before expansion and inherits
+the current resource context. The sketch callback acts only at original pending
+hole identities, after some earlier hole was assigned. Authorized false
+observations discard that branch without assigning a proof or accepting a
+partial program. Full original-contract, predicate, and decider applications
+are audited before beta reduction, under the actual query profile. There is
+no cross-call projection cache. Ordinary unsupported shapes conservatively
+retain search; internal/runtime/cancellation/resource exceptions propagate.
+Original let/have and auxiliary contexts are outside this projection fragment.
+`leant2.skipRules = "sketchProjection"` provides an experimental ablation while
+retaining the existing final contract and acceptance gates.
 
 Completed programs and proofs pass the selected gate, bounded theorem-only
 transport, and an independent gate at the exact original target and unreduced
@@ -557,16 +578,39 @@ passes all 839 at both budgets on `c69f484`, with unchanged pre/post inputs and
 independent reconstruction of actual emitted-source replays. The previous
 832-check API checkpoint retains its own revision and scope.
 
-The final source passes the 83-job aggregate native gate after serial module
+The archived `c69f484` source passes the 83-job aggregate native gate after serial module
 builds, all 76 Python harness tests, and the exact guide/README examples with
 three accepted sketch outcomes. An earlier parallel aggregate attempt exhausted
 host resources; its failure log remains separate from the successful serial
 rebuild. The unsafe-pruning regressions and public runs include the final
 unsafe-declaration guard.
 
+The later projection increment passes a fresh 87-job aggregate native build
+after all local modules were visited serially. Its 27 named component checks
+cover dependent asymmetric contexts, original-scope refusal, native/projected
+agreement, unfinished-child opacity, policy checks before syntax erasure, and
+state restoration. The separate integration module witnesses actual partial
+rejection followed by successful backtracking, public enabled/disabled
+acceptance, unsupported-let fallback, scoped quota enforcement, and native
+cancellation. These are native build checks, not additional external cases.
+
+The focused [projection experiment](experiments/sketch-projection-2026-09-22/README.md)
+preserves `church_case_039`'s exact supplied-default type and all 36 original
+observations, with empty explicit providers and the strict constructive profile.
+The same three-hole supplied-Option sketch that missed both budgets now returns
+one accepted completion at 5000 and 10000 ms. Both actual programs and full
+original contract proofs independently replay with zero axioms. Each run uses
+1774 rules, 5863 unifications, 432 proof attempts, one accepted candidate, and
+419 rejected complete proposals; the API times are 3934 and 3943 ms.
+Full recorded source/module/toolchain/provenance fingerprints are unchanged
+within the experiment. A same-build ablation with only
+`-Dleant2.skipRules=sketchProjection` changed returns valid bounded misses at
+both budgets, with unchanged recorded inputs. This is a bounded focused result, not a general
+performance claim or a new full 839-case archive.
+
 This is the initial closed command for E2. All thirteen original open Church
-stretch searches remain unscored, and the proposed thirteen carrier-given
-completions remain to be established separately. Contextual contract lifting,
+stretch searches remain unscored, and the full set of thirteen proposed
+carrier-given completions remains to be established separately. Contextual contract lifting,
 term/definition sketch syntax, arbitrary dependent sketches, carrier invention,
 and editor actions remain open.
 
