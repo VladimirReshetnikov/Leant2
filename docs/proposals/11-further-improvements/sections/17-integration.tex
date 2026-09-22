@@ -1,0 +1,119 @@
+\section{Integration provenance and evidence boundaries}\label{sec:integration}
+
+\subsection{What was consolidated}
+
+The incoming expert responses N1--N9 answered the same 31 questions in the
+earlier version of this article. They are not the older architecture proposals
+P1--P9 retained in directories 01--09. Their common explanations now have one
+maintained home: the semantic boundary in
+Section~\ref{sec:semantic-boundaries}, the topic-specific answers in Part~III,
+and the roadmap in Section~\ref{sec:roadmap}. Distinct constructions and
+assumptions are retained; repeating the same claim in several responses is
+not additional experimental evidence.
+
+The complete original packages are pinned to repository revision
+\code{5c3a53c} (the full SHA is recorded in the inventory). The machine-readable
+\path{integration/sources.json} identifies all 97 original files by path,
+Git blob and SHA-256 and records their disposition. Original articles and PDFs
+remain recoverable from that revision; they are superseded as reading paths
+by this maintained article. The 28 distinct executable-evidence and provenance
+files are preserved byte-for-byte under \path{evidence/N1/} through
+\path{evidence/N9/}. Source READMEs and standalone article build instructions
+are superseded by the maintained reproduction instructions, not treated as
+additional design recommendations.
+
+\begin{longtable}{@{}L{10mm}L{71mm}L{68mm}@{}}
+\toprule ID & Original package/article & Distinct evidence emphasis\\\midrule\endhead
+N1 & \path{new/1/article.tex}, split sections & Binary length-modulo-three carrier, conflict clique, eleven model checks.\\
+N2 & \path{new/2/Leant2_Expert_Answers/} & Four-state two-symbol machine; direct-tail obstruction and finite search accounting.\\
+N3 & \path{new/3/leant2-expert-answers/} & Unary modulo-three, rollback reuse and approximation-direction countermodels.\\
+N4 & \path{new/4/leant2_expert_answers/} & Parity and unary carriers, conjunction-aware retrieval, partial-row graph.\\
+N5 & \path{new/5/leant2_expert_answers/} & Four-state witness, strict request/publication distinctions and negative-policy audit recommendations.\\
+N6 & \path{new/6/leant2_expert_answers.tex} & Option min/max, Fibonacci pair, observational noncongruence and branch-qualified cache model.\\
+N7 & \path{new/7/Leant2_Expert_Questions/} & Feature-cover enumeration, shared angelic-call conflict, historical 31-question index.\\
+N8 & \path{new/8/leant2_expert_answers/} & Minimal sample-consistent carrier that overfits and is refined by a new observation.\\
+N9 & \path{new/9/leant2-expert-answers.tex} & Maximum-prefix-sum invariant monoid, scheme-dependent state and function-carrier reversal.\\
+\bottomrule
+\end{longtable}
+
+These path names are provenance identifiers, not active links to the retired
+incoming directories. The integration ledgers next to the source inventory
+map source sections and individual claims to their canonical destinations.
+They record duplicate treatment, corrections, alternatives and question
+dispositions. The bibliography consolidates references by work and pinned
+source rather than preserving multiple aliases for the same publication.
+
+\subsection{The historical question inventory}
+
+Answered questions are removed from the active expert agenda. The following
+table preserves their identifiers and scope for provenance without posing them
+again. Each topic's disposition paragraph records the established answer and
+the remaining limitation. New questions use the distinct suffix \code{N};
+they ask about the residual problem, not whether an already identified method
+exists.
+
+\begin{longtable}{@{}L{22mm}L{87mm}L{38mm}@{}}
+\toprule Historical IDs & Themes now covered by integrated answers & Canonical section\\\midrule\endhead
+R1.Q1--Q4 & Coupled goals, admissible cost bounds, learning versus ranking, deadline reproducibility & \ref{sec:search}\\
+R2.Q1--Q5 & Carrier minimality, polymorphic alphabets, fusion/lifting, motive bases, generalization & \ref{sec:carriers}\\
+R3.Q1--Q4 & Higher-order live evaluation, rollback-safe normalization, decisive evaluation, bounded angelic search & \ref{sec:evaluation}\\
+R4.Q1--Q4 & Motive templates, transports, unfolding, native induction interfaces & \ref{sec:dependent}\\
+R5.Q1--Q3 & Interpreter agreement, top-down recursion constraints, practical recursion schemes & \ref{sec:recursion}\\
+R6.Q1--Q4 & Value/proof interaction, sufficient induction fragments, automation, proof scheduling & \ref{sec:contracts}\\
+R7.Q1--Q3 & Dependent abstraction, type-class prerequisites, relevance for programs & \ref{sec:retrieval}\\
+R8.Q1--Q2 & Ranking objectives and exact versus sampled equivalence & \ref{sec:ranking}\\
+R9.Q1--Q2 & Model-proposal evaluation and replay/auditability & \ref{sec:learning}\\
+\bottomrule
+\end{longtable}
+
+Several answers are conditional rather than universal: finite-state minimality
+does not identify a minimal intended Lean program; a finite motive grammar
+does not enumerate all dependent motives; a measurement protocol does not
+supply an unmeasured model-accuracy percentage. Retiring an overbroad or
+answered question therefore does not assert that all associated research is
+finished. The active agenda in Section~\ref{sec:experts} points to the new,
+more specific questions.
+
+\subsection{What the preserved executable checks establish}
+
+All nine Python suites were rerun in isolated copies on September 22, 2026.
+Every process exited zero with empty stderr; every decoded JSON result matched
+its archived result; all preserved input hashes were unchanged. The raw
+process streams, executable hash and receipt are under
+\path{evidence/rerun-2026-09-22/}. The driver
+\path{tools/check_proposal_models.py} recreates the experiment in a fresh
+directory and never overwrites the historical receipts.
+
+The suites have different mathematical domains and stopping rules. N1's
+binary machine search exhausts the one- and two-state spaces and stops on a
+three-state witness. N2/N7 account for different seed conventions than N5;
+their table counts must not be interchanged. N3/N6/N9 use unary modulo-three
+models. N8 stops on a minimal four-state sample witness which fails at length
+six, then refines it. N9 checks maximum-prefix-sum closure and associativity
+on a finite invariant domain, including a counterexample to unrestricted
+identity. Written general proofs and the finite executions remain distinct.
+
+These checks execute neither Lean nor Leant2. They establish no native closure
+semantics, motive elaboration, engine throughput, model accuracy or universal
+refutation theorem. The original source manifests and checksum reports also
+retain their historical meaning: their article page counts and file hashes
+refer to the source packages, not to this consolidated PDF. The documentation
+build and visual review are recorded separately.
+
+\subsection{Versioned source observations and disagreements}
+
+The original performance table belongs to \code{33cec8b}; the responses'
+selected source inspections belong to \code{784664f}. Pinned Lean 4.34.0
+source advice is distinguished from moving manual pages consulted by the
+authors, some describing 4.35.0-rc2. A historical source observation is not a
+fresh implementation test. Reported external corpus counts and cloud timing
+conditions remain measurements of those external systems.
+
+The consolidation does not turn differing confidence levels into agreement:
+documented \code{sauto} options do not prove that its search policy transfers
+to Lean; native motive construction does not solve unrestricted generalization;
+equation-based evaluation need not coincide with definitional reduction;
+library selection is not a complete dependent retrieval procedure. The
+topic sections retain these qualifications where they affect an algorithm.
+The six independent obligations of
+Section~\ref{sec:semantic-boundaries} govern all resulting claims.

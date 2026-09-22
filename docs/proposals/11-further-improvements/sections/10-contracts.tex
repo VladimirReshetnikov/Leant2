@@ -1,46 +1,102 @@
 \section{R6. Contracts beyond decidable observations}\label{sec:contracts}
 
-\subsection{The problem}
+\subsection{The problem and the implementation boundary}\label{sec:contract-boundary}
 
-Almost every contract in the corpus is a conjunction of closed decidable equations. Those are decided by evaluation and the proof is \code{of_decide_eq_true}. The interesting contracts are different:
+Closed decidable equations support evaluation followed by an ordinary Lean proof. Universal length preservation, involution, sortedness with permutation, and agreement with a reference implementation require more: tests can refute a candidate, but only a proof certifies the requested universal contract. Refinement signatures such as \code{(xs : List A) -> {ys : List B // ys.length = xs.length}} expose local proof obligations during construction. Laws such as \code{f (f xs) = xs} or \code{f (xs ++ ys) = f xs ++ f ys} couple several executions and need not decompose into independent pointwise postconditions.
+
+The incoming implementation audits already find root program--proof pairing: \code{Engine.lean} wraps a contracted target in a \code{Subtype} and extracts its value and property for acceptance. R6 does not propose inventing that pairing again. The missing extension is to carry a suitable invariant through recursive motives so each recursive result comes with the property needed by its caller. The inspected \code{proofPortfolio} in \code{Search/Core.lean} refuses a target containing free variables as well as unresolved metavariables. A legitimate local branch goal usually contains free variables and an induction hypothesis. It needs a contextual proof adapter, or a checked abstraction over its telescope; adding a tactic to the closed-goal list does not supply that adapter.
+
+N1--N9 agree on these architectural boundaries. N8 explicitly identifies the existing root subtype; N1, N2, N4, and N7 identify the contextual portfolio gap. These source observations do not establish that the proposed service has been implemented or benchmarked. The unified proposal already specifies proof-service transactions, typed counterexamples, and an unresolved queue. The following refines readiness and induction certification; the common authority and result distinctions remain those of Section~\ref{sec:semantic-boundaries}.
+
+\subsection{Dependency-sensitive program and proof construction}\label{sec:contract-readiness}
+
+The original assertion that a proof about a program with holes is meaningless is too strong. Reflexivity can solve \code{?n = ?n} uniformly, or solve \code{?n = 3} by assigning a construction choice. Constructor disjointness can exclude an impossible branch before its arguments close. A conditional lemma can leave explicit assumptions for later fillings. These are three effects: a uniform proof, a branch-local assignment, and a proof under residual obligations. Record which occurred; a timed-out tactic supplies none of them.
+
+For each proof job retain the exact goal and local telescope, owning candidate, value/type/universe dependencies, local hypotheses and instance choices read, assignments it may make, certified consequences, attempted tiers, and support fingerprint. Cheap conversion, reflexivity, constructor reasoning, rigid index constraints, and applicable lemmas run when informative. Expensive proof search runs when its particular dependencies stabilize or its expected pruning benefit justifies an early attempt. A tactic assignment is a transactional program-search choice, visible to dependent goals and restored on backtracking. Metavariables represent existential choices; explicit binders or interface assumptions express a theorem uniform in all remaining choices. Conflating the two can incorrectly reuse a proof from one filling at another.
+
+Keep value construction, ready local proofs, termination obligations, and global proof debt as roles in the same dependency graph. A required instance may determine an output type or computational operation and cannot always wait until every type hole is ground. Wake suspended tasks only after a relevant support change or increased tier. Cache a completed local proof only after abstracting its dependency-closed telescope and checking the template on reuse.
+
+For a pointwise specification, construct
+\[
+ g : \prod_{x:X}\{y:B(x)\mid Q(x,y)\},\qquad f(x)=g(x).\mathsf{val}.
+\]
+For length-preserving map, the nil branch returns \code{([], rfl)}. Given recursive pair $(ys,h)$ with $h:|ys|=|xs|$, the cons branch returns
+\[
+ \bigl(a'(a)::ys,\ \mathsf{congrArg}(\mathsf{Nat.succ},h)\bigr),
+\]
+after the computation equations for length. This is a complete local proof pattern: its proof follows the construction instead of rediscovering induction on a finished anonymous recursor. A wrong-length branch can expose an early local contradiction. For accumulator or multi-call laws, strengthen $Q$ to an invariant $I$ and retain a checked implication back to $Q$; failure may reopen the invariant or carrier choice.
+
+Synquid motivates specification decomposition, but its solver-supported refinement fragment is not unrestricted Lean \code{Prop}~\cite{synquid}. A native adaptation uses a finite vocabulary of length equations, nonemptiness, bounds, membership, or ordering predicates, with checked introduction, elimination, implication, monotonicity, and component-transfer lemmas. Abstract joins forget unsupported facts; failed implication search means unknown. This gives useful refinement propagation without claiming complete liquid inference for arbitrary propositions. All nine incoming treatments share this restricted interpretation; their repeated examples are consolidated here.
+
+\subsection{A certificate for a recognizable induction class}\label{sec:contract-local-certificates}
+
+Let $s(xs)=\mathsf{foldr}\,\delta\,z\,xs$, let $I(xs,r)$ relate the input to its summary, and let $\phi$ finish it. Generate
+\begin{align}
+ &I([],z),\label{eq:contract-vc-base}\\
+ &\forall a,xs,r,\quad I(xs,r)\to I(a::xs,\delta(a,r)),\label{eq:contract-vc-step}\\
+ &\forall xs,r,\quad I(xs,r)\to Q(xs,\phi(r)).\label{eq:contract-vc-finish}
+\end{align}
+
+\begin{proposition}[Local invariant certification]\label{prop:contract-local-certification}
+Proofs of \eqref{eq:contract-vc-base}--\eqref{eq:contract-vc-finish} imply
+\[
+ \forall xs,\ Q(xs,\phi(\mathsf{foldr}\,\delta\,z\,xs)).
+\]
+\end{proposition}
+\begin{proof}
+Structural induction proves $I(xs,s(xs))$. The nil case is \eqref{eq:contract-vc-base}; the cons case uses the induction hypothesis in \eqref{eq:contract-vc-step} and the fold computation equation. Apply \eqref{eq:contract-vc-finish}. Each composition is an ordinary proof term.
+\end{proof}
+
+For a polynomial datatype, generate one certificate per constructor $c$:
+\[
+ \left(\bigwedge_{j=1}^{m}I(x_j,r_j)\right)
+ \longrightarrow I\bigl(c(\vec v,\vec x),a_c(\vec v,\vec r)\bigr).
+\]
+All nonrecursive fields and other hypotheses are universally quantified; a base constructor has $m=0$. Induction supplies exactly the recursive hypotheses licensed by the datatype. Indexed families require each result at the correct motive fiber and explicit transport obligations. If recursive calls change an accumulator, quantify it in the induction hypothesis. For well-founded recursion use its checked induction principle and equation correspondence rather than treating arbitrary calls as structurally smaller children.
+
+Define the initial recognizer by a finite grammar of recursion/invariant/generalization plans, a terminating oriented rewrite policy with proved rules, and a declared residual logic. A plan generates branch conditions, applies its hypotheses and rewrites, checks residual syntax, and requests proof-producing leaf decisions. A useful first fragment contains constructor/projection facts and quantifier-free linear arithmetic over naturals and integers, including only fixed-coefficient multiplication. Recognition is decidable for the bounded plan class when plan enumeration, normalization, and leaf checking terminate. Completeness is relative to this class and to an actually complete solver for the declared fragment. The names \code{omega} or \code{grind}, especially with resource caps, do not establish that premise by themselves.
+
+Map length reduces from $|ys|=|xs|$ to equality of successor lengths. Affine size bounds often have similar leaves. Reverse may need an append lemma or generalized accumulator invariant; sorting needs order and permutation facts; involution can need a lemma connecting two traversals. These are additional certificate requirements, not evidence that the properties are false. Return the failed local condition and selected plan with one of: certified; template applicable but invariant missing; outside the current fragment; or unresolved at the allotted bound. Missing invariants guide carrier/generalization proposals or lemma retrieval.
+
+N8 adds a crucial scope restriction: even a checked counterexample to a \emph{local invariant condition} need only reject that program--invariant pair. A too-strong invariant can fail while the original postcondition is true. Refuting the program requires a contradiction with the original contract, not merely failure of a sufficient proof plan. N1--N9's local-certification results are mathematical design arguments; their finite host-language models are not native Lean implementations of this recognizer.
+
+\subsection{A bounded native induction service}\label{sec:contract-induction-service}
+
+Use an explicit planner around Lean's induction facilities. The incoming source audits identify \code{MVarId.induction} and, in the pinned 4.34.0 elaborator, \code{evalFunInduction} and \code{fun_cases}~\cite{leaninduction,leanfuninduction}. N1 and other reports also cite a moving manual; those citations must not be mistaken for a release-specific integration test. Named supported recursive definitions may have functional induction principles~\cite{lean418}; an anonymous recursor need not have the theorem name expected by a high-level tactic. Preserve recursive equations, major premise, generalizations, and realization correspondence. Construct needed declarations in a scratch environment and include their dependencies in replay.
+
+The adapter introduces quantified inputs; chooses a small ordered set of structural or functional principles and dependency-closed generalizations; generates branches; unfolds checked equations; and runs local assumptions, reflexivity, curated simplification, arithmetic, then bounded saturation. Library lookup can precede repeated speculative induction when a theorem already settles a branch. Separate principle-selection, branch-generation, and branch-closing budgets. Save the proof term, not only a tactic string.
+
+Aesop supplies configurable rule search, Canonical offers dependent inhabitation and recursor reasoning, and LeanHammer supplies premise selection and proof reconstruction~\cite{aesop,canonical,leanhammer}. None establishes automatic discovery of arbitrary invariants under Leant2's interactive budget. N7's HipSpec-style adaptation proposes a bounded grammar of equations from failed branches, tests conjectures, then proves them before adding them to a reusable lemma bank~\cite{hipspec}. An unproved conjecture is never a simplification axiom. N8's observations about induction-oriented \code{try?} development~\cite{lean426} likewise motivate a version-pinned experiment, not an assumed drop-in solution. No incoming report establishes a complete maintained rippling/lemma-invention service for this task.
+
+Every service preserves full state on ordinary failure, propagates cancellation distinctly, checks scope and the original proposition, and audits transitive axioms. Its result distinguishes proof, checked counterexample, reduced or suspended obligation, unsupported fragment, and resource failure. Heartbeats and recursion limits constrain supported work; a deadline checked between calls does not preempt one long call. A service that cannot cooperate needs an isolated process for a hard wall-clock bound. Optional solvers, hammers, or remote retrieval remain outside the core-only default; startup, reconstruction, and communication costs are measured.
+
+\subsection{Paying proof debt without starvation}\label{sec:contract-proof-debt}
+
+There is a simple optimal ordering only under a much simpler model. For independent jobs with fixed positive costs $t_i,t_j$, success probabilities $p_i,p_j$, and stopping at the first success, the expected costs are
+\[
+ t_i+(1-p_i)t_j\quad\hbox{and}\quad t_j+(1-p_j)t_i.
+\]
+The first is no larger exactly when $p_i/t_i\ge p_j/t_j$. N2 states the analogous first-rejection calculation for tests; N3 supplies the first-proof-success form. Both follow by the same exchange argument. Actual proof jobs violate independence and stationarity: assignments, shared lemmas, counterexamples, warm contexts, and earlier failed tiers change other jobs' costs and prospects. General anytime and metareasoning ideas motivate a policy, not an independent-bandit optimality theorem~\cite{anytime,metareasoning}.
+
+A proposed score for an eligible next tier is
+\[
+ U(j)=\frac{\widehat p_{\mathrm{cert}}V_{\mathrm{cert}}
+              +\widehat p_{\mathrm{refute}}V_{\mathrm{prune}}
+              +\lambda\widehat I_{\mathrm{shared}}}
+             {\widehat c_j+\widehat c_{\mathrm{switch}}+\varepsilon}.
+\]
+Utility includes candidate quality, downstream work avoided, and reusable information. These are measured estimates, not admissible search bounds. Freeze them within recorded logical epochs. Compare learned policies with deterministic fixed tiers and round-robin resumption before choosing a default.
+
+The baseline uses weighted round-robin or deficit scheduling among value search, refutation, ready local proofs, termination, and global proofs. Reserve positive service for each eligible nonempty queue and age old jobs. Give increasing logical-work quanta, record attempted tiers and dependency versions, and resume continuations when the solver permits; otherwise account for restart and reuse only valid preprocessing. Batch jobs sharing a context when measured setup cost warrants it. Bound active debt by suspending states, not rejecting them. Waiting until search is idle can starve proofs forever; the earlier illustrative 5/50/500 ms ladder is a calibration hypothesis, not a portable semantic exchange rate. A small certification reserve near a deadline improves opportunity without guaranteeing success.
+
+Before costly tiers, test survivors against the bank of checked counterexamples. Generate well-typed dependent inputs with indices and precondition proofs; confirm violations in the admitted semantics. An invalid input, failed precondition, evaluator timeout, or failed proof is not a counterexample. Reuse counterexamples only for the same frozen contract and interpretation. Passing tests never replaces the universal proof. Keep unproved survivors as \emph{unrefuted, not certified}, available for continuation and separate from verified answers.
+
+\subsection{Acceptance measurements and remaining questions}\label{sec:contract-open}
+
+Historical R6.1 is answered by dependency-sensitive readiness; R6.2 has a sufficient certificate class; R6.3 has concrete induction infrastructure but no general invariant-invention service; R6.4 has a fair baseline and a restricted exchange argument, not an optimal policy for coupled search. Use at least a twenty-contract study with hand proofs classified as simplification, arithmetic, structural induction, generalized induction, retrieved lemma, and invented lemma. Include over-strong invariants and subtype branches using local hypotheses. Record time to the first certified useful result and first unproved survivor, debt count and age, productive wakes, repeated unchanged attempts, refutation latency, cancellation, and cost by proof stage. Aggregate tactic success does not establish improved certified synthesis.
 
 \begin{description}
-\item[Universal properties.] \code{forall xs, (f xs).length = xs.length}; \code{forall xs, f (f xs) = xs}; \code{forall xs, Sorted (f xs) and Perm xs (f xs)}.
-\item[Refinement-style signatures.] \code{(xs : List A) -> Subtype (fun ys => ys.length = xs.length)}, where the contract is in the type and the program must carry proofs.
-\item[Relational and metamorphic properties.] \code{f (xs ++ ys) = f xs ++ f ys}; agreement with a reference implementation on all inputs.
+\item[R6.N1.] What smallest invariant and generalization grammar covers the hand-classified quantified-contract suite, and which failed local conditions require a new invariant rather than a stronger leaf solver?
+\item[R6.N2.] Can a contextual proof service return replayable assignment patches and closed proof templates while preserving the native dependency graph under backtracking, including local instances and universe assignments?
+\item[R6.N3.] At equal logical work and equal end-to-end deadlines, does support-aware resumption and context batching improve time to a certified useful answer over fixed tiers and fair round-robin, without starving any eligible obligation class?
 \end{description}
-For these the engine has a five-tactic portfolio applied to the closed program. It proves the identity function length-preserving. It cannot prove that a synthesized recursive \code{map} is, because that proof is an induction whose statement mentions the just-synthesized recursor term, and no tactic in the portfolio performs induction.
-
-Two problems follow. \emph{Refutation}: wrong candidates must be rejected quickly, without a proof attempt. \emph{Certification}: the right candidate must be proved, automatically, within the budget.
-
-\subsection{What is known}
-
-\paragraph{Refutation.} Counterexample-guided inductive synthesis alternates a synthesizer that satisfies finitely many examples with a verifier that either proves the candidate or returns a new counterexample~\cite{cegis}. In Lean the verifier's cheap half is testing: \code{decide} on bounded domains, and property-based testing with generators and shrinking (the Plausible library). A counterexample is a closed instance of the contract and is kernel-checkable, which is the ``tests refute, proofs certify'' rule of the unified proposal.
-
-\paragraph{Certification.} Synquid checks refinement types with an SMT solver over decidable theories and relies on measures to make recursive functions' properties inductive by construction~\cite{synquid}. Leon and related tools verify synthesized recursive functions by unfolding plus SMT. In Lean the available automation is \code{simp}, \code{omega}, \code{grind}, \code{decide}, Aesop, hammers that call external provers with premise selection~\cite{leanhammer}, and neural provers. Automated induction (choosing the induction variable, generalizing, finding lemmas) remains a research area with specialised provers and no robust general solution.
-
-\paragraph{Correct by construction.} The alternative to proving after the fact is to synthesize program and proof together: the target is the subtype, the search builds a dependent pair, and the proof obligations of each branch are local (in the \code{cons} branch, prove the property from the induction hypothesis's property). This is how type-theoretic program extraction has always worked; as a \emph{search} strategy it makes every branch carry a proof goal with holes in it.
-
-\subsection{Why it is hard}
-
-Proof search for a property of a program with holes is not meaningful until the holes that the property depends on are filled; but waiting until the program is closed gives the prover a monolithic goal about a recursor term, the form automation handles worst. The local obligations of the correct-by-construction route are easy (often \code{simp} with the hypothesis) but there are many of them, each tactic call costs one to a hundred milliseconds, and the search makes thousands of nodes. The schedule that pays proof cost only on promising branches (``proof debt'' in the unified proposal) has no known optimal policy; it is a multi-armed bandit with correlated arms.
-
-\subsection{Design to try first}
-
-\begin{enumerate}
-\item \textbf{Bounded instantiation as a first-class refuter} (E7), extended with generators: for \code{forall x : tau, P x}, enumerate small values of \code{tau} by the engine's own type-directed enumeration (it is a synthesizer of inhabitants, after all), most-canonical first by A4. Cache the counterexamples found for one candidate and test them first on the next: this is CEGIS with the engine as its own example generator.
-\item \textbf{Program and proof together for subtype targets.} When the target is a subtype or the contract is a universally quantified property of the result, run the recursion rule on the \emph{pair}: the motive is the subtype, each branch must produce a value and a proof, and the proof goal is deferred (it is a proposition about open holes, so the existing rotation rule already sends it last) until the branch's value is closed. Then it goes to the portfolio with the induction hypothesis's property in context. The proof obligations are local and first-order in the typical cases (length, membership, ordering with \code{omega}).
-\item \textbf{Proof debt with a fixed exchange rate.} Charge proof attempts to the wall clock like any other step, but order them: never attempt a proof for a candidate that has not survived bounded instantiation; attempt local obligations before global ones; give each obligation a tier ladder (5 ms \code{rfl}/\code{decide}, 50 ms \code{simp}/\code{omega}, 500 ms \code{grind}) and climb it only when the rest of the search is idle or exhausted.
-\item \textbf{Inductive proofs of closed recursor terms} as the fallback: a small tactic that inducts on the recursor's major premise, unfolds the recursor's computation rule, and calls the portfolio with the hypothesis. It covers the properties whose proof follows the program's recursion, which is most of those a user states.
-\item \textbf{Report unproved survivors honestly.} A candidate that passes all tests and no proof is a distinct outcome (``unrefuted, not certified'') and must never be shown as verified; the unified proposal's result algebra already has the slot.
-\end{enumerate}
-
-\subsection{Questions for experts}
-
-\begin{enumerate}
-\item For the program-and-proof search, is there a known discipline for interleaving value holes and proof holes that avoids both premature proof attempts and late discovery that a value choice is unprovable? Refinement-type systems use liquid abstraction for this; is there an analogue without an SMT solver and with Lean's propositions?
-\item Which class of properties of structurally recursive programs is provable by ``induct along the program, simplify, close with arithmetic'', and can membership in the class be recognized syntactically so that the engine does not waste the budget outside it?
-\item What is the state of automated induction in Lean today (rippling-style tactics, lemma discovery, \code{grind} with induction, hammers), and which of it is usable as a library with a time limit?
-\item Is there a principled scheduling policy for proof debt, for example from the literature on anytime algorithms or bandits with switching costs?
-\end{enumerate}
-Related projects and fields: Synquid and refinement-type verifiers study synthesis and checking against refinement types; \code{grind}, Aesop and the Lean hammer are the general-purpose proof automation available in Lean; inductive theorem proving studies automated induction and lemma discovery; property-based testing studies generators for structured and dependent data.

@@ -1,46 +1,336 @@
 \section{R4. Indexed families and the motive problem}\label{sec:dependent}
 
-\subsection{The problem}
+\subsection{The problem and corrected starting point}\label{sec:dependent-scope}
 
-Leant2's reason to exist is Lean's type theory, and this is where it is weakest relative to its ambition. Probe 7 (head of a non-empty vector) works, because Lean's \code{cases} performs dependent elimination and unifies indices. Probe 8 does not:
+The historical evidence distinguishes elimination from synthesis of a recursive
+motive. Head of a nonempty vector succeeds through native dependent
+\code{cases}; vector map requires
 \begin{lstlisting}
 (A B : Type) -> (n : Nat) -> (A -> B) -> Vec A n -> Vec B n
 \end{lstlisting}
-The solution is an induction on the vector whose motive depends on the index, \code{fun n _ => Vec B n}. The engine's recursion rule calls \code{induction} with whatever motive Lean's tactic infers after the context has been fixed, never generalizes other hypotheses, and treats indexed families as out of scope. Four related capabilities are missing.
+with motive $M(n,x)=\mathsf{Vec}\ B\ n$. The inspected structural-recursion
+rule excluded indexed families and \code{Nat} before invoking Lean induction.
+Those source restrictions are not limitations of Lean's induction facilities.
+An initial supported indexed adapter is consequently a separate, smaller
+milestone than unrestricted motive invention.\prov{N1--N9}
 
-\begin{description}
-\item[Motive inference.] Choosing the motive of a recursor application so that the branches type check and the result has the goal type. For non-indexed families with a constant motive this is trivial. In general it is higher-order unification: find $M$ with $M\ \vec\imath\ x \equiv G$.
-\item[Generalization.] Deciding which hypotheses to revert before induction. Reverting too little makes the induction hypothesis useless (it speaks about the wrong index or the wrong accumulator); reverting everything makes every branch a function and multiplies the search. This is the same problem as the carrier of Section~\ref{sec:carriers}.
-\item[Transport.] Goals of type \code{Vec A (n + 0)} when a term of type \code{Vec A n} is at hand. The term exists only after rewriting with a propositional equality, and the rewriting itself needs a motive.
-\item[Type-level computation.] Goals whose type is a function applied to a hole, \code{F ?n}, where progress needs unfolding \code{F} on a guessed constructor form of the hole.
-\end{description}
+Four capabilities remain distinct: infer a motive for a prepared target;
+generalize locals so recursive hypotheses apply at changing arguments; repair
+propositional index equalities with transport; and expose a type family
+$F(?n)$ whose head depends on an unknown index. General higher-order unification
+is undecidable, while pattern unification has decidable fragments and
+practical elaborators add postponement and pruning\cite{huet75,miller91,abelpientka11}.
+Native dependent pattern matching supplies index unification, not a complete
+enumerator of all useful strengthened motives\cite{cockx}.
 
-\subsection{What is known}
+Canonical already demonstrates indexed recursor applications and generalized
+induction with a supplied stronger principle and predicate synthesis. The
+former claim that existing search never handles indexed or generalized
+induction is therefore too strong. Its translation restrictions remain
+relevant, and neither example establishes arbitrary motive invention.
+Agsy/Mimer, Idris proof search, and \code{sauto} remain useful comparisons;
+\code{sauto}'s dependent elimination and unfolding should not be mistaken for
+automatic induction discovery, which its documentation explicitly excludes.
+\cite{canonical,agsy,sauto,sautodocs}\prov{N1,N3--N9}
 
-Higher-order unification is undecidable in general~\cite{huet75}; the pattern fragment is decidable with most general unifiers~\cite{miller91}, and practical elaborators extend it with postponement and pruning~\cite{abelpientka11}. Lean's elaborator solves the motive problem for \code{induction}, \code{cases}, \code{match} and the triangle rewrite notation by abstracting occurrences of the indices and the major premise in the goal, which is a heuristic: the ``motive is not type correct'' error is its failure mode and is a familiar obstacle for Lean users. Dependent pattern matching by unification of indices is well understood~\cite{cockx}.
+\subsection{A finite motive language with explicit generalization}\label{sec:dependent-motives}
 
-For \emph{search} in dependent type theories there are several tools and no consensus. Agsy searches Agda terms with case splitting and a notion of refinement order~\cite{agsy}; Mimer is its current successor in Agda. \code{sauto} searches for inhabitants in the Calculus of Inductive Constructions with a focused, eager treatment of inversion and explicit limits on dependent elimination~\cite{sauto}. Canonical searches for $\beta$-normal, $\eta$-long inhabitants of a dependent type theory with its own representation and reports solving goals by structural recursion through recursors when the motive is determined by unification~\cite{canonical}. Idris has type-directed proof search with case splitting in the editor. All of them bound or avoid exactly the four capabilities above: none, to our knowledge, searches over motives or generalizations, and none handles transport other than by the user's rewriting.
-
-\subsection{Why it is hard}
-
-The space of motives is a function space over types. Even restricted to abstraction of sub-terms of the goal, a goal with $k$ occurrences of index expressions has $2^k$ candidate abstractions, most ill typed. Generalization multiplies by the subsets of the context. Transport makes the term language non-canonical: there are infinitely many proofs of an index equation and the kernel term contains them, so size-based enumeration and syntactic deduplication stop making sense, while proof irrelevance says all these terms are the same program. And every step relies on definitional unfolding, where the choice of transparency decides both whether unification succeeds and how long it takes; Lean automation in general has no principled answer to when to unfold.
-
-\subsection{Design to try first}
-
+For a major premise $x:I\,\vec p\,\vec\imath$, separate three choices:
 \begin{enumerate}
-\item \textbf{Index-generalizing induction.} For an inductive family local \code{x : I ps is}, revert \code{x}, the index variables among \code{is}, and every hypothesis whose type mentions them; then apply the recursor with the motive Lean infers for the reverted goal. This is the \code{induction ... generalizing} discipline, applied automatically and only to index variables, which keeps the branching at one motive per local. Probe 8 becomes solvable: the branches are \code{Vec B 0} and \code{B -> Vec B n -> Vec B (n+1)} with the right hypothesis.
-\item \textbf{Motives from the carrier grammar.} For accumulating recursion, the generalized hypotheses are chosen by the carrier search of Section~\ref{sec:carriers}: a carrier $S \to T$ is ``revert the local of type $S$''. One mechanism then serves Church folds and recursors.
-\item \textbf{Transport as a proof obligation, not a term.} When unification fails only because two index expressions are not definitionally equal, create the goal $i = j$, send it to the arithmetic tier of the portfolio (\code{omega}, \code{simp_arith}, \code{grind}), and insert a cast on success. Count the cast as zero size for ranking and erase it for display. Bound the number of casts per candidate to two.
-\item \textbf{Constructor-form splitting of index holes.} When a goal type is stuck on a hole of an inductive type, split the hole into its constructor forms (narrowing), bounded by the split budget.
-\item \textbf{A differential benchmark against existing tools.} Run Canonical and \code{exact?} (and, outside Lean, \code{sauto} and Agda's \code{auto} on translated problems) on the dependent part of the benchmark suite. The point is to learn where each stops, not to compete.
+\item abstract the indices and major premise already present in the target;
+\item revert a dependency-closed telescope of existing parameters;
+\item invent a bounded carrier, auxiliary result, or invariant absent from the
+original context.
 \end{enumerate}
+Mandatory dependency generalization is primarily an elaboration task;
+optional reversion is a search choice; invention is a larger synthesis problem.
+They share the carrier service of Section~\ref{sec:carriers}, but should not
+be charged to one undifferentiated powerset search.\prov{N1--N9}
 
-\subsection{Questions for experts}
+Fix scoped goal syntax and a finite collection of eligible occurrence positions.
+With $k$ positions, at most $2^k$ raw subsets arise before scope, typing,
+symmetry, and justified equality filters. This proves finite syntactic
+generation, not low complexity or completeness for higher-order unification.
+Nonoverlapping maximal occurrences are one useful policy, not the only one:
+a target containing $\mathsf{Vec}\ B\ (n+k)$ may need abstraction of the
+occurrence of $n$ inside the index while retaining $k$. A policy abstracting
+only the entire maximal $n+k$ need not generate that motive. Occurrences are
+scoped expressions with dependencies, not printed substrings.\prov{N3,N4}
 
+Nor can occurrence abstraction invent a new binder or result component:
+\[
+ M(n,x)=\mathsf{Vec}\ B\ n,\qquad
+ M(n,x)=\prod_{a:S(n,x)}T(n,x,a),\qquad
+ M(n,x)=T(n,x)\times U(n,x)
+\]
+are different recipe families. The latter two can introduce $S$, $U$, or a
+strengthened invariant absent from the original target. Explicitly close a
+bounded template language under dependent products, products, dependent pairs,
+subtypes, option-like initialization state, and permitted carrier constructors.
+Fix its terminals, literals, universe-expression size, auxiliary type formers,
+number of new binders, and total expression size; otherwise a nominal syntax
+bound need not produce a finite space.\prov{N1--N9}
+
+Generalization preserves telescope order and closes over both local declaration
+types and values. If $j:\mathsf{Fin}\ n$, moving $n$ across induction while
+leaving $j$ fixed is ill scoped. If a recursive call changes accumulator $a$,
+generalize $a$ even when its type mentions no index. Conversely, reverting
+every local makes branches unnecessarily large. For vector map, keep $A$, $B$,
+and $f:A\to B$ fixed; the empty branch produces $\mathsf{Vec}\ B\ 0$ and the
+cons branch combines $f$ of the head with the induction hypothesis at the
+tail length. Vector zip and lookup require the stronger parameter interfaces
+already traced in the unified proposal, not independent rediscovery here.
+
+Compound or repeated indices need explicit preparation. Replace a compound
+index such as $n+m$ by a fresh variable only while retaining its defining
+equality and dependent consequences. Then use native elimination to create
+the obligations. A generalized variable without that equation changes the
+problem. A motive producing proof-carrying results must retain dependence on
+the major value itself as well as its numerical indices.\prov{N1--N9}
+
+\Needspace{20\baselineskip}
+\paragraph{The recipe algorithm.}\label{sec:dependent-recipe}
+The bounded service enumerates scoped recipes and validates each native
+eliminator attempt before exposing its branches.
+\begin{lstlisting}[caption={Bounded motive service; pseudocode.}]
+enumerateMotiveRecipes(goal, major, bounds):
+  expose the inductive head and read native recursor metadata
+  prepare mandatory dependent telescope and index equations
+  yield native inferred motive
+  yield small dependency-closed generalizations
+        ranked by failed recursive-hypothesis applications
+  yield bounded parameter/carrier/result strengthenings
+  yield the declared wider scoped-occurrence abstractions
+  for each recipe, within its fair bounded schedule:
+    validate scope, sort, universes, and binder dependencies
+    attempt native eliminator construction transactionally
+    retain branches, substitutions, transports, and replay recipe
+    check final specialization back to the original target
+\end{lstlisting}
+A recursive hypothesis fixed at the wrong accumulator suggests generalizing
+that argument and its dependents. A missing result component suggests product
+strengthening; an algebraic reassociation may instead need a lemma.
+These explanations rank proposals, not prove that omitted recipes cannot work.
+Prefer the native inferred motive before expensive alternatives and retain a
+fair bounded fallback.\prov{N1--N9}
+
+\begin{proposition}[Restricted motive completeness]\label{prop:dependent-motives}
+Fix a finite scoped occurrence set, a finite family of dependency-closed
+generalization telescopes, and a finite result-lifting grammar. If candidate
+construction and exact checking terminate, enumeration of every combination,
+discarding only ill-typed combinations, terminates and finds every well-typed
+motive in that class.
+\end{proposition}
+\begin{proof}
+There are finitely many combinations and each is processed in finite time.
+Every member of the specified class is generated by definition, and every
+well-typed member survives the stated filter.
+\end{proof}
+A timeout is not exact checking and remains unresolved. This theorem describes
+exhaustion of the declared recipe family, not absence of any useful motive.
+A fair size-graded union enlarges coverage without making a fixed finite family
+complete for arbitrary accumulators or invariants.
+
+\subsection{Typed transports and restricted canonicalization}\label{sec:dependent-transports}
+
+For $F:I\to\Sort\,u$, $v:F(i)$, and $e:i=j$, transport constructs a term of
+$F(j)$, for example $\mathsf{cast}(\mathsf{congrArg}\ F\ e,v)$. Keep the family,
+source and destination indices/types, equality proof, transported term, and
+normalization provenance. A deferred transport must be a typed IR node whose
+interpretation inserts that cast, never an ordinary Lean term temporarily
+treated as though it had a different type.\prov{N1--N9}
+
+Three notions must remain separate. Definitional equality permits conversion;
+propositional equality provides transport evidence; finite observational
+agreement generally does not permit dependent substitution. Proof irrelevance
+identifies proofs of the same proposition, not arbitrary endpoint types or
+data in different fibers. Runtime proof erasure is a fourth implementation
+fact, not a license to erase the typing role of \code{Eq.rec}.
+
+The original example needs correction: with the standard Lean natural addition,
+$n+0$ reduces to $n$, whereas $0+n=n$ at symbolic $n$ uses the corresponding
+theorem. Thus $\mathsf{Vec}\ A\ (0+n)$, associative index rearrangements, or
+$\mathsf{Vec}\ A\ (n+m)$ versus $\mathsf{Vec}\ A\ (m+n)$ exercise propositional
+transport; $\mathsf{Vec}\ A\ (n+0)$ normally does not.\cite{leannat}
+Test native definitional equality before adding a cast.\prov{N1,N3--N7,N9}
+
+Choose a terminating deterministic index normalizer $N$ for a declared
+fragment, returning $e_i:i=N(i)$. Constructor arithmetic or canonical affine
+expressions are possible first theories. Normalize endpoints, compose their
+certificates, and reuse one transport construction for the normalized pair.
+For vector append, one proved index equation can serve many corresponding
+terms. Outside the fragment, keep a symbolic equality obligation; different
+normal forms do not prove inequality unless the fragment procedure is complete
+for that claim. Arbitrary \code{simp} success is a proof service, not a definition
+of global canonical form.\prov{N1--N9}
+
+Normalize identity casts and compatible compositions with checked lemmas.
+Transport along $p:A=B$ followed by $q:B=C$ agrees with transport along their
+composite, by equality elimination on $p$ and $q$. This optimization retains
+endpoints. Orient rewrites or bound saturation so arithmetic equalities do not
+create rewriting loops. The policy, lemma set, and certificates belong in
+cache identity and receipts. Place casts consistently at constructor/provider
+boundaries rather than generating every distribution through internal nodes.
+Initially restrict registered families and index theories.\prov{N4,N5,N8,N9}
+
+Heterogeneous equality can express relations before types coincide; converting
+that relation into the final homogeneous inhabitant still needs reconstruction.
+Typed e-graphs or local congruence classes may share checked equalities, but
+dependency-aware congruence and transport-producing extraction are obligations.
+A setoid changes the semantic language and requires every operation and
+contract to respect its relation. Neither provides a general cheap quotient of
+all Lean terms by arbitrary provable equality.
+
+Proof evidence may have low or zero presentation/ranking weight, but transport
+work remains real. Use a positive syntax grade, a certified canonical
+representation, or an explicit finite transport bound to avoid infinitely
+many zero-cost paths. The earlier bound of two casts is an experiment that
+restricts the grammar, not a completeness theorem. Hard deduplication requires
+a common expected type and checked definitional equality or an equality
+certificate; a coarser proof-insensitive fingerprint may group, not delete,
+unequivalent candidates. If display hides casts, either emit the exact checked
+term too or re-elaborate the sugared source and certify its intended equality.
+Do not publish untypeable Lean as a paste-ready result.\prov{N1--N9}
+
+\subsection{Demand-driven unfolding and index narrowing}\label{sec:dependent-unfolding}
+
+Canonical describes exposing function aliases such as \code{Set} and
+\code{Not}, reducible definitions, and class-instance structure in its
+translation; it also notes dependency expansion and abstraction costs.
+The documented \code{sauto} controls distinguish heuristic \code{unfold:}
+(default explicit list empty) from forced \code{unfold!:}; basic logical
+definitions receive special treatment. \code{red} simplification and
+\code{ered} eager scheduling are documented default-on options, with separate
+context-change simplification and backtracking solvers. N6 explicitly did not
+verify those implementation defaults; the more precise statements come from
+the documentation evidence in N1, N3, N7, and N9, not from a comparative run.
+Pin revisions and options in any experiment.\cite{canonical,sautodocs}
+
+Use a phase-sensitive transparency ladder:
 \begin{enumerate}
-\item Is there a complete and terminating enumeration of motives for a useful class, for instance motives that abstract a subset of the \emph{maximal} occurrences of index terms, and is that class closed under the generalizations needed for accumulators?
-\item How should a search treat propositional transports so that enumeration stays canonical? Is working in a setoid or with heterogeneous equality internally, and producing casts only at the end, known to work?
-\item What is the experience of Canonical and \code{sauto} with definitional unfolding during search: fixed transparency, on-demand unfolding when stuck, or normalization up front?
-\item For Lean specifically: can the elaborator's motive computation be called as a library with a failure that is cheap and informative, so that a search can try several abstractions?
+\item expose only the binder, function spine, constructor family, class head,
+or rigid application head needed for retrieval or the next rule;
+\item normalize registered index expressions using checked equations;
+\item unfold a demanded head blocking matching, a scrutinee, or motive
+construction, charging the particular request;
+\item offer a bounded broader-unfolding or theorem-rewrite fallback.
 \end{enumerate}
-Related projects and fields: the Lean elaborator implements motive computation for \code{induction}, \code{match} and rewriting, and transparency control; Canonical and \code{sauto} study inhabitation search in dependent type theories; Agsy and Mimer study term search with case splitting in Agda; research on dependent pattern matching and higher-order unification studies index unification and the pattern fragment.
+Retrieval keeps cheap normalized heads; speculative unification can escalate
+for a concrete proposed application; observation evaluation uses supported
+definitions/equations; proof simplification uses a bounded explicit rewrite
+set. Ordinary provider names remain compact components even when their bodies
+are unfolded for reasoning. Expanding the whole transitive provider closure
+can destroy indexing selectivity and duplicate enormous expressions.\prov{N1--N9}
+
+Record the request's purpose, transparency, unfolded declarations, environment,
+local context, and assignment dependencies. A shallow mismatch means unresolved
+at this stage, not proof of nonconvertibility. It cannot permanently remove a
+candidate requiring a later stage allowed by the advertised grammar. Escalation
+is resumable work charged to the ledger, with per-constant budgets and cycle
+protection. Opaque constants remain opaque unless an allowed checked equation
+or explicit interface permits reasoning about them.
+
+If $F(?n)$ is stuck because the index determines its head, repeatedly unfolding
+$F$ adds no information. Schedule another goal that determines $?n$, or
+enumerate constructor forms of the inductive index under the split budget.
+This is \emph{narrowing}, a search alternative sharing the native assignment
+state, not a normalization theorem. Keep all admitted forms and their
+dependencies.\prov{N7}
+
+Compare fixed weak-head/reducible policies, demand-driven escalation, and
+bounded up-front normalization on indexed vectors, arithmetic, and large
+libraries. Count matches unlocked, failed conversions, reduction work,
+expression growth, cache invalidations/memory, and verified candidates at
+matched logical budgets. Compare Canonical, \code{exact?}, and translated
+\code{sauto}/Agda cases to locate capability boundaries; changed elaboration
+and libraries make raw cross-assistant timings informative case studies,
+not an implementation theorem or a demonstrated optimal policy.\prov{N1--N9}
+
+\subsection{A version-pinned native motive adapter}\label{sec:dependent-adapter}
+
+The Lean~4.34.0 source inspected by the responses exposes
+\code{Lean.Meta.getMajorTypeIndices},
+\code{Lean.Meta.mkRecursorAppPrefix}, and \code{Lean.MVarId.induction}.
+The first requires suitable variable indices and checks repeated or improperly
+dependent occurrences. The prefix builder abstracts the major premise and
+indices, chooses recursor universes, and checks the motive/elimination sort.
+Induction reverts dependencies, reintroduces them, and returns
+\code{InductionSubgoal} values containing goals, fields, and a
+\code{FVarSubst}.\cite{leaninduction}\prov{N1--N9}
+
+\begin{lstlisting}[caption={Signatures reported from the pinned source; integration still needs compilation tests.}]
+Lean.Meta.mkRecursorAppPrefix
+  (mvarId : MVarId) (tacticName : Name)
+  (majorFVarId : FVarId) (recursorInfo : RecursorInfo)
+  (indices : Array Expr) : MetaM Expr
+
+Lean.MVarId.induction
+  (mvarId : MVarId) (majorFVarId : FVarId)
+  (recursorName : Name)
+  (givenNames : Array AltVarNames := #[]) :
+  MetaM (Array InductionSubgoal)
+\end{lstlisting}
+Do not duplicate reversion already performed by the native API, and do not
+assume success of high-level \code{cases} means every low-level induction call
+accepts the unchanged major premise. Compound/repeated indices may need the
+elaborator's generalization path or remembered equalities first. N3 also
+identifies \code{ElimApp.mkElimApp} and \code{ElimApp.setMotiveArg} in tactic
+elaboration as implementation references, with their surrounding state and
+preconditions intact. Functional induction over an existing definition is
+another available principle; it does not itself invent the desired recipe.\cite{leanfuninduction,lean418}
+
+A trial accepts the major premise, generalized telescope, recursor/principle,
+and recipe. Save complete speculative state, validate the recipe, invoke the
+native operation, inspect branch targets, and retain substitutions and
+transports. Return a persistent successor or replay recipe; raw metavariable
+identifiers from a rolled-back state must not escape. Apply the same
+substitution to observations and recursive capabilities instead of guessing
+new locals from printed names or positions.\prov{N1--N9}
+
+Use structured outcomes:
+\begin{lstlisting}[caption={Proposed adapter results; pseudocode.}]
+MotiveAttempt :=
+  success(prefix, branches, substitutions, transports, replay)
+| unsupportedMajorOrRecursor(reason)
+| indexPreparationNeeded(indices)
+| illegalEliminationOrUniverse(reason)
+| illTypedMotive(diagnostic)
+| missingInstanceOrUnresolvedConstraint(constraint)
+| resourceExhausted
+\end{lstlisting}
+Preserve native diagnostics as detail, not fragile exception-text predicates
+for impossibility. Failed attempts restore assignments, universes, local
+instances, messages, delayed constraints, substitutions, and branch caches.
+Cancellation and internal/resource interruption propagate to the controller;
+they are not ordinary motive failures. Limit heartbeats/recursion per trial,
+but do not promise cheap failure merely because the function is callable from
+\code{MetaM}. Memoize only with the complete goal/context, recipe, recursor,
+policy, and relevant assignment identity.
+
+The first adapter suite should include lists, naturals, options, vector map,
+vector zip, dependent pairs, \code{Fin n} locals, compound/repeated indices,
+major-value-dependent result families, forbidden elimination from \code{Prop},
+and a near-identical ill-scoped recipe. Repeated failed trials must leave the
+next trial observationally unchanged. Measure instantiation and failure cost
+separately from branch search. Compile against the actual pinned toolchain
+before declaring this a supported API, and keep specialized fast constructors
+behind the same validation boundary.\prov{N1--N9}
+
+\subsection{New questions after the four original answers}\label{sec:dependent-open}
+
+The finite-template, transport, unfolding, and API-access questions above have
+concrete bounded answers. Their unresolved extensions are:
+\begin{enumerate}[label=R4.N\arabic*.]
+\item Which explicit motive recipe grammar, including nonmaximal index
+abstractions and dependency-closed changing parameters, gives the best measured
+coverage before new carrier or invariant invention is required?
+\item For which registered dependent families and index theories can transport
+normalization be proved terminating and reconstructible while keeping its
+enumeration grade and proof cost bounded?
+\item Which phase-sensitive transparency policy improves verified results at
+matched logical budgets without turning shallow conversion failures into
+permanent exclusions?
+\item Can the pinned induction adapter preserve substitutions and every
+speculative state component across failure and interruption, and what are its
+measured success/failure costs on compound indices and value-dependent motives?
+\end{enumerate}

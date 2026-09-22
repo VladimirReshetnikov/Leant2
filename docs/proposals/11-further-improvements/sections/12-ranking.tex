@@ -1,61 +1,163 @@
 \section{R8. Ranking and candidate equivalence}\label{sec:ranking}
 
-\subsection{The problem}
+\subsection{A declared preference rather than a correctness criterion}\label{sec:ranking-objective}
 
-A type usually has many inhabitants and a loose contract admits several behaviors. The engine returns up to twelve candidates sorted by three keys: number of unused explicit inputs, number of eliminators, term size; duplicates are removed by printed form. This produced sensible first candidates on the corpus after two corrections found by reading output (instance binders are not inputs; class instances are projected, not destructured). It is a heuristic with no definition of what it approximates. Concretely:
+The historical implementation ranks by unused outer binders, eliminator occurrences, and raw expression size, then removes equal printed forms. Its grace period limits waiting after the first answer. These are useful implementation policies, but they do not define semantic equivalence, user intention, or optimality. The original examples of twelve type-former variants and indistinguishable-looking candidates expose separate presentation, ranking, and identity problems.
 
-\begin{itemize}
-\item For queries whose answer must invent a type former the list is twelve variations of one idea (\code{fun _ => Empty}, \code{fun _ => Unit}, \dots); eleven slots carry no information.
-\item When the contract under-determines the function, two behaviorally different candidates appear as siblings with nothing to say that they differ, or where.
-\item The grace period ends the search 400 ms after the first candidate. Whether the best candidate has been seen by then is not known.
-\end{itemize}
+First require the exact type, contract, axiom profile, and requested execution status. Within this feasible set, N1--N9 propose a frozen conditional description-length or Bayesian preference. For example,
+\begin{equation}
+ J_Q(p,\pi)=L_{\mathcal G_Q}(p)
+       +\lambda_h L(\mathsf{helpers}(p))
+       +\lambda_r\widehat{\mathsf{runtime}}(p)
+       +\lambda_\pi\mathsf{proofCost}(\pi)
+       +\lambda_d\mathsf{dependencyCost}(p).
+ \label{eq:ranking-objective}
+\end{equation}
+The nonnegative weights, grammar, provider library, normalization, and stable tie-breaker are versioned. Count carrier, seed, step, finisher, and invented helper bodies, not merely a short outer name hiding an arbitrary implementation. A library operation can receive a short code as a declared familiarity prior, without claiming its body or runtime is small. Keep program, proof, exported presentation, and execution cost distinguishable. A lexicographic profile or small Pareto frontier is an alternative when the units should not be combined into one scalar.
 
-\subsection{What is known}
+For a proper grammar distribution, $L(p)=-\log P_{\mathcal G_Q}(p)$ has a coding interpretation; an explicit prefix encoding is another defensible definition. Arbitrary scores are not automatically probabilities. N2 adds that grammar probabilities often describe \emph{derivations}, not programs: multiple construction paths can distort program probability. Choose canonical derivations, a minimum-derivation cost, or a correctly aggregated program distribution, and make the implementation match that choice. The completeness lane gives each legal production a finite usable grade and avoids zero-cost cycles that prevent progress. A subprobability model must be declared as such.
 
-Synthesizers rank by size or by a probabilistic grammar learned from code~\cite{deepcoder,probe}; programming-by-example systems such as FlashFill rank with learned features because users give one or two examples and the intended program is rarely the smallest. Type-directed tools (Djinn, Agsy, \code{exact?}) return the first or the smallest. Parametricity gives exact equivalence tests for polymorphic first-order functions (A4). For general Lean terms, equivalence is undecidable, and definitional equality is both too fine (it separates extensionally equal functions) and occasionally expensive.
+For noiseless finite data $D$, every consistent program has equal likelihood under a hard-consistency model, so
+\[
+ -\log P(p\mid T,D,\E)
+ =-\log P(p\mid T,\E)+\text{constant}\qquad(p\models D).
+\]
+The preference therefore comes from the prior, not from a theorem that examples identify the intended program. A universal request adds an actual proof constraint; a noisy-example likelihood, if separately offered, cannot weaken an ordinary Lean contract. Estimated runtime is a preference feature, not a complexity theorem. Use deterministic operation counts or freeze measured features for reproducible ranking; new wall-time measurements are not stable lower bounds.
 
-We know of no published notion of \emph{what the right first answer is} for type-and-contract queries that could be optimized, nor of a study of what users of a proof assistant expect from such a tool.
+Unused inputs are soft, contract-sensitive features. Constants, projections, length computations, and short-circuiting traversals can legitimately ignore inputs or recursive results. Conversely, $x-x$ mentions $x$ without depending on it extensionally. Occurrence only in a type or erased proof is different from computational use, and a dictionary or callback can hide relevant behavior. Normalized syntactic analysis and probe perturbations are useful approximations, not exact information-flow decision procedures. Label the actual feature, such as an argument not syntactically used, rather than claiming semantic independence without proof.
 
-\subsection{Design to try first}
+Learned ranking in PBE, DeepCoder, Probe, and DreamCoder motivates experimentation~\cite{deepcoder,probe,dreamcoder}. N6 cites real-time PBE ranking and user disambiguation studies~\cite{rankingstudy,pbeinteraction}; N8 cites Singh--Gulwani's ranking of appropriate programs rather than one prescribed syntax~\cite{ranking}. None establishes a universally preferred ordering for dependent Lean inhabitants. Use blinded pairwise judgments, readability and proof-maintenance assessments, reference rank modulo declared equivalence, accepted-result rank, edit distance to the retained solution, top-$k$ usefulness, and number of extra examples needed for disambiguation. Keep multiple reasonable references for underdetermined tasks; matching one syntax is not the only success.
 
+\subsection{Exact identity, proved equality, and observational groups}\label{sec:ranking-equivalence}
+
+Use four separately named layers:
 \begin{enumerate}
-\item \textbf{Behavioral classes.} Group candidates by their values on a probe set: the contract's own inputs, the canonical parametric inputs of A4, and small values enumerated as in R6. Show one representative per class (the best by the present keys) with the count of merged candidates. Two classes that the contract does not separate are shown with a distinguishing input.
-\item \textbf{Relevance as a first-class key.} A candidate that ignores an input, returns a constant, or discards a recursive result is suspect in a way that is independent of size. Generalize ``unused inputs'' to \emph{information flow}: which inputs can influence the output, computed syntactically on the normal form. Rank by flow first.
-\item \textbf{An anytime stopping rule.} Replace the fixed grace period by: stop when the cost frontier of the search (R1) exceeds the cost of the best candidate by a margin, since no cheaper candidate can then appear. With a cost-ordered search this is exact for the cost model; the grace period remains as an upper bound.
-\item \textbf{A ranking benchmark.} For each benchmark problem record the reference solution and report its rank. This is the only way to tell whether a change to ranking is an improvement.
+\item Typed alpha-canonical structural identity, retaining universes, binder roles, context abstraction, relevant metadata, dictionaries, and dependencies.
+\item Native definitional equality under the pinned environment, checked transactionally so comparison cannot mutate branch unknowns. A bounded failure is unknown, not inequality.
+\item Explicit propositional or pointwise equality with all needed transport or extensionality evidence under the permitted axiom profile.
+\item Agreement of defined values on a named finite set of typed observations.
 \end{enumerate}
+Use a structural fingerprint for indexing and an exact collision check before discarding a candidate. Pretty printing can hide implicits, dictionaries, universes, coercions, or proof terms; it is not an injective semantic encoding. Proof-insensitive hashing can shortlist comparisons, but is not itself the equality certificate.
 
-\subsection{Questions for experts}
+Write the last relation as
+\[
+ p\approx_D q
+ \quad\Longleftrightarrow\quad
+ \text{$p$ and $q$ have equal defined observations at every probe in $D$}.
+\]
+A stuck result is unknown, not evidence of equal values. Contract inputs often cannot separate accepted candidates because all of them already satisfy those constraints. Add fresh deterministic typed probes, bounded generated values, and canonical positional inputs only within an audited parametric fragment. For dependent functions $(x:X)\to B(x)$, generate $x$ first and use observers typed in $B(x)$. Values in different fibers require justified type alignment or an appropriate heterogeneous relation. Proof irrelevance may collapse proofs of the same proposition; it does not erase data indices, computational dictionaries, or transport endpoints.
 
-\begin{enumerate}
-\item Is there a defensible formal objective for ranking inhabitants of a type, for example minimum description length under a grammar learned from Lean's library, and does it agree with user preference in studies from programming-by-example?
-\item For dependent types, which notion of candidate equivalence is both cheap and meaningful: definitional equality after normalization with proof irrelevance, or observational equality on generated inputs?
-\end{enumerate}
-Related projects and fields: programming by example studies ranking of consistent programs and user expectations; research on parametricity studies exact testing of polymorphic functions; human-factors research studies how proof-assistant users work with automation.
+The incoming reports give several versions of one obstruction. Identity and constant zero agree at zero but differ at one. More generally,
+\[
+ f(n)=n,\qquad
+ g_b(n)=
+ \begin{cases}n&n\le b,\\n+1&n>b\end{cases}
+\]
+agree on $0,\ldots,b$ and disagree at $b+1$. N8's $0$ versus $n(n-1)$ agrees at zero and one but differs at two. Even element-parametric list functions can agree on all lengths up to $m$ and differ at $m+1$: compare identity with returning the empty list above the cutoff. Parametricity can reduce the element alphabet for a fixed length; it does not eliminate unbounded lengths.
+
+For display, keep one readable representative and the member count of each \emph{observational group}, retaining alternatives or their regeneration recipes. New observations split groups; parked members also need a route back to certification because an equal-observation alternative may have a cheaper proof. A found distinguishing input explains a difference, not which candidate the user intended. Certify its actual output difference; failure to find one is not equality. For type-valued answers there may be no useful universal ground observer: use conservative typed-shape/elimination summaries instead of collapsing \code{Empty}, \code{Unit}, or all unobserved type formers.
+
+Destructive search quotienting requires more than closed terms or current sample agreement. The relation must be a congruence for every permitted future context, preserve interface/proof constraints, and preserve the relevant feasibility or cost bound. A surrounding function application can introduce a new input; recursion or CEGIS can introduce new observations. A restricted straight-line DSL whose operators act pointwise on complete retained observation vectors can meet a suitable congruence theorem. General higher-order dependent Lean terms do not inherit that result. Without it, keep alternatives recoverable. Even proved extensional equality need not identify implementations under a runtime objective: quadratic fold reversal and linear accumulator reversal can deserve separate representatives.
+
+\subsection{What a stopping certificate must cover}\label{sec:ranking-stopping}
+
+\begin{proposition}[Stopping under a frozen objective]\label{prop:ranking-stop}
+Let $p_\star$ be a certified incumbent under the fixed objective $J$. Suppose every unexplored or uncertified candidate in the declared grammar is represented by a frontier state $s$, with a validated lower bound $L(s)$ on the final cost of every completion. If
+\[
+ J(p_\star)\le\inf_{s\in\mathcal F}L(s),
+\]
+no covered candidate is strictly cheaper.
+\end{proposition}
+\begin{proof}
+A hypothetical cheaper candidate has a frontier ancestor by coverage. Its final cost is at least that ancestor's bound, which is at least $J(p_\star)$, a contradiction.
+\end{proof}
+
+Coverage includes pending carrier proposals, retrieved providers, suspended branches, proof debt, auxiliary lanes, parked alternatives, and recorded grammar extensions. Equal-cost ties require an appropriate tie policy; a strict frontier inequality excludes unseen equal-cost competitors. For top-$k$ distinct semantic classes, formulate the incumbent threshold, lower bounds, and duplicate policy over those classes; a one-candidate certificate does not establish a diversity optimum.
+
+The bound must measure the \emph{same} objective as publication ranking. Rule depth, CPU work already spent, or stale learned queue probabilities do not bound unused-input penalties, rendered size, or runtime automatically. Learning may reorder exploration while $J$ stays frozen, but cannot silently change either this objective or frontier coverage. A margin-based rule has only the corresponding approximation guarantee once the bound is specified. A first-success grace period gives responsiveness and \emph{best found}, not optimality or uniqueness. N1--N9's repeated frontier arguments are consolidated in Proposition~\ref{prop:ranking-stop}; no existing search receipt is thereby upgraded to an optimality certificate.
+
+\subsection{Remaining ranking questions}\label{sec:ranking-open}
+
+The existence of a defensible preference objective and the necessary distinction between equality layers answer historical R8.1--R8.2 at the design level. Empirical preference and fragment-specific quotienting remain open:
+\begin{description}
+\item[R8.N1.] Which frozen ordering over full program/helper cost, readable presentation, and proof or execution cost best predicts blinded user preferences on underdetermined Lean contracts, compared with the existing three-key heuristic?
+\item[R8.N2.] For which concrete typed sublanguage can observational replacement be proved congruent and cost-preserving, including dictionaries, dependent indices, recursive calls, and later counterexamples?
+\item[R8.N3.] Can a practical frontier ledger account for deferred proof, retrieval, proposal, and diversity choices strongly enough to emit a checkable bounded top-$k$ stopping certificate?
+\end{description}
 
 \section{R9. Learned guidance under a kernel gate}\label{sec:learning}
 
-\subsection{The problem}
+\subsection{A measured proposal service}\label{sec:learning-measurement}
 
-Every open problem above contains a guess that a statistical model might make better than an enumeration: the carrier type, the generalization, the helper's specification, the relevant library components, the rule order, the guard. Large language models write plausible Lean and are often right about exactly these creative steps, while being unreliable about details that a type checker and a contract catch immediately. The kernel gate makes the combination safe by construction: a model can only propose. The open questions are whether the combination is worth its cost inside a ten-second interactive budget, and how it coexists with the owner's constraints of determinism, no settings, and a core-only default.
+A model may propose carriers, generalizations, helper signatures, components, recursion schemes, or guards. DeepCoder's component guidance, DreamCoder's library learning, and LeanDojo/LeanHammer's proof retrieval are relevant precedents~\cite{deepcoder,dreamcoder,leandojo,leanhammer}. All N1--N9 agree that these results provide no transferable accuracy percentage for the exact Leant2 task: only a type and examples, a declared carrier/helper grammar and providers, bounded downstream synthesis, and a proof of the original contract. N1's broader 2026 synthesis comparison~\cite{llmsynthesis} is adjacent evidence with different prompts and verifiers; it supplies no such percentage either. No incoming model-check script constitutes a model-accuracy experiment.
 
-\subsection{What is known}
-
-Neural guidance of enumerative synthesis (DeepCoder~\cite{deepcoder} and successors) learns a distribution over components from the examples and reorders the search; library learning (DreamCoder~\cite{dreamcoder}) grows the component set across tasks. For Lean, retrieval-augmented provers and hammers~\cite{leandojo,leanhammer} show that premise selection transfers; whole-proof and step-level neural provers have improved quickly. We do not know of work on neural guidance for \emph{program} synthesis in a dependently typed language with a contract, nor of measurements of latency-bounded use.
-
-\subsection{Design to try first}
-
+Separate the success events:
 \begin{enumerate}
-\item \textbf{One interface, several sources.} Define a proposal interface: given the query, the partial program and a named decision point (carrier, generalization, helper type, component set, guard), return an ordered list of well-formed Lean terms or types. The enumerative grammars of R2 and R7 are the default implementation. A model is another implementation. Everything downstream (type checking, residual evaluation, the gate) is unchanged.
-\item \textbf{Proposals only reorder.} A learned source may change the order in which alternatives are tried, never the set, so completeness up to the bound and the meaning of a negative result are preserved.
-\item \textbf{Offline and optional.} The default build has no model. An optional lane may call a local model with a fixed seed and temperature zero; its proposals are recorded in the receipt (E3) so that a result can be replayed without the model.
-\item \textbf{Start where the payoff is largest.} Carrier and helper proposals (R2, R5): one call per query, outside the inner loop, with the largest reduction of search space per call.
+\item The proposal parses, scopes, elaborates, and meets grammar, universe, and profile restrictions.
+\item A solution using it is expressible in the permitted filler grammar, witnessed independently when possible.
+\item The fixed downstream synthesizer discovers a compatible complete implementation within its allotted work.
+\item The implementation proves the original contract, passes axiom and requested export/execution checks, and improves end-to-end usefulness after all proposal costs are charged.
 \end{enumerate}
+A sufficient carrier can be difficult to fill; a plausible helper can be uninhabited; sample agreement can overfit. Isomorphic or alternative sufficient carriers need not match the reference type textually. Judge adequacy by an allowed witnessed implementation and declared cost, rather than a carrier name. An oracle supplied body establishes expressibility but not discovery. A finite bounded miss does not show a carrier is mathematically insufficient.
 
-\subsection{Questions for experts}
+Use paired arms: fixed native grammar; hand-ranked or distinction-guided symbolic proposals; a recorded learned reordering within that same grammar; restricted model proposals; and an explicit expanded-grammar arm. Add carrier-given and motive/helper-given oracle arms to locate remaining body-search and proof bottlenecks. A direct model-generated-program comparison, suggested by N5, belongs in a separate arm because it supplies more than a carrier. Guidance-only comparisons keep providers, examples, axiom policy, and filler/verifier fixed. Compare equal logical completion work and equal total deadlines, reporting synthesis-only timing separately.
 
-\begin{enumerate}
-\item What accuracy do current models reach at proposing the accumulator or auxiliary function for textbook recursive programs when given only the type and examples? A small study on the E8 suite would answer it.
-\item Is there a way to make a model's contribution deterministic and auditable enough for a tool whose output is cited in proofs of correctness, beyond recording proposals in receipts?
-\end{enumerate}
-Related projects and fields: LeanDojo and the Lean hammer study retrieval and learned guidance for Lean; neurosymbolic program synthesis studies learned guidance of enumerative search.
+Cross carrier-given/invented with trace-complete/incomplete examples and helper invention. Stratify option and tuple state, continuations, indexed motives, generalized accumulators, ordinary folds, and helpers. Hold out semantic families and close variants, separate textbook tasks from fresh combinations, remove revealing target names/comments/reference carriers, vary operations and encodings, and include ambiguous examples. Renaming alone cannot remove pretraining contamination. Types-and-examples prompts, full specifications, and reference-algorithm prompts are different information conditions.
+
+At proposal counts such as $k=1,3,10$, report validity, witnessed expressibility, discovered bodies, certified solutions, axiom/export outcomes, useful-template recall, time to first certified answer, regressions on previously solved tasks, and residual gap to the oracle. Include initialization, retrieval, generation, parsing, malformed proposals, elaboration, filling, proof, and final replay. Separate cold local, resident local, and remote runs. Keep every failed proposal and rejection reason. One bounded batch at preparation or a named logical epoch is the first experiment; its supposed latency advantage over a call per node remains a hypothesis.
+
+N8 makes uncertainty reporting concrete. For $x$ successes among $n$ independent task units, $\hat p=x/n$, a Wilson interval is
+\[
+ \frac{\hat p+z^2/(2n)\ \pm\
+ z\sqrt{\hat p(1-\hat p)/n+z^2/(4n^2)}}{1+z^2/n}.
+\]
+State $n$ and the chosen confidence level. Repeated prompts or related list variants are not independent tasks; aggregate by task or use family-clustered resampling. No numerical outcome is asserted until this experiment runs.
+
+\subsection{Restricted proposals and independent authority}\label{sec:learning-interface}
+
+Use one proposal interface for deterministic grammars, user sketches, retrieved components, and optional models. Inputs include the frozen query, partial program, and a named decision point. Outputs are bounded carrier ASTs, well-scoped helper telescopes, typed sketches, allowed component references, binder selections, or recursion-scheme choices. Validate scope, node/depth bounds, permitted constants, exact universes, and grammar membership before elaborating in an isolated scratch context. New helper bodies are dependency-checked and kernel-checked before use.
+
+Arbitrary Lean commands, imports, attributes, macros, tactics, foreign code, new axioms, unsafe declarations, and altered trust options are not a harmless term-proposal language. They can execute or change the environment before a final kernel check. The proposer cannot weaken the original target or contract or choose the proof type that defines acceptance. Resource limits protect even rejected proposals. Optional remote submission also needs an explicit policy for private local definitions and contracts. The acceptance and publication boundaries of Section~\ref{sec:semantic-boundaries} remain independent of the generator.
+
+N8 recommends hardening a gate API to take the frozen query and derive $C(p)$ internally. Its source audit also observes that the engine already constructs the proof type from the frozen contract; the recommendation is a stronger boundary invariant, not evidence that the inspected engine proves an unrelated statement. A checked result must retain exact program, original-contract proof, helper closure, transitive axiom inventory, and any logical-to-executable correspondence.
+
+\subsection{Reordering, extension, and replay}\label{sec:learning-replay}
+
+A reorder-only proposal must pass membership in the recorded bounded grammar $\mathcal G_B$. A new carrier or helper outside it creates an extension $\mathcal G_B\subseteq\mathcal G'_B$ and changes negative-result and optimality scope. Keeping only model top-$k$ alternatives is not merely reordering unless omitted alternatives remain available. For a fixed finite structurally bounded grammar, exhaustive fair enumeration with conservative pruning sees the same set after reordering. Fixed time or node limits need not. Infinite enumeration additionally needs fairness. Reserve positive deterministic baseline work and never convert zero model probability, absent proposals, or model failure into semantic impossibility.
+
+Admit asynchronous proposals at named logical checkpoints in stable identifier order, rather than letting arrival times silently decide search order. Record absence and cancellation as input events. Freeze or record policy updates and scores; integer-valued scores can simplify cross-platform replay. Canonicalize ephemeral scratch names for identity without changing semantically relevant binder or dependency identity.
+
+Distinguish four audit objects, consolidating N3's four levels and the other reports' three replay notions:
+\begin{description}
+\item[Proof receipt.] Rechecks the closed program against the independently retained target, exact contract, universes, and axiom policy.
+\item[Realization receipt.] Relates the logical term to the exported executable representation and its execution checks.
+\item[Search receipt.] Replays proposals, grammar epochs, logical work, decisions, deferred alternatives, and scoped pruning evidence; acceptance alone proves no coverage or optimality claim.
+\item[Model receipt.] Attributes the proposal stream to a particular inference configuration. Regenerating its bytes is stronger than replaying recorded bytes.
+\end{description}
+
+A durable content-addressed record contains:
+\begin{lstlisting}
+frozen query, contract, local telescope, universe and trust policy
+repository, toolchain, imported artifacts, local-instance digest
+grammar, providers, rank model, scheduler and bounds
+decision points, all raw and parsed proposals, rejection reasons
+logical admission order, policy epochs, work and stop reason
+prune scopes, coverage checkpoints, unresolved proof obligations
+closed programs, original-contract proofs, helpers, axiom audits
+export correspondence and separately recorded execution status
+model/tokenizer identifiers, prompts, selected context, decoding
+inference backend, quantization/numerical settings when available
+\end{lstlisting}
+
+A seed and temperature zero do not fix weights, tokenizer, numerical kernels, batching, tie-breaking, inference software, or hardware. Search replay consumes the complete recorded stream without calling the model. A remote service may support transcript replay without promising bit-identical regeneration. Preserve raw bytes alongside canonical parsed forms to audit parser behavior. Digests or signatures protect provenance integrity; proof checking establishes the mathematical claim. Recheck the result in a fresh environment. N7's CoqHammer reconstruction analogy illustrates this separation of discovery from a reusable proof artifact.
+
+The default remains local, core-only, and model-free. Optional guidance may improve discovery while leaving certification independent of model availability. It can still waste time, bias preferences, or starve alternatives; accounting, fixed objectives, grammar tracking, and fair fallback address those risks rather than assuming a kernel gate also proves useful search.
+
+\subsection{Remaining guidance questions}\label{sec:learning-open}
+
+Historical R9.1 has no established numerical answer and is replaced by the defined experiment. R9.2's replay architecture and limits are answered; its implementation and empirical costs remain open:
+\begin{description}
+\item[R9.N1.] Under the paired, family-held-out protocol, which proposal source improves fully certified end-to-end results after charging inference and validation, and how much remaining failure is explained by the carrier/helper oracle?
+\item[R9.N2.] What bounded typed proposal language covers useful carrier, generalization, and helper suggestions while supporting decidable membership in the native grammar and explicit accounting for extensions?
+\item[R9.N3.] Can a model-independent replay reproduce the complete logical admission trace, including asynchronous absence, rejection, and policy-update events, across fresh environments with canonical scratch identities?
+\end{description}

@@ -1,49 +1,358 @@
 \section{R5. General recursion from incomplete examples}\label{sec:recursion}
 
-\subsection{The problem}
+\subsection{The missing capability and revised comparisons}\label{sec:recursion-scope}
 
-The engine has one recursion scheme: the recursor of an index-free recursive inductive type other than \code{Nat}, with a constant motive, at the outermost level, with the induction hypotheses as the only recursive calls. It solves tree size, list length, list map and the Leant recursive scenarios. It cannot express, and so cannot find:
+The historical implementation admitted outermost constant-motive recursion on
+an index-free recursive inductive other than \code{Nat}, exposing induction
+hypotheses as its recursive calls. Its list-length/map and tree-size successes
+do not establish natural recursion, indexed motives, changing parameters,
+derived measures, helper invention, or mutual/nested recursion. The intended
+end state retains these requirements. A small scheme portfolio specifies an
+implementation order, not a replacement for them.
 
-\begin{itemize}
-\item recursion on \code{Nat} (item A2), on two arguments at once (\code{zip}, \code{merge}), or on a derived measure (\code{gcd}, division, binary search);
-\item recursive calls on sub-sub-terms (Fibonacci, \code{pairs}), which need course-of-values recursion;
-\item accumulating parameters and tupled results (Section~\ref{sec:carriers});
-\item mutual and nested inductive types, for which Lean generates recursors that are awkward to use directly;
-\item helper functions: probe 11 (in-order flatten) is \code{flatten l ++ [a] ++ flatten r}; with \code{append} available as a provider the difficulty is depth, since the body has two recursive results combined by two applications inside a constructor context, and the search tree at that depth is large under a fixed rule order.
-\end{itemize}
+Several examples need a corrected diagnosis. Zip can recurse on one list while
+generalizing and matching the other. Fibonacci can use a pair of successive
+values under ordinary natural recursion rather than necessarily requiring
+sub-subterm calls. Tree flattening can use append, an accumulator, or a
+difference-list carrier; with append already provided, body depth and search
+order may dominate. Merge admits nested structural organization or a measure
+on the joint argument tuple. These alternatives separate expressibility,
+representation cost, and discovery difficulty.\prov{N1--N9}
 
-\subsection{What is known}
+Lean's definition elaborators, recursor metadata, equation theorems, and
+termination principles provide realization infrastructure. Size-change and
+lexicographic analysis supply established termination methodology, but the
+synthesizer still proposes calls and discharges decrease obligations
+\cite{sizechange}. The historical estimate of tens of milliseconds per
+elaborated candidate motivates measuring and amortizing realization; it is
+not a demonstrated universal cost bound.
 
-\paragraph{Schemes and termination.} Lean accepts recursive definitions by structural recursion (compiled to \code{brecOn}, which is course-of-values) and by well-founded recursion with a termination measure; recent Lean versions guess lexicographic measures automatically for many definitions. Termination analysis by size-change~\cite{sizechange} and by lexicographic orders is mature. So \emph{checking} a candidate recursive definition is solved by handing it to Lean's definition elaborator; the cost is tens of milliseconds per candidate, far above a kernel check.
+Myth uses recursive examples in a trace-complete regime. Smyth explicitly
+supports interdependent holes and sparse recursive traces; grouping it under
+a blanket trace-completeness requirement was incorrect. Burst supplies angelic
+execution and strengthening, Trio builds recursive programs from nonrecursive
+expressions, and Synquid uses refinement/measure information. These are
+different synthesis and validation settings, not transferable Leant2 scores
+\cite{myth,smyth,burst,trio,synquid}. The mixed-quantifier recursive-sketch and
+counterexample-derived syntactic constraints of the July~2026 Cataclyst
+preprint are another comparison point, not a dependent Lean implementation
+or a ready-checked pruning rule.\cite{cataclyst}\prov{N1,N3--N9}
 
-\paragraph{Synthesis.} Myth synthesizes recursive functions by treating the function's own examples as its specification for recursive calls, which requires trace-complete examples~\cite{myth}. Escher, \lam\textsuperscript{2} and Smyth have variants of the same requirement~\cite{escher,lambda2,smyth}. Burst removes it with angelic execution and a refinement loop~\cite{burst}; Trio synthesizes straight-line ``blocks'' from examples and then folds them into a recursive definition~\cite{trio}. Synquid proves termination through a user-supplied measure in the refinement type~\cite{synquid}. None targets a language where the definition must also pass a kernel as a term built from recursors.
+\subsection{Typed capabilities and explicit realization}\label{sec:recursion-capabilities}
 
-\subsection{Why it is hard here}
+Retain the unified proposal's recursion plan: function telescope, selected
+major argument, fixed/generalized parameters, motive, branch telescopes and
+index equations, scoped recursive capabilities, program/proof holes,
+termination obligations, final specialization, and executable lowering.
+Search may use equation-like bodies while the kernel checks realized recursor
+or well-founded terms. Neither representation alone proves their agreement.
 
-\paragraph{Two representations.} The object the kernel certifies is a recursor term (or a \code{WellFounded.fix} term with a proof). The object a search wants to enumerate is a recursive equation with calls to a named function. Translating every candidate through Lean's definition elaborator is too slow for the inner loop; enumerating recursor terms directly makes course-of-values and multi-argument recursion unnatural.
+Let $X$ contain the complete recursive state, $B:X\to\Sort\,u$ be the result
+family, and $R:X\to X\to\Prop$ a chosen well-founded relation. At state $x$,
+the capability is
+\begin{equation}\label{eq:recursion-capability}
+ \mathit{rec}_x:(y:X)\to R(y,x)\to B(y).
+\end{equation}
+The result is $B(y)$, not a fixed type or $B(x)$. Changing accumulators, other
+arguments, and mutual-recursion tags belong to $X$ or are explicitly quantified
+in the result family. A measure may depend on only part of $X$, but call
+identity and admissibility use the full state. Otherwise unequal calls can be
+conflated and the indexed programs of Section~\ref{sec:dependent} excluded.
+\prov{N1--N9}
 
-\paragraph{Contracts are rarely trace-complete.} A user who writes \code{f [1,2,3] = 6} seldom adds \code{f [2,3] = 5} and \code{f [3] = 3}. Without them a partial recursive body cannot be evaluated (R3), so recursion is searched blind until the body closes. The engine survives today because the bodies are tiny.
+The body has no unrestricted provisional self-reference. Capabilities are
+scoped to a recursion frame and cannot leak into ordinary providers.
+Structural constructor paths cheaply supply some decrease evidence; measure
+calls create proof obligations. Decrease on one sample is not a universal
+proof. An unresolved proof hole may remain a guarded obligation, but deductions
+depending on it stay heuristic until their hypotheses hold. Never introduce a
+global temporary axiom naming the recursive function and overlook it during
+the dependency audit.
 
-\paragraph{The scheme is a carrier.} Choosing the argument to recurse on, the measure, the accumulators and the tupling is the carrier problem again, with termination as an extra constraint.
+A typed body functional has type
+\[
+ F:\prod_{x:X}
+       \left(\left(\prod_{y:X}R(y,x)\to B(y)\right)\to B(x)\right).
+\]
+Realization produces $f:\prod_x B(x)$ and a checked equation
+\begin{equation}\label{eq:recursion-equation}
+ f(x)=F\bigl(x,\lambda y\,h.\ f(y)\bigr),
+\end{equation}
+including administrative parameters and casts of the chosen encoding.
+Keep ordinary expressions and types native to Lean; the additional IR need
+only encode recursive-call structure, guards, branch parameters, shared holes,
+and pending termination obligations.\prov{N2,N5,N6,N9}
 
-\subsection{Design to try first}
+Two realization paths remain useful. Send promising closed typed bodies
+through Lean's equation elaborator and retain declarations/equations; or
+instantiate a small library of already certified recursive templates. The
+second can avoid repeated full elaboration but must not become an unverified
+parallel termination compiler. Realize selected survivors or reusable helpers,
+cache checked equations, and charge realization/certification to the reported
+end-to-end budget. Generated declarations, equations, and termination evidence
+extend the environment fingerprint and acceptance audit.
 
-\begin{enumerate}
-\item \textbf{A capability-based body language.} Keep the unified proposal's principle: recursion is admitted only through typed \emph{recursive-call capabilities}. Generalize the single capability ``the induction hypothesis of this constructor argument'' to a capability $\mathit{rec} : (y : \tau) \to y \prec x \to \sigma$, a function that may be called on any argument provably smaller than the current one in a chosen order $\prec$. For structural orders the proof is a constructor path found syntactically; for measures it is an arithmetic goal for \code{omega}. The search enumerates bodies against this capability; the \emph{realization} step, once per closed candidate that passes the contract by evaluation, compiles the body to \code{brecOn} or \code{WellFounded.fix} through Lean's definition elaborator and kernel-checks it. Evaluation during search uses a direct interpreter for the capability (unfold the body on smaller arguments, with fuel), which is sound for refutation because the realized term is definitionally or provably equal to that unfolding.
-\item \textbf{A small, ordered scheme grammar.} Structural on one argument; structural on one argument with one accumulator (from the carrier grammar); simultaneous structural on two arguments; course-of-values of depth two; measure \code{sizeOf} or length of one argument. Enumerate in that order under the cost search of R1.
-\item \textbf{Trace completion by the evaluator.} Stage 4 of Section~\ref{sec:evaluation}: recursive calls on observed inputs are answered from the contract. Add Burst's idea in its simplest form: when a call is on an unobserved input, record the value that would make the observation true as an \emph{assumption} and continue; a closed candidate is accepted only after all assumptions are discharged by actually evaluating the candidate, which the closed-program check does anyway. Assumptions then only \emph{order} the search; they never prune, so soundness does not depend on them.
-\item \textbf{Helpers from failed searches.} When a body search fails at depth $d$ with a hole whose examples (from unevaluation) are consistent, promote the hole to a separate synthesis problem with those examples as its contract. This is how probe 11 would find \code{append} if it were not a provider. It is bounded by allowing one helper per query.
+\subsection{Interpreter agreement is generally propositional}\label{sec:recursion-simulation}
+
+Structural encodings can have convenient definitional equations. General
+well-founded definitions often require propositions such as
+\code{WellFounded.fix_eq}; Lean documents examples whose expected equation
+does not close by \code{rfl}. The opposite blanket claim is also too strong:
+N5 and N8 identify Lean~4.27's reducible fuel-based implementation for relevant
+natural-measure definitions. State the encoding and pinned-version behavior
+rather than asserting that every well-founded equation is only propositional.
+\cite{leanrecursion,lean427}\prov{N1--N9}
+
+\begin{proposition}[Interpreter--realizer agreement]\label{prop:recursion-simulation}
+Suppose a typed body interpreter and realization use the same body semantics,
+every call carries valid $R(y,x)$ evidence, nonrecursive operations preserve
+their intended dependent meanings, and the realization satisfies
+Equation~\ref{eq:recursion-equation}. Every successful finite interpreter
+evaluation at $x$ returning $v:B(x)$ establishes $f(x)=v$.
+\end{proposition}
+\begin{proof}
+Use well-founded induction on $x$. The decrease proof of each call $y$ makes
+the induction hypothesis available, identifying its interpreted result with
+$f(y)$. Substitute these equalities into the proved semantics of the
+nonrecursive operations, using the same dependent substitutions and transports.
+The realization's equation identifies the resulting value with $f(x)$.
+Equivalently, induct on a successful finite evaluation derivation explicitly
+recording all recursive calls.
+\end{proof}
+
+Equality preservation is an obligation, not a consequence of matching
+input/output types. For reflected bodies, prove it by induction on syntax.
+If the proof equates higher-order recursive oracles using extensionality,
+account for that principle in the axiom profile. The equivalent uniqueness
+formulation says two total interpretations satisfying the same well-founded
+equations agree pointwise when the body respects pointwise equality of
+recursive results.\prov{N2,N3,N9}
+
+A fuelled interface records a derivation or checked trace and satisfies
+\begin{equation}\label{eq:recursion-fuel}
+ \mathsf{runFuel}(k,b,x)=\mathsf{some}(v)
+ \quad\Longrightarrow\quad \mathsf{realize}(b)(x)=v.
+\end{equation}
+Fuel exhaustion gives unknown, neither divergence nor a bad contract value.
+Adequate-fuel/eventual-success is a separate theorem for a declared total
+fragment. A decreasing natural measure may bound recursion depth, not every
+reduction or branching evaluation-tree size; define the fuel unit. Termination
+does not supply a small uniform interactive-budget bound. Simulation of closed
+programs also does not justify open pruning without the all-completions
+condition of Section~\ref{sec:evaluation-certification}.\prov{N1--N9}
+
+For closed observations, rewrite with generated equations, use proof-producing
+simplification or \code{cbv}/\code{decide_cbv}, or evaluate a reified body and
+reconstruct the observation proof through Equation~\ref{eq:recursion-fuel}.
+Benchmark native equation evaluation before a universal interpreter.
+Keep three trust profiles distinct: direct kernel reduction; proof-producing
+interpretation checked under the original axioms; and compiled computation
+with explicitly approved additional assumptions. Compiled execution can screen,
+rank, or nominate counterexamples; kernel-only hard pruning needs checked
+negative evidence. The source reports identify native reduction axioms such as
+\code{Lean.ofReduceBool} as excluded providers, so quietly using them changes
+the policy.\cite{leancbv,leantactics}\prov{N1,N4,N6,N7,N9}
+
+\subsection{Publishing an executable definition}\label{sec:recursion-publication}
+
+The recorded code-generator failure on a logically accepted recursor term is
+an independent boundary. Preserve the logical object, construct a compilable
+equation-style definition, and prove pointwise correspondence or reprove the
+original contract for that definition. Attaching \code{implemented_by} is not
+an equality proof.
+
+Lean's \code{Nat.recCompiled}, \code{Nat.rec_eq_recCompiled}, and its
+\code{@[csimp]} attribute supply a proof-backed compilation-rewrite precedent
+in the pinned core. Its comment identifies recursor compiler support as the
+motivation. Investigate a small publication adapter using this pattern before
+a universal recursor decompiler.\cite{leannat}\prov{N3,N5}
+
+The bridge proof may introduce axioms absent from the logical term, especially
+through extensionality; audit it separately. A pointwise bridge or direct
+contract proof may avoid an unnecessarily strong equality obligation.
+Logical equivalence does not itself verify the compiler/runtime, and
+unaccounted implementation substitutions remain relevant. Record kernel
+acceptance, contract certification, export, compilation, and representative
+execution separately. A noncompiling logical result remains useful with
+explicit status; a compiling substitute lacking the bridge is not automatically
+the certified program. Include publication work in time to usable result.\cite{leancompile,leanvalidation}
+\prov{N1--N9}
+
+For an invented helper bundle, construct its declaration-dependency graph
+and check an acyclic bundle in topological order. Each declaration must close
+over the advertised telescope, depend only on imported or earlier accepted
+declarations, preserve its universe parameters, and satisfy the transitive
+axiom policy. Recheck the final program and contract in the exported bundle;
+scratch-environment success is insufficient. Mutual recursion requires an
+explicitly supported bundle rule with its own joint termination and
+realization checks, rather than bypassing the acyclic audit.\prov{N5}
+
+\subsection{Top-down angels, sharing, and helper invariants}\label{sec:recursion-angels}
+
+Section~\ref{sec:evaluation-angelic} states the oracle semantics and finite
+theorem once. Top-down search gains expected types, local telescopes, induction
+information, and sketches. Bottom-up version spaces or finite-tree automata
+share completed subterms and behaviors more directly. Neither dominates without
+a matched experiment, and changing direction does not inherit Burst's space
+savings or correctness proof.\prov{N1--N9}
+
+A branch carries its partial equation body and a persistent call-constraint
+graph. A descriptor includes frame/function identity, full typed arguments,
+universes, local substitution, and assumptions. Hash-cons with checked identity.
+Filling constructor fields propagates demands; filling guards selects
+conditional constraints; refining arguments can identify a call with a known
+input or another call. Assignment watchers invalidate both forward residuals
+and affected oracle assumptions. Repeated occurrences of a hole remain one
+shared unknown.
+
+Keep three evidence levels: answers forced by the original contract;
+existential answers that could make the sketch pass; and actual results of
+the closed realized candidate. The first constrain accepted completions, the
+second guide or enter sound relational solving, and the third support final
+checking. From $r_1+r_2=5$, committing to $0,5$ and discarding other explanations
+is invalid. If both symbols denote the same call, include their equality.
+If one observation permits zero or one and another demands positivity,
+prematurely choosing zero loses the feasible option.\prov{N2,N6}
+
+When execution contradicts a guessed result, reject the completed body or
+refine that combination of skeleton and assumptions. A failed unobserved-call
+guess does not ban all bodies or globally ban the input. Nogoods retain exactly
+their supporting assumptions; specification-relative counterexample caches
+are not universal facts about every candidate.\prov{N4,N7,N8}
+
+For an invented worker $g(s,a)$ with $f(s)=g(s,a_0)$, observations of $f$
+normally constrain only seed $a_0$. Reusing them at arbitrary $a$ is invalid.
+Supply a generalized invariant, derived typed examples, or concrete execution.
+The reversal invariant
+$g(xs,acc)=\mathsf{reverse}(xs)\mathbin{+\!+}acc$, universally quantified over
+$acc$, illustrates joint generalization of a changed parameter and its
+correctness property. Helper/carrier alternatives remain reopenable when a
+proposed strengthening is unsupported.\prov{N1,N5,N9}
+
+Use a hybrid: shallow closed components for a specific telescope and target,
+typed recipes retained behind behavioral summaries, offered to top-down
+refinement. Cross-context reuse needs checked renaming/substitution. A behavior
+vector is an index, not a permanent quotient: new recursive inputs may split
+its bucket. Begin with observed calls, then symbolic unknown calls for ordering,
+then a complete certified relational fragment for pruning. Execute the finished
+recursion ordinarily and check the original full contract with no remaining
+angels. Convenient assumptions do not fabricate trace-complete examples.
+\prov{N1--N9}
+
+\subsection{A staged recursion portfolio and its limits}\label{sec:recursion-basis}
+
+No response establishes a canonical minimal basis or Leant2 coverage percentage.
+A universal well-founded recursor can make a basis syntactically tiny while
+hiding difficult measure, algebra, and proof searches. Optimize coverage at
+bounded total cost under a fixed component inventory, including scheme
+selection, body filling, decrease proofs, realization, and certification.
+
+Paramorphisms are a useful published starting point. For a polynomial functor
+$F$, an algebra $F(\mu F\times K)\to K$ sees each original child and recursive
+result; a fold ignores the original child. For lists,
+\[
+ \mathsf{para}(z,s,[])=z,\qquad
+ \mathsf{para}(z,s,a::xs)=s(a,xs,\mathsf{para}(z,s,xs)).
+\]
+Natural primitive recursion similarly exposes predecessor and prior result.
+Para uses typed multi-hole templates with recursion-free fillers and reports
+a 59-benchmark study. Its non-kernel validation and resource setting do not
+establish Leant2's ten-second dependent-synthesis coverage.\cite{para}
+\prov{N1,N8}
+
+\begin{longtable}{@{}L{.23\linewidth}L{.69\linewidth}@{}}
+\toprule
+Tier & Purpose, witness, and additional obligation\\
+\midrule\endhead
+Structural &
+Registered folds/paramorphisms, including naturals and supported indexed
+families: map, length, tree size, powers. Validate motives and
+constructor-field capabilities.\\
+Generalized/stateful &
+Changing parameters, function accumulators, option-like empty state, products,
+dependent result strengthening. Reverse, zip on one structural list, extrema,
+Fibonacci pairs, and difference-list flattening need their initializer,
+updater, and finisher.\\
+Nested/helper &
+Bounded nesting over other arguments/substructures; initially one synthesized
+helper with a closed parameter interface, without hidden access to a parent's
+changing context.\\
+Course-of-values &
+Certified deeper-predecessor access when structural/product encodings are
+unsuitable. Record constructor paths, indices, and admitted calls; depth two
+is a syntactic bound, not all course-of-values coverage.\\
+Measured &
+Finite measure/lexicographic grammar on full states, checked well-foundedness
+and per-call decrease. Bound arithmetic expressions, tuple lengths, relation
+choices, and decrease-proof search.\\
+Mutual/nested families &
+Later adapters using actual recursor metadata, tagged joint states or generated
+definition bundles, and their real induction/termination interfaces; avoid
+brittle generated-name rules.\\
+\bottomrule
+\end{longtable}
+Rows overlap: count all admissible reference encodings and measure the cheapest
+verified one. Task names do not determine necessary schemes. Providers can
+hide substantial recursion, so report their capabilities alongside visible
+template complexity.\prov{N1--N9}
+
+The measured tier includes merge with sum of remaining lengths; Euclidean gcd
+with a nonzero-branch modulus-decrease theorem; division/binary search with
+decreasing intervals; and quicksort with filtering-length bounds. Calling
+\code{omega} does not supply every semantic lemma. \code{sizeOf}, length,
+natural arguments, bounded differences, and lexicographic tuples require
+precise semantics and proof plans. A failed measure/proof attempt rejects
+that proposal, not the original problem. Prefer measures whose obligations
+lie in a declared proof fragment before broad invention.\prov{N1,N2,N5--N9}
+
+When body search reaches a consistently constrained hole beyond its depth,
+propose a helper with a dependency-closed parameter interface and derived
+necessary observations. Do not assume those observations fully specify it.
+Retain caller reconstruction and the original final contract. One helper per
+query is an experiment, not an expressiveness theorem. Mutual/nested inductives
+need dedicated tracks. Coinductive or intentionally partial programs require
+a different semantic acceptance profile; interpreter fuel must not quietly
+admit them into a total-function claim.\prov{N1,N5,N7,N8}
+
+\subsection{Coverage experiments and new questions}\label{sec:recursion-evaluation}
+
+First translate a withheld reference witness into the declared scheme grammar
+and kernel-check it: this establishes representation coverage. Next run with
+scheme and carrier supplied, scheme alone, and neither. Distinguish providers
+enabled/withheld and disclose helpers. These separate body search, carrier
+invention, scheme choice, and retrieval. A handwritten witness is neither
+discovery nor timing evidence.\prov{N1--N9}
+
+Stratify list/natural/tree exercises, unresolved Church/indexed cases, and
+adversarial variations of index expressions, parameter order, and termination
+measures. Hold out families when assessing guidance. Compare trace-complete
+examples, sparse examples with neutral calls, and sparse examples with angels
+at matched body/scheme bounds. Include a case omitting all internal calls and
+require actual realized execution to decide acceptance. Record overlapping
+scheme encodings before attributing marginal coverage to one tier.
+
+Report first sufficient/successful schemes, carriers, components, helpers,
+trace completeness, universal-proof requirements, decrease-proof costs,
+realization, kernel checking, compilation, and execution. Distinguish
+out-of-grammar, interrupted search, unresolved decrease, behavioral counterexample,
+and unresolved contract proof. Give logical-work and wall-clock curves through
+the usable exported artifact. Original ten-second recursion probes and
+regression scores remain gates; a toy model or supplied-scheme success does
+not prove automatic invention at that budget.\prov{N1--N9}
+
+The original interpreter, direction, and basis questions have the conditional
+answers above. Remaining questions are:
+\begin{enumerate}[label=R5.N\arabic*.]
+\item Which minimal typed recursive-body IR supports checked simulation into
+native equation elaboration and reusable templates, including dependent
+results, and what adequate-fuel theorem is practical for that fragment?
+\item How should a persistent top-down oracle store represent helper invariants
+and assumption-scoped nogoods so refinements retain all alternatives while
+recovering useful bottom-up sharing?
+\item Which recursion portfolio and measure/proof grammar give the best verified
+coverage when representation, supplied-scheme filling, automatic invention,
+and executable publication are measured separately?
+\item Can a small proof-backed publication adapter, using equation definitions
+or compiler simplification theorems, preserve each permitted axiom profile
+while making the synthesized recursor families executable?
 \end{enumerate}
-
-\subsection{What would count as progress}
-
-The recursion entries of the ported suites at 10 s, reported separately for trace-complete and trace-incomplete contracts; probe 4 and probe 11; no change in the scores of Table~\ref{tab:scores}.
-
-\subsection{Questions for experts}
-
-\begin{enumerate}
-\item Is the search-time interpreter of a capability-based body guaranteed to agree with the realized \code{brecOn} or \code{WellFounded.fix} term up to the kernel's conversion, or only propositionally? For well-founded recursion Lean's terms do not reduce well in the kernel; what is the recommended way to evaluate them (equation lemmas, \code{decide} with \code{Nat.rec} fuel, compiled evaluation under a trusted-code profile)?
-\item Does angelic execution compose with top-down type-directed search, and what is lost relative to Burst's bottom-up setting?
-\item Is there a canonical small basis of recursion schemes that covers the functions in standard introductory corpora, with measured coverage?
-\end{enumerate}
-Related projects and fields: Lean's definition elaborator implements structural and well-founded recursion and the guessing of termination measures; Burst, Trio, Myth and Synquid study synthesis of recursive programs from examples and refinement types; termination analysis studies size-change and lexicographic orders.

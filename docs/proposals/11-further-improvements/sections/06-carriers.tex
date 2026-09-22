@@ -1,65 +1,640 @@
 \section{R2. Carriers, accumulators and auxiliary state}\label{sec:carriers}
 
-This is the problem we consider hardest and most valuable. It is the reason for all thirteen stretch failures and for probe 11, and it reappears in every recursion scheme.
+\subsection{The problem is a representation together with its operations}
+\label{sec:carrier-package}
 
-\subsection{The problem}
+A Church list exposes its fold,
+\code{xs : (R : Type) -> (A -> R -> R) -> R -> R}; using it requires choosing
+$R$. Ordinary recursors expose the same choice through their motive. When the
+requested result is already the fold result, unification may infer that type.
+Otherwise the useful representation need not occur in the query. This motivates
+carrier invention, but does not establish that every bounded search failure is
+caused by a missing carrier: transition synthesis, finishing, proof and search
+allocation must be measured separately.
 
-A Church-encoded list is its own fold: \code{xs : (R : Type) -> (A -> R -> R) -> R -> R}. To use it the synthesizer must choose $R$. A recursor is the same with the motive in place of $R$. When the function to be synthesized \emph{is} a fold into its result type, $R$ is the goal type and unification finds it. Otherwise $R$ is a type that occurs nowhere in the query:
+For a list function $h:\mathrm{List}\,A\to T$, search a \emph{package}
+\begin{equation}\label{eq:carrier-package}
+ (K,z,s,o),\qquad z:K,\quad s:A\to K\to K,\quad o:K\to T,
+ \qquad h(xs)=o(q(xs)),
+\end{equation}
+where $q([])=z$ and $q(a::xs)=s(a,q(xs))$. A direct fold has $K=T$ and
+$o=\mathrm{id}$; a fold with a general finisher is a different problem.
+The package may depend on fixed query parameters, but must not capture the
+major input $xs$ outside its fold. Otherwise $K=\mathrm{Unit}$ can ignore the
+fold while its finisher computes the answer from the captured input. Do not
+allow calls to the unfinished target except through approved recursion
+capabilities (N4's scope restriction).
+
+Even without that capture, $K=\mathrm{List}\,A$, $z=[]$, $s=\mathrm{cons}$
+and $o=h$ always reconstruct the input and defer the entire problem to the
+finisher. Charge and bound \emph{all} package components, required helpers and
+proofs. State cardinality, carrier-type syntax, executable description length,
+proof cost, runtime and storage are different objectives. A natural number
+can encode a pair of natural numbers; a short function type may contain
+closures retaining input-sized data. Neither makes the corresponding encoding
+cheap or useful.
 
 \begin{center}\small
-\begin{tabular}{@{}L{30mm}L{52mm}L{66mm}@{}}
+\begin{tabular}{@{}L{35mm}L{51mm}L{60mm}@{}}
 \toprule
-Function & Carrier $R$ & Why\\
+Task or scheme & Useful representation & Information or operation supplied\\
 \midrule
-\code{map}, \code{append}, \code{filter} & result type & plain fold\\
-\code{reverse}, \code{foldl} & $T \to T$ & left-to-right accumulation through a right fold\\
-\code{foldl1}, \code{reduce} with default & $\mathrm{Option}\,A \to A$, or $\mathrm{Option}\,A$ & the first element seeds the accumulator\\
-\code{maximum} & $\mathrm{Option}\,A$ & same, with a comparison\\
-\code{minMax} & $\mathrm{Option}\,(A \times A)$ & two running values\\
-\code{at} (index) & $\mathrm{Int} \to A$ & the index is consumed while folding\\
-\code{fib} & $\mathbb{N} \times \mathbb{N}$ & tupling\\
-tree flatten, efficiently & $\mathrm{List}\,A \to \mathrm{List}\,A$ & accumulator avoids quadratic append\\
+\code{map}, \code{append}, \code{filter} & result type & direct fold\\
+right-fold implementation of \code{foldl} & $T\to T$ & delayed accumulator\\
+right-associated nonempty reduction & $\mathrm{Option}\,A$ & empty/nonempty phase\\
+left-associated nonempty reduction & $\mathrm{Option}\,A\to A$ & phase and continuation\\
+\code{maximum} with a default & $\mathrm{Option}\,A$ & seen element and comparison\\
+\code{minMax} & $\mathrm{Option}\,(A\times A)$ & two extrema and empty phase\\
+index with supplied default & $\mathrm{Int}\to A$ & consume an index through the fold\\
+\code{fib} & $\Nat\times\Nat$ & adjacent recurrence values\\
+efficient reversal/tree flattening & $\mathrm{List}\,A\to\mathrm{List}\,A$ & continuation/difference list\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-The engine solves the first two rows. The second row needed a dedicated rule (7a: instantiate a recursive eliminator at $T \to T$ for goal $T$), found by hand after reading a failing trace. A general frontier of candidate carriers was tried first and multiplied the search by an order of magnitude; restricting the rule to eliminators whose step threads the result type made one probe ten times faster. That history is the problem in miniature: each carrier shape is easy once named, and enumerating shapes blindly is unaffordable.
+These are templates, not semantic necessities or new measured successes.
+In particular, do not assume that an optional element alone implements an
+arbitrary nonassociative \emph{left}-associated operation through a right fold.
+The historical targeted $T\to T$ rule and the cost of the blind carrier
+frontier motivate keeping useful specializations early in a general grammar;
+uniform enumeration need not erase them. The same problem appears as motive
+generalization, tupling, invariant strengthening and helper invention: each
+proposes information whose specification is not explicitly supplied.
 
-The same problem has three other faces. \emph{Motive generalization}: a structurally recursive function with an accumulating parameter is a recursor whose motive is a function type, $\mathrm{motive} := \lambda\_.\ S \to T$. \emph{Strengthening}: a recursive function that returns more than is asked (a pair) and is projected afterwards. \emph{Helper invention}: a fold whose step calls an auxiliary function that must itself be synthesized. In all four the synthesizer must invent an object whose specification is not given.
+\subsection{Minimal semantic state and what samples cannot identify}
+\label{sec:carrier-quotient}
 
-\subsection{What is known}
+The classical direct-fold characterization requires that the kernel of $h$
+respect \code{cons}: equal results on tails remain equal after prepending an
+element~\cite{whenfold}. For a fold with hidden state and a finisher, the more
+appropriate relation is
+\begin{equation}\label{eq:carrier-residual}
+ x\sim_h y\quad\Longleftrightarrow\quad
+ \forall u:\mathrm{List}\,A,\quad
+ h(u\mathbin{+\!+}x)=h(u\mathbin{+\!+}y).
+\end{equation}
+The contexts \emph{prepend} a list because a right fold has already processed
+the tail. Reversing this orientation changes the state problem.
 
-\paragraph{Theory of folds.} A classical result characterizes exactly when a function $h$ on lists is a fold: when the kernel of $h$ is closed under \code{cons}, that is, $h\,xs = h\,ys$ implies $h\,(a{::}xs) = h\,(a{::}ys)$~\cite{whenfold}. When it is not, $h$ becomes a fold after pairing with auxiliary functions: this is \emph{tupling}~\cite{tupling}, and the third homomorphism theorem gives conditions under which a function that is both a left and a right fold is a homomorphism~\cite{thirdhom}. The smallest sufficient auxiliary information is, in automata terms, the Myhill--Nerode quotient of input lists under ``indistinguishable by $h$ after any further \code{cons}''. These results say a carrier \emph{exists} and what it must distinguish. They do not give a procedure to find a \emph{type and step function} from a handful of examples.
+\begin{theorem}[Residual quotient and reachable state]
+\label{thm:carrier-quotient}
+For every realization~\eqref{eq:carrier-package}, $q(x)=q(y)$ implies
+$x\sim_h y$. The quotient by $\sim_h$ supports a realization of $h$, and
+the reachable states of any realization map surjectively onto that quotient.
+In particular, $r$ pairwise inequivalent tails require $r$ distinct states.
+\end{theorem}
+\begin{proof}
+Equal states remain equal after applying the same sequence of prepend
+transitions; induction on $u$ gives equal states on $u\mathbin{+\!+}x$ and
+$u\mathbin{+\!+}y$, and the common finisher gives equal outputs. For the
+quotient, choose $z=[[]]$, $s(a,[x])=[a::x]$ and $o([x])=h(x)$.
+The step is well defined because a test with prefix $u$ on $a::x$ is a test
+with prefix $u\mathbin{+\!+}[a]$ on $x$; the empty prefix makes the output
+well defined. Induction gives $q(x)=[x]$. Sending a reachable state $q(x)$
+to $[x]$ is well defined by the first implication and reaches every class.
+\end{proof}
 
-\paragraph{Synthesis systems.} \lam\textsuperscript{2} fixes a set of combinators (\code{map}, \code{filter}, \code{foldl}, \code{foldr}, \code{recl}) and deduces examples for the combinator's function argument from examples for the whole; for folds the deduction is possible only when the examples are closed under taking tails, and the accumulator type is the result type~\cite{lambda2}. Myth, Smyth, Burst and Trio synthesize explicit recursion and avoid the carrier by not using folds; they need a function's own examples to be trace-complete (Myth), or replace recursive calls by angelic values and check them afterwards (Burst), or derive recursion from straight-line blocks (Trio)~\cite{myth,smyth,burst,trio}. None of them invents an accumulating parameter or a tuple unless the signature already has it. Synquid requires the user to write the auxiliary function's refinement type~\cite{synquid}. DreamCoder learns reusable abstractions across tasks, which is helper invention over a corpus rather than within one query~\cite{dreamcoder}. Inductive-theorem-proving research calls the proof-side twin of this problem generalization and lemma speculation and regards it as open.
+This is a semantic characterization, not an effective minimal-type algorithm.
+The quotient can be infinite, its equality undecidable, and its useful
+representation absent from the chosen grammar. The finite lower bounds use
+only finite counting; stronger comparisons of arbitrary infinite cardinalities
+need their set-theoretic assumptions stated separately. Isomorphic
+representations need not have the same syntax or operational cost.
 
-So, to our knowledge: the existence theory is classical, the enumeration of carriers is not addressed by synthesis systems, and the learning of a carrier from examples has no published algorithm for this setting.
+Finite samples do not determine this universally quantified relation in
+general. Over a nonempty alphabet, for any finite collection of input words
+choose an unobserved word $w$. Constant zero
+and the function returning one precisely on $w$ agree on zero-valued samples,
+yet only the first has a one-state deterministic realization. Both functions
+are total and computable. Thus samples do not determine even whether the
+intended function requires more than one state.
 
-\subsection{Design to try first}
+\subsection{Two constructive bounded problems}
+\label{sec:carrier-finite}
 
-\paragraph{A carrier grammar with costs.} For a goal type $T$, element type $A$ and the types $S_i$ of other locals:
+\begin{theorem}[Minimum finite machine consistent with finite samples]
+\label{thm:carrier-finite-machine}
+Let $A,B$ be finite explicitly enumerable sets with decidable equality and
+$B$ nonempty. A finite consistent sample set
+$D\subseteq\mathrm{List}\,A\times B$ admits a terminating procedure that
+finds a minimum-state deterministic right-fold machine fitting $D$.
+\end{theorem}
+\begin{proof}
+Let $S$ contain $[]$ and all suffixes of sample inputs. Use states
+$S\cup\{\bot\}$, start at $[]$, and set $s(a,x)=a::x$ if $a::x\in S$,
+otherwise $\bot$; the sink stays at $\bot$. Processing a sample from right
+to left stays in $S$. Assign its specified output to each sample state and a
+fixed $b_0\in B$ elsewhere. Consistency makes this well defined and gives
+an upper bound $|S|+1$ on state count. Equivalently, construct a trie of
+reversed sample words and add a sink.
+
+For $k=1,\ldots,|S|+1$, enumerate every transition table
+$A\times\mathrm{Fin}\,k\to\mathrm{Fin}\,k$ and output table
+$\mathrm{Fin}\,k\to B$, fixing the seed to zero. Any nonempty finite
+machine can rename its initial state to zero. Every sample check terminates;
+the first successful $k$ is minimal and the upper bound ensures a success.
+\end{proof}
+
+With $a=|A|$ and $b=|B|$, there are $k^{ak}b^k$ tables at fixed seed, or
+$k^{ak+1}b^k$ with all labeled seeds. These different conventions explain
+otherwise different incoming enumeration counts. The theorem establishes
+decidability, not interactive tractability. Direct backtracking with early
+sample propagation is a Lean-only option; SAT or finite-domain solving,
+symmetry breaking and partition refinement are alternative accelerators.
+One encoding uses states $q_x$, transitions $d_{a,k}$ and outputs $o_k$ with
 \[
-K \;::=\; T \;\mid\; S_i \to K \;\mid\; K \times K \;\mid\; \mathrm{Option}\,K \;\mid\; A \;\mid\; \mathrm{Bool} \;\mid\; \mathbb{N}
+ q_{a::x}=d_{a,q_x},\qquad o_{q_x}=h(x)
 \]
-bounded by size 3, enumerated in cost order under the search of Section~\ref{sec:search}. Rule 7a is the production $T \to T$. Each carrier adds a \emph{finishing} obligation $K \to T$ (apply to the seed, project, or supply a default for \code{none}), which is ordinary synthesis. The grammar is small; the cost is the subtree each carrier opens, which is why this design depends on the two ideas below and on R3.
+where observations exist, preserving consistency whenever states are shared.
+A satisfying finite table still needs a permitted typed emitter, finite
+enumeration/equality operations and native checking. It is not automatically
+expressible within an arbitrary small step grammar.
 
-\paragraph{Refute a carrier before searching under it.} For a fixed carrier $K$, the unknowns are \code{step}, \code{init} and \code{finish}. The contract's observations give, for each input list, the required value of \code{finish (foldr step init xs)}. Two inputs that must produce different final results after the same suffix of \code{cons} operations must be mapped to different values of $K$. If the number of classes that the observations force exceeds the number of values of $K$ that can be built from the inputs at the search depth, $K$ is refuted without synthesizing anything. For finite carriers such as \code{Bool} this is a counting argument; for $T$ itself it is exactly the fold-closure test of that characterization applied to the examples and explains in advance why \code{reverse} cannot be a plain fold into \code{List A} by a step of depth one. We believe this test is new as a pruning rule; whether it is strong enough to matter is an empirical question.
+\paragraph{Bounded typed packages.}
+Fix finite type and term productions, providers, literals, universes, helpers,
+recursion schemes and proof choices, together with a total syntax grade for
+$(K,z,s,o)$. Enumerate in a fixed objective order, type-check and validate every
+observation, and prune only by valid necessary conditions. If the resulting
+space $\mathcal P_b$ is finite and each check terminates decisively, this
+returns a minimum sample-consistent member or proves none exists in
+$\mathcal P_b$: every member is visited, no satisfying member is pruned, and
+the first success is least in the chosen order. These are all needed premises.
+For arbitrary Lean proof or reduction attempts, retain unknown outcomes;
+``enumeration exhausted with unresolved checks'' is not semantic absence
+(Section~\ref{sec:semantic-boundaries}). Universal contracts still require
+their actual proofs.
 
-\paragraph{Learn the carrier as an automaton.} Treat the observations as samples of a function on strings over $A$. Build the observation table used in active automata learning: rows are input prefixes (or suffixes, for right folds), columns are continuations, entries are required results. The distinct rows are the states a carrier must distinguish. The number of states and their structure suggest the carrier: one state per value of $T$ means a plain fold; states indexed by ``seen nothing'' versus a value of $A$ means $\mathrm{Option}\,A$; pairs of values mean a product. This gives a \emph{proposal} for $K$ derived from the data, to be confirmed by synthesis and the kernel. We have not found this in the synthesis literature and do not know how it behaves with the five to forty observations that contracts provide, or with polymorphic element types, where parametricity (A4) should reduce the alphabet to positions.
+Bounding only type syntax does not give this procedure. For prescribed
+$K=X$ and target $\mathrm{Unit}$, even the single empty-list observation has
+a realization exactly when $X$ has a closed inhabitant: the seed supplies one,
+and conversely a chosen seed can be preserved by the step and discarded by
+the finisher. Conversely an unbounded finisher $\mathrm{Unit}\to T$ already
+contains arbitrary inhabitation of $T$. These reductions from N8 and N9 show
+why type enumeration alone cannot decide arbitrary package existence.
 
-\paragraph{Sketches as the escape hatch.} Until invention works, a user who knows the carrier can write \code{xs (Option A) ?step ?init} as a sketch (E2). The stretch cases become a benchmark with two tracks: carrier given, and carrier invented.
+\subsection{Sound sample lower bounds and their counterexamples}
+\label{sec:carrier-lower-bounds}
 
-\subsection{What would count as progress}
+Build a witnessed incompatibility graph on selected tails. Join $x$ and $y$
+only when a common prefix $u$ has two known, different outputs for
+$u\mathbin{+\!+}x$ and $u\mathbin{+\!+}y$.
 
-The thirteen stretch cases and the accumulator entries of the ported suites (\code{fib}, \code{list_rev_tailcall}, \code{tree_flatten}, \code{maximum}, \code{index}), solved within 10 s without new hand-written carrier rules, and without slowing the solved Church probes by more than a factor of two.
+\begin{proposition}[Observed-context capacity bound]
+\label{prop:carrier-capacity}
+Any deterministic package fitting these observations assigns different states
+to adjacent tails. For finite $K$,
+\[
+ \chi(G)\le |\operatorname{Reach}(K)|\le |K|.
+\]
+A clique of size $r$ therefore refutes a carrier with fewer than $r$ possible
+reachable states.
+\end{proposition}
+\begin{proof}
+If $q(x)=q(y)$, processing the common prefix gives equal states and equal
+finished outputs, contradicting its witnessed unequal observations. Hence
+$x\mapsto q(x)$ is a proper coloring by reachable states.
+\end{proof}
 
-\subsection{Questions for experts}
+The certificate consists of the actual conflicting observations and a proved
+capacity bound, or an inductively closed invariant bounding the reachable
+state set for \emph{every} admitted program in the claimed class. A clique is
+cheap to check. A general chromatic lower bound needs its own evidence;
+the number of colors found by greedy coloring is an \emph{upper} bound on
+$\chi(G)$, not a refutation certificate. Even a correct coloring need not
+extend to a deterministic transition system: equal states must have equal
+successor states under the same constructor.
 
-\begin{enumerate}
-\item Is there a constructive version of the fold characterization that, given finitely many input--output pairs, returns a minimal carrier \emph{as a type} from a fixed grammar, or proves none exists in the grammar?
-\item Is the automaton view sound for polymorphic functions, and what replaces the alphabet when elements are abstract? We expect positions and equalities between positions, by parametricity, but have no proof.
-\item In program calculation, tupling and accumulation are derived by fusion from a specification. Can fusion be run ``backwards'' from examples to propose the auxiliary function, and is there a complete strategy for a useful class (list homomorphisms, catamorphisms over polynomial functors)?
-\item For recursors, is there a known enumeration of motives that is complete for primitive recursion with parameters and avoids the explosion we saw on \code{Nat}?
-\item How do inductive theorem provers choose generalizations today, and do their heuristics (rippling, lemma speculation from failed proofs) transfer to choosing carriers from failed syntheses?
-\end{enumerate}
-Related projects and fields: the algebra of programming and program calculation study folds, tupling and the third homomorphism theorem; \lam\textsuperscript{2}, Burst and Trio study synthesis of recursive list and tree programs from examples; automata learning studies the inference of minimal state spaces from observations; inductive theorem proving studies generalization, rippling and theory exploration.
+Three further mistakes recur in the incoming answers' counterexamples.
+\begin{itemize}
+\item Partial rows $(0,?)$, $(?,1)$, $(1,1)$ show that compatibility is not
+transitive. Unknown entries are neither outputs nor inequalities. Different
+partial rows may describe the same state; merging all compatible pairs or
+counting distinct strings of entries is unjustified.
+\item Values found by a depth-limited enumerator are not an upper bound on
+inhabitants or reachable states. A short transition can build arbitrarily
+large values when iterated. Refuting \code{Nat}, lists or functions because
+only two values were found is unsound without a separate bounded-image proof.
+\item A direct-fold obstruction does not exclude the same carrier with a
+finisher. For total list tail, $h([])=h([b])=[]$, but after prepending $a$,
+$h([a])=[]\ne[b]=h([a,b])$. This excludes a direct fold whose state is
+$h(xs)$. The same list carrier with $q=\mathrm{id}$ and $o=\mathrm{tail}$
+works, so the restriction on finishing code is essential.
+\end{itemize}
+
+\paragraph{Three states for a Boolean result.}
+For ``length divisible by three'', tails of lengths $0,1,2$ under prefix
+lengths $0,1,2$ have rows
+$(1,0,0)$, $(0,0,1)$, $(0,1,0)$. They form a three-clique. A cyclic
+three-state counter with output true at zero attains the bound; induction
+identifies the state with length modulo three. Thus \code{Bool} is too small
+even though the output is Boolean; \code{Option Bool} supplies three values.
+Unary fixed-seed table enumeration uses $2,16,216$ tables at sizes one, two
+and three; changing the alphabet or allowing every labeled seed changes these
+counts. N1, N3, N4 and N9 contain variants of this finite illustration.
+
+\paragraph{Four states from nine distinct observations.}
+Let $h$ mean that a word over $\{a,b\}$ contains both symbols. The tails
+$[],[a],[b],[a,b]$ under prefixes $[],[a],[b]$ yield
+\[
+\begin{array}{c|ccc}
+\text{tail} & [] &[a]&[b]\\\hline
+{[]}&0&0&0\\
+{[a]}&0&0&1\\
+{[b]}&0&1&0\\
+{[a,b]}&1&1&1
+\end{array}
+\]
+Every pair is incompatible. The twelve cells use nine distinct input words;
+the stronger sample set of all fifteen words of length at most three contains
+them. Four states suffice: retain two seen-symbol flags, set the relevant flag
+on each step and finish with conjunction. An induction establishes the flag
+invariant on all words. Fixed-seed enumerations of the smaller binary machines
+have $2,64,5832$ tables; including all seeds gives $2,128,17496$.
+N2, N5 and N7 use different sample extensions and witness-test bounds. These
+are compatible finite experiments, not interchangeable receipts. Their Python
+checks corroborate the construction, not native Lean synthesis, universal
+correctness or performance; the mathematical induction supplies the universal
+argument. N4's binary parity example similarly needs two states, demonstrating
+that these bounds concern the particular observed behavior.
+
+\paragraph{A minimum sample machine can still overfit.}
+\label{sec:carrier-minimum-overfit}
+N8's evaluation section supplies a distinct constructive example. For the unary
+target ``length exactly two'', initially observe lengths zero through five.
+Suffix lengths $0,1,2,3$ form a four-clique: each pair has an observed common
+prefix taking exactly one member to length two. The four-state cycle
+$0\to1\to2\to3\to0$, with output true only at state two, attains this
+sample minimum but returns true incorrectly at length six. After adding the
+length-six counterexample, the machine
+$0\to1\to2\to3\to3$ with the same output convention still uses four states
+and fits the strengthened samples. Its reached state is $\min(n,3)$ by
+induction, proving the intended behavior at every length. Thus certified state
+capacity, minimum sample consistency and identification of the intended
+function are three different claims even in a tiny exact finite language.
+The extra counterexample comes from the experiment's reference oracle, which
+an arbitrary example-only query does not automatically provide.
+
+Active automata learning supplies useful observation-table ideas, but Angluin's
+membership and equivalence oracles are stronger than a fixed sample set~\cite{angluin}.
+Do not assume missing table entries, closure or consistency have been learned.
+Use state constraints to suggest options, products or continuations; the table
+is not a decoder of an intended Lean type.
+
+\subsection{Polymorphic carriers: shapes, positions and available observations}
+\label{sec:carrier-parametricity}
+
+The correct reduction is conditional on a relational or naturality theorem,
+not merely a polymorphic-looking Lean type. The incoming reports connect
+polymorphic testing~\cite{bernardy10,wadler89} with Mulleners, Jeuring and
+Heeren's container-based realizability work~\cite{containers}. N9 supplies the general
+construction; the list instance used by the other answers follows from it.
+
+\begin{theorem}[Shape--position representation]
+\label{thm:carrier-containers}
+For containers $F(A)=\sum_{s\in S}(P_s\to A)$ and
+$G(A)=\sum_{t\in U}(Q_t\to A)$, a natural transformation
+$\tau:F\Rightarrow G$ is determined by a shape map $\phi:S\to U$ and
+maps $\psi_s:Q_{\phi(s)}\to P_s$, with
+\[
+ \tau_A(s,k)=(\phi(s),k\circ\psi_s).
+\]
+Conversely these maps define a natural transformation.
+\end{theorem}
+\begin{proof}
+Evaluate $\tau$ at the generic input $(s,\mathrm{id}_{P_s})$ of element
+type $P_s$; its result defines $(\phi(s),\psi_s)$. Naturality along
+$k:P_s\to A$ gives the displayed equation. Conversely, associativity of
+composition makes this equation commute with every element map.
+\end{proof}
+
+For lists the shape is a length $n$ and positions are $\mathrm{Fin}\,n$.
+If $f_A:\mathrm{List}\,A\to\mathrm{List}\,A$ is natural, let
+$e_n=[0,\ldots,n-1]$ and let $v:\mathrm{Fin}\,n\to A$ select an input
+list's entries. Then
+\begin{equation}\label{eq:carrier-position-test}
+ f_A(xs)=\operatorname{map}(v)(f_{\mathrm{Fin}\,n}(e_n)).
+\end{equation}
+The output word records deletion, duplication or permutation of positions.
+Repeated elements are covered because $v$ need not be injective. At $n=0$
+the position type is empty and its list result is empty; no nonexistent
+function $\Nat\to A$ or arbitrary element of an empty type is assumed. Use
+appropriate universe lifts at a higher fixed universe. For multiple containers
+tag position sets by argument and retain specified cross-input sharing.
+
+If two natural functions agree on $e_n$ for $n\le N$, applying
+\eqref{eq:carrier-position-test} proves equality on every input of length at
+most $N$. This does not prove equality at greater lengths or for all programs
+of a syntax-size bound without a separate small-model theorem. Identity and
+the natural function that returns its input through length $N$ and then
+returns $[]$ agree on those tests and disagree at $N+1$.
+
+Nor does quantifying over \code{Type} establish naturality for arbitrary Lean
+providers. Classical decidability permits a noncomputable family returning
+its input when $A$ is subsingleton and $[]$ otherwise. Mapping a singleton
+list between one- and two-element types witnesses failure of naturality.
+An axiom-profile check alone is not a parametricity certificate.
+
+With lawful equality, arbitrary maps that collapse elements need not preserve
+behavior; bounded inputs require realizable partitions of positions, not just
+the all-distinct case. Orders, hashing, algebraic dictionaries, distinguished
+elements and callbacks expose further structure. A raw \code{BEq} dictionary
+need not be lawful; retain its operational semantics until a preservation law
+permits replacing it with mathematical equality. Nominal or register-style
+models can separate finite control from stored atoms and symbolic payloads;
+nominal automata provide a relevant semantic precedent~\cite{nominal},
+but reversing or copying arbitrarily long lists may require unbounded storage.
+Finite symbolic alphabets do not imply finite concrete state.
+
+A practical provider classification is token-preserving, shape-observing,
+equality-observing, order-observing or opaque. Certify the admitted fragment
+and providers before using generic positions for permanent pruning or merging.
+Without that theorem, symbolic observations remain useful tests and proposal
+features. Indexed tokens additionally carry their index and typing telescope;
+renaming must preserve fibers, and caching modulo token renaming needs an
+evaluator invariance theorem.
+
+\subsection{Constructive fusion, feature discovery and closure}
+\label{sec:carrier-lifting}
+
+The original claim that auxiliary-state synthesis has no relevant published
+algorithm is too broad. AutoLifter synthesizes auxiliary summaries and
+combinators from a reference computation and a prescribed algorithmic paradigm;
+its decomposition can choose necessary conditions with unrealizable later
+subtasks. It is neither a global minimal-type method nor a complete sparse-
+example learner~\cite{autolifter}. The incoming reports also identify Eguchi and colleagues'
+auxiliary-type inference, Para's recursion templates, and Synduce's
+unrealizability witnesses as useful but differently scoped precedents~\cite{eguchi,para,synduce}.
+Tupling and homomorphism calculation remain relevant~\cite{tupling,thirdhom}.
+
+The earlier comparisons remain useful when their task boundaries are retained.
+$\lambda$\textsuperscript{2} propagates examples into a fixed combinator vocabulary;
+its fold deduction uses tail-complete observations and a result-typed
+accumulator~\cite{lambda2}. Myth, Smyth, Burst and Trio investigate explicit
+recursion, trace information, live evaluation, angelic results or construction
+from nonrecursive blocks~\cite{myth,smyth,burst,trio}. Those mechanisms do not
+by themselves constitute the joint carrier/package learner specified here.
+Synquid's supplied auxiliary refinements and DreamCoder's abstractions learned
+across a corpus address different sources of missing specification
+\cite{synquid,dreamcoder}. These distinctions identify adaptation opportunities;
+they do not support the original universal claim that synthesis research never
+invents auxiliary state.
+
+\paragraph{An evidence-dependent constructive fold.}
+Weber and Caldwell's constructive work qualifies the idea that fold
+characterization is purely nonconstructive~\cite{weber}. The following sufficient condition
+from N6 makes the supplied evidence explicit.
+
+\begin{proposition}[Fold construction from a section]
+\label{prop:carrier-section-fold}
+Let $h:\mathrm{List}\,A\to B$ have a section
+$r:B\to\mathrm{List}\,A$ satisfying $h(r(b))=b$. If
+$h(x)=h(y)$ implies $h(a::x)=h(a::y)$, then
+\[
+ h=\operatorname{foldr}\ s\ z,\qquad
+ z=h([]),\qquad s(a,b)=h(a::r(b)).
+\]
+\end{proposition}
+\begin{proof}
+The base case is immediate. Since $h(r(h(x)))=h(x)$, cons congruence gives
+$h(a::r(h(x)))=h(a::x)$. Substitute the induction hypothesis for the fold
+of the tail to obtain the constructor equation.
+\end{proof}
+
+This consumes $h$, a section and a congruence proof; it does not discover them
+from samples. A section on the reachable image, with its typing and closure
+obligations explicit, can weaken the unnecessarily global surjectivity premise.
+For a polynomial functor the corresponding construction applies $F(r)$ before
+the constructor and $h$, with the analogous congruence and induction premises.
+
+\paragraph{Feature separation is only the first stage.}
+Choose a bounded typed feature library $\phi_j:\mathrm{List}\,A\to S_j$:
+emptiness, optional first/last element, length modulo a small modulus, flags
+for a concrete alphabet, or available measures. Features must use only the
+actual operations of the query; abstract elements cannot be compared with an
+unsupplied distinguished value. Each feature separates some observed
+incompatibility edges. Weighted set cover proposes a small set $J$ and
+\[
+ K_J=\prod_{j\in J}S_j,\qquad
+ \phi_J(xs)=(\phi_j(xs))_{j\in J}.
+\]
+Now synthesize the seed, updater and finisher with the closure equations
+\begin{align}
+ \phi_J([])&=z,&
+ \phi_J(a::xs)&=s(a,\phi_J(xs)),&
+ o(\phi_J(xs))&=h(xs).\label{eq:carrier-feature-closure}
+\end{align}
+Induction on $xs$ proves $\operatorname{foldr}\ s\ z\ xs=\phi_J(xs)$
+from the first two equations; the third gives the requested result. For a
+partially specified task retain the actual contract instead of inventing a
+reference equality. Finite observations may suggest the equations but do not
+prove their universal versions.
+
+If two tails agree on selected features but need different successor features
+after the same constructor, add a closure-distinction obligation and seek more
+information. A feature set that separates outputs may still be impossible to
+update cheaply. Retain alternative sets and backtrack; greedy feature selection
+is a heuristic, not a complete lifting procedure. Exhaustively enumerate
+bounded feature subsets, algebras and finishers with complete checking for a
+relative completeness theorem. Preserve unknown proof alternatives. This is
+the constructive separation-and-closure procedure emphasized by N2, N3 and N7.
+
+Alternatively propose a relation $I(xs,k)$ describing stored information and
+prove initialization, preservation and finishing:
+\[
+ I([],z),\quad
+ I(xs,k)\Rightarrow I(a::xs,s(a,k)),\quad
+ I(xs,k)\Rightarrow C(xs,o(k)).
+\]
+The invariant is itself a synthesis proposal. A reference computation may
+generate counterexamples; sparse contracts provide only their stated
+observations. For $F(X)=\sum_c A_c\times X^{r_c}$, each constructor receives
+an algebra $A_c\times K^{r_c}\to K$, using the summaries of \emph{all}
+recursive children. The general closure equation is
+$H\circ\mathrm{in}=\alpha\circ F(H)$; for a lifted
+$H=\langle h,b\rangle$, projecting the fold gives $h$. A fixed carrier and
+bounded constructor algebra give a finite synthesis class. Polynomial functors
+alone do not make unrestricted helper and invariant invention decidable.
+
+\subsection{Worked representations and scheme-dependent invariants}
+\label{sec:carrier-worked}
+
+\paragraph{Reversal is already a list-valued fold.}
+\label{sec:carrier-reverse}
+All nine answers correct the semantic use of reversal in the original proposal:
+\[
+ \operatorname{reverse}(xs)=
+ \operatorname{foldr}\ (\lambda a\ r.\ r\mathbin{+\!+}[a])\ []\ xs.
+\]
+The induction step is exactly the defining reversal equation. A shallow or
+append-free grammar may not express the step, but that is a language
+restriction, not a capacity obstruction. Under ordinary singly linked lists,
+the successive append traversals cost $0+1+\cdots+(n-1)=\Theta(n^2)$.
+For the continuation representation set
+\[
+ K=\mathrm{List}\,A\to\mathrm{List}\,A,\quad z=\mathrm{id},\quad
+ s(a,k)=\lambda acc.\ k(a::acc),\quad o(k)=k([]).
+\]
+Induction proves $q(xs)(acc)=\operatorname{reverse}(xs)\mathbin{+\!+}acc$:
+the step uses the induction hypothesis at $a::acc$ and append associativity.
+With constant-time cons and closure creation, construction and final traversal
+of the closure chain take linear work. A left-fold scheme can also reverse
+linearly with an ordinary list carrier. These alternatives show why the
+scheme, operation grammar and cost model belong in the optimization problem.
+
+\paragraph{Adjacent values, empty phases and defaults.}
+For Fibonacci, $q(n)=(F_n,F_{n+1})$, seed $(0,1)$ and transition
+$(a,b)\mapsto(b,a+b)$ close the recurrence; induction proves the invariant.
+This does not prove that no clever single-natural encoding exists. Optional
+maximum state avoids inventing an element before one has been seen, and an
+optional pair similarly handles extrema. A total maximum, nonempty reduction
+or index must preserve the supplied empty/out-of-range default or inhabitance
+assumption. Carrier invention cannot create an element of an uninhabited
+type. Difference lists for tree flattening avoid repeated copying under the
+same explicit operational assumptions used for reversal.
+
+\paragraph{Maximum prefix sum: the recursion scheme changes the needed state.}
+\label{sec:carrier-prefix-sum}
+N9 supplies a useful distinction not captured by the earlier examples. For
+integer lists, let $h$ be maximum prefix sum including the empty prefix. A
+right fold needs only an integer:
+\[
+ h([])=0,\qquad h(a::xs)=\max(0,a+h(xs)).
+\]
+But the result alone cannot combine arbitrary adjacent segments: $[0]$ and
+$[-1]$ both give zero, while appending $[1]$ gives one and zero respectively.
+Lift to $H(xs)=(\operatorname{sum}(xs),h(xs))$, with
+\begin{equation}\label{eq:carrier-prefix-product}
+ (s,m)\otimes(t,n)=(s+t,\max(m,s+n)).
+\end{equation}
+Every prefix of $x\mathbin{+\!+}y$ lies inside $x$ or contains all of $x$
+and a prefix of $y$, so $H(x\mathbin{+\!+}y)=H(x)\otimes H(y)$.
+The reachable invariant is $I(s,m):\ 0\le m\land s\le m$.
+
+\begin{proposition}[Invariant-restricted summary monoid]
+\label{prop:carrier-prefix-monoid}
+Operation~\eqref{eq:carrier-prefix-product} is associative on $\mathbb Z^2$,
+preserves $I$, and has two-sided identity $(0,0)$ on states satisfying $I$.
+\end{proposition}
+\begin{proof}
+Both bracketings have first coordinate $s+t+u$ and second coordinate
+$\max(m,s+n,s+t+p)$. For invariant operands the second coordinate is at least
+$m\ge0$ and at least $s+t$ because $n\ge t$. Left identity uses
+$\max(0,m)=m$; right identity uses $\max(m,s)=m$.
+\end{proof}
+
+Left identity fails on the unrestricted pair $(1,-1)$. Demanding algebra laws
+for all syntactic pairs can therefore reject this correct reachable-state
+representation; assuming $I$ without proving its initialization and preservation
+can validate an incorrect one. Carrier type, scheme and invariant are related
+search choices. ``Minimal carrier'' has no scheme-independent meaning here.
+
+\subsection{Motive enumeration and a shared strengthening service}
+\label{sec:carrier-motives}
+
+Retain a short prioritized carrier grammar, for example
+\[
+ K::=T\mid A\mid S_i\to K\mid K\times K\mid\mathrm{Option}\,K
+       \mid\mathrm{Bool}\mid\Nat,
+\]
+then its indexed and dependent extensions when needed. A size-three frontier
+is an engineering starting point, not a theorem of coverage. Every proposal
+opens seed, algebra and finishing obligations together; a type that elaborates
+but cannot be initialized is not a solved representation. Charge the whole
+subtree and preserve specialized priorities such as $T\to T$.
+
+For $f:\Nat\to S_1\to\cdots\to S_k\to T$, a constant recursor result
+$K=S_1\to\cdots\to S_k\to T$ lets the successor branch apply its
+predecessor result at newly computed parameter values. This is a complete
+schema for the declared nondependent primitive-recursive fragment provided
+its entire base and step language is enumerated. It is not a small complete
+procedure for every useful dependent primitive recursion.
+
+Separate existing-parameter generalization, result strengthening, index
+abstraction and recursion nesting. A dependent template is
+\[
+ M(\vec\imath,x)=
+ \prod_{j\in J}(a_j:S_j(\vec\imath,x,\vec a_{<j})).\,
+ K(\vec\imath,x,\vec a),
+\]
+with $J$ dependency-closed and binders in valid telescope order. Dependent
+accumulators need $\Pi$ rather than ordinary arrows; coupled values and
+proof-carrying summaries may need $\Sigma$ rather than plain products.
+Type-check motives before opening all method searches, and deduplicate only
+with justified equality, not a display-level index simplification.
+
+Dovetail over generalized binders, carrier size, total term size, helper
+count, active recursion frames and proof/universe bounds. One possible joint
+grade charges $|K|+|M|+|z|+|s|+|o|$ plus recursive-scheme introductions.
+Fair expansion covers the union of the declared finite grammars under the
+appropriate checking assumptions, not all Lean inhabitants at an interactive
+deadline. Keep outermost natural-number recursion and existing arithmetic
+providers early, use observed constants and a small literal basis first, and
+charge nested eliminators separately. Permanently excluding later schemes or
+numerals loses the corresponding completeness claim. A beam or a fixed top-$k$
+carrier list needs a fair fallback retaining its omissions.
+
+\paragraph{Failure-directed strengthening.}
+Carrier choice, motive generalization and helper invention should share a
+bounded service that consumes structured failed obligations. Record the
+available induction hypothesis, required recursive application, changed
+parameters, unmatched indices, blocked equations and distinguishing residual
+observations. Generalize a changing accumulator and its dependencies; add a
+missing statistic as a product; add an empty phase tag; propose a typed helper
+for a repeated fragment; or retrieve an algebraic reassociation lemma when
+that is the actual missing step. A helper that merely adds another unsolved
+function is not useful until both output recovery and closure become easier.
+
+Use typed anti-unification and rippling-inspired comparison to generate a
+small ranked menu, preserving the original branch. Tests reject false
+conjectures cheaply; survivors remain conjectures until native proof and
+policy checking. HipSpec and Hipster supply theory-exploration precedents~\cite{hipspec,hipster},
+not a turnkey Lean import established by these reports. Induction with
+generalization in superposition reasoning is another supplied precedent for
+strengthening induction problems~\cite{inductiongeneralization}; transferring
+its first-order inference machinery requires a separate typed Lean design.
+Canonical's supplied
+generalized induction example demonstrates predicate discovery with a suitable
+principle available~\cite{canonical}; discovering that principle itself is a
+separate task. If a guessed helper fails, backtrack its consumers. Record
+environment and axiom profile before reusing a proved lemma across tasks.
+
+\subsection{Evaluation and new expert questions}
+\label{sec:carrier-experiments}
+
+Use at least three matched tracks: carrier supplied, carrier selected from a
+fixed template grammar, and carrier inferred from failures or observations.
+Add an efficiency track when runtime/storage, rather than merely sample
+consistency, is the objective. Hold the original contract, defaults, allowed
+providers, universe policy and body grammar fixed across relevant comparisons.
+Compare blind and distinction-guided ordering of the same representation
+grammar; measure subtree size and time per carrier, transition/finisher search,
+proof debt and final code cost. Scheme selection, motive discovery, body
+construction, universal proof and executable publication are separate results.
+
+The historical thirteen Church stretch cases and accumulator tasks such as
+\code{fib}, \code{list_rev_tailcall}, \code{tree_flatten}, \code{maximum}
+and \code{index} remain useful evaluation families. The original goal of
+solving them within ten seconds without new task-specific rules and without
+more than a factor-two slowdown of solved Church probes is a prospective
+acceptance target, not a claim supplied by the incoming finite models. No
+exact modern accuracy or speedup follows from their Python checks.
+
+The historical five expert questions now have the conditional answers and
+explicit limits above. The active next questions are:
+\begin{description}
+\item[R2.N1.] Can a Lean-native carrier proposer emit and cheaply check
+distinguishing-context certificates against finite capacity or a proved
+reachable-state invariant, while sharing work with bounded algebra synthesis?
+\item[R2.N2.] Which provider-certified parametric fragment supports a proved
+shape/position or equality-pattern reduction for higher-order and indexed
+queries, and can a useful small-model bound connect program size to test depth?
+\item[R2.N3.] Can failure-directed feature separation and closure synthesis
+retain relative completeness while materially reducing search over the same
+carrier, updater and finisher grammar on sparse-contract tasks?
+\item[R2.N4.] What joint grammar and cost model can select recursion scheme,
+dependent motive, carrier and reachable-state invariant without pushing the
+original computation into an unrestricted finisher or helper?
+\item[R2.N5.] Which structured induction failures reliably distinguish a missing
+parameter, missing state component and missing algebraic lemma, and how much
+does that diagnosis improve discovery after charging its extra proof debt?
+\end{description}

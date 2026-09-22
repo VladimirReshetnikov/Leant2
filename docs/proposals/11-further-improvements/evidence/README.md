@@ -2,7 +2,7 @@
 
 The directories `N1` through `N9` preserve the distinct executable model checks
 and their original receipts from the nine incoming expert-answer packages.
-The prose and repeated architectural material are being integrated into the
+The prose and repeated architectural material are integrated into the
 maintained article, rather than retained as nine competing articles.
 
 These files are copied from the original Git blobs without rewriting their

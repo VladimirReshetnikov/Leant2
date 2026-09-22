@@ -1,69 +1,161 @@
-\section{Roadmap}\label{sec:roadmap}
+\section{A dependency-ordered implementation and evaluation plan}\label{sec:roadmap}
 
-\subsection{Dependencies}
+\subsection{One joint state, several bounded services}
 
-\begin{center}
-\begin{tikzpicture}[node distance=9mm and 12mm]
-\node[box] (e8) {E8 benchmarks};
-\node[box,right=of e8] (e4) {E4, A5 substrate\\and indexing};
-\node[box,right=of e4] (r3a) {R3 stage 1\\per-observation report};
-\node[box,below=of e8] (e1) {E1, E2 definitions\\and frontends};
-\node[box,below=of e4] (r1) {R1 states, costs,\\goal order};
-\node[box,below=of r3a] (r3b) {R3 stages 2--4\\hole closures, angelic calls};
-\node[box,below=of e1] (r7) {R7 retrieval};
-\node[box,below=of r1] (r2) {R2 carriers};
-\node[box,below=of r3b] (r5) {R5 recursion schemes};
-\node[box,below=of r7] (r6) {R6 program and proof};
-\node[box,below=of r2] (r4) {R4 indexed families};
-\node[box,below=of r5] (a12) {A1, A2 guards,\\Nat recursion};
-\draw[flow] (e8) -- (e4);
-\draw[flow] (e4) -- (r1);
-\draw[flow] (r3a) -- (r1);
-\draw[flow] (r3a) -- (r3b);
-\draw[flow] (r1) -- (r2);
-\draw[flow] (r1) -- (r7);
-\draw[flow] (r3b) -- (r2);
-\draw[flow] (r3b) -- (r5);
-\draw[flow] (r2) -- (r5);
-\draw[flow] (r2) -- (r4);
-\draw[flow] (r3a.east) -- ++(7mm,0) |- (a12.east);
-\draw[flow] (a12.south) -- ++(0,-5mm) -| (r6.south);
-\end{tikzpicture}
-\end{center}
+The implementation plans in N1--N9 are consolidated here. They retain the
+native kernel boundary and a reference search order while making dependencies,
+incomplete results and service costs explicit. Bounded carriers, sketches and
+native induction can proceed before unrestricted carrier inference; a
+best-first frontier need not precede every improvement. These are dependency
+choices, not predictions of speedup.
 
-\subsection{Phases and gates}
+An explicit node contains the persistent native state, original request ID,
+typed program and obligations, universe constraints, recursive frames,
+observation read sets, assignment versions, proof jobs, immutable cost and
+an expansion cursor. The cursor resumes a rule partway through its alternatives
+instead of repeating its earlier prefix. Shared immutable terms and closed
+checked facts differ from branch-dependent residuals. Work charges remain
+monotone outside rollback. Eviction, spill and fallback policies are resource
+decisions, never proofs of exhaustion.
 
-Every phase ends with the six harnesses at full score for 10 s and 5 s budgets, plus its own gate.
+\begin{lstlisting}
+while logical work remains and the external deadline permits:
+    job := chooseEligibleJobAtDeterministicCheckpoint()
+    restore(job.nativeState)
+    validateReadDependencies(job)
+    reply := advanceOneBoundedServiceAction(job)
+    match reply:
+      alternatives(xs): enqueueWithStableIds(xs)
+      blocked(reads): suspendUntilRelevantChange(job, reads)
+      refuted(evidence, scope): validateAndRecordExclusion(evidence, scope)
+      proofReady(term, proof): checkFrozenQueryAndRecord(term, proof)
+      unknown(reason): retainUnresolvedJob(job, reason)
+    invalidateAffectedObservations()
+    reserveProofAndPublicationWork()
+    chargeWorkOutsideRollbackAndCommitTraceEvent()
+return checkedAnswers, publicationReceipts, frontierAndUnresolvedJobs
+\end{lstlisting}
 
-\begin{longtable}{@{}L{14mm}L{62mm}L{72mm}@{}}
-\toprule
-Phase & Content & Gate\\
-\midrule
-\endhead
-P1 & E8 benchmark port; E1 compilable results; E4 profiling and per-local caching; R3 stage 1 (per-observation report) & benchmark baseline recorded (expected: most recursion and conditional entries fail); probe 6 binds cleanly; node cost under 1 ms on Church probes\\
-P2 & R1 steps 1--2 (first-class states, cost order); A5 indexing; A3 normal-form checks; E5 parallel lanes & identical candidate lists to the depth-first engine on the whole corpus; no repeated passes; uninhabited queries answered in lane time\\
-P3 & A1 guards; A2 \code{Nat} recursion and literals; E7 portfolio and bounded instantiation; E6 propositional decision procedure & probes 4, 9, 10; conditional and arithmetic benchmark entries; propositional queries certified both ways\\
-P4 & R3 stages 2--3; R1 steps 3--4 (learned costs, goal order by domain size) & differential agreement with the kernel on every generated closed program; solved count at 1 s improves on P2\\
-P5 & R2 carrier grammar, carrier refutation, observation-table proposals; R5 capability-based bodies and schemes; R4 index-generalizing induction & stretch cases; accumulator and tupling entries; probe 8; probe 11\\
-P6 & R6 program and proof together; R7 retrieval; R8 behavioral classes; E2 frontends; E3 receipts & quantified-contract suite; probes 14, 16; reference-solution rank reported for the whole suite\\
-P7 & R9 proposal interface with an optional model lane & measured accuracy of proposed carriers; results replayable without the model\\
+This is pseudocode. A service action may contain an expensive Lean primitive,
+so reduction, elaboration and external inference need resource boundaries.
+Model absence and cancellation are recorded input events. Proposals state
+whether they stay within or extend the grammar; old coverage or optimality
+claims do not silently extend to a larger language.
+
+\subsection{Responsibilities, not a required file layout}
+
+\begin{longtable}{@{}L{36mm}L{115mm}@{}}
+\toprule Service & Responsibility and boundary\\\midrule\endhead
+Query and receipts & Freeze statement, policy and environment; retain positive and negative certificates and their actual scope.\\
+Dependencies and agenda & Compute constraint closure, readiness and component interfaces; schedule fair resumable work separately from ranking.\\
+Observation normalization & Derive necessary observations with reconstruction evidence; retain original Boolean semantics and unknown outcomes.\\
+Incremental evaluation & Store typed residuals and complete read dependencies; certify supported decisive reductions.\\
+Carriers and motives & Propose carrier/seed/step/finish/invariant tuples and dependency-closed generalizations in a graded grammar.\\
+Recursion realization & Enforce scoped call capabilities and decrease evidence; connect interpreted bodies with checked definitions.\\
+Retrieval and proof jobs & Preserve dictionary prerequisites; schedule contextual proof tiers without turning failure into refutation.\\
+Publication & Independently check export, compilation and execution, including any equivalence bridge to a logical definition.\\
 \bottomrule
 \end{longtable}
 
-P1 to P3 are engineering and adaptation and can be scheduled with confidence. P4 is mostly engineering with one validation risk (agreement with the kernel). P5 is where the research risk is concentrated: it should be preceded by the expert consultations of Section~\ref{sec:experts} and by paper prototypes on the thirteen stretch cases, and its gate should be read as a target, not a commitment.
+The example module names in the incoming reports are organizational suggestions,
+not an additional set of features or files to create verbatim. An implementation
+may combine responsibilities while preserving their contracts. Detailed
+algorithms appear in Part~III; duplicating them here would create competing
+definitions of the same state.
 
-\subsection{Risks}
+\subsection{Phases and exit evidence}
 
-\begin{longtable}{@{}L{46mm}L{50mm}L{52mm}@{}}
-\toprule
-Risk & Consequence & Mitigation\\
-\midrule
-\endhead
-Cost-ordered search changes which candidates are found first & baseline outcomes stay the same but transcripts change; ranking complaints & gate P2 on identical candidate lists before enabling costs; change costs only with the ranking benchmark in hand\\
-Custom evaluator disagrees with the kernel & unsound pruning, lost solutions & conservative fragment; differential testing on every generated program; kernel fallback\\
-Carrier enumeration slows solved cases & regression in time, not in score & carriers enter only after the plain fold fails at the current cost bound; carrier refutation before search\\
-Definition elaborator too slow for recursion candidates & P5 recursion unusable in 10 s & realize only candidates that pass the contract by interpretation\\
-Mathlib-scale index too large or slow to load & retrieval lane unusable interactively & environment-fingerprinted on-disk index; reachability pre-pass limits providers to tens\\
-Determinism lost under parallel lanes or learned costs & results not reproducible & rank after all lanes stop; learned costs are a pure function of the query's own search history\\
+Every implementation phase preserves the maintained regression suite at both
+5 s and 10 s, with exact revisions, provider inventories and outcome meanings.
+The old six-harness table remains historical. Documentation integration and
+finite-model reruns do not satisfy an implementation phase's gates.
+
+\begin{longtable}{@{}L{12mm}L{59mm}L{77mm}@{}}
+\toprule Phase & Work & Evidence required to leave the phase\\\midrule\endhead
+P0 & Freeze request semantics, result distinctions, receipts, identities and complete cost accounting. & Unrelated proofs, wrong universes and forbidden negative axioms are refused; timeout is unknown; certificate and publication replay are separate.\\
+P1 & Observation decomposition, closed caches, local proof adapters, indexed induction and useful primitive/provider coverage. & Cache-disabled comparisons preserve decisions; indexed and missing-lemma cases have checked witnesses; open and rollback cases remain safe.\\
+P2 & Bounded carrier/motive/strengthening grammar, explicit finishers, finite-state exclusion and local invariants. & Supplied-carrier body search and full invention are separate; failed proposals are charged; finite bounds and original contracts are checked.\\
+P3 & Resumable states with original DFS first, then fixed-cost/fair policies and conservative dependency components. & Equal completed logical prefixes before policy changes; frontier memory measured; exhaustive small reference cases lose no valid in-bound witness.\\
+P4 & Typed partial evaluation, recursive capabilities, checked realization, local proof jobs and bounded helper/angelic refinement. & Supported-fragment arguments and adversarial tests; interpreter agreement; unresolved survivors retained; universal contracts proved where claimed.\\
+P5 & Retrieval and scheduling optimization; optional learned proposals and user-facing ranking. & Matched total-cost experiments, including inference, proof and compilation; held-out families; replay without the model; claims match the objective.\\
 \bottomrule
 \end{longtable}
+
+P1 and bounded portions of P2 may proceed together. P3 is not a prerequisite
+for a useful sketch or induction adapter. Stronger pruning in P4 depends on
+semantic support rather than solved-count improvements alone. Aspirations such
+as sub-millisecond nodes or solving every stretch case remain hypotheses to
+measure. E6 propositional countermodels need the contextual bridge in
+Section~\ref{sec:semantic-boundaries} before they count as Lean negatives.
+
+\subsection{Benchmark dimensions and accounting}
+
+Record the exact target, contract, policy, providers, grammar, bounds, reference
+witness and recursive capabilities. Cross these dimensions where they isolate
+a cause: type-only, finite examples and universal property; carrier supplied
+versus invented; helpers supplied, retrieved or invented; complete versus
+incomplete traces; reference-oracle access versus examples-only input;
+supplied versus invented motives and invariants; logical certification versus
+executable publication. Oracle and supplied-artifact arms diagnose the
+remaining bottleneck and must not be counted as unassisted invention. A
+reference establishes representability only in its declared grammar. A helper
+with an accumulator does not inherit a complete specification from examples
+of the original seed-specific function.
+
+Keep saturated regressions, the thirteen unassisted Church stretch cases,
+indexed families, recursive compositions and universal contracts as separate
+tracks. Deduplicate imported benchmarks by semantic task family. Report
+construction, certified refutation, unification, observation, proof, realization
+and retrieval work; first candidate, first certified answer and first executable
+publication times; peak memory; reference-equivalent rank; and exact stop
+reason. Medians, tails and regressions matter as well as total score. Cold
+imports/indexes and warm interactive runs are distinct. Compiler/runtime,
+hardware, threads, cache policy and repeated-run variation belong in reports.
+
+\begin{longtable}{@{}L{39mm}L{109mm}@{}}
+\toprule Ablation & Comparison that identifies the effect\\\midrule\endhead
+Observation/cache & Same expansion order: no cache, closed cache, dependency cache; compare decisions and work.\\
+Search policy & Resumable DFS before queue heuristics; fixed versus learned dispatch with identical grammar and frozen ranking.\\
+Carrier discovery & Supplied carrier, enumeration, feature proposals and full invention; body filling and proof budgets matched.\\
+Angelic refinement & Unknown calls remain stuck versus shared typed constraints; count failed guesses and unresolved domains.\\
+Proof construction & Closed post-hoc portfolio versus local invariants and induction-aligned verification conditions.\\
+Retrieval & Curated baseline, ranking-only retrieval and justified bounded filtering; report missed usable components.\\
+Learned proposals & Model-free, recorded/shuffled proposals, fixed-grammar guidance and explicit grammar extension as separate arms.\\
+\bottomrule
+\end{longtable}
+
+\subsection{Adversarial tests before stronger claims}
+
+Each pruning test checks both the survivor's original gate and preservation of
+known valid bounded completions. Positive certification alone misses false
+negative search results. The repeated source checklists become one matrix:
+
+\begin{longtable}{@{}L{40mm}L{108mm}@{}}
+\toprule Test & Required behavior\\\midrule\endhead
+Dependency closure & Shared type/universe variables, local lets, dictionaries or relational observations prevent unsound factorization despite different printed targets.\\
+Rollback and delayed holes & Assignment--rollback--reassignment, identifier reuse and different closure contexts invalidate stale residuals; irrelevant changes permit valid reuse.\\
+Samples and finite state & Missing entries are not differences; pairwise compatibility is not transitive; enumerated values are not a carrier upper bound.\\
+Parametricity/equality & Unlawful \code{BEq}, computational dictionaries and uncertified providers do not silently acquire naturality or propositional-equality laws.\\
+Recursive constraints & Equal calls share results; failed angelic choices leave alternatives; a guessed finite domain cannot refute a larger one without coverage.\\
+Dependent realization & Casts remain typed; decrease obligations and interpreter agreement replay; insufficient fuel is unknown.\\
+Program and proof & Proofs may constrain open values; inadequate invariants refute the program--invariant pair only; proof jobs receive fair service.\\
+Original request & Weaker contracts, specialized universes, unrelated proof types and forbidden positive or negative axioms cannot replace the requested result.\\
+Frontier and rank & Evicted/unresolved states remain visible; an incumbent is not optimal while a pending lower bound permits a better answer.\\
+External proposals & Escaped locals, unauthorized dependencies, oversized syntax and environment changes are refused or bounded; raw and parsed proposals are retained.\\
+Publication/replay & Certification and compilation status differ; speed-perturbed workers reproduce logical checkpoints, not necessarily equal timed answer sets.\\
+\bottomrule
+\end{longtable}
+
+\subsection{Risks and falsifiable decisions}
+
+Frontiers exchange repeated work for retained state; measure memory before
+blaming snapshots alone. Expressive carriers can slow easy cases, so retain
+a fair plain-grammar path and charge proposal failures. A custom evaluator
+needs a supported-fragment conservativity argument; closed-program agreement
+is a test, not that argument. Interpreted behavior guides realization only
+through its documented connection to the checked definition. Retrieval indexes
+need environment identities and cold-loading measurements. Deterministic
+epochs and receipts replace the claim that sorting after parallel deadlines
+makes discovery deterministic. Continue research phases based on these
+measurements and obligations, not novelty, shorter terms or plausible model
+suggestions alone.

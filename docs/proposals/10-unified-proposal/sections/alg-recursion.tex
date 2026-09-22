@@ -126,18 +126,24 @@ A branch state therefore contains a data hole and a proof hole that constrain ea
 
 \subsubsection{Contract failure backtracks into the branch choice}
 
-Because the proof hole mentions the data metavariable, a failed proof restores the state to before the data assignment and tries the next data candidate. \Pn{2}'s \code{Choice} trace is the minimal test: the first constructor is assigned, the dependent proof fails, the joint continuation restores the state and the second constructor succeeds\prov{\Pn{2}}. \Pn{3}'s length example shows what the motive does and does not decide: with $r : \mathrm{List}\,A$, $h : |r| = |xs|$, both $x{::}r$ and $r \mathbin{+\!\!+} [x]$ satisfy $|ys| = |x{::}xs|$, so the motive prunes but does not invent intent; an order-sensitive contract decides between identity and reverse\prov{\Pn{3}}.
+Because the proof hole mentions the data metavariable, an unsuccessful proof attempt restores the data choice before trying another candidate, but retains the unproved choice as resumable proof debt. Only checked refutation rejects it semantically; exact exhaustion can close its declared proof fragment while broader proof routes remain available. A failed tactic does neither. \Pn{2}'s \code{Choice} trace is the minimal test: the first constructor is assigned, the dependent proof fails, the joint continuation restores the state and the second constructor succeeds\prov{\Pn{2}}. \Pn{3}'s length example shows what the motive does and does not decide: with $r : \mathrm{List}\,A$, $h : |r| = |xs|$, both $x{::}r$ and $r \mathbin{+\!\!+} [x]$ satisfy $|ys| = |x{::}xs|$, so the motive prunes but does not invent intent; an order-sensitive contract decides between identity and reverse\prov{\Pn{3}}.
 \begin{lstlisting}
 certifiedBranch(br):
   -- br.context has fields, and (v_i, h_i) for each recursive field
   for y in candidates(br.target, br.context ++ [v_i]):  -- Section sec:spines
     snapshot := state
     assign dataHole := y
-    if prove(proofHole : R(ctorPattern, y), br.context ++ [h_i]):  -- Section sec:proof-services
-      return Subtype.mk y proof
-    restore snapshot          -- the proof failure rejects y, not the branch
-  fail(branch)                 -- feeds failureDirectedGeneralization
+    reply := prove(proofHole : R(ctorPattern, y), br.context ++ [h_i])
+    match reply with
+    | proof p => yield Subtype.mk y p          -- sibling alternatives remain available
+    | checkedRefutation cert => reject this value/invariant pair with cert
+    | unknown/unsupported => retain closed recipe(y, proofHole) in fair proof debt
+    | interrupted e => restore snapshot; propagate e
+    restore snapshot                           -- never confuse rollback with refutation
+  return unresolvedOrScopedExhaustion(branch)   -- may feed invariant/generalization proposals
 \end{lstlisting}
+
+A failed sufficient invariant excludes only the value/invariant pair unless its certificate also contradicts the original contract. The maintained proposal's R6 makes this distinction explicit and supplies local induction certificates.
 
 \subsubsection{The alternative route and the choice between them}
 

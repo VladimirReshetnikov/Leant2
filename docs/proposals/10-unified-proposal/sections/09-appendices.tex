@@ -2,8 +2,8 @@
 
 Each row names an idea adopted in this document, the proposals that develop it most fully, and the alternatives that were not adopted. ``All'' means every proposal contains the idea in some form.
 
-\begin{center}\small
-\begin{longtable}{@{}L{4.3cm}L{2.3cm}L{8.6cm}@{}}
+{\small
+\begin{longtable}{@{}L{4.3cm}L{2.3cm}L{8.5cm}@{}}
 \toprule
 Idea & Adopted from & Alternatives and notes \\
 \midrule
@@ -65,7 +65,7 @@ Evaluation corpus, leakage rules, adversarial suite & \Pn{2}, \Pn{4}, \Pn{5}, \P
 Gated roadmap & all & Reordered so that the baseline release precedes recursion discovery. \\
 \bottomrule
 \end{longtable}
-\end{center}
+}
 
 Ideas present in the proposals and \emph{not} adopted: a monolithic \code{Subtype} answer type (\Pn{4}'s experiments); persistent native metavariable states across sessions (rejected by \Pn{6}); permanent observational quotienting outside known finite complete domains (rejected by all); a dedicated learned ranker in the first release (deferred by all); a Haskell-hosted solver process as part of the semantic engine (rejected by all).
 
@@ -73,8 +73,8 @@ Ideas present in the proposals and \emph{not} adopted: a monolithic \code{Subtyp
 
 Counts per transcript in \texttt{C:\textbackslash Leant\textbackslash test} at revision \code{6bf05ad}. ``Queries'' is the number of \code{:synth} lines; ``where'' the number with a behavioral assertion; ``cand.'' the number of queries whose golden shows at least one candidate; ``uninh.'' the ``provably uninhabited'' verdicts; ``ctrl'' the negative controls (bounded miss, none passed, preflight error).
 
-\begin{center}\small
-\begin{longtable}{@{}L{4.3cm}rrrrrL{4.9cm}@{}}
+{\small
+\begin{longtable}{@{}L{4.3cm}rrrrrL{4.85cm}@{}}
 \toprule
 Transcript & queries & where & cand. & uninh. & ctrl & Features exercised \\
 \midrule
@@ -117,7 +117,7 @@ synth-six-binder-rankn & 6 & 0 & 6 & 0 & 0 & six-binder rank-N \\
 Total & 278 & 12 & 266 & 5 & 7 & \\
 \bottomrule
 \end{longtable}
-\end{center}
+}
 
 The five ``provably uninhabited'' queries are \code{forall a b : Type, a -> b}; \code{forall a b : Type, Option a -> b}; \code{forall a b : Type, Pair a b -> Empty}; an empty session inductive under a provider whose instance does not apply; and \code{forall p : Prop, p or not p}. The first four admit a Lean refutation by instantiating with \code{Unit} and \code{Empty}, and by \code{cases} on the empty inductive; the fifth admits only a fragment certificate under the constructive lane, and a labeled classical candidate under the standard profile.
 

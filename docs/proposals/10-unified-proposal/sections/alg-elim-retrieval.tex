@@ -213,18 +213,20 @@ For large inventories \Pn{4} and \Pn{9} adopt TYGAR-style abstraction as an acce
 
 \begin{lstlisting}
 abstractCompose(goalType, inventory, k):
-  A := abstraction with nodes = (rigid head, bounded argument pattern), edges = providers
+  A := typed AND-hypergraph (heads, shared parameters, indices, universes, dictionaries)
   loop up to k times:
-    path := shortestPath(A, abs(availableTypes), abs(goalType))
+    plan := proposedComposition(A, abs(availableTypes), abs(goalType))
     if none: return noProposal            -- advisory only, never negative evidence
-    t := elaborate path natively in the branch (spines of alg:search, transports of alg:transport)
-    if t typechecks: return proposal t
-    d := explain mismatch (index Vec A 0 vs Vec A (n+1), universe, dictionary identity)
-    A := refine A by the distinction d       -- split one node; never ban the provider
+    result := elaborate all plan premises jointly in a fresh branch transaction
+    if result is checked term t: return proposal t
+    if result is timeout, blocked, or unsupported: retain fallback; return noProposal
+    d := justifiedMismatch(result)        -- failed unification need not prove incompatibility
+    if d exists: refine only its affected combination and scope in A
+    else: deprioritize this plan; retain the provider in fallback
   return noProposal
 \end{lstlisting}
 
-The abstraction keeps nominal heads, index dependencies, universe constraints, and dictionary identities as labels so that a failed path yields a concrete refinement; the exact branch stays authoritative and no completeness theorem is claimed for the abstract graph\prov{\Pn{4},\Pn{9}}.
+Each hyperedge requires all arguments under compatible substitutions; reusable Lean locals are not consumed linearly. Unknown dependent heads and universes map to top or a conservative union. Only a justified mismatch supports refinement. Abstract nonreachability becomes hard exclusion only after proving simulation of every admitted concrete construction and its corresponding bound, including lambdas, locals, recursors, casts, and dictionaries. Otherwise the exact branch and fair provider fallback remain authoritative, as developed in the maintained proposal's R7\prov{\Pn{4},\Pn{9}}.
 
 \subsection{Component recipes, saturation, and the join}\label{alg:recipes}
 

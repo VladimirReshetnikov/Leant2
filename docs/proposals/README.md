@@ -1,18 +1,23 @@
 # Leant2 design proposals
 
-Nine independently prepared design proposals for Leant2, followed by one
-unified proposal that combines the strongest ideas from all nine.
+The maintained design consists of the
+[unified architecture](10-unified-proposal/Leant2.pdf) and the
+[integrated improvement plan](11-further-improvements/Leant2-next.pdf).
+The original nine architecture proposals remain available as historical
+sources. Nine subsequent expert-answer packages have been consolidated into
+the improvement plan, with distinct evidence and provenance preserved there.
 
-Every proposal is a self-contained package: a LaTeX article (with its PDF),
+Each original architecture proposal is a self-contained package: a LaTeX article (with its PDF),
 one or more small Lean 4.34.0 prototypes that were compiled remotely through
 the AXLE checking service, transcribed receipts of those checks, and Python or
 Wolfram helper scripts. None of them is a complete Leant2 implementation.
 
 ## Directory map
 
-The directories are numbered in the original alphabetical order of the
-uploaded archives. Redundant wrapper directories (`Leant2/`) and download
-suffixes (` (1)`) were removed; the contents of each package are unchanged.
+Directories `01-` through `09-` are numbered in the original alphabetical
+order of their uploaded archives. Redundant wrapper directories (`Leant2/`)
+and download suffixes (` (1)`) were removed; those historical packages are
+unchanged. Directories `10-` and `11-` contain the maintained synthesis.
 
 | Dir | Original archive | Article title | Main article file |
 | --- | --- | --- | --- |
@@ -34,7 +39,7 @@ which is now the numbered directory itself.
 
 ## The unified proposal
 
-`10-unified-proposal/Leant2.tex` (compiled: `Leant2.pdf`) is a new article
+`10-unified-proposal/Leant2.tex` (compiled: `Leant2.pdf`) is the architecture article
 that consolidates the nine proposals. Part I keeps the ideas that recur across
 most proposals as the architectural core, selects the best-developed treatment
 of each subsystem where the proposals differ, and records which proposal each
@@ -49,12 +54,22 @@ evidence; the evidence sections cite the receipts in the nine packages.
 
 ## The design for further improvements
 
-`11-further-improvements/Leant2-next.tex` (compiled: `Leant2-next.pdf`) was
-written after the first implementation passed the baseline and every replayed
-Leant suite. It starts from measurements: a probe of queries just outside the
-corpus and a profile of the search. It separates work with known solutions
-(engineering and adaptation items, each with a closing test) from nine open
-algorithmic problems where no optimal solution is known, and for each of those
-states what is known, the design to try first, and the questions to put to
-outside experts. It ends with a phased roadmap and a table of whom to ask
-what.
+The [improvement plan](11-further-improvements/README.md) preserves its
+original measurements at commit `33cec8b` and now integrates nine expert
+responses to its 31 original questions. Shared explanations are deduplicated;
+distinct algorithms, theorems, counterexamples and qualifications remain in
+their topic sections. Answered questions are retired and replaced by 33
+narrower questions about the remaining formalization, implementation and
+empirical gaps. A common P0–P5 roadmap records dependencies and acceptance
+gates.
+
+Its [source inventory](11-further-improvements/integration/sources.json)
+records all 97 incoming files at revision
+`5c3a53c22c18e6acd8ff17eb0902ce4da354518a`, while topic coverage ledgers
+identify the canonical destinations. The completed incoming directories under
+`new/` are retired. All nine model suites and their original evidence are
+preserved under [evidence](11-further-improvements/evidence/README.md); their
+fresh Python rerun passed with matching archived JSON results. These finite
+checks are separate from native Lean verification and engine benchmarks.
+Selected source observations in the expert responses remain pinned to
+`784664f`, and do not describe a fresh audit of the current implementation.

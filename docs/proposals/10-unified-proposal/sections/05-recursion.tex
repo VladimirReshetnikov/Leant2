@@ -61,7 +61,7 @@ The well-founded schema is $F(x) = \mathrm{step}(x, \lambda y\,(h : y \prec x).\
 
 \subsection{The kernel/compiler boundary}\label{sec:lowering}
 
-Four prototypes independently produced an axiom-free recursor term that the code generator rejected (``code generator does not support recursor \code{T.rec} yet''). The consequence is a design rule\prov{\Pn{4},\Pn{6},\Pn{8},\Pn{9}}:
+Four prototypes independently produced an axiom-free recursor term that the code generator rejected (``code generator does not support recursor \code{T.rec} yet''). These historical failures do not imply that every native recursor application is uncompilable or that every later toolchain has the same limitation. The consequence is a design rule\prov{\Pn{4},\Pn{6},\Pn{8},\Pn{9}}:
 
 \begin{invariant}[Two products per recursion plan]\label{inv:lowering}
 A recursion schema produces a logical reconstruction, used for proof, and an executable definition, lowered from the plan through the equation compiler with pattern equations and, when needed, \code{termination_by} and decrease proofs. If the two differ, the engine proves a correspondence theorem $\forall t,\ f_{\mathrm{eq}}(t) = f_{\mathrm{rec}}(t)$ and checks both, or proves the contract directly for the executable definition. The receipt records \code{kernelChecked} and \code{compiled} separately.

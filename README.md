@@ -13,12 +13,18 @@ We may freely borrow any Lean code and ideas from there.
 
 ## Design
 
-The design is in `docs/proposals/`: nine independent proposals (`01-` to `09-`)
-and the unified proposal `10-unified-proposal/Leant2.pdf` that consolidates
-them. The implementation below follows the unified proposal; section numbers
-in the source comments refer to it. The plan for what comes next, including
-the open algorithmic problems and where outside expertise would help, is
-`docs/proposals/11-further-improvements/Leant2-next.pdf`.
+The [design index](docs/proposals/README.md) links the nine original proposals
+and the [unified architecture](docs/proposals/10-unified-proposal/Leant2.pdf).
+The implementation below follows that architecture; section numbers in the
+source comments refer to it. The maintained
+[improvement plan](docs/proposals/11-further-improvements/Leant2-next.pdf)
+integrates nine subsequent expert responses to 31 design questions, with
+deduplicated algorithms, explicit evidence boundaries, a phased implementation
+plan, and 33 narrower remaining questions. Its
+[reproduction and integration guide](docs/proposals/11-further-improvements/README.md)
+links the preserved model evidence and source-by-source coverage ledgers.
+The historical engine measurements in those articles remain revision-specific;
+the proposal integration adds no new engine-performance claim.
 
 ## Implementation status
 

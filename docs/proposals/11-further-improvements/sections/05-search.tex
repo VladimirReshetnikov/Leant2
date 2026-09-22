@@ -1,57 +1,344 @@
 \section{R1. Search control with coupled goals under a wall-clock budget}\label{sec:search}
 
-\subsection{The problem}
+\subsection{The problem and the corrected design}
 
-Given a query and ten seconds, in what order should partial programs be expanded? The engine answers with a fixed rule order, a fixed goal order modified by three deferral limits, depth-first search and iterative deepening on depth. Section~\ref{sec:profile} shows what this costs: one rule opened 90\% of a search tree and nothing in the engine could know it; a depth-4 pass ran for 4.7 s without a candidate while the depth-5 pass found one in 0.5 s; and a cut pass is repeated from the start by the next lane.
+The historical profile in Section~\ref{sec:profile} motivates three separate
+decisions: which partial program to expand, which coupled hole to refine, and
+how to allocate a finite budget among lanes and depths. In that profile one
+rule opened 90\% of the tree; a depth-4 pass consumed 4.7 seconds without a
+candidate while a depth-5 pass found one in 0.5 seconds. These observations
+motivate experiments with resumable search, not a theorem that best-first
+search or a particular cost function will improve every query.
 
-Three sub-problems are tangled together.
+Incoming answers N1--N9 agree on a corrected design: retain a joint native
+constraint state, share persistent structure, factor only components whose
+independence is justified, and separate the final candidate objective from
+exploration priority and charged work. Two original requirements need repair.
+``One unit per open non-leaf goal'' is not generally an admissible heuristic;
+and identical candidate lists under a fixed wall-clock deadline cannot be
+guaranteed across differing machine speeds while reporting every improvement
+reached. The following results answer the historical R1 questions; the active
+expert agenda at the end asks about the remaining implementation and research gaps.
 
+\subsection{Conditional factorization and contextual reuse}
+\label{sec:search-factorization}
+
+There is a useful middle ground between copying all work and imposing one
+global sequential order. Represent alternatives as a persistent whole-state
+OR graph and factor certified independent constraints into AND components.
+Genuinely incompatible assignments still require distinct logical branches.
+Aesop already tracks transitive clusters of metavariable-coupled goals,
+including dependencies through local contexts; independence detection itself
+is not a new idea absent from Aesop~\cite{aesop}. Its copying of affected goal
+nodes should not be confused with wholesale copying of every search subtree.
+Canonical supplies a comparison for metavariable refinement order, and the
+incoming reports identify Canonical-min's suspended constraints and
+assignment-triggered resumption as another useful reference~\cite{canonicalmin}. Guarantees for
+that calculus do not transfer automatically to arbitrary Lean tactics.
+
+For each obligation, conservatively close its support through expression and
+universe metavariables, assigned expressions, declaration types, local types
+and values, delayed-assignment environments, postponed equations, relevant
+instance arguments, provider types, and admissible local expressions. Add
+residual observations as constraint nodes: $x,y:\Nat$ may have independent
+types while $x+y=7$ couples their acceptable assignments. Likewise
+$f(0)+g(0)=1$ couples two function bodies. An immutable shared parameter or
+constant need not connect components; a writable variable in its type does.
+
+The hypergraph can use unresolved variables as vertices and obligations as
+hyperedges, or its incidence-graph dual. What matters is conservative support,
+including a rule's possible writes. Treat an opaque tactic with unknown effects
+as touching its entire reachable state. Overestimated dependencies lose an
+optimization; underestimated ones can remove compatible completions even if
+the final kernel gate rejects malformed survivors.
+
+\begin{proposition}[Conditional component factorization]
+\label{prop:search-factorization}
+After fixing a shared interface assignment $\eta$, suppose the remaining
+typing, grammar and behavioral constraints factor as
+$\Phi_1(X_1;\eta)\land\cdots\land\Phi_k(X_k;\eta)$ with disjoint writable
+sets $X_i$. Every allowed transition in component $i$ reads only $X_i$,
+$\eta$ and immutable shared data, writes only $X_i$ and fresh private
+variables, and preserves this separation. Then the completion set at $\eta$
+is the Cartesian product of the component completion sets. Their substitutions
+commute up to fresh-name renaming.
+\end{proposition}
+\begin{proof}
+A substitution on the disjoint union of the $X_i$ is a tuple of substitutions
+on its components. No right-hand side or typing dependency reads another
+component's writable variables, so their capture-avoiding union is well formed.
+Each conjunct is satisfied exactly when its corresponding substitution
+satisfies it. Conversely, restricting a joint solution satisfies every factor.
+Transition confinement ensures that this argument continues to hold after
+refinement, rather than only at the initial graph snapshot.
+\end{proof}
+
+A useful operational frame condition for components $I,J$ is
+\[
+ W(I)\cap(R(J)\cup W(J))=\varnothing,\qquad
+ W(J)\cap(R(I)\cup W(I))=\varnothing.
+\]
+With complete read/write footprints, immutable environment and policy, and
+fresh identifiers renamed apart, each transition reads the same values in
+either order and their writes unite. This is a sufficient interface contract,
+not a claim that collecting visible target metavariables establishes it.
+For a small unfixed separator, subsearches export relations between interface
+assignments and solutions; the global result is a union of products over
+compatible $\eta$. Joining those relations may still be exponential.
+
+Update supports after assignments or context extensions. New shared helpers
+or observations can merge components; assigning a shared variable can split
+one. Union--find alone handles the former but not the latter. Recompute small
+affected components or maintain persistent adjacency and a wakeup queue.
+Rules that introduce a cross-component dependency must rejoin components or
+be prohibited after a component is sealed. A global size budget, a provider
+usable at most once, or a nonlinear objective is also a connecting constraint.
+For additive size bounds, combine cost-indexed component solution streams;
+choosing only each component's first answer can discard the only globally
+admissible combination.
+
+\paragraph{Three levels of reuse.}
+Share immutable expressions and context nodes; share persistent branch prefixes
+while keeping assignment maps distinct; and, only under checked interface
+conditions, reuse a semantic solution. A reusable entry is a typed recipe:
+abstract the minimal dependency-closed local telescope, canonicalize binders,
+record the target, residual constraints, interface guard, environment,
+transparency, instance policy, grammar and relevant dependency fingerprints.
+On reuse freshen universe and expression variables, substitute actual locals,
+validate the guard, and type-check the instantiated term. Raw \code{MVarId}s
+or \code{FVarId}s cannot be transplanted into another branch. A proof of
+$P(x)$ does not become a proof of $P(y)$ through similar printing.
+
+Keep a lazy stream or guarded family of data solutions unless a checked
+argument makes every remaining alternative irrelevant to the surrounding
+contract. A success cache and a failure cache have different obligations:
+closed contextual successes can be replayed; negative reuse requires a checked
+refutation or exhaustion of a matching finite grammar and bound. Timeout,
+blocked unification and a failed tactic are scheduling information, not
+uninhabitability certificates.
+
+\subsection{Admissible bounds for joint completion}
+\label{sec:search-bounds}
+
+Begin with $h(S)=0$ under fixed nonnegative costs. The original unit-per-goal
+bound fails twice: exact-local closure may cost zero, and one assignment may
+close several obligations. For example, assigning $?n:=0$ at cost one can
+make both $n=0$ and $n+1=1$ reflexive with free propagation. Two visible
+obligations then have remaining cost one. Repeating the same constraint makes
+the overestimate arbitrarily large. A model charging each proof constructor
+would give different costs; therefore the objective must be stated first.
+
+Let $d(S)$ be minimum additional completion cost. If $\ell_i(S)\le d(S)$
+for each justified relaxation of obligation $i$, then
+\[
+ h_{\max}(S)=\max_i\ell_i(S)\le d(S).
+\]
+A sum is valid only if every completion's cost can be partitioned into
+component shares that dominate the respective bounds. Semantic independence
+alone is insufficient when one provider action or shared subterm is charged
+once but serves several components. Explicitly partition each concrete
+action's cost without charging more than that action costs.
+
+\begin{proposition}[Abstract-distance lower bound]
+\label{prop:search-abstract-bound}
+Suppose an abstraction maps concrete solved states to abstract solved states,
+and every concrete transition of cost $c$ to an abstract path of cost at most
+$c$. Then the shortest abstract completion distance
+$d^{\#}(\alpha(S))$ is an admissible lower bound on $d(S)$.
+\end{proposition}
+\begin{proof}
+Map a concrete completion to the concatenation of its simulating abstract
+paths. It reaches an abstract solution at no greater cost. The shortest
+abstract completion costs no more than this mapped path. Taking the infimum
+over concrete completions gives the result.
+\end{proof}
+
+Candidate abstractions erase dependent indices, treat proof and dictionary
+obligations as free, allow extra providers, retain a small separator, or use a
+finite type-head production hypergraph or constructor-pattern database. A
+minimum-cost cover or fractional covering relaxation can account for actions
+that close several goals together. Each construction still needs the
+simulation argument for \emph{every} admitted production: omitting a cast,
+higher-order introduction, zero-cost local, or multi-goal unification effect
+can turn a purported relaxation into an overestimate.
+
+Derivation cost, failed search work and final-expression size are distinct.
+Filling a shared hole may duplicate syntax; normalization may erase it; a
+later assignment may change which inputs a completed program uses. A lower
+bound on production count does not prove optimality under a different final
+ranking tuple. Use a fixed additive derivation objective initially, or prove
+the lower bound for the actual advertised candidate objective.
+
+Nonnegative costs alone do not imply fair cost enumeration. Every genuinely
+generative cycle needs positive cost or a finite secondary structural grade.
+Administrative zero-cost closure must terminate through a well-founded
+normalization argument, finite saturation or justified duplicate control;
+infinitely many distinct zero-cost states evade simple cycle detection. If
+an admissible but inconsistent heuristic is later used on a graph, reopen a
+state when a smaller path cost is found. Uniform-cost search is the simpler
+reference until a stronger bound pays for its computation.
+
+\subsection{Learning priorities without changing the objective}
+\label{sec:search-learning}
+
+Adaptive order preserves accepted-answer correctness under the acceptance
+gate, but it can change which answers appear before a deadline. Probe supplies
+a just-in-time learning precedent~\cite{probe}, not a theorem of invariant
+finite-budget answers or a dependent-search A* guarantee. Keep four fields
+distinct: final objective $J(p)$, charged work, a proved frontier bound
+$L(S)$ on unseen $J$, and dispatch priority $P_e(S)$ for epoch $e$.
+
+Freeze $J$ for the query. Learning may reward observations survived, useful
+blockers removed, estimated information gain, or low evaluation cost in
+$P_e$. Correlated examples should not automatically outweigh a structurally
+different observation, and training-example survival may reward overfitting.
+Measure held-out behavior separately. If the advertised objective itself
+changes, version it and recompute the affected bounds; silently decreasing
+edge costs does not preserve the old A* argument.
+
+Use deterministic logical epochs: collect a fixed batch of completed events,
+aggregate evidence in canonical order, record the update inputs and model
+digest, then freeze the next epoch's scores. Rekey affected queue entries,
+rebuild the queue, or use an explicitly separate guidance queue; stale heap
+keys establish neither the new order nor a reproducible old one. Canonical
+ties must not depend on hash iteration, timestamps, memory addresses or
+timing-derived names. Deterministic integer or rational updates are one
+possible implementation, not a required statistical model.
+
+Reserve a nonzero deterministic share of logical work for a fixed grammar
+frontier. With finite branching, fair admission and terminating local work,
+every finite reference derivation eventually receives service. A beam or
+top-$k$ list in a fast lane may be useful, but omitted alternatives must remain
+scheduled in the reference lane for a coverage claim. Introducing a helper
+or carrier outside the grammar is a recorded language extension, not merely
+reordering. Exhaustion of the old grammar is not exhaustion of the enlarged one.
+
+The appropriate default receipt is ``best certified candidates found under
+objective version $v$ in this logical prefix.'' A stronger minimum-cost claim
+requires an incumbent $p$ and coverage of \emph{all} unexplored alternatives
+under the same objective, with
+\[
+ J(p)\le\inf_{S\text{ on the complete frontier}}L(S).
+\]
+A grace period after the first answer is not such a certificate. Stable
+sorting gives stable order of a given verified set, not stability of the set
+that a time-limited run discovers. Test user-facing stability under irrelevant
+renaming, harmless provider permutations, repeated runs and additional
+examples rather than treating an algorithm name as evidence of predictability.
+
+\subsection{Deterministic prefixes and real deadlines}
+\label{sec:search-deadlines}
+
+A reproducible logical schedule and a hard deadline are compatible, but the
+deadline may truncate that schedule at different positions. The anytime
+literature supplies a quality-versus-deliberation perspective~\cite{anytime};
+it does not establish machine-independent equality of timed answer sets.
+
+\begin{proposition}[Deadline obstruction]\label{prop:search-deadline}
+Suppose a deterministic search first certifies a new answer after positive
+work $w$. If one execution reaches $w$ before deadline $D$ and another does
+not, an interface publishing every certified improvement reached by $D$
+cannot return the same answer set in both executions.
+\end{proposition}
+\begin{proof}
+The answer is available only in the first completed prefix. Sorting cannot
+insert an undiscovered certified answer into the other. Suppressing the new
+answer or continuing beyond the deadline changes one of the stated requirements.
+\end{proof}
+
+Even a restricted speed variation breaks equality if a cutoff crosses an
+answer event. A known throughput bound can justify fixed work for a specified
+machine class; startup calibration alone cannot account for cache warmth,
+instance search, reduction costs, load or allocation. Nor does one expensive
+node represent a stable amount of work.
+
+Provide an interactive execution contract that respects cancellation and
+reports its completed prefix, a replay contract that consumes that prefix
+regardless of elapsed time, and fixed-work runs for experiments. Pin query,
+environment, grammar, policy, provider order, model, seed and tie-breaks.
+Checkpoints contain the frontier, semantic branch states, expansion cursors,
+model state, monotone work ledger, unresolved tasks and exhausted cost bands,
+not only a candidate count. Charge rule, unification, normalization, instance,
+observation and proof work at specified points even after rollback. Resuming
+to the same logical checkpoint should reproduce the stream; three timed
+two-second runs need not equal one six-second run because startup and replay
+also consume time.
+
+Parallel workers may speculate, but stable task identities and fixed logical
+allotments must feed a deterministic commit order. Publish completed epochs;
+label any opportunistic extras separately. A race to the first answer followed
+by cancellation is not repaired by sorting its survivors. Cooperative node
+checks and heartbeats are not universal real-time interrupts: bound expensive
+services and use a worker cancellation boundary where necessary. Reserve
+resources for final checking; interruption cannot promote an unchecked term.
+
+Iterative deepening remains a useful baseline: its familiar large-branching
+overhead argument concerns completed brute-force passes~\cite{korf85}, not
+arbitrarily cut heterogeneous lanes. Likewise the Luby restart theorem assumes
+a Las Vegas runtime model~\cite{luby93}; correlated deterministic lanes with
+shared learned state do not automatically meet it. Prefer resumable work to
+restarting the identical prefix. Compare restarts only when a new policy or
+random trial gives them a substantive purpose.
+
+\subsection{Implementation sequence and evidence still needed}
+\label{sec:search-experiments}
+
+First make the \emph{whole semantic state} and a resumable expansion cursor
+explicit while reproducing the continuation baseline with a LIFO frontier.
+\code{Meta.SavedState} alone is not a specification of every branch-dependent
+cache or elaborator effect. Audit external references and residual-cache
+identities; semantic caches need valid branch keys, while global work charges
+remain outside rollback. Snapshot creation cost does not measure the memory
+retained by a broad persistent frontier. External process snapshotting and
+in-process persistent contexts have different cost regimes. N5's supplied
+snapshotting study is a relevant tactic-search precedent~\cite{snapshot},
+not evidence for the cost of this proposed in-process frontier.
+
+Next use the dependency graph for goal pressure and blocker wakeups, then
+memoize closed contextual successes, then introduce certified independent
+commits and separator tables if repeated work justifies them. Fail-first
+selection can estimate the applicable rule domain from retrieval, with ties
+favoring assignments that constrain other goals, and aging prevents starvation.
+Agsy and Canonical are useful comparisons~\cite{agsy,canonical}; a dependent
+goal's domain is an estimate, not an exact finite set supplied by those systems.
+The historical initial weights (exact 0, constructor/local application 1,
+provider 2, split 3, recursion 4, accumulator choice 5) remain hypotheses to
+measure under the zero-cost safeguards, not a proved optimal cost model.
+
+A bottom-up companion remains a distinct option: enumerate small typed terms
+over observation environments and offer components to top-down holes, following
+the broad ideas of Escher and Burst~\cite{escher,burst}. Finite observational
+signatures may organize buckets, but retaining only one representative needs
+a contextual congruence argument for the admitted grammar or a way to recover
+discarded alternatives. Observational agreement is not unrestricted program
+equality. Grammar learning and divide-and-conquer enumeration remain useful
+comparisons~\cite{deepcoder,eusolver,transit}, not replacements for these checks.
+
+Measure solved count at 1, 10 and 60 seconds, first certified answer, best fixed
+objective at equal logical work, proof debt, frontier memory, repeated work,
+component sizes, cache replay cost and nodes off the successful path. Compare
+the same grammar with and without goal ordering, factorization, heuristics
+and learning. Replace the impossible demand of zero answer-set variance under
+$\pm30\%$ speed changes with equal outcomes at equal logical checkpoints;
+report time-dependent prefix differences and actual latency separately.
+The incoming Python countermodels illustrate failed bounds and deadline
+claims. They are not native Lean validation or performance measurements.
+
+\subsection{New questions for experts}\label{sec:search-new-questions}
+The historical questions have the conditional answers above. The next questions
+concern the missing constructive analyses and matched experiments.
 \begin{description}
-\item[Node order.] Which open partial program to expand next. Depth-first order is forced today by the representation: the only saved states are those on the current path.
-\item[Goal order.] Within a partial program, which hole to fill next. Holes share metavariables, so the order changes the branching factor of the others by orders of magnitude. The deferral rules are hand-written answers to four recurring situations (type holes, instance goals, holes of unknown type, the contract).
-\item[Budget split.] How to divide wall-clock time between lanes and between depths, when the time a pass needs is not known in advance.
+\item[R1.N1.] What conservative read/write analysis covers Lean's delayed
+assignments, local instances and elaborator effects cheaply enough to justify
+component factorization, and which workloads repay separator joins and retained
+frontier memory?
+\item[R1.N2.] Which finite relaxation admits a rule-by-rule cost simulation for
+the actual final candidate objective, including sharing and normalization, while
+providing enough pruning to repay its computation?
+\item[R1.N3.] Which deterministic learning signals improve held-out synthesis
+at equal logical work without destabilizing fixed-objective ranking under
+irrelevant renaming, provider-order changes and correlated examples?
+\item[R1.N4.] What resumable checkpoint and interruption protocol can reproduce
+native search, proof services and parallel proposal admission at equal logical
+prefixes with acceptable latency and memory overhead?
 \end{description}
-
-\subsection{Why it is hard here}
-
-\paragraph{Coupled goals.} In first-order proof search without shared variables, subgoals are independent and an AND/OR tree can be searched best-first with memoized subgoals. With shared metavariables the subgoals of one node are a constraint problem: solving one instantiates the others. Aesop meets the same difficulty in best-first proof search for Lean and handles it by copying goals that share metavariables, so that each assignment lives in its own branch, at the price of duplicated work and a more complicated tree~\cite{aesop}. Leant2 sidesteps the difficulty by keeping all unfinished goals in the continuation, which makes depth-first search correct and makes any other order expensive. We do not know of a search organization that has both properties: independent treatment of goals that really are independent, and correct joint treatment of those that are not, without either copying or sequentializing.
-
-\paragraph{No cost signal.} Weighted enumeration needs a cost per production. Depth is a poor proxy: the accumulator rule and an exact local both cost one unit. A good cost is the expected size of the subtree a rule opens times the probability that the solution is inside, neither of which is known before the search.
-
-\paragraph{Wall clock, not node count.} Node cost varies by a factor of a hundred between a type-only query and a contract query with forty observations. Budgets in nodes do not transfer; budgets in time make the search non-reproducible across machines unless the cut points are made irrelevant to the result.
-
-\subsection{What is known}
-
-\begin{itemize}
-\item Iterative deepening is asymptotically optimal among brute-force tree searches when the branching factor is large and nothing is known about costs~\cite{korf85}; its overhead is the factor $b/(b-1)$. It stops being a good choice exactly when passes are cut by a deadline rather than completed, which is our situation.
-\item For a randomized or restarted procedure with unknown run-time distribution, the universal restart schedule is within a logarithmic factor of optimal~\cite{luby93}. Lanes and depths are such a portfolio.
-\item Enumerative synthesizers replace depth by a \emph{cost} from a probabilistic grammar and enumerate in cost order; the grammar can be learned offline (DeepCoder~\cite{deepcoder}) or during the search from partial successes (Probe's just-in-time learning~\cite{probe}).
-\item Choosing which hole to fill next is variable ordering in constraint satisfaction, where fail-first heuristics (smallest domain, most constrained) are standard and effective. Agda's Agsy orders subproblems by a similar principle~\cite{agsy}.
-\item Best-first search over proof states with rule priorities and a normalization phase is what Aesop implements for Lean, with white-box rule sets~\cite{aesop}. Canonical searches $\beta$-normal $\eta$-long terms of dependent type theory with its own term representation and heuristics for the order of metavariable refinement, and reports large gains from that order~\cite{canonical}.
-\end{itemize}
-
-\subsection{Design to try first}
-
-\paragraph{Step 1: make states first-class.} A search state is a \code{Meta.SavedState}, a goal list and a cost. Saved states are cheap (Table~\ref{tab:profile}: 1\% of time), because the metavariable context is a persistent structure. Keep a priority queue of states instead of a call stack. Depth-first search is the special case of a LIFO queue, so nothing is lost and the baseline can be re-verified before any policy changes.
-
-\paragraph{Step 2: cost instead of depth.} Give every rule application a cost, initially hand-set from the measurements (exact local 0, constructor 1, application of a local 1, provider 2, case split 3, recursion 4, accumulator instantiation 5), and expand in order of cost-so-far plus a lower bound on the cost to close the remaining goals (one unit per open non-leaf goal). This is A* with an admissible but weak heuristic, and it subsumes iterative deepening without repeated passes.
-
-\paragraph{Step 3: learn costs within the query.} Following Probe, when a partial program survives more observations of the contract than its siblings, lower the cost of the rules that built it for the rest of the query. The residual evaluator of Section~\ref{sec:evaluation} provides the signal (how many conjuncts, or how many observations inside one conjunct, are already true). This is where the two problems meet.
-
-\paragraph{Step 4: goal order by estimated domain size.} Replace the three deferral limits by one rule: fill next the hole with the fewest applicable rule instances, computed from the index of A5, with ties broken toward holes whose assignment would instantiate the most other goal types. Instance goals and type holes then fall out as special cases rather than as separate policies.
-
-\paragraph{Step 5: a bottom-up companion.} For contracts with input--output observations, enumerate small closed terms over the locals of each observation environment bottom-up, keeping one term per observational-equivalence class~\cite{transit,escher}, and offer them to the top-down search as additional exact candidates for holes of ground type. This is how Burst supplies the components of a recursive body~\cite{burst}.
-
-\subsection{What would count as progress}
-
-Solved count at 1 s, 10 s and 60 s on the benchmark suite of E8; the ratio of nodes expanded to nodes on the solution path; and variance of the result under a $\pm 30\%$ change of machine speed, which has to be zero for the candidate list and small for time.
-
-\subsection{Questions for experts}
-
-\begin{enumerate}
-\item Is there a principled search organization for goals that share metavariables that is neither Aesop's copying nor our sequentialization? In particular, can independence be detected cheaply (no shared unassigned metavariables after instantiation) and exploited by memoizing solved independent subgoals across branches?
-\item What is the right admissible heuristic for the cost to close a goal in a dependent type theory, where closing one goal can close others by unification?
-\item Does just-in-time cost learning stay sound for ranking, that is, can it change \emph{which} candidates are found within the budget in a way users would find arbitrary, and how do published systems control that?
-\item For wall-clock budgets, is there a known way to make results independent of machine speed other than fixing a node budget per lane and calibrating it at start-up?
-\end{enumerate}
-Related projects and fields: Aesop studies best-first proof search in Lean and the coupling of goals through metavariables; Canonical studies the order of metavariable refinement for inhabitation in dependent type theory; Probe and EUSolver study cost-guided and divide-and-conquer enumeration; constraint programming studies variable-ordering heuristics under dynamic domains.

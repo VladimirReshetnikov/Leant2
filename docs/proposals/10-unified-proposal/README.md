@@ -2,7 +2,12 @@
 
 `Leant2.tex` consolidates the nine independent proposals in the sibling
 directories `01-` to `09-` into one design. `Leant2.pdf` is the compiled
-article (about 100 pages).
+article. This preserves the architecture synthesis of proposals 01–09.
+The [maintained further-improvements proposal](../11-further-improvements/README.md)
+integrates later expert answers and supplies the current detailed obligations
+and research agenda. Corrections here reconcile material semantic claims
+without relabeling the original evidence as current implementation evidence.
+See [the consistency audit](integration-audit.md) for the correction map.
 
 Part I (architecture) keeps the consensus of all nine as its core (exact Lean
 expressions as semantic authority; whole-continuation backtracking; recursion
@@ -39,8 +44,11 @@ audit, its certificate checkers with proved soundness, its Kripke-countermodel
 certificate for intuitionistic non-derivability, and two documented kernel
 pitfalls (`debug.skipKernelTC`, asynchronous `addDecl`).
 
-No new experiments were run. Section 15 states what the nine prototypes have
-and have not demonstrated.
+No new experiments were run for this synthesis or its consistency corrections.
+The evidence section describes the original nine prototypes at their recorded
+revisions, not the current implementation status. The corrected PDF was rebuilt
+and visually reviewed; the [publication receipt](integration/architecture-review.md)
+records its exact source identity and coverage separately from implementation evidence.
 
 ## Build
 

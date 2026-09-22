@@ -83,7 +83,7 @@ Residual ::= Known(constructor, fields : list Residual)
            | Hole(h, args : list Value, expected : Option Value, path : Phi)
            | Unknown(reason)      -- fuel exhausted, stuck opaque constant, effect
 \end{lstlisting}
-Fuel is explicit; \code{Unknown} is a first-class outcome and is never read as \code{false}\prov{\Pn{2},\Pn{3},\Pn{6}}. \Pn{2}'s residual forms (known constructors, closures, suspended applications, conditionals, named holes with observed arguments) are adopted verbatim; \Pn{6} adds the path assumptions to the hole record.
+These constructors are schematic: each residual carries its exact native type, scope and dependency-closed environment. A hole occurrence includes its telescope substitution, including type, instance, universe, and index dependencies; identical hole identifiers with different captured substitutions are not interchangeable. Typedness alone does not establish evaluation correctness or safe pruning. Hard refutation additionally needs completion/substitution correspondence or conservative abstract semantics, preserving relevant dependencies even if reduction erases unused arguments. The maintained proposal's R3 specifies these obligations. Fuel is explicit; \code{Unknown} is a first-class outcome and is never read as \code{false}\prov{\Pn{2},\Pn{3},\Pn{6}}. \Pn{2}'s residual forms (known constructors, closures, suspended applications, conditionals, named holes with observed arguments) are adopted verbatim; \Pn{6} adds the path assumptions to the hole record.
 
 \subsubsection{Live-example propagation}
 
@@ -104,11 +104,12 @@ propagate(sketch t, sample rho, expected y, table T, fuel):
         else: keep the relational residual { z | g z = y }         -- no guessed inverse
   | (Hole(h, args, _, path), y) ->
         T.insert(h, args, y, path)                                 -- constrain ONE use
-        if T has (h, args, y') with y' /= y and args decidably equal:
-          Refute(rho)                                              -- functional consistency
+        if T has same typed closure instance and certified equal args with y' /= y:
+          if both path guards hold for rho: Refute(rho)            -- incompatible outputs
+          else: retain the guarded incompatibility                -- disjoint paths may agree
   | (Unknown(_), _) -> Unresolved(rho)                             -- never a refutation
 \end{lstlisting}
-The hole-observation table $T$ is keyed by hole identity and argument tuple; equal inputs induce equal outputs, so $h(0)=0$ and $h(0)=1$ are inconsistent for one deterministic $h$ although an angelic interpreter assigning each occurrence independently would satisfy both\prov{\Pn{2},\Pn{6}}. \Pn{2}'s regression script checks exactly this: one consistent valuation for the pair versus one spurious independent assignment. For higher-order arguments the argument-equality test may be unavailable; the table then retains uncertainty rather than inventing a comparison\prov{\Pn{2}}. Recursive-call outputs under a sketch are represented symbolically under the induction hypothesis or well-founded call specification; a model of those symbolic constraints does not prove that a single recursive implementation realizes them, so they never support hard pruning\prov{\Pn{2},\Pn{7}}. Two holes correlated by one sample are solved together, not independently\prov{\Pn{7}}.
+The hole-observation table $T$ is keyed by hole identity and argument tuple; equal inputs induce equal outputs, so $h(0)=0$ and $h(0)=1$ are inconsistent for one deterministic $h$ although an angelic interpreter assigning each occurrence independently would satisfy both\prov{\Pn{2},\Pn{6}}. \Pn{2}'s regression script checks exactly this: one consistent valuation for the pair versus one spurious independent assignment. For higher-order arguments the argument-equality test may be unavailable; the table then retains uncertainty rather than inventing a comparison\prov{\Pn{2}}. Recursive-call outputs under a sketch are symbolic under their explicitly justified call specification. A satisfying symbolic model does not prove realizability by one recursive implementation. A checked unsatisfiability result can support pruning when the encoding conservatively contains all relevant completions; assumptions derived from the original contract restrict this claim to contract-satisfying completions. Speculative call guesses cannot acquire that authority\prov{\Pn{2},\Pn{7}}. Two holes correlated by one sample are solved together, not independently\prov{\Pn{7}}.
 
 \subsubsection{Typed test generation for dependent inputs}
 

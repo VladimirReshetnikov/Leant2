@@ -1,0 +1,172 @@
+\section{A common semantic boundary for the integrated design}
+\label{sec:semantic-boundaries}
+
+The nine expert responses, identified as N1--N9 in the integration ledger,
+agree on the most important correction to the original plan: certification,
+search coverage and useful execution are different obligations. This section
+states their shared foundation once. Later sections retain the distinct
+constructions, counterexamples and unresolved questions that depend on it.
+The arguments are mathematical design arguments, not new Lean formalizations.
+
+\subsection{Freeze the problem before proposing a solution}
+
+Let the original query be
+\[
+ Q=(E,\Gamma,T,C,A,\mathcal L,\mathcal G,B,\Pi),
+\]
+where $E$ is the imported environment, $\Gamma$ the local telescope and its
+instances, $T$ the target, $C:T\to\Prop$ the contract, $A$ the permitted axiom
+policy, $\mathcal L$ the providers, and $(\mathcal G,B)$ a declared grammar
+and its bounds. The frozen policy $\Pi$ identifies the ranking objective,
+logical resource accounting, transparency/equality settings, search and
+proposal admission policy, and their versions. A policy change is recorded
+as a new experiment or an explicit epoch transition; it must not silently
+reuse a certificate or cache entry whose assumptions changed.
+An absent behavioral contract means $C(p)=\mathsf{True}$.
+Closing a local answer abstracts the original telescope; it does not replace
+its dependencies with similarly named variables. Original universe parameters
+remain rigid. A term at $T[\ell:=0]$ answers a specialized query, not an
+arbitrary original universe-polymorphic query. Any permitted generalization of
+new inference variables must preserve the jointly checked program/proof types.
+
+\begin{definition}[Completion set]\label{def:completion-set}
+A partial state $S$ contains the typed program root, expression and universe
+assignments, delayed constraints, local contexts and instances, recursion
+capabilities, residual observations and proof obligations. Write
+$\Comp_{\mathcal G,B}(S)$ for its compatible closing substitutions under the
+declared grammar and bounds. A completion is a native well-scoped substitution,
+not a textual replacement of question marks.
+\end{definition}
+
+Finiteness needs actual bounds on literals, universe expressions, auxiliary
+declarations, recursion schemes and proof plans as well as term depth. A
+finite program grammar alone does not turn a bounded tactic portfolio into a
+decision procedure for arbitrary Lean propositions. Conversely, a finite
+example conjunction can itself have a fully checked proof: its finite scope
+does not make the proof less valid, but it does not specify an unstated
+universal intention.
+
+\subsection{Six guarantees and their separate evidence}
+
+\begin{description}
+\item[Positive certification.]
+The closed abstractions of $p:T$ and $\pi:C(p)$ check in $E$, and the transitive
+axiom dependencies of the program, original type, proof and original contract
+are permitted by $A$. A kernel-checked theorem may use allowed axioms; it need
+not be axiom-free.
+\item[Conservative pruning.]
+A refuted partial branch has no permitted satisfying completion. This
+requires a separate argument about the refuter. Checking all surviving
+answers cannot reveal a solution discarded before the gate.
+\item[Relative coverage.]
+Every member of a named candidate grammar is considered or safely excluded
+by a fair exhaustive run. Certification completeness additionally needs a
+decisive verifier for the advertised fragment, or a separate finite proof
+grammar. Top-$k$ retrieval, queue eviction and a deadline are budget choices,
+not exclusion proofs.
+\item[Ranking optimality.]
+No eligible candidate improves one fixed objective. First success, best among
+visited terms, immutable program cost and a learned dispatch score are not
+interchangeable. Outstanding alternatives need valid bounds before an
+optimality claim is made.
+\item[Replay.]
+Proof replay, logical search replay and reproduction of model inference have
+different prerequisites. A fixed logical prefix can be replayed; equal wall
+time on different machines does not imply an equal completed prefix.
+\item[Executable publication.]
+Declaration transport, compilation and advertised execution are independently
+checked. A well-typed recursor expression does not by itself establish that
+the supported publication path compiles or executes it.
+\end{description}
+
+These are six obligations rather than six promised completed features.
+The responses group them differently: most distinguish the first five,
+N6 groups its principal guarantees more coarsely, and N5 and several
+realization discussions make the sixth explicit. No disagreement is resolved by silently
+folding execution into kernel acceptance.
+
+\subsection{Necessary observations, alternatives and refutation}
+
+For a partial root $p_S$, a sound hard rejection requires
+\begin{equation}\label{eq:conservative-pruning}
+ \forall\theta\in\Comp_{\mathcal G,B}(S),\quad \neg C(p_S\theta).
+\end{equation}
+An inferred observation or angelic constraint $D$ is safe to add to every
+remaining alternative only if
+\begin{equation}\label{eq:necessary-observation}
+ \forall\theta\in\Comp_{\mathcal G,B}(S),\quad
+ C(p_S\theta)\Longrightarrow D(\theta).
+\end{equation}
+If $D$ has no compatible realization, these two statements imply safe
+refutation: a satisfying completion would satisfy $D$, contradicting its
+impossibility. An observation need not hold for completions that violate the
+contract. This is why an example can constrain a recursive call conditionally
+on correctness of the whole synthesized function.
+
+A sufficient guess has a different role. One guessed invariant, recursive
+result or helper can define a search alternative; failure of that alternative
+does not reject all other guesses. Repeated equal recursive calls must remain
+correlated. Fuel exhaustion, an unsupported evaluator case, a failed tactic
+or an unsuccessful unification attempt remains inconclusive unless a stronger
+decisive fragment supplies the missing exclusion argument. Differential
+testing can falsify a refuter's correctness, but passing tests cannot prove
+Equation~\ref{eq:conservative-pruning} for every open completion.
+
+\Needspace{27\baselineskip}
+\subsection{Results must identify what was established}
+
+\begin{longtable}{@{}L{32mm}L{119mm}@{}}
+\caption{A result algebra with explicit evidence boundaries.}\label{tab:result-evidence}\\
+\toprule Result & Required meaning\\\midrule\endfirsthead
+\toprule Result & Required meaning\\\midrule\endhead
+Verified & A term of the frozen target and a checked proof of its exact requested contract under its policy.\\
+Observed / unrefuted & Recorded observations for a typed candidate; required certification is still missing.\\
+Candidate refuted & A particular candidate or partial branch violates a checked necessary condition.\\
+Impossible & A checked theorem excludes solutions of the original query under the advertised policy.\\
+Bound completed & The named finite program/proof search was covered; unresolved verification obligations are recorded separately.\\
+Interrupted / unsupported & Work stopped or a feature is unavailable; neither states that the target is uninhabited.\\
+Publication status & Separate export, compilation and execution results for the accepted artifact.\\
+\bottomrule
+\end{longtable}
+
+Refuting every visited candidate is not proving impossibility. Exhausting
+syntax while some verification attempts remain unresolved is not semantic
+exhaustion. A finite Kripke countermodel for a reified propositional calculus
+establishes nonvalidity in that calculus; interpreting it as a Lean negation
+of an arbitrary contextual target needs a further bridge. These distinctions
+belong in receipts and diagnostics and need not become user-facing engine
+settings.
+
+\subsection{Services with deliberately different authority}
+
+\begin{lstlisting}
+ProposalService.propose : DecisionPoint -> SearchView -> Alternatives
+ObservationService.check : PartialState -> ValuesOrBlockersOrRefutation
+ProofService.tryProve : TypedObligation -> Budget -> ProofOrUnknown
+AcceptanceGate.check : FrozenQuery -> Candidate -> Proof -> GateReply
+PublicationService.realize : Accepted -> ExportCompileExecuteReceipt
+\end{lstlisting}
+This is interface pseudocode. A proposal changes the order or adds an
+alternative; it carries no authority to remove every other alternative.
+A refutation carries checked evidence or invokes a component with established
+conservative semantics. The gate reconstructs $C(p)$ from the original query,
+rather than trusting an unrelated supplied proof type. All services use the
+same dependency information and retain their active resource checks.
+
+The source packages inspected selected code at
+\code{784664ff34e819422510a4d470ab07fe48bb736b}; their API observations are
+historical. They correctly distinguish a gate accepting a proof/type pair
+from an end-to-end caller that constructs the requested contract. Their
+recommendation to freeze the query at the gate is not evidence that such a
+caller accepted an unrelated proof. Likewise, N5's observations about negative
+certificate retention, universe specialization and intermediate partial
+reduction motivate explicit invariants; they must not be presented as
+unrechecked defects in a later implementation. This documentation integration
+does not change the implementation or claim a new acceptance run.
+
+State ownership must be explicit across these services: immutable reusable
+content, branch-local assignments/views, and monotone work/diagnostic counters
+are different classes. An \code{IO.Ref} is not automatically a globally valid
+cache. The joint dependency and scheduling obligations are developed in
+Sections~\ref{sec:search} and~\ref{sec:evaluation}; proof and realization
+obligations remain attached to the same original query throughout.

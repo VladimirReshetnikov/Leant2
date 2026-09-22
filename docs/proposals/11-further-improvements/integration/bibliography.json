@@ -1,0 +1,358 @@
+{
+  "scope": "Bibliographic consolidation from supplied expert packages; source reports retain their original verification boundaries.",
+  "entries": [
+    {
+      "canonical_key": "smyth",
+      "source_path": "docs/proposals/new/9/leant2-expert-answers.tex",
+      "source_key": "smyth"
+    },
+    {
+      "canonical_key": "hoogleplus",
+      "source_path": "docs/proposals/new/3/leant2-expert-answers/references.tex",
+      "source_key": "hoogleplus"
+    },
+    {
+      "canonical_key": "canonical",
+      "source_path": "docs/proposals/new/8/leant2_expert_answers/article.tex",
+      "source_key": "canonical"
+    },
+    {
+      "canonical_key": "burst",
+      "source_path": "docs/proposals/new/9/leant2-expert-answers.tex",
+      "source_key": "burst"
+    },
+    {
+      "canonical_key": "trio",
+      "source_path": "docs/proposals/new/4/leant2_expert_answers/leant2_expert_answers.tex",
+      "source_key": "trio"
+    },
+    {
+      "canonical_key": "leanhammer",
+      "source_path": "docs/proposals/new/7/Leant2_Expert_Questions/article.tex",
+      "source_key": "leanhammer"
+    },
+    {
+      "canonical_key": "canonicalmin",
+      "source_path": "docs/proposals/new/9/leant2-expert-answers.tex",
+      "source_key": "canonicalmin"
+    },
+    {
+      "canonical_key": "angluin",
+      "source_path": "docs/proposals/new/9/leant2-expert-answers.tex",
+      "source_key": "angluin"
+    },
+    {
+      "canonical_key": "autolifter",
+      "source_path": "docs/proposals/new/9/leant2-expert-answers.tex",
+      "source_key": "autolifter"
+    },
+    {
+      "canonical_key": "weber",
+      "source_path": "docs/proposals/new/4/leant2_expert_answers/leant2_expert_answers.tex",
+      "source_key": "weber"
+    },
+    {
+      "canonical_key": "containers",
+      "source_path": "docs/proposals/new/9/leant2-expert-answers.tex",
+      "source_key": "containers"
+    },
+    {
+      "canonical_key": "eguchi",
+      "source_path": "docs/proposals/new/1/references.tex",
+      "source_key": "eguchi"
+    },
+    {
+      "canonical_key": "para",
+      "source_path": "docs/proposals/new/8/leant2_expert_answers/article.tex",
+      "source_key": "para"
+    },
+    {
+      "canonical_key": "hipspec",
+      "source_path": "docs/proposals/new/6/leant2_expert_answers.tex",
+      "source_key": "hipspec"
+    },
+    {
+      "canonical_key": "hipster",
+      "source_path": "docs/proposals/new/9/leant2-expert-answers.tex",
+      "source_key": "hipster"
+    },
+    {
+      "canonical_key": "synduce",
+      "source_path": "docs/proposals/new/9/leant2-expert-answers.tex",
+      "source_key": "synduce"
+    },
+    {
+      "canonical_key": "selfadjust",
+      "source_path": "docs/proposals/new/4/leant2_expert_answers/leant2_expert_answers.tex",
+      "source_key": "selfadjust"
+    },
+    {
+      "canonical_key": "adapton",
+      "source_path": "docs/proposals/new/9/leant2-expert-answers.tex",
+      "source_key": "adapton"
+    },
+    {
+      "canonical_key": "scrybe",
+      "source_path": "docs/proposals/new/4/leant2_expert_answers/leant2_expert_answers.tex",
+      "source_key": "scrybe"
+    },
+    {
+      "canonical_key": "leaninduction",
+      "source_path": "docs/proposals/new/5/leant2_expert_answers/references.tex",
+      "source_key": "leaninduction"
+    },
+    {
+      "canonical_key": "leancbv",
+      "source_path": "docs/proposals/new/4/leant2_expert_answers/leant2_expert_answers.tex",
+      "source_key": "leancbv"
+    },
+    {
+      "canonical_key": "leantactics",
+      "source_path": "docs/proposals/new/9/leant2-expert-answers.tex",
+      "source_key": "leantactics"
+    },
+    {
+      "canonical_key": "leannat",
+      "source_path": "docs/proposals/new/5/leant2_expert_answers/references.tex",
+      "source_key": "leannat"
+    },
+    {
+      "canonical_key": "lean427",
+      "source_path": "docs/proposals/new/8/leant2_expert_answers/article.tex",
+      "source_key": "lean427"
+    },
+    {
+      "canonical_key": "leanrecursion",
+      "source_path": "docs/proposals/new/5/leant2_expert_answers/references.tex",
+      "source_key": "leanrecursion"
+    },
+    {
+      "canonical_key": "lean4lean",
+      "source_path": "docs/proposals/new/9/leant2-expert-answers.tex",
+      "source_key": "lean4lean"
+    },
+    {
+      "canonical_key": "lean4lean2026",
+      "source_path": "docs/proposals/new/7/Leant2_Expert_Questions/article.tex",
+      "source_key": "lean4lean2026"
+    },
+    {
+      "canonical_key": "sautodocs",
+      "source_path": "docs/proposals/new/3/leant2-expert-answers/references.tex",
+      "source_key": "sautodocs"
+    },
+    {
+      "canonical_key": "cataclyst",
+      "source_path": "docs/proposals/new/5/leant2_expert_answers/references.tex",
+      "source_key": "cataclyst"
+    },
+    {
+      "canonical_key": "leanfuninduction",
+      "source_path": "docs/proposals/new/3/leant2-expert-answers/references.tex",
+      "source_key": "leanfuninduction"
+    },
+    {
+      "canonical_key": "leanlibrary",
+      "source_path": "docs/proposals/new/3/leant2-expert-answers/references.tex",
+      "source_key": "leanlibrary"
+    },
+    {
+      "canonical_key": "names",
+      "source_path": "docs/proposals/new/8/leant2_expert_answers/article.tex",
+      "source_key": "names"
+    },
+    {
+      "canonical_key": "snapshot",
+      "source_path": "docs/proposals/new/5/leant2_expert_answers/references.tex",
+      "source_key": "snapshot"
+    },
+    {
+      "canonical_key": "inductiongeneralization",
+      "source_path": "docs/proposals/new/1/references.tex",
+      "source_key": "inductiongeneralization"
+    },
+    {
+      "canonical_key": "nominal",
+      "source_path": "docs/proposals/new/1/references.tex",
+      "source_key": "nominal"
+    },
+    {
+      "canonical_key": "leansearch",
+      "source_path": "docs/proposals/new/1/references.tex",
+      "source_key": "leansearch"
+    },
+    {
+      "canonical_key": "llmsynthesis",
+      "source_path": "docs/proposals/new/1/references.tex",
+      "source_key": "llmsynthesis"
+    },
+    {
+      "canonical_key": "pbeinteraction",
+      "source_path": "docs/proposals/new/6/leant2_expert_answers.tex",
+      "source_key": "pbe-interaction"
+    },
+    {
+      "canonical_key": "rankingstudy",
+      "source_path": "docs/proposals/new/6/leant2_expert_answers.tex",
+      "source_key": "ranking-study"
+    },
+    {
+      "canonical_key": "anytime",
+      "source_path": "docs/proposals/new/8/leant2_expert_answers/article.tex",
+      "source_key": "anytime"
+    },
+    {
+      "canonical_key": "metareasoning",
+      "source_path": "docs/proposals/new/8/leant2_expert_answers/article.tex",
+      "source_key": "metareasoning"
+    },
+    {
+      "canonical_key": "ranking",
+      "source_path": "docs/proposals/new/8/leant2_expert_answers/article.tex",
+      "source_key": "ranking"
+    },
+    {
+      "canonical_key": "lean418",
+      "source_path": "docs/proposals/new/8/leant2_expert_answers/article.tex",
+      "source_key": "lean418"
+    },
+    {
+      "canonical_key": "lean426",
+      "source_path": "docs/proposals/new/8/leant2_expert_answers/article.tex",
+      "source_key": "lean426"
+    },
+    {
+      "canonical_key": "leancompile",
+      "source_path": "docs/proposals/new/8/leant2_expert_answers/article.tex",
+      "source_key": "leancompile"
+    },
+    {
+      "canonical_key": "leandojov2",
+      "source_path": "docs/proposals/new/8/leant2_expert_answers/article.tex",
+      "source_key": "leandojov2"
+    },
+    {
+      "canonical_key": "premisereadme",
+      "source_path": "docs/proposals/new/6/leant2_expert_answers.tex",
+      "source_key": "selector-readme"
+    },
+    {
+      "canonical_key": "aesopreadme",
+      "source_path": "docs/proposals/new/4/leant2_expert_answers/leant2_expert_answers.tex",
+      "source_key": "aesopreadme"
+    },
+    {
+      "canonical_key": "leanvalidation",
+      "source_path": "docs/proposals/new/1/references.tex",
+      "source_key": "leanvalidation"
+    },
+    {
+      "canonical_key": "librarysearch",
+      "source_path": "docs/proposals/new/1/references.tex",
+      "source_key": "librarysearch"
+    },
+    {
+      "canonical_key": "grind",
+      "source_path": "docs/proposals/new/5/leant2_expert_answers/references.tex",
+      "source_key": "grind"
+    }
+  ],
+  "merged_aliases": {
+    "leanreccompiled": "leannat",
+    "leanselector": "leanlibrary",
+    "polymorphic": "containers",
+    "hoogle": "hoogleplus",
+    "canonical-min": "canonicalmin",
+    "constructive-fold": "weber",
+    "fold": "whenfold",
+    "folds": "whenfold",
+    "fold-characterization": "whenfold",
+    "gibbons": "whenfold",
+    "hammer": "leanhammer",
+    "tygar": "hoogleplus",
+    "luby": "luby93",
+    "parametric": "bernardy10",
+    "parametric-testing": "bernardy10",
+    "polytesting": "bernardy10",
+    "polytests": "bernardy10",
+    "wadler": "wadler89",
+    "lean-cbv": "leancbv",
+    "lean-induction": "leaninduction",
+    "lean-induction-source": "leaninduction",
+    "leanind": "leaninduction",
+    "leanprelude": "leannat",
+    "lean-recursion": "leanrecursion",
+    "leandefs": "leanrecursion",
+    "leanrec": "leanrecursion",
+    "lean-selector-source": "leanlibrary",
+    "leansuggestions": "leanlibrary",
+    "suggestions": "leanlibrary",
+    "lean-tactics": "leantactics",
+    "leanref": "leantactics",
+    "leanmanual": "leantactics",
+    "sauto-docs": "sautodocs",
+    "pbe-interaction": "pbeinteraction",
+    "ranking-study": "rankingstudy",
+    "selector-readme": "premisereadme"
+  },
+  "additional_source_dispositions": [
+    {
+      "source_keys": [
+        "repo",
+        "leantrepo",
+        "proposal",
+        "leantproposal",
+        "repo-r1",
+        "repo-r2",
+        "repo-r3",
+        "repo-r4",
+        "repo-r5",
+        "repo-r6",
+        "repo-r7",
+        "repo-r89",
+        "evidence",
+        "proposal-evidence",
+        "implementation",
+        "coretypes",
+        "engine",
+        "repo-engine",
+        "gate",
+        "gatecode",
+        "leantgate",
+        "repo-gate",
+        "srcgate",
+        "searchcode",
+        "searchcore",
+        "leantcore",
+        "repo-search",
+        "srcsearch",
+        "transaction",
+        "transactioncode",
+        "srctrans",
+        "repo-toolchain"
+      ],
+      "disposition": "Historical project self-citations consolidated into frozen source inventory, preserved manifests, integration ledgers and historical evidence; original bodies recoverable by pinned Git blob."
+    },
+    {
+      "source_keys": [
+        "lean-nat",
+        "leaninductbook"
+      ],
+      "canonical_key": "leannat",
+      "disposition": "Pedagogical induction/addition examples use the same mathematical facts as pinned Nat source; original moving textbook URLs remain recoverable in source inventory."
+    },
+    {
+      "source_keys": [
+        "leanreference"
+      ],
+      "disposition": "Rolling manual introduction used to identify displayed version 4.35.0-rc2, not a distinct technical theorem; preserve pinned 4.34 versus rolling-documentation distinction in semantic/evidence prose and original Git source."
+    },
+    {
+      "source_keys": [
+        "premisereadme"
+      ],
+      "canonical_key": "premisereadme",
+      "disposition": "N8 live README and N6 selector-readme name the same project page. Canonical entry retains N6 inspected blob; N8 privacy/runtime context is retained in retrieval section and original source."
+    }
+  ]
+}

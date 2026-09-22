@@ -1,26 +1,64 @@
-\section{Where outside expertise would help}\label{sec:experts}
+\section{A focused agenda for outside expertise}\label{sec:experts}
 
-The questions of Part~III are collected here in the order in which answers would change the plan most. For each we name the projects and fields whose research addresses the question, and what we would bring to a conversation, because a specialist's time is best spent on a small, concrete artifact rather than on a description.
+The nine incoming responses answer the original 31 questions through
+conditional theorems, bounded algorithms, counterexamples, native API
+directions, and experimental protocols. Those questions are no longer the
+active agenda. Sections~\ref{sec:search}--\ref{sec:learning} contain the
+\emph{33 replacement questions}, identified by R1.N1--R9.N3; this section
+sets priorities and preparation requirements without repeating their wording.
+An answer establishing a finite model or a restricted theorem does not settle
+its unrestricted extension or demonstrate a useful implementation.
 
-\begin{longtable}{@{}L{8mm}L{48mm}L{48mm}L{42mm}@{}}
+\begin{longtable}{@{}L{17mm}L{43mm}L{42mm}L{44mm}@{}}
 \toprule
-\# & Question & Projects and fields that study it & What we bring\\
+Question IDs & Decision the answer should change & Relevant expertise & Concrete artifact to prepare\\
 \midrule
 \endhead
-1 & Given finitely many input--output pairs of a list function, compute a minimal fold carrier from a type grammar, or show none exists (R2) & program calculation (folds, tupling, the third homomorphism theorem); automata learning (minimal state spaces from observations) & the thirteen stretch cases with their observation tables; the fold-closure test worked out on \code{reverse}, \code{foldl1}, \code{maximum}\\
-2 & Search organization for goals that share metavariables, other than copying or sequentializing (R1) & Aesop (best-first proof search in Lean); Canonical (refinement order in dependent inhabitation) & traces showing goal-order sensitivity; the deferral rules and the cases each was written for\\
-3 & Live bidirectional evaluation for higher-order examples and dependent types; a conservative fast evaluator relative to the Lean kernel (R3) & Hazel (hole closures); Smyth (bidirectional evaluation); Lean4Lean and the Lean kernel (reduction rules and their specification) & profile data; the per-observation decomposition; a corpus of $10^5$ generated closed programs for differential testing\\
-4 & Enumerating motives and generalizations; canonical treatment of transports in search (R4) & the Lean elaborator (motive computation); Canonical and \code{sauto} (dependent inhabitation); Agsy and Mimer (term search in Agda); higher-order unification & probe 8 and ten further indexed-family problems with the motives written out\\
-5 & Evaluating and realizing capability-based recursive bodies; angelic execution in top-down search (R5) & Lean's definition elaborator (structural and well-founded recursion); Burst and Trio (recursive synthesis from incomplete examples) & the capability design; measurements of definition-elaboration cost per candidate\\
-6 & Interleaving value holes and proof holes; the class of properties provable by induction along the program; state of automated induction in Lean (R6) & Synquid (refinement-type synthesis); \code{grind}, Aesop and the Lean hammer (proof automation); inductive theorem proving & the quantified-contract suite with hand proofs classified by the automation they need\\
-7 & Type abstraction for reachability over dependent, class-polymorphic libraries; relevance for programs rather than proofs (R7) & Hoogle+ and SyPet (component-based synthesis); \code{exact?}, Loogle and Lean premise selection (library lookup) & the head-level reachability graph of Lean core with its connectivity statistics\\
-8 & A formal objective for ranking inhabitants; what proof-assistant users expect (R8) & programming by example (ranking); human-factors research on proof assistants & the ranking benchmark with reference ranks under the current keys\\
-9 & Accuracy of model-proposed carriers and helpers; auditability (R9) & LeanDojo and the Lean hammer (learned retrieval); neurosymbolic program synthesis & the E8 suite as an evaluation set\\
+R1.N1--N4 & Component isolation, admissible bounds, policy updates and replay checkpoints & Lean metaprogramming; Aesop and Canonical; constrained search and scheduling & Effect/read-set traces, shared-assignment counterexamples, a finite abstraction and its rule simulation, interrupted logical traces\\
+R2.N1--N5 & Carrier certificates, provider parametricity, feature closure, joint schema and invariant invention & Program calculation and automata learning; AutoLifter and constructive fold derivation & A finite table certificate checker, explicit grammar and cost, reversal/prefix-sum examples, paired supplied/invented carrier tasks\\
+R3.N1--N4 & Residual semantics, dependency-complete caching, certified evaluation and relational oracles & Smyth and Hazel; incremental computation; Lean reduction and proof-producing evaluation & Typed open-term examples with completions, rollback adversaries, read-set accounting, certificate cost breakdowns\\
+R4.N1--N4 & Motive recipes, transport normalization, transparency and native adapter state restoration & Lean induction elaboration; dependent inhabitation and higher-order unification & A pinned adapter prototype; vector/dependent-pair examples; changing parameters, compound indices and ill-scoped recipes\\
+R5.N1--N4 & Recursive-body simulation, oracle refinement, scheme coverage and executable publication & Lean equation elaboration and compilation; Burst, Trio and recursion-scheme synthesis & A typed body IR, interpretation/realization theorem statement, repeated-call and helper cases, separate compile/export checks\\
+R6.N1--N3 & Local invariant grammar, contextual proof effects and fair proof scheduling & Automated induction, refinement synthesis and Lean proof automation & Hand-classified quantified contracts, proof/assignment templates, context-batch traces and starvation tests\\
+R7.N1--N3 & A selective conservative abstraction, dictionary certificates and useful retrieval & Hoogle+, SyPet, Lean premise selection and type-class resolution & Concrete AND-hypergraph simulation, dependent-index counterexamples, leakage-controlled corpus split and provider oracle\\
+R8.N1--N3 & A preference objective, safe quotienting and bounded top-$k$ certificates & Synthesis ranking, typed semantics and proof-assistant user studies & Blinded rankings, observational collision cases, full deferred-frontier ledger and cost-preserving equality witnesses\\
+R9.N1--N3 & Proposal benefit, a bounded typed language and model-independent replay & Learned retrieval and synthesis; experimental design & Family-held-out paired tasks, carrier/helper oracle, frozen model receipt, rejection/admission event replay\\
 \bottomrule
 \end{longtable}
 
-\paragraph{Venues.} The Lean community chat is the natural first venue for questions 2, 4, 5 and 6, which concern Lean's own elaborator, kernel and automation. The others are questions for the program-synthesis and programming-languages research communities, reachable through the projects' public repositories and the cited papers.
+\paragraph{Preparation order.}
+First establish the P0 interfaces of Section~\ref{sec:roadmap}: the frozen
+query, permitted axioms, completion semantics, publication contract and
+separate result statuses. Then prepare R3's smallest useful certified
+observation fragment, R4's native adapter and R5's realization/publication
+boundary alongside R1's effect and replay examples. These decide interfaces
+that would otherwise be expensive to revise. R2's finite carrier checker and
+bounded package enumeration can proceed immediately; they do not wait for
+unrestricted minimal-carrier or automatic invariant invention results.
 
-\paragraph{Order of contact.} Question 1 first, because it decides whether R2 is a research project or an engineering one, and everything in P5 waits on it. Questions 2 and 3 next, because they shape the P2 and P4 rewrites of the search core and the evaluator, which are expensive to redo. The others can wait for their phases.
+R6 and R7 should share the same dependency and context identities. Their
+experiments can proceed once those identities are stable. Freeze R8's
+objective before claiming search optimality or evaluating learning; defer
+R9's benefit claim until a paired native baseline and the carrier/helper
+oracle exist. This order follows implementation dependencies, not a claim
+that one research topic is intrinsically more important.
 
-\paragraph{What we do not need help with.} Parts~I and~II. The items there are understood, their tests are written down, and the measurements of Section~\ref{sec:evidence} say in which order to do them.
+\paragraph{What counts as a useful response.}
+For a semantic question, request a theorem with explicit grammar, scope,
+axiom, termination and completeness hypotheses, or a counterexample to the
+proposed boundary. For a native interface question, request a minimal
+reproducible example pinned to the actual Lean version, including failure
+and rollback. For an empirical question, agree on a decision-changing
+comparison before collecting results: held-out tasks, matching work and
+deadline budgets, cold/warm cost, and all certification/publication stages.
+An external benchmark or submitted Python model is a starting artifact,
+not a Leant2 acceptance result.
+
+\paragraph{Contact and ownership.}
+The cited projects and the Lean community are possible discussion venues;
+this agenda records no outreach or endorsement. The artifacts above are
+preparation tasks unless a repository receipt explicitly establishes that
+they exist. The engineering and adaptation items also require specialist
+review where they cross compiler, contextual-refutation or parametricity
+boundaries. Their classification is not evidence that every implementation
+detail is already solved.

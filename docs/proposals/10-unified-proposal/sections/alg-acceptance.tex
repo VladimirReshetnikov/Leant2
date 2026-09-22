@@ -1,6 +1,6 @@
 \section{Algorithms: proof services and the acceptance gate}\label{alg:acceptance}
 
-This section gives the procedures behind Sections~\ref{sec:proof-services}, \ref{sec:classical}, and \ref{sec:acceptance}: the proof-service adapter and its worker loop, the constructive propositional lane with its non-derivability certificate, the acceptance gate as one procedure with named failure results, the freeze step and the transaction adapter's typed outcomes, the production of negative results, an adversarial checklist, and two end-to-end traces. Where the nine proposals give different versions of one procedure, the most fully specified one is adopted and the alternatives are noted. The worker loop is taken from Forge's \code{lean/Forge/Frontend.lean} \cite{forge}, which is the only compiled implementation of this contract among the sources; the pseudocode below follows its control flow line by line and marks every Leant2 addition.
+This section gives the procedures behind Sections~\ref{sec:proof-services}, \ref{sec:classical}, and \ref{sec:acceptance}: the proof-service adapter and its worker loop, the constructive propositional lane with its non-derivability certificate, the acceptance gate as one procedure with named failure results, the freeze step and the transaction adapter's typed outcomes, the production of negative results, an adversarial checklist, and two end-to-end traces. Where the nine proposals give different versions of one procedure, the most fully specified one is adopted and the alternatives are noted. The worker loop is taken from Forge's \code{lean/Forge/Frontend.lean} \cite{forge}, which is the only compiled implementation of this contract among the sources; the schematic pseudocode below adapts that control flow and makes Leant2's stronger transactional and interruption obligations explicit; it is not a compiled implementation.
 
 \subsection{The proof-service adapter}\label{alg:proof-adapter}
 
@@ -25,26 +25,28 @@ A bare Boolean, a ``no goals'' message, or a remote checker's \code{okay = true}
 
 \subsubsection{The worker loop}
 
-Forge's \code{runWorker} saves the full tactic state, runs one worker under \code{tryCatchRuntimeEx} so that heartbeat and deadline exceptions are caught like any other failure, and on apparent success audits the proof term before keeping the state. Leant2 adds three things: a \emph{mode}, a \emph{permitted assignment set}, and a \emph{budget} argument; in joint mode the assignments the worker made to permitted holes are captured and returned as a patch, and the state is restored either way so that the engine applies the patch through its own transaction\prov{\Pn{2},\Pn{7}}.
+The historical Forge wrapper saves full tactic state, catches worker exceptions, and audits an apparent success before keeping the state. Leant2 must classify caught exceptions before returning an outcome: a local tactic miss is not cancellation, a global resource interruption, or infrastructure failure. Leant2 also adds three things: a \emph{mode}, a \emph{permitted assignment set}, and a \emph{budget} argument; in joint mode the assignments the worker made to permitted holes are captured and returned as a patch, and the state is restored either way so that the engine applies the patch through its own transaction\prov{\Pn{2},\Pn{7}}.
 \begin{lstlisting}
+WorkerFailure := localMiss Diagnostic | localBudget Budget | interrupted Exception
+
 runWorker (goal : MVarId) (worker : Worker) (mode : Joint | Frozen)
           (permitted : Set MVarId) (policy : AxiomPolicy) (budget : Budget)
-    : TacticM (Except String (Expr x AssignmentPatch)) := do
+    : TacticM (Except WorkerFailure (Expr x AssignmentPatch)) := do
   let saved    <- saveState                              -- Forge: full tactic state
   let goalType <- instantiateMVars (<- goal.getType)      -- the ORIGINAL goal
   let goalCtx  := (<- goal.getDecl).lctx
   let before   := currentAssignments (mvars existing now)  -- Leant2: for the patch
-  let outcome <- tryCatchRuntimeEx (withBudget budget do  -- limits are failures too
+  let outcome <- tryCatchRuntimeEx (withBudget budget do  -- classify exceptions below
       evalTactic worker.script
       unless (<- getUnsolvedGoals).isEmpty do throw "worker left goals open"
       let pf <- instantiateMVars (mkMVar goal)
       if pf.hasSorry     then throw "REJECTED: admitted, not proved"
-      if pf.hasExprMVar  then throw "REJECTED: proof still contains metavariables"
+      if pf.hasExprMVar || pf.hasLevelMVar then throw "REJECTED: unresolved metavariables"
       let escaped := (collectFVars pf).filter (fun x => not (goalCtx.contains x))
       unless escaped.isEmpty do throw "REJECTED: uses variables outside the goal's context"
       let ok <- withLCtx goalCtx (<- goal.getDecl).localInstances do
                   try Meta.check pf; isDefEq (<- inferType pf) goalType
-                  catch _ => pure false
+                  catch ex => if isInterrupt ex then throw ex else pure false
       unless ok do throw "REJECTED: term does not have the goal's type"
       let bad <- disallowedAxioms policy pf     -- collectAxioms over pf.getUsedConstants
       unless bad.isEmpty do throw s!"REJECTED: axioms outside the policy: {bad}"
@@ -55,22 +57,26 @@ runWorker (goal : MVarId) (worker : Worker) (mode : Joint | Frozen)
       | Joint  => unless delta.subsetOf permitted do
                     throw s!"REJECTED: assigned outside the permitted set: {delta \ permitted}"
       pure (pf, AssignmentPatch.ofDelta delta))
-    (fun ex => pure (Except.error (<- ex.toMessageData.toString)))
-  saved.restore (restoreInfo := true)   -- ALWAYS: assignments, lctx, goals, messages
-  return outcome
+    (fun ex => pure (Except.error (classifyWorkerFailure ex)))
+  saved.restore (restoreInfo := true)   -- ALWAYS, including interruption and success
+  match outcome with
+  | .error (.interrupted ex) => throw ex -- controller owns cancellation/global resource policy
+  | _ => return outcome                -- local miss or checked proof/patch
 \end{lstlisting}
 
 Three details are load-bearing. First, the restore happens on success as well as on failure in Leant2 (Forge keeps the state on success because the tactic \emph{is} the caller); the accepted proof and patch are data that the engine installs through the atomic attempt of Section~\ref{sec:transactions}, so that the patch is subject to the commit criterion, is visible to wake-ups, and is rolled back with its branch\prov{\Pn{2},\Pn{6}}. Second, \code{disallowedAxioms} iterates \code{collectAxioms} over every constant the term uses and subtracts the profile's allowlist (Section~\ref{sec:profiles}); Forge's \code{forge.allowChoice} option is the standard/strict switch, and stock \code{grind} needs \code{Classical.choice}, so the strict profile drops \code{grind} from the portfolio rather than accepting its proofs\cite{forge}. Third, the type check runs under the goal's own local context and instances, so nothing the worker introduced is in scope; this is what catches Forge's ``escape'' test worker, whose proof is a phantom hypothesis of the goal's own type.
 
-The frozen mode closes the candidate before the goal is formed: every program hole that is still open is replaced by a rigid local parameter and the obligation becomes universally quantified over those parameters, so that ``there should be no computational holes'' is enforced structurally rather than by convention\prov{\Pn{2},\Pn{6}}.
+Frozen verification of an already closed candidate keeps its exact identity. A different service may prove a property uniformly over every allowed filling of an open interface. That service must close each contextual hole over its dependency-closed telescope, preserve shared occurrences and exact type/universe dependencies, and apply each fresh rigid parameter to the occurrence's actual substitution. One untyped local per metavariable followed by textual replacement is insufficient. A schematic preparation is:
 \begin{lstlisting}
-freezeGoal (Phi : Expr) (t : Expr) : MetaM (MVarId x Array FVarId) := do
-  let holes := (collectMVars t).filter isProgramHole
-  withRigidParams holes fun params => do           -- one fvar per open hole
-    let t'  := t.replaceMVars holes params
-    let g   <- mkFreshExprMVar (Phi.betaRev #[t'])  -- Phi applied to the frozen term
-    pure (g.mvarId!, params)
+freezeOpenInterface(Phi, t, branch) -> Option ClosedGoalSchema:
+  interface := nativeDependencyClosedInterface(t, Phi, branch)
+  if unsupported dependency, capture, or universe case: return none
+  params, body := abstractOwnedHolesWithTypedOccurrenceSubstitutions(interface)
+  check substitution/completion correspondence and well-scoping
+  goal := closeOverOriginalContextAndParams(Phi(body))
+  replay goal : Prop; return schema(goal, interface, reconstruction)
 \end{lstlisting}
+The schema is closed data; it never returns a live goal whose rigid locals have escaped their scope. Proving this universal schema is sufficient for every represented filling. Refuting the universal schema only shows a bad filling and does \emph{not} refute every completion; family pruning requires the stronger no-satisfying-completion argument. The maintained proposal's R3 and R6 give the interface and proof-effect obligations. A contextual proof service must also accept legitimate branch locals and induction hypotheses, unlike a closed-goal-only portfolio.
 
 \subsubsection{Portfolio order and per-tier budgets}
 
@@ -91,7 +97,7 @@ escalation: an obligation that returns `unknown` at tier k with allowance b is
         each attempt is charged to the ledger and never refunded
 \end{lstlisting}
 
-What is delegated is exactly what each tool decides: \code{decide} closes ground decidable propositions by kernel reduction; \code{omega} closes linear arithmetic over \code{Nat} and \code{Int} with the usual truncated-subtraction case split; \code{simp} performs controlled unfolding with a lemma set the query names (uncontrolled unfolding of a recursive contract is worse than the synthesis problem); \code{grind} supplies congruence closure, its arithmetic module, and e-matching over the project's annotated lemmas; Aesop supplies rule-based structural search; and Forge's checkers cover the arithmetic obligation shapes that have a proposal--check--soundness triple, so that the untrusted proposer runs outside Lean and the proof term is an application of the checker's soundness theorem to a certificate that \code{decide} validates\prov{\Pn{1},\Pn{4},\Pn{8}}\cite{forge}. \Pn{3} and \Pn{8} additionally put indexed theorem retrieval in tier 4; \Pn{2} suggests reusing Aesop's rule infrastructure directly. The unified design keeps retrieval in the construction lanes (Section~\ref{alg:search}) because a retrieved lemma is a provider, not a proof step.
+The intended delegated fragments are: \code{decide} closes ground decidable propositions by kernel reduction; \code{omega} is a proof-producing linear-arithmetic tactic over \code{Nat} and \code{Int}, with supported truncated-subtraction reasoning; completeness of a particular fragment must be established for the pinned implementation and allowance rather than inferred from the tactic name; \code{simp} performs controlled unfolding with a lemma set the query names (uncontrolled unfolding of a recursive contract is worse than the synthesis problem); \code{grind} supplies congruence closure, its arithmetic module, and e-matching over the project's annotated lemmas; Aesop supplies rule-based structural search; and Forge's checkers cover the arithmetic obligation shapes that have a proposal--check--soundness triple, so that the untrusted proposer runs outside Lean and the proof term is an application of the checker's soundness theorem to a certificate that \code{decide} validates\prov{\Pn{1},\Pn{4},\Pn{8}}\cite{forge}. \Pn{3} and \Pn{8} additionally put indexed theorem retrieval in tier 4; \Pn{2} suggests reusing Aesop's rule infrastructure directly. The unified design keeps retrieval in the construction lanes (Section~\ref{alg:search}) because a retrieved lemma is a provider, not a proof step.
 
 \subsubsection{A joint-mode patch is a branch choice}
 
@@ -116,12 +122,14 @@ structure Obligation where
   goal : MVarId; tier : Nat; allowance : Budget; waitsOn : Set MVarId
   readiness : Ready | Blocked | Deferred; cost : Nat  -- size of goal after instantiate
 
-onAssign (m : MVarId) := for o in waitingOn m do
-  if (instantiateMVars o.goal.type).hasProgramHole then o.readiness := Deferred
-  else o.readiness := Ready; requeue o          -- arithmetic/index goals wake now
+onRelevantChange (m : MVarId) := for o in waitingOn m do
+  o.readiness := readinessOfNextTier(o, currentDependencyVersions)
+  -- Cheap uniform proofs or data-constraining unification may run with open holes.
+  if o.readiness = Ready: requeue o unless same support and tier already attempted
 
-schedulerTurn := if growthSinceLastProof >= G then
-  pick the Ready obligation with least (tier, cost); run adapter at its tier
+schedulerTurn := if proofQueueHasReservedService or growthSinceLastProof >= G then
+  pick a Ready obligation by fair service plus heuristic (tier, cost)
+  run contextual adapter at its tier
   match reply with
   | proof/refutation => install through the attempt; discharge or reject branch
   | reducedGoal g' r => replace o.goal by g'; remember r for reconstruction
@@ -129,7 +137,7 @@ schedulerTurn := if growthSinceLastProof >= G then
                         in the fair layer if the proof budget is exhausted
 \end{lstlisting}
 
-This is a ranking policy, not a pruning theorem: branches whose debt is expensive stay available in the fair cost layer, and a production heuristic that abandons them must say so in the incompleteness ledger\prov{\Pn{1}}.
+Readiness is solver- and dependency-sensitive; an open computational hole does not automatically defer every proof tier. The fair queue must reserve service even when program enumeration never becomes idle. These are scheduling policies, not pruning theorems: branches whose debt is expensive stay available in the fair cost layer, and a production heuristic that abandons them must say so in the incompleteness ledger\prov{\Pn{1}}.
 
 \subsection{The constructive propositional lane}\label{alg:prop-lane}
 

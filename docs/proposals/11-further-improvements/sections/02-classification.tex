@@ -8,9 +8,9 @@ The owner's requirements and the decisions of the unified proposal are not reope
 \item \textbf{One adaptive engine, no settings.} Every improvement must decide for itself when it applies. A technique that needs the user to choose a mode is out of scope; a technique that needs a tuning constant must come with a way to set the constant from the query.
 \item \textbf{The kernel is the only authority.} A candidate is published only after the exact program and the exact contract proof pass \code{addDeclCore} and the axiom audit. Heuristics, evaluators, learned models and external tools may propose and may prune; they never certify.
 \item \textbf{Pruning must be sound with respect to the contract.} A branch may be abandoned only when no completion of the partial program can satisfy the contract, or when the loss is an accepted incompleteness of a bounded search (depth, splits). The first kind needs an argument; Section~\ref{sec:evaluation} returns to this.
-\item \textbf{The baseline never regresses.} The six harnesses of Table~\ref{tab:scores} are the regression gate for every change, at 10 s and at 5 s.
+\item \textbf{Preserve regression evidence.} The six historical harnesses of Table~\ref{tab:scores} retain their original revision and scope. An implementation change must also run the maintained acceptance suite at both 10 s and 5 s; an old score is not a current-source receipt.
 \item \textbf{Core-only by default.} The toolchain is Lean~4.34.0 without Mathlib. Mathlib, Aesop, Plausible and similar packages may become optional lanes, never requirements.
-\item \textbf{Determinism.} The same query in the same environment gives the same candidates in the same order. Parallelism and learned guidance have to preserve this, or make the nondeterminism invisible in the result.
+\item \textbf{Replayable logical work.} A fixed query, environment, grammar, policy and proposal transcript should reproduce a recorded logical search prefix and its candidates. Equal wall-clock budgets need not complete the same prefix. Parallel result sorting alone cannot remove differences in discovery.
 \end{itemize}
 
 \subsection{Three classes of work}
@@ -23,7 +23,14 @@ The owner's requirements and the decisions of the unified proposal are not reope
 
 \subsection{Work items}
 
-\begin{longtable}{@{}L{12mm}L{68mm}L{10mm}L{58mm}@{}}
+The motivation column is the original \code{33cec8b} planning snapshot. It is
+retained to explain the research questions, not as an inventory of defects in
+the current checkout. The integrated answers below revise the proposed
+algorithms and their guarantees; current implementation status belongs to the
+maintained implementation notes and revision-specific acceptance archives.
+
+\begingroup\small
+\begin{longtable}{@{}L{12mm}L{67mm}L{10mm}L{57mm}@{}}
 \toprule
 Id & Item & Class & Evidence that motivates it\\
 \midrule
@@ -54,5 +61,13 @@ R8 & Ranking and candidate equivalence & R & three-key lexicographic ranking\\
 R9 & Learned guidance under a kernel gate & R & none today\\
 \bottomrule
 \end{longtable}
+\endgroup
 
-The research items are not independent. R2 and R5 are the same problem seen from Church encodings and from recursors: both ask for a type that the specification does not mention. R3 is what makes R2 and R5 affordable, because a carrier is only worth trying if wrong ones are refuted early. R1 decides how much of any of the others fits in ten seconds. Section~\ref{sec:roadmap} orders the work accordingly.
+The research items share machinery without having identical obligations.
+R2 and R5 both invent state or helper interfaces absent from the specification;
+recursive realization also needs termination, scope and interpreter-agreement
+arguments. R3 can make both searches more affordable through conservative
+observations. R1 allocates their work within the interactive budget.
+Useful bounded carriers, native induction and sketches need not wait for an
+unrestricted carrier-minimization algorithm. Section~\ref{sec:roadmap} gives
+the revised dependency order.

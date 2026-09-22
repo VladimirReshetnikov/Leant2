@@ -1,48 +1,156 @@
 \section{Adaptation items}\label{sec:adaptation}
 
-These are solved problems in other settings. For each we say what carries over and what does not.
+These techniques have precedents in other settings; their guarantees do not
+transfer automatically to dependent Lean synthesis. Gap descriptions below
+refer to the original \code{33cec8b} planning snapshot. The revised adaptations
+state the extra conditions required by the integrated answers, rather than
+claiming an inventory of currently missing features.
 
 \subsection{A1. Conditionals and guard abduction}
 
-\paragraph{Gap.} The engine cannot produce \code{if a <= b then b else a}. It has no comparison components and no rule that introduces a Boolean or decidable test. Probes 9 and 10 fail for this reason alone.
+\paragraph{Historical motivation.} The original grammar lacked comparison
+components and a Boolean/decidable guard rule for terms such as
+\code{if a <= b then b else a}. Probes 9 and 10 motivated this extension.
+Adding a missing production removes that particular expressibility obstacle;
+it does not establish that the extended search will find and certify a result.
 
 \paragraph{What is known.} Enumerative synthesizers separate \emph{terms} from \emph{conditions}: find terms that are each correct on some examples, then learn a decision tree of guards that routes every example to a correct term (the divide-and-conquer strategy of EUSolver~\cite{eusolver}). Type-directed synthesizers abduce the guard instead: Synquid generates a branch, asks a solver for the weakest condition under which it satisfies the refinement type, and synthesizes a guard that implies it~\cite{synquid}. Example-directed tools split on a scrutinee when the examples disagree about the result~\cite{myth}.
 
-\paragraph{Adaptation.} The engine already evaluates the contract on partial programs. Extend the residual evaluator to report, for a closed branch candidate $t$, the \emph{set of observations} it satisfies, instead of only refuting at the first failure. Then:
+\paragraph{Adaptation.} For a supported observation fragment, extend residual
+evaluation to report which observations a typed branch candidate satisfies,
+with its local input environment, instead of returning only the first failure.
+Then:
 \begin{enumerate}
 \item collect branch candidates whose satisfied sets cover all observations;
 \item enumerate guards from a small grammar over the locals (decidable comparisons of locals of the same type, Boolean-valued locals and their applications, \code{isEmpty}-style tests obtained from constructors);
-\item evaluate each guard on each observation's inputs, and build the smallest decision tree that separates the satisfied sets;
+\item evaluate each guard on those typed input environments and search a bounded
+decision-tree grammar for a covering tree; call it smallest only after complete
+search under a fixed cost and bound;
 \item emit \code{if g then t1 else t2} (or \code{match}), and let the ordinary closed-program check certify it.
 \end{enumerate}
-The part that does not carry over is identifying ``the inputs of an observation''. In a SyGuS problem an example is an input--output pair. Here a contract is an arbitrary proposition mentioning $f$, and one conjunct may call $f$ several times, or under a fold. The adaptation needs an instrumented evaluation that records the argument tuples with which $f$'s body is entered, per conjunct, so that guards are evaluated in the right environments. For recursive programs those environments include the recursive calls, which ties this item to R3 and R5.
+The difficult adaptation is identifying ``the inputs of an observation.'' A
+contract can relate several calls to $f$ or invoke it under a fold. A trace
+must retain their correlations; routing each call independently because a
+whole conjunct held for one constant branch candidate does not preserve that
+conjunct after branch mixing. Use checked observation decomposition, or keep
+the relational constraint and validate the assembled decision tree against
+the original contract. Necessary inferred observations need the implication
+in Section~\ref{sec:semantic-boundaries}; unknown decomposition remains opaque.
+Recursive call environments add the capability and constraint obligations in
+Sections~\ref{sec:evaluation} and~\ref{sec:recursion}.
 
 \paragraph{Closing test.} Probes 9 and 10; the \code{max}, \code{min}, \code{filter}, \code{insert-sorted} and \code{compare} entries of the ported benchmarks.
 
 \subsection{A2. Recursion on natural numbers, literals and arithmetic}
 
-\paragraph{Gap.} Structural recursion excludes \code{Nat} because nested induction on natural-number hypotheses exploded the search, and the only numeric components are \code{Nat.add}, \code{Nat.succ} and \code{Nat.zero}. Probe 4 ($2^n$) therefore has no program in the grammar.
+\paragraph{Historical motivation.} The original plan excluded natural-number
+structural recursion after nested induction caused search growth, and listed
+only \code{Nat.add}, \code{Nat.succ} and \code{Nat.zero} as numeric components.
+Its probe 4 ($2^n$) therefore motivated both recursion and arithmetic extensions.
+This is a statement about that restricted planning grammar, not current
+implementation coverage or mathematical nonexistence.
 
-\paragraph{Adaptation.} Three separable changes. (i) Allow \code{Nat.rec} at the outermost level, and only there, exactly as for other inductives, when a contract is present; the explosion came from nested use. (ii) Treat numeric literals as components with a cost that grows with the literal, restricted to literals that occur in the contract plus 0, 1 and 2; this is the standard constant-seeding heuristic of enumerative synthesis. (iii) Add \code{Nat.mul}, \code{Nat.sub}, \code{Nat.pred} and the decidable comparisons as curated components behind the demand filter. None of this is new; the adaptation is making the residual evaluator efficient on \code{Nat.rec} terms, where kernel reduction of literals uses the GMP acceleration only for closed numerals and falls back to unary reduction when a hole is nearby.
+\paragraph{Adaptation.} Keep three choices separate. First, prioritize an
+outermost \code{Nat.rec} schema with explicit decreasing capabilities before
+nested recursion; an outermost-only tier is a useful restriction, not coverage
+of every primitive-recursive program. Second, seed literal enumeration with
+constants from the contract plus 0, 1 and 2, charging literal encoding size.
+Broader bounds must eventually admit omitted literals if relative coverage is
+claimed. Third, evaluate demand-directed \code{Nat.mul}, \code{Nat.sub},
+\code{Nat.pred} and comparison components while preserving natural-number
+truncated-subtraction semantics. Carrier, motive and recursion bounds belong
+to the joint grammar of Section~\ref{sec:carrier-motives}.
+
+Measure native reduction on closed numerals and partially known arithmetic
+separately. An unresolved term may block an optimized reduction; that alone
+does not establish that every nearby hole forces unary evaluation or identify
+the dominant cost. Use residual traces to justify any specialized evaluator
+and preserve its unknown outcomes and arithmetic semantics.
 
 \paragraph{Closing test.} Probe 4, factorial, Fibonacci with a pair accumulator (which needs R2), sum to $n$, and the \code{nat_*} entries of the Myth suite.
 
 \subsection{A3. Normal forms and symmetry reduction}
 
-\paragraph{Gap.} The traces show the same program reached along several paths and many programs that differ only by $\beta\eta$ or by a trivial identity (\code{fun a x => x} as a fold step is the identity fold). Closed programs are memoized after refutation, but partial programs are not, and nothing prevents generating the redundant ones.
+\paragraph{Historical motivation.} The original traces showed duplicate
+construction paths, administrative $\beta\eta$ variants and redundant fold
+steps. These motivate canonical construction and duplicate detection, but a
+well-typed simplification and a behavior-preserving search quotient have
+different obligations. For example, an element-ignoring step may yield the
+seed; it must not be called the identity on the input list without checking
+the entire fold and its type.
 
-\paragraph{What is known.} Proof search in focused calculi enumerates only $\beta$-normal $\eta$-long forms, which removes all $\beta\eta$-duplicates by construction; this is the basis of inhabitation tools from Djinn onward and of the recent Canonical solver for Lean~\cite{canonical}. Bottom-up synthesizers prune by observational equivalence: two terms with equal values on all examples are interchangeable, so only one is kept~\cite{transit,escher}.
+\paragraph{What is known.} Focused inhabitation calculi use canonical
+$\beta$-normal $\eta$-long forms for their specified calculi; Canonical is a
+relevant dependent-search reference~\cite{canonical}. Applying that statement
+to an unrestricted Lean grammar additionally requires accounting for
+definitional reductions, proof arguments and supported syntax. Bottom-up
+synthesizers use finite observational signatures to compress component spaces
+\cite{transit,escher}; their interchangeability claim is relative to the
+observation environments and compositional language, not arbitrary contexts.
 
-\paragraph{Adaptation.} The engine's rules already build $\eta$-long forms (introduction is forced and exclusive) and never build a $\beta$-redex except through forward application (rule 7b), which should be restricted to results that are then destructured. What is missing is a check that an \emph{exact-local} rule is not used where an $\eta$-expanded application would produce the same term, and symmetry reduction for commutative components. Observational equivalence carries over only for closed subterms of ground type whose free variables are all bound by the observations, which is the minority in a top-down search; its proper home is the bottom-up component of Section~\ref{sec:search}.
+\paragraph{Adaptation.} Audit overlapping exact-local and introduction routes
+and redundant forward applications, then normalize only within a documented
+typed fragment. A restriction that removes forward applications needs either
+a completeness argument for the chosen normal-form grammar or an explicit
+incompleteness label. Symmetry reduction for a commutative component requires
+its actual commutativity law and a representative policy consistent with the
+candidate objective.
+
+Finite signatures are safe hard quotients only when equivalent representatives
+remain interchangeable in \emph{all admitted surrounding contexts}, or when
+discarded alternatives can be recovered by the reference search. Ground type
+and finitely instantiated free variables alone do not prove that congruence:
+a higher-order or recursive context can invoke the fragment in an unobserved
+environment. Keep observational buckets as ranking/proposal structures by default and use checked
+equality or a certified fragment theorem for permanent merging. The same
+restriction applies to the bottom-up companion of Section~\ref{sec:search}.
 
 \subsection{A4. Parametricity-directed test inputs}
 
-\paragraph{Idea.} A polymorphic function cannot inspect its type argument. For \code{f : (A : Type) -> List A -> List A}, the free theorem~\cite{wadler89} says $f$ commutes with \code{map}; hence $f$ is determined by its behavior on lists of distinct elements, for instance on \code{[0,1,...,n-1]} at type \code{Nat}. Work on testing polymorphic properties turned this into a method for choosing a single monomorphic instance that is as good as testing all instances~\cite{bernardy10}.
+\paragraph{Conditional idea.} In an explicitly parametric fragment, a family
+\code{f : (A : Type) -> List A -> List A} commutes with \code{map}; the surface
+type alone does not prove this for arbitrary Lean providers or classical
+constructions. Theorem~\ref{thm:carrier-containers} and
+Equation~\ref{eq:carrier-position-test} derive the shape/position reduction,
+including repeated elements, empty types and its universe assumptions.
+The polymorphic-testing literature supplies its own relational hypotheses
+\cite{wadler89,bernardy10}; a theorem about a suitable monomorphic instance
+does not make finitely many values of that instance globally complete tests.
 
-\paragraph{Use in Leant2.} Three uses, in increasing ambition. (i) \emph{Deduplicate} accepted candidates: two candidates of a polymorphic type are equal as functions up to a size bound if they agree on the canonical inputs, so ranking can show one representative per behavior and say how many were merged. (ii) \emph{Explain} candidates: print each candidate's action on the canonical input (\code{[0,1,2] |-> [2,1,0]}), which is more readable than the term. (iii) \emph{Warn} about under-specified contracts: if accepted candidates disagree on a canonical input, show the input as a question to the user. The adaptation work is computing the canonical instance for Lean types with type classes, where parametricity holds only relative to the class laws, and for dependent types, where the free theorem is more delicate. For plain polymorphic first-order signatures, which is most of the corpus, the published construction applies directly.
+\paragraph{Use in Leant2.} Explain a candidate with a symbolic example such as
+\code{[0,1,2] |-> [2,1,0]}, and show a distinguishing input when accepted
+candidates disagree. Group equal sampled behaviors with an explicit sample
+scope; do not call them equal programs. Under proved naturality, agreement on
+canonical inputs through length $N$ proves equality only on inputs through
+length $N$. Equality for every program of a syntax-size bound would require a
+separate small-model theorem, which the incoming reports do not establish.
+
+Hard deduplication needs that stronger justification or checked candidate
+equality. Equality/order dictionaries, opaque callbacks and indexed fibers
+require provider-specific preservation laws and suitable symbolic structures;
+see Section~\ref{sec:carrier-parametricity}. Use canonical tests as useful
+probes immediately, and claim complete reduction only for a certified fragment.
 
 \subsection{A5. Rule indexing}
 
-Each rule scans all locals and all providers and asks the unifier whether they fit. Lean's \code{DiscrTree} and \code{LazyDiscrTree} index terms by their rigid head structure and answer ``which entries could unify with this goal'' in time proportional to the goal, not the index; \code{exact?} and \code{simp} are built on them, and Aesop uses them to select rules~\cite{aesop}. Index providers by conclusion once per query, and index locals incrementally as they are introduced (the index is persistent, so it backtracks with the state for free). Two things do not carry over: conclusions that are a bare type variable match every goal, so the demand filter stays; and the index does not see through reducible definitions unless keys are normalized the way \code{simp} normalizes them, which has to match what the unifier will later accept.
+The historical repeated local/provider scans motivate Lean's \code{DiscrTree}
+or \code{LazyDiscrTree}, with Aesop as a rule-selection reference~\cite{aesop,aesopreadme}.
+These indexes can avoid scanning unrelated rigid heads, but retrieval cost also
+depends on matching branches, wildcard entries and returned candidates. It is
+not bounded solely by goal size independent of the index or output size.
 
-\paragraph{Closing test.} With two thousand session declarations in scope, time per node grows by less than 10\% over the empty session.
+Index provider conclusions for a pinned environment and normalize keys under
+an explicit transparency policy. Maintain local entries with valid dependency
+identities as contexts and assignments change. Persistent structure permits
+sharing; placing it inside the actual branch snapshot or validating its keys
+is still necessary for rollback. Bare-variable conclusions require broad
+matches, and reductions or transports accepted by the native checker must not
+be silently excluded by stricter keys. Demand filtering is a heuristic unless
+its necessary-condition argument is proved. Section~\ref{sec:retrieval}
+states the dependent and dictionary obligations for stronger filtering.
+
+\paragraph{Closing test.} Retain the original target of less than 10\% node-time
+growth with two thousand session declarations as a hypothesis to measure.
+Report cold index construction, warm retrieval, wildcard density, returned
+candidate count and native checking separately; verify retrieval recall on
+known usable components rather than measuring speed alone.

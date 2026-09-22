@@ -1,40 +1,101 @@
 \section{R7. Component retrieval at library scale}\label{sec:retrieval}
 
-\subsection{The problem}
+\subsection{The problem and established precedents}\label{sec:retrieval-boundary}
 
-The engine knows twenty curated library functions and whatever the session declares. Probes 14 and 16 fail because \code{Nat.succ_pos} and \code{Nat.le_trans} are not among them. Lean core has tens of thousands of declarations; Mathlib has several hundred thousand. A synthesizer for ``Lean types that occur in practice'' has to find, among them, the handful that belong in the program, inside a search whose branching factor is already the limiting resource.
+A curated provider list cannot cover an ambient Lean library. Polymorphic providers such as \code{List.foldr}, \code{Option.getD}, and \code{id} can fit many goals; retrieving more names can therefore increase search cost even when lookup is fast. The historical probes missing \code{Nat.succ_pos} and \code{Nat.le_trans} motivate a proof-lemma retrieval lane, but adding a retrieval interface alone does not prove that those probes will close under their original budgets.
 
-The demand filter shows the shape of the difficulty. A provider whose conclusion is a constant-headed type is tried only on goals with that head, which is cheap and precise. A provider whose conclusion is a type variable, such as \code{List.foldr}, \code{Option.getD} or \code{id}, fits every goal; the engine admits it only when a local's type head occurs among its argument heads. That rule was enough for twenty functions. It will not be for twenty thousand.
+Lean indexed lookup, Loogle-style type queries, and theorem premise selectors supply useful baselines. SyPet's component reachability and Hoogle+'s type-guided abstraction refinement supply composition precedents~\cite{sypet,hoogleplus}. All N1--N9 correct the original question about type classes: Hoogle+ already uses dictionary passing, described in its Sections 2.5 and 5.1. Its reported experiment uses 291 components and 44 queries; neither this nor its first-order treatment establishes retrieval over all dependent declarations in a large Lean environment. Higher-kinded cases such as general \code{Monad m} and Lean's dependent constraints remain adaptation work.
 
-\subsection{What is known}
+Use separate proposition-lemma and data-component retrieval modes behind one typed interface. A proof lemma relevant to length preservation need not compute a list; several data programs can share \code{List A -> List A} while examples distinguish identity, reversal, and duplication. Retrieval success is a proposed component set, not an accepted term or a global impossibility certificate.
 
-\paragraph{Lookup in Lean.} \code{exact?} and \code{apply?} index the library's conclusions in a lazily built discrimination tree and try the matches, closing side goals with \code{solve_by_elim}. They find single lemma applications, not compositions. Loogle answers pattern queries over the same data. Premise selection for hammers ranks declarations by relevance to a goal with symbol-overlap heuristics or learned embeddings~\cite{leanhammer,leandojo}.
+\subsection{Constraint-carrying AND-hypergraphs}\label{sec:retrieval-hypergraph}
 
-\paragraph{Component-based synthesis.} SyPet models an API as a Petri net whose places are types and whose transitions are methods, and finds compositions as reachability paths, then fills arguments by SAT~\cite{sypet}. Hoogle+ extends this to polymorphic Haskell by \emph{type-guided abstraction refinement}: search over an abstraction of the types in which polymorphic components are approximated, check the concrete types of a found path, and refine the abstraction where the check fails~\cite{hoogleplus}. Both target tens of thousands of components and first-order or rank-1 types, without dependent types, universe levels or implicit instance arguments.
+For a provider
+\[
+ c:\prod_{x_1:T_1}\cdots\prod_{x_n:T_n(x_1,\ldots,x_{n-1})}
+ R(x_1,\ldots,x_n),
+\]
+represent an application as an AND-hyperedge requiring all arguments under compatible substitutions. With only an $A$ available, a provider $A\to B\to C$ does not construct $C$ unless its $B$ premise is supplied. Independent edges $A\to C$ and $B\to C$ forget this conjunction. Such a graph can be a deliberately loose over-approximation for ranking, but its paths are not realizability witnesses.
 
-\subsection{Why it is hard here}
-
-\begin{itemize}
-\item \textbf{Dependent and polymorphic conclusions.} A Lean lemma's conclusion mentions its arguments; ``types as places'' has no direct meaning when types contain terms. The abstraction must forget term indices in a way that is refinable.
-\item \textbf{Type classes.} Most library functions are generic over a structure (\code{[Add A]}, \code{[LE A]}, \code{[Monad m]}). A component is applicable only if instances resolve, and instance resolution is itself a search that is too slow to run per candidate per node.
-\item \textbf{Programs versus proofs.} Relevance signals learned on proof corpora rank lemmas. For data goals the relevant components are functions, and which function is relevant is determined by the contract's behavior rather than by symbols in the goal.
-\item \textbf{Cost of loading.} Importing Mathlib takes seconds and gigabytes before the first node is expanded. An index has to be built once and stored, keyed by the environment's fingerprint.
-\end{itemize}
-
-\subsection{Design to try first}
-
+Retain a hierarchy of descriptors:
 \begin{enumerate}
-\item \textbf{Two retrieval modes.} For proposition-typed holes, call the existing lookup (\code{exact?}'s index, then the premise selector) with a time limit and take the top $k$ as providers for that hole only. This alone fixes probes 14 and 16 and costs nothing when no proposition-typed hole remains open after the ordinary rules.
-\item \textbf{A reachability pre-pass for data goals.} Build, once per environment, a graph whose nodes are type heads with arity (the abstraction: \code{List _}, \code{Option _}, \code{Nat}, a node for ``type variable'') and whose edges are functions from argument heads to result head. Given a query, compute the components that lie on some path from the heads available in the context to the head of the goal, within length three. Only those become providers. This is the first level of Hoogle+'s abstraction, without refinement; refinement is what the ordinary search does when it unifies.
-\item \textbf{Behavioral relevance.} When the contract has input--output observations, run each unary or binary candidate component of fitting type on the observed inputs. A component whose output equals the required output on all observations is the answer; one whose output is a prefix, a permutation or a sub-term of the required output gets a lower cost. This is a generic form of what \lam\textsuperscript{2} does by hand-written deduction rules and is cheap because evaluation of closed library functions can use compiled code under a trusted-evaluation profile, with the kernel confirming only the winner.
-\item \textbf{Instance-aware indexing.} Index class-generic components under the class as a precondition, and resolve instances once per (class, type) pair per query, memoized.
+\item The sort, rigid head, bounded function spine, arity, and explicit/implicit/instance binder roles.
+\item Repeated type-variable identities and parameter positions; \code{List A -> Option A} must preserve the relation between its occurrences of \code{A}. Forgetting it permits spurious \code{List Nat -> Option Bool} paths.
+\item Query-relevant index shapes (zero, successor, shared variable, bounded affine expression, or unknown), and symbolic universe relations, including restrictions on elimination out of \code{Prop}.
+\item Dictionary and proof prerequisites, and resource annotations for any deliberately restricted eliminator use.
 \end{enumerate}
 
-\subsection{Questions for experts}
+For vector append, retain
+\[
+ \mathsf{Vec}\ A\ n\to\mathsf{Vec}\ A\ m\to\mathsf{Vec}\ A\ (n+m).
+\]
+Forgetting the sum is an over-approximation; incorrectly equating $n$ and $m$ is not. A dependent head can change after assignment: if $F(\mathsf{true})=\mathsf{Nat}$ and $F(\mathsf{false})=\mathsf{Bool}$, index $F(?b)$ by a union or top until its discriminator resolves. Do not guess one head, specialize an unresolved universe to \code{Prop}, or confuse a function argument with a value of its codomain.
 
-\begin{enumerate}
-\item What is the right type abstraction for dependent, universe-polymorphic signatures so that abstract reachability is a useful over-approximation? Erasing all term arguments is sound but may connect everything to everything.
-\item Has type-guided abstraction refinement been tried with type classes, and how were instance constraints represented in the net?
-\item Can Lean's premise-selection interface be queried with a \emph{data} goal plus examples, and is there a corpus from which relevance for programs (rather than proofs) could be learned, for instance definitions in Mathlib and Std with their bodies erased?
-\end{enumerate}
-Related projects and fields: Hoogle+ and SyPet study type-directed component-based synthesis over large libraries; \code{exact?}, Loogle and Lean's premise-selection interface implement lookup and relevance ranking over Lean libraries; LeanDojo and the Lean hammer study learned premise selection.
+Ordinary Lean values can be reused or ignored. A consuming Petri-net representation must explicitly support contraction and weakening; otherwise it can exclude \code{fun x => (x,x)} or legitimate projections. A search-specific one-use Church-eliminator policy is a separate grammar restriction, not a property of Lean's type system.
+
+\begin{proposition}[Safe abstract nonreachability]\label{prop:retrieval-simulation}
+Fix a concrete grammar and construction bound. Suppose every permitted starting term maps to an abstract initial fact and every concrete construction step maps to an abstract transition, with bounds correspondingly interpreted. If exhaustive abstract reachability finds no abstraction containing the target within that bound, no concrete derivation within the bound constructs it.
+\end{proposition}
+\begin{proof}
+Induct on a hypothetical concrete derivation. The initial cases have abstract counterparts; each construction rule lifts reachable premises to an abstract result containing the concrete result. Its final target would therefore be abstractly reachable, contradicting the assumption.
+\end{proof}
+
+The simulation premise is the substantive obligation. Include constants, locals, partial applications, lambdas, constructors, projections, relevant conversion and casts, dictionary construction, admitted eliminations, recursion templates, and invented helpers whenever the concrete grammar includes them. An abstraction of first-order library calls alone cannot justify exclusion from a higher-order search. An abstract timeout is not established unreachability. A path-length limit of three is a declared bounded fast lane, not evidence that no length-four solution exists.
+
+\subsection{A concrete refinement and retrieval loop}\label{sec:retrieval-loop}
+
+Build an index once per environment fingerprint and schema version, including relevant local additions and instance changes. Query it by rigid heads and argument patterns, then perform relaxed hypergraph reachability. Each proposed composition is concretized by instantiating its full telescope in a fresh transaction and asking Lean to check its dependent arguments, universes, and result. On a justified rigid mismatch, refine the abstraction with the distinguishing shared parameter, index relation, universe constraint, dictionary, or proof premise, and retry. Retain the scope of that obstruction: a failed instantiation does not refute every use of its provider.
+
+An incomplete higher-order unifier, unresolved instance, capped normalization, or timeout supplies no general impossibility certificate. Deprioritize or suspend those cases. Rejecting individual paths repeatedly without changing the abstraction is concrete filtering, not type-guided abstraction refinement. Initially use the graph to order a small provider pool and retain a fair wider stream; promote exclusions only for a documented fragment satisfying Proposition~\ref{prop:retrieval-simulation}. Record top-$k$, path limits, and the actual admitted providers in the bound descriptor.
+
+A discrimination tree is output-sensitive: returning many wildcard matches can dominate time regardless of query size. Measure shortlist size, concrete applicability checks, mismatch causes, and downstream search, not just index lookup. A universal type-variable node connecting everything is a reason to retain more correlations, not to discard polymorphic providers silently.
+
+Compatible closed behavioral probes can rank providers by output shape, size change, callback use, prefixes, permutations, or subterms. A component that already meets the observations is still subject to the full original contract and execution policy. A component that does not equal the desired final output can be an essential intermediate step, so standalone mismatch is not a compositional refutation. Compiled probes provide guidance under the chosen evaluation policy; they do not acquire certificate authority merely because the eventual winner is kernel-checked.
+
+\subsection{Dictionary-aware obligations and caching}\label{sec:retrieval-dictionaries}
+
+The existing Hoogle+ construction translates a constrained method and a list instance schematically to
+\[
+ \mathit{eqMethod}:\mathsf{EqD}(A)\to A\to A\to\mathsf{Bool},
+ \qquad
+ \mathit{eqList}:\mathsf{EqD}(A)\to\mathsf{EqD}(\mathsf{List}\ A).
+\]
+Methods consume dictionary arguments and instance components construct them. N7 also notes Hoogle+'s functional-dependency treatment. The transferable representation is explicit prerequisites; Lean's native machinery remains authoritative for concrete terms.
+
+Lean adds multiple and dependent class parameters, output parameters, universes, local instances with priorities, and assignments shared with ordinary arguments. Lazy resolution after sufficient information is available avoids repeated speculative work, but some instances themselves determine missing information. Suspend underdetermined requests with their blockers rather than enforcing a rigid all-types-first phase.
+
+A reuse key includes the entire instantiated class expression, relevant universe and assignment dependencies, environment fingerprint, local-instance context and priorities, transparency, and resolution options. The shorthand \code{(class, type)} is insufficient. Abstract a successful dictionary over its required context, reinstantiate it, and recheck on reuse. Distinguish a checked dictionary, a certified incompatibility in a complete restricted fragment, and ordinary failure or timeout. Only the certified case supports semantic exclusion; even bounded failure on a closed goal is not automatically nonexistence.
+
+Computational dictionaries are data. Two \code{Add A}, comparison, or equality structures may yield different observations. Preserve actual dictionary identity in candidates, evaluation caches, and equivalence checks unless an adequate checked equivalence permits replacement. Proof irrelevance concerns proofs of the same proposition, not arbitrary class structures. Class laws used in pruning must be supplied as evidence. This connects retrieval directly to the semantic identity policy in Section~\ref{sec:ranking-equivalence}.
+
+\subsection{The data-goal adapter and a leakage-controlled corpus}\label{sec:retrieval-corpus}
+
+N2, N3, N6, N8, and N9 inspect Lean 4.34.0's \code{Lean.LibrarySuggestions.Basic} interface~\cite{leanlibrary}:
+\begin{lstlisting}
+abbrev Selector := MVarId -> Config -> MetaM (Array Suggestion)
+-- Relevant Config fields:
+maxSuggestions : Nat
+caller         : Option String
+filter         : Name -> MetaM Bool
+hint           : Option String
+\end{lstlisting}
+The goal need not be a proposition. Core supplies the interface without a default suggestion engine; the arbitrary textual hint may be ignored. N1 also points to an indexed-lookup data example \code{example : Nat := by exact?}~\cite{librarysearch}. These facts answer interface capability, not example-conditioned retrieval accuracy.
+
+Define a Leant2 request containing the exact target, local telescope and current dependencies, available instances, typed observations, carrier/helper role, allowed-provider policy, and requested count. A backend can use a caller tag such as \code{leant2.data}, a safe-declaration filter, and a compact hint; a data-aware backend must explicitly implement how it consumes that hint. Combine deterministic type matching, symbol overlap, and conservative reachability before learned relevance. Returned names pass the same native application and trust checks as other providers.
+
+LeanDojo, LeanHammer, and the incoming LeanSearch references establish theorem-retrieval precedents, not measured transfer to program components~\cite{leandojo,leanhammer,leansearch}. N6 and N8 also report cloud-selector cold starts, including a documented 10--20 second session-preparation example in N8~\cite{premisereadme}. These are upstream reported conditions, not Leant2 measurements; remote selection cannot be uncharged work in a short query. Keep the default local and model-free; an optional network backend has a declared data-sharing policy, recorded response manifest, and full latency accounting.
+
+Construct a corpus from safe executable definitions in core/Std, then an optional ambient-library track. Keep the target type, legitimate context, supplied or generated observations, and reference-body component dependencies as training labels. Such labels are not a unique correct component set: inlining and alternative algorithms can change them. Noncomputable definitions require a declared observation semantics rather than automatic compiled-example generation.
+
+Freeze each synthesis environment before the target where possible. Withhold the target constant, aliases, generated equations, compiler helpers, wrappers, and designated transitive reconstructions revealing its body. A theorem mentioning a hidden target must not reintroduce it as a callable shortcut. The reference implementation may be an external observation oracle but never a synthesis provider; record whether specifications are human supplied, theorem extracted, or generated. Audit import/source-order availability and permitted lemma closure.
+
+Split by semantic family, module or repository, and dependency clusters rather than random near-duplicate declarations. Local exclusions do not eliminate public-corpus model-pretraining contamination. Maintain API-composition/reuse, restricted body-synthesis, provider-given oracle, retrieval-required, helper-invention, and indexed-family tracks. Report recall of \emph{some sufficient component set}, exact applicability, dictionary cost, cold imports/indexing, warm retrieval, and end-to-end certified success at equal budgets. High reference-dependency recall can still produce an unusably large search.
+
+\subsection{Remaining questions}\label{sec:retrieval-open}
+
+Historical R7.1 now has a simulation obligation and concrete staged design; R7.2 is answered positively by dictionary passing; R7.3's API question is answered, while its program-relevance and corpus-performance questions remain empirical. The active questions are:
+\begin{description}
+\item[R7.N1.] Which minimum combination of shared-parameter, dependent-head, index, and universe information makes hypergraph retrieval selective at preserved recall, and can its simulation be checked for a concrete higher-order provider grammar?
+\item[R7.N2.] Can native instance resolution expose reusable dependency-complete dictionary certificates, including output-parameter assignments and local-instance priorities, without unsound negative caching?
+\item[R7.N3.] On leakage-controlled body-synthesis and ambient-library tracks, does example-conditioned retrieval improve certified solve rate after charging import, indexing, dictionary, and proposal costs, relative to type-only retrieval and a provider oracle?
+\end{description}

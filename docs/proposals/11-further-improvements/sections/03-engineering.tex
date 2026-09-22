@@ -1,75 +1,218 @@
 \section{Engineering items}\label{sec:engineering}
 
-Each item names the defect, the design, and the test that closes it.
+Each item retains a motivation from the original \code{33cec8b} planning
+snapshot, a revised design, and prospective exit evidence. These descriptions
+are not a current-checkout defect inventory. The integrated semantic boundary
+in Section~\ref{sec:semantic-boundaries} and the phased plan in
+Section~\ref{sec:roadmap} qualify the original implementation suggestions.
 
 \subsection{E1. Results as compilable definitions}
 
-\paragraph{Defect.} The REPL binds every candidate as \code{it1}, \code{it2}, \dots{} with \code{addAndCompile}. A candidate built from a recursor, such as the list sum
+\paragraph{Historical motivation.} The profiled REPL bound candidates as
+\code{it1}, \code{it2}, \dots{} with \code{addAndCompile}. A candidate built
+from a recursor, such as the list sum
 \begin{lstlisting}
 fun a => List.rec Nat.zero (fun head tail tail_ih => head.add tail_ih) a
 \end{lstlisting}
-is accepted by the kernel and then rejected by the code generator (``does not support recursor \code{List.rec}''). The user sees a correct answer followed by three errors, and cannot evaluate the result.
+was accepted by the kernel and then rejected by the code generator (``does not
+support recursor \code{List.rec}''). That run displayed a correct answer
+followed by errors and did not provide an evaluable published result.
 
 \paragraph{Design.} Separate the certified term from the published definition.
 \begin{enumerate}
-\item The certified object stays the kernel term. Bind it with \code{addDecl} only, so that binding cannot fail after acceptance.
-\item Produce a \emph{presentation}: translate each recursor application with a constant motive into a structurally recursive \code{def} with pattern matching, elaborate that definition with Lean's own equation compiler, and prove it equal to the certified term by \code{rfl} (or by induction when \code{rfl} fails). When the proof succeeds, attach the compiled definition with \code{@[implemented_by]} or publish it in place of the recursor term; when it fails, publish the kernel term as \code{noncomputable} and say so.
-\item The same translation gives the text shown to the user: a \code{match} is what a Lean programmer expects to read, and \code{casesOn} terms in the output become \code{match} expressions too.
+\item Preserve the exact certified program and original contract proof. Export
+them into a staging environment, abstracting the original local telescope and
+universe parameters, and recheck the resulting declarations. Separating
+\code{addDecl} from compilation avoids conflating two operations; it does not
+prove that declaration transport or binding cannot fail.
+\item Construct an executable presentation through Lean's equation compiler.
+Where a recursor plan supports a pattern-matching definition, elaborate that
+definition, compile it, and prove its correspondence with the logical term
+or prove the original contract directly for the executable definition.
+Try definitional equality first; use induction or the checked equation
+theorems when required. A source-level \code{match} rendering by itself is not
+a compilation or correspondence proof.
+\item Publish the checked executable definition when all promised obligations
+hold. An \code{@[implemented_by]} route requires its own audited backend and
+correspondence assumptions; the attribute is not the theorem connecting two
+programs. If only the logical artifact is available, label export and
+compilation statuses explicitly, and offer a \code{noncomputable} presentation
+only if that declaration has itself checked. It does not satisfy an executable
+publication request.
 \end{enumerate}
-The translation is mechanical for constant motives and non-indexed families, which is all the engine produces today. Non-constant motives (Section~\ref{sec:dependent}) need the translation to generalize over the motive's extra arguments; Lean's structural-recursion elaborator already does the reverse direction and its source is the specification.
+Constant-motive non-indexed folds are an appropriate first supported fragment;
+arbitrary recursor syntax can still contain nested eliminations or scope and
+sharing issues. Nonconstant motives and dependent arguments require the
+realization obligations in Sections~\ref{sec:dependent} and~\ref{sec:recursion}.
+Use version-pinned native elaboration interfaces and retain explicit unsupported
+outcomes rather than asserting a universal mechanical translation.
 
-\paragraph{Closing test.} Probe 6 binds without error and \texttt{\#eval it1 [1,2,3]} prints 6; every recursive candidate in \code{run_recursive.py} is printed as a \code{match}.
+\paragraph{Closing test.} Probe 6 exports and compiles without error and
+\texttt{\#eval it1 [1,2,3]} prints 6. Every supported recursive candidate has
+separate logical, exported and compiled receipts and a readable source
+presentation whose elaboration is rechecked. Printing a \code{match} is a
+presentation test, not a substitute for those gates.
 
 \subsection{E2. Frontends}
 
-Today there are two entry points: the REPL and the command \texttt{\#leant2}. The engine entry \code{runQuery} already takes a closed type, an optional contract, a profile and a provider list, so the frontends are thin.
+The original plan began with the REPL and \texttt{\#leant2}. A shared query
+interface can support additional frontends, but dependent local contexts,
+universe preservation, hole ownership and replay make their adapters substantive
+correctness boundaries rather than merely syntax wrappers.
 
 \begin{description}
-\item[Term elaborator] \texttt{synth\%} elaborates to the first-ranked candidate for the expected type, with the local context as providers. It must postpone until the expected type has no metavariables, and it must fail rather than guess when the budget ends.
+\item[Term elaborator] \texttt{synth\%} elaborates to a certified candidate
+under the declared ranking. Postpone unresolved expected-type dependencies
+when necessary; do not specialize the original universe parameters or assign
+foreign holes merely to make the query easier. Timeout without a certified
+candidate remains an incomplete result.
 \item[Tactic] \code{leant2} closes a goal whose target is data or a proposition, reporting the term through \code{Try this}. It competes with \code{exact?}; its advantage is construction (case analysis, recursion, contracts) rather than lookup.
-\item[Sketches] A definition body with holes, \code{def f xs := List.foldr ?step ?init xs}, plus a \code{where} contract, is a query whose root program is partially given. The search state already represents exactly this, so the work is in elaborating the sketch with \code{?}-holes into the initial goal list. Sketches are also how a user passes a carrier hint without a setting.
-\item[Code action] In the editor, offer ``synthesize body'' on a \code{sorry} whose enclosing declaration has \code{example}-style tests below it; collect the tests as the contract.
+\item[Sketches] A body such as
+\code{def f xs := List.foldr ?step ?init xs}, together with an explicitly
+associated contract, supplies a partial program and carrier hint. Distinguish
+owned holes from pre-existing elaborator metavariables, close each typed local
+interface, preserve dependencies and apply the final original contract to the
+whole completed program. Sketch surface syntax and hole elaboration must be
+specified and tested, rather than inferred from the existence of an internal
+metavariable search state.
+\item[Code action] Offer ``synthesize body'' at a \code{sorry} with explicitly
+associated tests. Recognize and check each test's relation to the declaration;
+textual proximity alone does not identify the intended contract. Replay the
+replacement source in its original declaration context.
 \item[Library API] A documented \code{Leant2.synthesize : Query -> MetaM Outcome} with the result algebra, for use from other metaprograms, including Forge.
 \end{description}
 
-\paragraph{Closing test.} Each frontend has a test file under \code{tests/}; the sketch frontend re-solves the thirteen stretch cases when given the reference carrier, which also measures how much of their difficulty is carrier invention alone.
+\paragraph{Closing test.} Each frontend has native success, scope, policy and
+interruption cases. The prospective sketch target is to solve all thirteen
+stretch tasks with their reference carriers and unchanged contracts. Record
+body-search failures separately: supplying a carrier does not establish that
+transition and finishing synthesis will succeed.
 
 \subsection{E3. Receipts, replay and resumable search}
 
-The unified proposal specifies a receipt for every accepted candidate (query, environment fingerprint, program, proof, axioms, ledger) and a replay command that re-checks a receipt without search. Neither is built. Build them as specified; the gate already has every field. Resumability is the new part: a \code{budgetExhausted} outcome should carry enough to continue. With iterative deepening the resumable state is small, namely the lane, the depth, and the path of alternative indices of the node that was being expanded when the deadline hit. Replaying that path re-creates the metavariable context deterministically, which is cheaper and more robust than serializing it.
+The unified proposal specifies candidate receipts containing query, environment,
+program, contract proof, axioms and ledger. Preserve proof replay separately
+from logical search replay and executable publication. A resumable incomplete
+outcome also needs the original problem, pending alternatives and proofs,
+semantic state, expansion cursor, policy/model epoch and monotone work charges.
+Section~\ref{sec:search-deadlines} gives the full checkpoint contract.
 
-\paragraph{Closing test.} A query cut at 2 s and resumed twice finds the same candidates in the same order as one run at 6 s.
+A deterministic lane/depth/alternative path is one possible reconstruction
+format if all effects, ordering and external proposals needed to reproduce it
+are pinned. It is not sufficient by itself for branch caches, delayed
+constraints or dynamic priorities. Compare reconstruction cost and native
+persistent snapshots experimentally; neither is universally cheaper or more
+robust by construction.
+
+\paragraph{Closing test.} Cutting and resuming at recorded logical checkpoints
+reproduces the candidate and event sequence of uninterrupted execution to the
+same final logical prefix. Separately measure reconstruction and startup time.
+Three two-second executions need not reach the same prefix as one six-second
+execution, as Proposition~\ref{prop:search-deadline} explains.
 
 \subsection{E4. Substrate cost}
 
-Thirty percent of the time on contract queries is not attributed to any step (Table~\ref{tab:profile}). The plan is measurement first.
+The historical profile left thirty percent of contract-query time unattributed
+(Table~\ref{tab:profile}). The plan is measurement first.
 \begin{enumerate}
 \item Build the executable with a sampling profiler attached (on Windows, ETW; on Linux, \code{perf}) and read the C call stacks of the Lean runtime. This distinguishes allocation, reference counting, persistent-map operations and \code{instantiateMVars} traversals without guessing.
-\item Remove repeated work per node that is already visible in the source: the local context is scanned by six rules, each recomputing \code{whnf} of every local's type; goal types are instantiated at entry, in the rotation check, and again in the residual scan; \code{instantiatePartial} rebuilds the whole program at every evaluation. Compute per-local facts once when a local is introduced, and keep them in the goal record.
+\item Re-profile the repeated scans and instantiations identified by the
+historical source inspection. Cache per-local facts only with their complete
+assignment, universe, transparency and instance dependencies; introducing a
+local once does not make its type immutable while metavariables remain open.
+Keep branch-valid caches in the goal/state representation, with invalidation
+and rollback tests from Section~\ref{sec:evaluation}.
 \item Replace linear scans by indexes (item A5).
 \end{enumerate}
-\paragraph{Closing test.} Unattributed time under 10\%; node cost under 1 ms on the Church probes.
+\paragraph{Closing test.} The original targets of unattributed time below
+10\% and node cost below 1 ms on the Church probes remain measurable
+hypotheses. Report query mix, inclusive/exclusive accounting, cache overhead
+and retained memory; moving time between counters is not a speedup.
 
 \subsection{E5. Parallel lanes}
 
-The constructive, refutation and classical lanes are independent searches over the same frozen environment. Lean can run \code{MetaM} computations in tasks when each has its own state; the lanes share only the ledger and the first-found signal, which are already \code{IO.Ref}s. Run lanes as tasks with a common deadline and cancel the others when one reports. Determinism is kept by ranking after all lanes have stopped and by fixing a priority between lanes when more than one succeeds.
+Whole-lane parallelism is a candidate optimization when each worker owns its
+semantic state and the shared environment is frozen. Audit all external
+references, environment mutations and services before declaring the workers
+independent; an \code{IO.Ref} does not establish safe ownership. Shared work
+accounting and cancellation require an explicit synchronization protocol.
 
-Or-parallelism inside a lane (the alternatives at the root, or the carriers of Section~\ref{sec:carriers}) follows the same pattern and matters more once carrier enumeration exists. The limit is memory, since each task holds its own caches.
+For deterministic logical replay, give jobs stable identities, fixed work
+quanta and a canonical commit order. Workers may speculate, but admit completed
+epochs by that order. First-found cancellation is a separate opportunistic
+policy: ranking its survivors afterwards cannot recover candidates lost to
+the race. Preserve its actual event trace without claiming identical timed
+answer sets. The detailed boundary is in Section~\ref{sec:search-deadlines}.
 
-\paragraph{Closing test.} Uninhabited and classical queries in the baseline finish in the time of their own lane rather than after the constructive lane's share.
+OR-parallel alternatives and carrier proposals follow the same ownership
+discipline. AND-parallel subgoals additionally need the factorization
+conditions of Section~\ref{sec:search-factorization}. Measure memory, duplicated
+work, publication latency and lost useful work on cancellation, not only CPU
+utilization.
+
+\paragraph{Closing test.} Compare sequential and parallel lanes at matched
+logical work and separately under a common interactive budget, preserving the
+same certified outcomes and replaying completed checkpoints. Faster classical
+or refutation results are an empirical target, not an automatic consequence
+of scheduling tasks concurrently.
 
 \subsection{E6. A decision procedure for propositional targets}
 
-For a target in the implicational-conjunctive-disjunctive fragment over propositional atoms, intuitionistic provability is decidable, and contraction-free sequent calculi of the LJT family terminate without loop checking~\cite{dyckhoff92}. The unified proposal already specifies a reification and a focused calculus for this fragment. Building it gives three things the bounded search cannot: a definite ``not intuitionistically provable'' with a finite Kripke countermodel as evidence, a definite answer for classical provability (by a SAT check on the same reification), and therefore a principled decision to enter the classical lane instead of the present test for the presence of \code{Prop}. The procedure is PSPACE-complete in general~\cite{statman79} but the instances are tiny.
+For the reified implicational-conjunctive-disjunctive propositional fragment,
+intuitionistic provability is decidable and contraction-free LJT calculi give
+terminating search~\cite{dyckhoff92}. A checked finite Kripke countermodel
+establishes nonvalidity in that calculus. It does not by itself prove a Lean
+negation for an arbitrary contextual target whose atoms have an interpretation.
+Positive reconstruction and any negative transfer both need the reification
+bridge and complete treatment of the relevant assumptions specified in
+Section~\ref{sec:semantic-boundaries}. Likewise, a SAT result about the reified
+classical formula needs its appropriate checked certificate and interpretation.
 
-\paragraph{Closing test.} Every propositional query in \code{synth-basic} and \code{synth-manual} is answered by the procedure with a certificate, positive or negative, in under 50 ms.
+Such results can justify scheduling constructive and policy-permitted
+classical work for the supported fragment. They do not decide arbitrary Lean
+propositions merely because \code{Prop} occurs in their type. General
+intuitionistic propositional validity is PSPACE-complete~\cite{statman79};
+small practical instances and latency must be measured.
+
+\paragraph{Closing test.} Inventory which \code{synth-basic} and
+\code{synth-manual} queries satisfy the supported reification assumptions.
+Each covered query receives a checked positive reconstruction or a precisely
+scoped negative certificate; unsupported contextual queries remain explicit.
+The original under-50-ms target is prospective and reported separately from
+certificate validity.
 
 \subsection{E7. A wider proof portfolio}
 
-Closed non-decidable conjuncts go to \code{first | rfl | decide | simp | omega}. The toolchain also ships \code{grind} and \code{try?}, and the unified proposal asks for a proof-service adapter with typed replies and per-tier budgets. Build the adapter, order the tiers by measured cost, add \code{grind} and \code{simp_arith}, and add bounded instantiation: for a contract $\forall x : \tau,\ P\,x$ with $\tau$ finite or with a small-scope hypothesis, test $P$ on the first $k$ values before any proof attempt, so that a wrong candidate is refuted by evaluation and only survivors reach the prover. The refutation is sound; the proof is still required for acceptance.
+The historical portfolio \code{first | rfl | decide | simp | omega} motivated
+a transactional adapter with typed replies and per-tier budgets. Evaluate
+available \code{grind}, \code{try?}, arithmetic simplification and bounded
+instantiation adapters at the pinned toolchain; names alone do not establish
+integration or cost. Local-context proof obligations and induction hypotheses
+need the richer interface of Section~\ref{sec:contracts}.
+
+For $\forall x:\tau,\ P\,x$, a concrete well-typed input with a checked
+proof of $\neg P(x)$ refutes the candidate. Enumerating a few values can find
+such a counterexample without a small-model theorem; passing those tests does
+not prove the universal contract. Finite exhaustive validation requires an
+enumeration coverage proof and exact evaluation. Retain unknown evaluation or
+proof outcomes and the axiom policy for negative evidence. Schedule testing
+and proving fairly rather than making an arbitrary finite test prefix the
+sole gate to all proof work.
 
 \paragraph{Closing test.} A suite of twenty quantified contracts over lists and naturals (length preservation, idempotence, involution) where wrong candidates are refuted by instantiation in under 5 ms each.
 
 \subsection{E8. Benchmarks beyond Leant}
 
-The Leant corpus is saturated. Progress on Part~III needs problems that fail today and have published baselines. Port, with their examples as contracts: the benchmark sets of Myth~\cite{myth}, \lam\textsuperscript{2}~\cite{lambda2}, Smyth~\cite{smyth}, Burst~\cite{burst} and Trio~\cite{trio} (lists, naturals, trees, booleans; about fifty problems each with heavy overlap), the type-only problems used to evaluate Agda's and Coq's inhabitation tools~\cite{agsy,sauto}, and a Lean-specific set made by erasing the bodies of small definitions in core \code{List}, \code{Option} and \code{Nat} and using their simp lemmas as contracts. Record solved count, time to first candidate, and rank of the reference solution. The thirteen stretch cases and the seven failing probes of Table~\ref{tab:probe} are the first entries.
+The historical scored Leant corpus was saturated; that does not establish
+coverage of its unscored stretch tasks or of broader synthesis. Port suitably
+scoped tasks from Myth~\cite{myth}, $\lambda$\textsuperscript{2}~\cite{lambda2},
+Smyth~\cite{smyth}, Burst~\cite{burst}, Trio~\cite{trio}, and the type-only
+Agda/Coq studies~\cite{agsy,sauto}, deduplicating semantic families and recording
+each source's actual grammar, supplied helpers, examples and recursion scope.
+Add Lean tasks by erasing small core \code{List}, \code{Option} and \code{Nat}
+definitions and selecting suitable lemmas as explicit contracts. A published
+score in another language is not a matched Leant2 baseline by default.
+The historical stretch cases and failing probes provide initial tasks, with
+separate carrier/motive-given diagnostics. Use the complete timing, evidence
+and ablation matrix in Section~\ref{sec:roadmap}; report certification and
+executable publication separately from first candidate discovery.

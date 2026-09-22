@@ -1,59 +1,349 @@
 \section{R3. Evaluation of programs with holes}\label{sec:evaluation}
 
-\subsection{The problem}
+\subsection{The problem and revised boundary}\label{sec:evaluation-scope}
 
-A contract is useful during the search only if it can reject a partial program. The engine substitutes the partial program into each conjunct of the contract and asks the kernel for the weak head normal form of \code{decide (C p)}. The kernel reduces until it needs the value of a hole and stops. If the result is \code{false} the branch is dead; if it is stuck the search goes on. This costs 45\% of the time on contract queries and is the only source of pruning power the engine has. Four things are wrong with it.
+The proposal's measured starting point is repeated residual-contract evaluation:
+substitute the partial program into an observation, reduce its decision
+procedure, reject a decided false result, and continue when reduction is
+stuck. The historical profile attributed 45\% of contract-query time to this
+work; that is a workload measurement, not a prediction for the designs below.
+Repeated folds restart; results and blockers are aggregated; backward demands
+are unavailable; and unfinished recursive calls often block reduction.
+Independent observations would serve search scheduling
+(Section~\ref{sec:search}) and guard synthesis without changing the contract.
 
-\begin{enumerate}
-\item \textbf{Nothing is reused.} Every evaluation starts from the definition of the contract. A fold over forty inputs is re-reduced from the first input at every node, although only one hole changed since the parent.
-\item \textbf{All or nothing.} The evaluator reports refuted or stuck. It does not say which observations already hold, which the cost learning of R1 and the guard abduction of A1 both need, nor which hole it was stuck on in a form the search can use to choose the next goal.
-\item \textbf{No backward information.} Evaluation runs forward from inputs. The literature's strongest pruning runs backward: from the required output of the whole, derive required outputs of the holes.
-\item \textbf{Recursion blocks it.} In a partial recursive body the recursive call is a call to the partial program itself and is stuck immediately, so nothing is learned until the body is complete.
+Responses N1--N9 correct the starting literature description. Smyth's simplified
+formal core is first-order, but its implementation supports higher-order
+examples and polymorphism, interdependent holes, and examples that are not
+trace-complete\cite{smyth}. Its scope must not be reduced to its core exposition.
+The research boundary is a dependency-correct adaptation to Lean. A correct
+kernel primitive does not certify arbitrary preprocessing of an open term;
+closed differential tests do not prove that partial-state pruning preserves
+every completion. The guarantees and evidence categories of
+Section~\ref{sec:semantic-boundaries} apply throughout.\prov{N1--N9}
+
+\subsection{Typed closures and relational unevaluation}\label{sec:evaluation-closures}
+
+Hazelnut Live supplies semantics with typed hole closures; Smyth resumes
+computations and propagates required results backward. Scrybe supplies a later
+example-propagation reference. Combinator-specific inversion in Myth and
+$\lambda^2$, and the interpretation of examples as refinements, give further
+implementation choices\cite{hazel,smyth,scrybe,myth,lambda2,frankle16}.
+None supplies a ready-made conservative evaluator for all native Lean
+expressions, universes, delayed assignments, and dependent conversion.
+
+A hole declared $m:(\Delta\vdash T)$ is encountered in context $\Gamma$ through
+a well-typed substitution $\rho:\Gamma\to\Delta$. Its closure records
+\[
+ H=(m,\Delta,\rho,T[\rho],\kappa,\nu),
+\]
+where $\kappa$ contains suspended eliminations or typed observations and $\nu$
+identifies the immutable state version. All occurrences share one contextual
+unknown. Evaluating $\mathsf{map}\ ?f\ [a,b]$ can preserve the list spine and
+retain two closures for the same $f$, not two independently fillable holes.
+A vector-producing hole observed at lengths zero and three has constraints in
+different fibers. Preserve its substitutions, equality evidence, and transports;
+erased lists or host-language equality cannot replace them. Proofs and
+dictionaries can affect legal reduction even when proof arguments are erased
+at runtime.\prov{N1--N9}
+
+Higher-order examples are finite trees of demanded applications: a
+function-valued result must satisfy a relation when applied to particular
+typed arguments. Church inputs are observed through applications to eliminators.
+This is not an extensional oracle at unobserved inputs, nor a reason to merge
+functions that agree on the current table. An unobserved application stays
+neutral unless another justified rule applies.
+
+Unevaluation returns a relation on completions, not necessarily one value.
+Constructor injectivity turns $\mathsf{cons}\ ?x\ ?xs=a::ys$ into necessary
+field constraints. For noninjective $g$, $g(?x)=y$ requires the original
+equation, a proved preimage rule, or alternatives covering all possibilities.
+An unknown conditional yields both guard/branch alternatives; an application
+with unknown function and argument may remain a joint constraint. Conditions
+such as $f(0)=f(1)$ must preserve correlations between calls. Choosing one
+sufficient explanation is useful guidance, but its failure refutes the branch
+only if the alternatives collectively cover every satisfying completion.
+\prov{N2,N3,N5,N6,N8,N9}
+
+\paragraph{Certified observation extraction.}\label{sec:evaluation-observations}
+For each extracted $O_i(p)$ retain $C(p)\to O_i(p)$ as in
+Equation~\ref{eq:necessary-observation}. Refutation needs this direction;
+acceptance by assembling observations also needs
+$(\bigwedge_i O_i(p))\to C(p)$ or another reconstruction theorem.
+Register justified decompositions of conjunctions, Boolean conjunction required
+to be true, \code{decide} wrappers, and \code{List.all} over a fully known finite
+list. A failed disjunct does not refute a disjunction. Infinite quantification
+remains symbolic unless a sound reduction applies.\prov{N1--N9}
+
+An arbitrary \code{BEq} dictionary is computational data. Replacing
+\code{x == y = true} by $x=y$ requires the appropriate lawfulness theorem;
+otherwise keep the exact Boolean test, including unconventional instances.
+Multiple calls in a relational observation stay coupled. Give each observation
+its own identity, decider when applicable, true/false/unknown status, residual,
+and dependencies. New counterexamples add identities rather than silently
+changing existing cache entries.
+
+\paragraph{Fragment progression.}
+Start with typed first-order observations on Booleans, naturals, lists, and
+products; admit lambdas, applications, let bindings, constructors, projections,
+known-constructor cases, selected constant-motive recursors, and named pure
+primitives with checked semantics. Then add higher-order applications and
+indexed constructors with explicit fibers, before arbitrary dependent
+eliminators. Constructor disagreement in a closed prefix may refute while a
+tail is open; a match blocked on an unknown index normally suspends.
+Each extension needs substitution stability and rollback tests. Unsupported
+inversions retain residual constraints or fall back; they never reinterpret a
+value in the wrong fiber.\prov{N1--N9}
+
+\subsection{Assignment-driven normalization and rollback}\label{sec:evaluation-cache}
+
+Self-adjusting computation, Adapton, and named incremental computation give
+methodology for demand tracking and \emph{from-scratch consistency}: reuse must
+agree with reevaluation in the current branch. Canonical-min gives a more
+direct control precedent, suspending constraints on metavariables, resuming on
+assignment, and supporting push/pop search state. These results concern their
+own calculi; they do not certify a full Lean normalizer. The reviewed
+Canonical-min account leaves full mechanization as future work.
+\cite{selfadjust,adapton,names,canonicalmin}\prov{N1--N9}
+
+Use a residual computation DAG with immutable expression/closure nodes, values
+or residuals, read sets, and dependency edges. Cache identity includes the
+frozen observation, evaluator version, exact expression, local telescope and
+substitution, environment, transparency/rewrite policy, and relevant mutable
+reads. Reads include already assigned expression metavariables, universes,
+delayed-assignment links, local declaration types and values, instances,
+options, and equation/inversion lemmas whenever consulted. Final unassigned
+blockers alone miss assigned values that chose a reduction branch. Dynamic
+read sets may omit an unused branch of a known Boolean match and so be more
+precise than whole-term syntactic dependencies.\prov{N1--N9}
+
+\begin{proposition}[Read-set cache validity]\label{prop:evaluation-cache}
+Suppose a deterministic evaluator has fixed immutable semantic inputs and
+records a sound over-approximation of every mutable value read. If those inputs
+and all recorded values agree in another state, its cached result agrees with
+reevaluation there.
+\end{proposition}
+\begin{proof}
+Replay the finite evaluation trace. Every read returns the same value, so the
+same pure operation and next read are selected. Induction gives the same result
+and termination point. An omitted dependency invalidates the hypothesis; an
+extra dependency only causes unnecessary recomputation.
+\end{proof}
+
+The minimal counterexample evaluates $?m+1$ with $?m:=0$, rolls back, and assigns
+$?m:=1$: the second answer is $2$, not the cached $1$. Equivalently, a false
+result for $?m=1$ in the first branch must not reject the second. Both states
+contain an assigned hole and may reuse a rolled-back numerical generation.
+This ABA identity error is a model counterexample, not a reproduced Leant2
+defect. Use immutable assignment nodes, persistent deltas, validated content
+identities, or globally fresh stamps. A fresh global timestamp invalidating
+everything is safe but sacrifices reuse. Hashes index entries; correctness-
+sensitive collisions require structural confirmation.\prov{N1--N9}
+
+Watchers enqueue affected observations on assignment. Rollback restores the
+persistent branch-store root or revalidates read fingerprints; mutable watcher
+lists must also restore or be indexed by branch lineage. Share closed
+subexpressions in the frozen environment, and open residuals only through
+validated closures. Historical inspections found \code{residualBlockers} in an
+\code{IO.Ref} outside \code{Meta.SavedState}; that motivates ownership tests,
+not an asserted false-result bug. In contrast, resource charges intentionally
+survive rollback and are never refunded.
+
+Cache unknown carefully: a stuck result is reusable only while its reads agree;
+a timeout is a cost estimate, not evidence that a larger allowance cannot
+decide it. Global false caching requires a certificate or an identity
+establishing the same proposition, program, assumptions, and policy.
+Contract-relative oracle facts must not become unconditional cache values.
+
+Implement exact closed-result caching first, branch-local residuals next,
+and cross-branch reuse only after assignment-version and delayed-substitution
+tests. Measure hits, invalidations, recomputation, demand-queue work, closure
+retention, and old-world memory. A large hit rate can still lose overall when
+persistence retains too many environments.\prov{N4--N9}
+
+\subsection{Checked evaluation before a new normalizer}\label{sec:evaluation-certification}
+
+N4, N6, and N7 add an existing backend to the common small-fragment proposal:
+benchmark Lean's proof-producing CBV machinery. The inspected Lean~4.34.0 source
+exposes \code{Lean.Elab.Tactic.Cbv}, \code{evalDecideCbv}, \code{cbvGoal},
+\code{cbvHyp}, and \code{cbvDecideGoal}. The \code{decide_cbv} wrapper applies
+\code{of_decide_eq_true} and invokes the CBV goal checker. Equation-based
+propositional rewriting handles useful closed observations and well-founded
+definitions without code-generator trust of the kind used by
+\code{native_decide}. Its proof dependencies still require the selected axiom
+audit, and documented dependent-position limitations prevent treating it as
+a complete open-hole evaluator. Source availability is not a performance or
+compiled integration result.\cite{leancbv,leantactics}
+
+Kernel conversion and proved equations are different specifications. A checked
+rewriter may prove $e=v$ without conversion at the chosen strategy reducing
+$e$ to $v$. This is useful semantic evidence, not an under-approximation of
+conversion. If conversion is the specification, restrict the fragment to
+kernel-convertible reductions. Compare current kernel reduction, ordinary
+proof-producing simplification, CBV, and the custom fragment separately.
+
+\begin{proposition}[A sufficient open-refutation certificate]\label{prop:evaluation-refutation}
+Let a partial program $p$ be abstracted over a well-typed dependency-ordered
+completion telescope $\Delta$, and let every allowed completion satisfy $D$.
+A checked certificate
+\[
+ \forall\theta:\Delta,\quad D(\theta)\to\neg C(p[\theta])
+\]
+justifies removing the branch. Additional assumptions are permitted only when
+every contract-satisfying completion entails them.
+\end{proposition}
+\begin{proof}
+A hypothetical accepted completion supplies its typed telescope values and
+the required assumptions, yielding a contradiction. In the conditional case,
+the hypothesis that it satisfies $C$ supplies the additional assumptions.
+\end{proof}
+A Boolean certificate
+$\mathsf{decide}(O(p[\theta]))=\mathsf{false}$ for a necessary observation is
+one instance. A proof about one arbitrary filling rejects only that filling;
+successful simulation of closed programs is weaker than this open obligation.
+This instantiates Equation~\ref{eq:conservative-pruning}.\prov{N1--N9}
+
+A \emph{substitution-stable reducer} proves that each permitted reduction
+commutes with every well-typed completion; substituting into a false-ending
+trace preserves false. An \emph{abstract evaluator} instead proves
+\[
+ \{\llbracket O(p[\theta])\rrbracket:\theta\text{ allowed}\}
+ \subseteq\gamma(\widehat{\mathsf{eval}}(O,p)).
+\]
+If this over-approximation has no permitted outcome, the branch is refuted.
+Under-approximating possible behaviors is unsafe for exclusion.
+Under-approximating \emph{proved judgments} is safe: more answers are unknown,
+while each reported decision still has evidence.
+
+The reports identify a specific proof boundary in \code{instantiatePartial}:
+its reduction-only delayed-assignment expansion permits intermediate
+metavariables whose local contexts no longer match. This is not a demonstrated
+counterexample, but it prevents assuming ordinary well-typed substitution.
+Carry typed substitution spines or prove a relation from that representation
+to every admissible native completion. A correct \code{Kernel.whnf} invocation
+alone cannot establish the preprocessing relation.\prov{N1--N7,N9}
+
+\paragraph{Deployment alternatives.}\label{sec:evaluation-deployment}
+First let fast custom evaluation change priority only. Next let it propose
+compact negative evidence checked before a prune. Finally prove a typed object
+language's denotation and fuelled interpreter, or a verified abstract
+transformer. A proof-producing reducer composes step equalities and integrates
+incrementally; a reflected evaluator uses a shared soundness theorem and may
+lower checking overhead after a larger initial proof investment. Compact
+traces can be checked when committing a prune and certified summaries cached.
+These remain alternative engineering choices, not measured superiority claims.
+\prov{N1--N9}
+
+\begin{lstlisting}[caption={Proposed evidence-bearing evaluation interface; pseudocode.}]
+EvalResult :=
+  value      (typedValue, equalityEvidence, readSet)
+| suspended  (typedClosure, blockers, readSet)
+| rejectHint (diagnostic, readSet)
+| refuted    (checkedBranchCertificate, assumptions, readSet)
+| resourceExhausted
+\end{lstlisting}
+Only \code{refuted} removes a branch in the conservative lane. Unsupported
+syntax, ill-scoped residuals, unproved side conditions, exhausted fuel, and
+failed certificate construction give unknown or propagate resource interruption,
+never false. Later acceptance checking cannot recover an earlier unsound prune.
+
+Lean4Lean supplies a checker and mechanized metatheory, with verification work
+extending over time. It supplies identified definitions and proved lemmas,
+not automatic extraction of every later kernel optimization into a verified
+incremental evaluator. A new closure machine still needs its environment
+relation, substitution lemmas, and simulation theorem.
+\cite{lean4lean,lean4lean2026}
+
+\subsection{Angelic calls and the bounded guarantee}\label{sec:evaluation-angelic}
+
+Angelic calls are existential results constrained by the specification. A sound
+relaxation admits every ordinary execution of every allowed completion.
+Unsatisfiability can then refute; a satisfying angelic execution is merely
+permission to continue. A finite list of guessed outputs under-approximates
+behavior unless it covers every realization. One failed guess, incomplete
+solving, or a timeout cannot establish universal failure.\prov{N1--N9}
+
+Call identities include the function or recursion frame, full typed argument
+tuple, implicit computational parameters, universes, and relevant environment.
+Known-equal calls share outputs or compatibility constraints in the appropriate
+fiber. Independent angels can satisfy $f(0)\ne f(0)$: this is a loose
+over-approximation, not itself an unsound refutation, but cannot count as an
+actual program. Imposing equality on unequal calls, or silently bounding an
+infinite result domain, may instead remove a real completion. Syntactically
+different symbolic inputs are not necessarily unequal.
+
+If $C(f)\to f(v)=w$ is established, the oracle may use $w$ under $C$.
+A contradiction excludes contract-satisfying completions, not necessarily every
+arbitrary completion. Retain the implication in certificates and cache
+identities. If several outputs are permitted, retain their relation.
+Unobserved calls may remain unconstrained. Observations of $f(s)=g(s,a_0)$
+do not specify the invented accumulator helper $g(s,a)$ at arbitrary $a$
+(Section~\ref{sec:recursion-angels}).
+
+Burst contributes strengthening, ordinary candidate checks, and backtracking;
+Smyth contributes a different live-constraint organization. Their guarantees
+do not transfer merely by changing search direction\cite{burst,smyth}.
+The responses' bounded claims can be stated once as follows.
+
+\begin{theorem}[Finite checked refinement]\label{thm:evaluation-bounded}
+Fix a finite explicitly represented set $F$ of well-typed concrete candidates,
+including bounds on bodies, literals, universes, helpers, instances, recursion
+schemes, and proof plans. Suppose validation terminates and decides the stated
+observations, selection is fair, refinements preserve every satisfying member,
+and each unsuccessful completed iteration removes its selected failing
+candidate without indefinitely repeating unresolved auxiliary states.
+Then refinement terminates with a satisfying member or correctly exhausts $F$.
+\end{theorem}
+\begin{proof}
+Satisfying members are never removed. Every unsuccessful completed iteration
+strictly decreases the finite remaining set, so at most $|F|$ such iterations
+occur. Fair terminating selection and validation eventually recognize a
+satisfying member or exhaust the set.
+\end{proof}
+
+Another sufficient implementation bounds candidate--oracle pairs, uses an
+exact terminating constraint solver and well-founded recursive calls, and
+strictly removes an incompatible pair or failed candidate on each refinement.
+Finite syntax alone does not bound integer outputs, fresh calls, helper
+declarations, or refinement sequences. Incomplete unification, top-$k$ retrieval
+without fallback, and proof attempts indefinitely returning unknown prevent
+exhaustion claims. An expanding grammar with fair dovetailing supports only a
+relative semidecision guarantee; fuel or wall-clock exhaustion stays unknown.
+
+\subsection{Validation and new questions}\label{sec:evaluation-checks}
+
+The implementation sequence is certified observation extraction, immutable
+reports and watchers, closed proof-producing backends, a typed fragment with
+checked negatives, then oracle constraints with certified pruning. Angelic
+guidance alone is a useful earlier milestone. A small bottom-up pool of typed
+closed realizations can supplement top-down holes; behavioral summaries index
+alternatives and new observations split or regenerate buckets instead of
+permanently discarding their contents.
+
+Regressions must include open terms under multiple completions, repeated hole
+applications, universes, delayed assignments, indexed constructors, casts,
+proof-dependent types, local dictionaries, transitive reads, exceptions,
+sibling rollback, and reuse of conditional facts outside their assumptions.
+Compare cached and fresh evaluation. Closed generated-term differential
+testing supplements these checks; even $10^5$ agreements do not prove the
+completion theorem. Charge certificate generation/checking and recomputation:
+a fast hint followed by a full replay at every node need not save time.
+The submitted Python cache/oracle models illustrate failure modes; they are
+neither Lean verification nor engine performance measurements.\prov{N1--N9}
+
+The original four questions are answered above at their stated boundaries.
+The remaining research questions are more specific:
+\begin{enumerate}[label=R3.N\arabic*.]
+\item What is the smallest typed residual fragment covering the measured hot
+observations for which substitution stability, delayed-assignment closure,
+and a proof-producing refutation path can all be established?
+\item Which complete read-set representation gives useful cross-branch reuse
+without retaining excessive old environments, and can its from-scratch
+consistency be proved for the actual Lean state interface?
+\item Under each permitted axiom profile, when do kernel reduction, equation-
+based CBV, reflected evaluation, and checked speculative traces improve
+end-to-end observation cost, including certificate construction and checking?
+\item Which finite relational oracle language preserves all bounded concrete
+recursive behaviors while supporting useful complete refutation, especially
+for dependent fibers and invented helpers outside their initial seed?
 \end{enumerate}
-
-\subsection{What is known}
-
-\paragraph{Holes as values.} Hazelnut Live gives an operational semantics in which evaluation proceeds around holes and produces results containing \emph{hole closures}: a hole together with the environment in which it was reached~\cite{hazel}. Smyth builds synthesis on it: \emph{live bidirectional evaluation} evaluates a sketch to a result with hole closures, then \emph{unevaluates} the required output against that result to obtain example constraints on each hole, in the hole's own environment~\cite{smyth}. This is exactly items 2 and 3 above, for a simply typed ML core with algebraic data types and first-order examples.
-
-\paragraph{Angelic recursion.} Burst evaluates a partial recursive program by letting recursive calls return whatever value makes the examples pass, records those assumptions, and later checks or repairs them; this removes the need for trace-complete examples at the price of a refinement loop whose termination argument is specific to their bottom-up setting~\cite{burst}.
-
-\paragraph{Example propagation.} \lam\textsuperscript{2} and Myth push examples through combinators and constructors by inversion rules written per combinator~\cite{lambda2,myth}; a type-theoretic reading of example-directed synthesis treats examples as refinement types, so that propagation is type checking~\cite{frankle16}.
-
-\paragraph{Incremental normalization.} Normalization by evaluation with explicit closures makes sharing natural; memoizing it across edits of a term is, as far as we know, studied for incremental type checking in editors rather than for search.
-
-\subsection{Why it is hard here}
-
-\paragraph{The evaluator of record is the Lean kernel.} A refutation must agree with what the kernel will later say about the closed program, or pruning loses solutions. Using the kernel itself guarantees that. A custom evaluator for speed and for hole closures has to be proved, or at least tested exhaustively, to be conservative: it may report ``stuck'' where the kernel would decide, never the reverse. Lean's reduction includes definitional unfolding with reducibility hints, structure eta, recursor reduction on literals, quotient and projection rules, and proof irrelevance; a faithful reimplementation is a large surface.
-
-\paragraph{Observations are propositions, not pairs.} Unevaluation in Smyth starts from an example $f\,v = w$. A Lean contract is any proposition: a conjunction of equations is typical, but so are \code{check f = true} where \code{check} folds over forty inputs and compares with \code{==}, and quantified statements. Backward propagation has to go through the contract's own structure (\code{List.all}, \texttt{\&\&}, \code{BEq} instances, \code{decide}) before it reaches an equation on a value of $f$. Each of those needs an inversion rule or a generic treatment.
-
-\paragraph{Higher-order and Church-encoded inputs.} When the inputs are functions (every Church probe), the ``required output'' of a hole is a function, and examples on it arise only through the applications the rest of the program performs. Smyth's unevaluation is first-order.
-
-\paragraph{Dependent types.} A hole's environment may bind types and proofs; two hole closures for the same hole can have different types. Example constraints must be typed per closure.
-
-\subsection{Design to try first}
-
-\paragraph{Stage 1: a richer report from the kernel path, no new evaluator.} Decompose the contract further than its top-level conjuncts: recognize \code{List.all xs p = true}, \texttt{(a \&\& b) = true} and \code{decide P = true} and split them into independent observations at query time, each with its own precomputed decider. The evaluator then reports a bit vector (true, false, stuck) per observation. This gives R1 its signal and A1 its satisfied sets, keeps the kernel as evaluator, and makes each evaluation smaller. The ``stuck on these holes'' memo that exists today becomes per observation, so an assignment re-evaluates only the observations blocked on that hole.
-
-\paragraph{Stage 2: a conservative hole-closure evaluator for a fragment.} Implement call-by-need evaluation with environments for the fragment the engine actually generates (lambda, application, constructors, recursors with constant motive, projections, literals with the arithmetic the kernel accelerates), over Lean \code{Expr} with holes as neutral terms that record their environment. Fall back to the kernel outside the fragment. Validate by differential testing against \code{Kernel.whnf} on every closed program the harnesses generate (about $10^5$ per full run), requiring agreement on decided cases.
-
-\paragraph{Stage 3: unevaluation for first-order observations.} For observations of the form $f\,\vec v = w$ with $w$ of a first-order data type, push $w$ backward through constructors and case analysis to hole closures, as in Smyth, and use the resulting examples in two ways: to refute (no term at this depth can produce that value from this environment) and to order goals (fill the hole with the most constrained examples first, which is Step 4 of Section~\ref{sec:search}).
-
-\paragraph{Stage 4: angelic recursive calls.} In the body of a structural recursion the induction hypothesis is a local variable. Evaluate with it bound to an oracle that answers from the contract's observations when the argument is one of the observed inputs (or a sub-term of one), and is stuck otherwise. For trace-complete contracts this is Myth's method; for others it degrades to today's behavior rather than to unsoundness, since a stuck call refutes nothing.
-
-\subsection{Soundness conditions}
-
-\begin{invariant}[Conservative refutation]
-If the evaluator reports an observation \code{false} for a partial program $p$, then for every completion $p'$ of $p$ the kernel decides that observation \code{false} for $p'$.
-\end{invariant}
-For the kernel path this holds because reduction never inspected a hole. For Stage 2 it must be established for the fragment. For Stage 4 it holds only if the oracle's answers are consequences of the contract: an oracle answer taken from an observation $f\,v = w$ is the value every accepted $f$ must return at $v$, so a branch refuted under it is refuted for every program that satisfies the contract, which is the set we care about. This argument fails for contracts that do not determine $f\,v$ uniquely, and the implementation has to check that the observation it uses is an equation with a closed right-hand side.
-
-\subsection{Questions for experts}
-
-\begin{enumerate}
-\item Has live bidirectional evaluation been extended to higher-order examples or to dependent types? If not, where does it break first?
-\item Is there a published incremental or memoized normalizer whose invalidation is driven by hole assignment, suitable for a backtracking search in which assignments are undone?
-\item What is the cheapest sound way to obtain a fast evaluator that provably under-approximates the Lean kernel's conversion on a fragment? Would extracting the fragment's rules from the kernel's specification in Lean4Lean be realistic?
-\item For angelic recursion in a top-down search, is there a termination and completeness argument analogous to Burst's?
-\end{enumerate}
-Related projects and fields: Hazel studies hole closures and live evaluation of incomplete programs; Smyth studies bidirectional evaluation for sketches; Burst studies angelic execution of recursive calls; Lean4Lean specifies the Lean kernel's reduction rules in Lean; normalization by evaluation studies efficient normalizers with neutral terms.

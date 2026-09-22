@@ -69,7 +69,7 @@ Every prototype that eliminated an indexed family with \code{cases} picked up \c
 
 \subsection{The provider index}
 
-A persistent index is built at import over declaration types: identity, universe parameters, telescope, weak-head result shape, argument heads, constructor or projection role, computational-versus-proof classification, and registered specification lemmas. The index is a discrimination tree over normalized result heads with mandatory wildcard and reducible-head buckets; it may over-return but never silently under-returns, and an intentionally narrowed query is never negative evidence\prov{\Pn{4},\Pn{5},\Pn{8},\Pn{9}}.
+A persistent index is built at import over declaration types: identity, universe parameters, telescope, weak-head result shape, argument heads, constructor or projection role, computational-versus-proof classification, and registered specification lemmas. The index is a discrimination tree over normalized result heads with mandatory wildcard and reducible-head buckets; a completeness-preserving use must over-return rather than silently omit permitted candidates, with a conservative fallback for unresolved dependent heads and universes. This is an index coverage obligation, not a theorem supplied by choosing a discrimination tree; an intentionally narrowed query is never negative evidence\prov{\Pn{4},\Pn{5},\Pn{8},\Pn{9}}.
 
 Retrieval widens in tiers, each recorded in the result: locals and local dictionaries; the goal's own constructors and projections; explicitly requested providers; registered project components and tagged \emph{synthesis lemmas}; nearby namespaces and imports; a budgeted broad scan. A fixed cap such as fifty providers is a heuristic, never ``exhaustive''\prov{\Pn{1},\Pn{9}}.
 
