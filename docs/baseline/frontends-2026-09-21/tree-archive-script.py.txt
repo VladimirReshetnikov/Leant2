@@ -1,0 +1,269 @@
+"""Draft tree-checkpoint wrapper; never build or run acceptance from this script.
+
+An explicit --expected-total 823 or 824 asserts the actual committed fixture
+state. Capture only after implementation publication and a full native build.
+The archived guard auditor and finalizer utilities are reused at pinned hashes;
+the wrapper and both dependency sources are preserved in any resulting archive.
+"""
+from __future__ import annotations
+
+import argparse
+from collections import Counter
+from datetime import datetime, timezone
+import hashlib
+import json
+from pathlib import Path
+import re
+import shutil
+import sys
+import tempfile
+import types
+import zipfile
+
+ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "tools/run_all.py").is_file())
+HERE = Path(__file__).resolve().parent
+BUDGETS = (10000, 5000)
+DEFAULT_PREFIX = ROOT / "baseline-out/tree-composition"
+DEFAULT_DESTINATION = ROOT / "docs/baseline/tree-composition-2026-09-21"
+DEPENDENCIES = {
+    "base-archive-script.py.txt": (
+        ROOT / "docs/baseline/guards-2026-09-21/archive-script.py.txt",
+        "6fb04b42f673927942855d2f88ae76ae1951c446a6031225d691b078c3b89c24"),
+    "base-finish-script.py.txt": (
+        ROOT / "scratch/finish_guard_archive.py",
+        "2a6af04ed0462e20e90d07474984cb7f63622101460ca45bb848c4af81477595"),
+}
+TREE_MANIFEST = "tests/benchmarks/tree-composition.json"
+TREE_IDS = ["composition_tree_inorder", "composition_leaf_tree_flatten", "composition_tree_false"]
+
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def verify_hashes(folder, expected):
+    for relative, digest in expected.items():
+        require(sha(Path(folder) / relative) == digest, f"hash differs: {relative}")
+
+
+def load_pinned(name, source, expected):
+    require(sha(source) == expected, f"frozen helper bytes changed: {source}")
+    # Compile verified bytes in memory. A normal source loader could write a
+    # __pycache__ inside the immutable historical archive being referenced.
+    module = types.ModuleType(name)
+    module.__file__ = str(source)
+    sys.modules[name] = module
+    exec(compile(Path(source).read_bytes(), str(source), "exec"), module.__dict__)
+    return module
+
+
+sys.path.insert(0, str(ROOT / "tools"))
+BASE = load_pinned("tree_frozen_guard_auditor", *DEPENDENCIES["base-archive-script.py.txt"])
+FINISH = load_pinned("tree_frozen_guard_finish", *DEPENDENCIES["base-finish-script.py.txt"])
+# The original archived module computes paths relative to its historical script
+# location. Rebase its filesystem globals, without rewriting its frozen source.
+BASE.ROOT = ROOT
+BASE.EXE = ROOT / ".lake/build/bin/leant2.exe"
+BASE.MANIFESTS = {**BASE.MANIFESTS, "tree-composition": TREE_MANIFEST}
+FINISH.ROOT = ROOT
+
+
+def validation_plan(expected_total):
+    require(expected_total in (823, 824), "explicit expected total must be 823 or 824")
+    expected = dict(BASE.BASE_TOTALS)
+    manifests = {}
+    for name, relative in BASE.MANIFESTS.items():
+        cases = BASE.run_extended.load_cases(ROOT / relative)
+        counts = Counter(case["expect"] for case in cases)
+        opened = {case["id"] for case in cases if case["expect"] == "open"}
+        required = len(cases) - len(opened)
+        if name == "extended":
+            require(len(cases) == 29 and counts["none"] == 4, "E8 inventory or controls changed")
+            tree = next((case for case in cases if case["id"] == "probe11_tree_inorder"), None)
+            require(tree is not None, "original E8 tree case missing")
+            wanted = "open" if expected_total == 823 else "candidate"
+            require(tree["expect"] == wanted and opened == ({tree["id"]} if wanted == "open" else set()),
+                    f"{expected_total} requires original E8 tree expectation {wanted}; do not infer promotion")
+        else:
+            wanted = {"recursion-gates": (3, 2), "local-proofs": (5, 1),
+                      "guard-gates": (3, 2), "tree-composition": (2, 1)}[name]
+            require(not opened and (counts["candidate"], counts["none"]) == wanted,
+                    f"{name}: positive/control expectations changed")
+            if name == "tree-composition":
+                require([case["id"] for case in cases] == TREE_IDS, "tree gate identities/order changed")
+        expected[name] = required
+        manifests[name] = {"path": relative, "required": required, "open": len(opened),
+                           "case_ids": [case["id"] for case in cases]}
+    routes = BASE.run_all.HARNESSES
+    require([name for name, _ in routes] == list(expected) and len(routes) == 12,
+            "expected all twelve independent harness families in order")
+    for name, command in routes:
+        if name in BASE.MANIFESTS:
+            wanted = ["tools/run_extended.py"]
+            if name != "extended":
+                wanted += ["--manifest", BASE.MANIFESTS[name]]
+            require(command == wanted, f"wrong manifest routing: {name}")
+    require(sum(expected.values()) == expected_total, "manifest-derived total differs from explicit expectation")
+    return {"expected_totals": expected, "expected_total": expected_total, "manifests": manifests,
+            "harnesses": [[name, command] for name, command in routes]}
+
+
+def collect_inputs(expected_total):
+    # Reuse clean-tree, tracked-source, dynamic module and external-input capture.
+    BASE.validation_plan = lambda: validation_plan(expected_total)
+    inputs = BASE.collect_inputs()
+    require(TREE_MANIFEST in inputs["source_sha256"], "tree fixture is not committed")
+    inputs["archive_script"] = str(Path(__file__).resolve())
+    inputs["archive_script_sha256"] = sha(Path(__file__))
+    inputs["audit_dependencies"] = {}
+    for archived_name, (path, expected) in DEPENDENCIES.items():
+        require(sha(path) == expected, f"frozen helper changed: {path}")
+        inputs["audit_dependencies"][archived_name] = {"path": str(path), "sha256": expected}
+    return inputs
+
+
+def church_stretch_audit(folder):
+    """Record honest PASS/MISS outcomes, including newly solved stretch cases."""
+    text = (folder / "church.log").read_text(encoding="utf-8")
+    rows = re.findall(r"(?m)^STRETCH-(\S+) (\S+) \[(\d+) ms\] (\S+)", text)
+    require(len(rows) == len(FINISH.STRETCH_IDS) and {row[1] for row in rows} == FINISH.STRETCH_IDS,
+            "Church stretch identity/count changed")
+    require(len(re.findall(r"(?m)^STRETCH-", text)) == len(rows), "unrecognized Church stretch row")
+    prefix = folder / "church/partial"
+    commands = [line.rstrip() for line in prefix.with_suffix(".in").read_text(encoding="utf-8").splitlines()
+                if line.startswith(":synth")]
+    parsed = BASE.repl_protocol.parse(prefix.with_suffix(".out").read_text(encoding="utf-8"),
+                                      prefix.with_suffix(".stderr").read_text(encoding="utf-8"), 0, commands)
+    require(parsed.healthy, f"Church partial raw protocol failure: {parsed.problems}")
+    queries = {query.command.split()[1]: query for query in parsed.queries}
+    result = []
+    for status, name, elapsed, outcome in rows:
+        require(name in queries, f"stretch row missing from raw transcript: {name}")
+        query = queries[name]
+        require(outcome == query.outcome and int(elapsed) == query.elapsed_ms,
+                f"stretch log disagrees with raw query: {name}")
+        require((status == "PASS" and query.candidate and outcome == "candidate") or
+                (status == "MISS" and not query.candidate and outcome in FINISH.BOUNDED),
+                f"invalid stretch classification: {name}")
+        result.append({"id": name, "status": status, "outcome": outcome, "elapsed_ms": int(elapsed)})
+    return {"solved": sum(row["status"] == "PASS" for row in result), "total": len(result),
+            "outcomes": dict(Counter(row["outcome"] for row in result)), "results": result}
+
+
+def validate_run(budget, snapshot, prefix):
+    audit = BASE.validate_run(budget, snapshot, prefix)
+    folder = BASE.run_folder(prefix, budget)
+    raw = {path.relative_to(folder).as_posix(): path.read_bytes() for path in folder.rglob("*") if path.is_file()}
+    # The inherited auditor checks baseline inventory/score. Reuse the separate
+    # reviewed boundary audit so expected preflight/post-query errors stay scoped.
+    baseline = FINISH.load_verified_tool("run_baseline", snapshot["inputs"])
+    audit["baseline_diagnostics"] = FINISH.baseline_audit(
+        raw, snapshot["inputs"]["validation_plan"]["expected_totals"]["baseline"], baseline)
+    audit["church_stretch"] = church_stretch_audit(folder)
+    query_rows = sum(len(BASE.read_json(folder / f"{name}.json")["results"])
+                     for name in snapshot["inputs"]["validation_plan"]["manifests"])
+    audit["manifest_queries"] = query_rows
+    audit["synthesis_queries"] = query_rows + audit["baseline_diagnostics"]["queries"] + sum(
+        session["queries"] for session in audit["raw_sessions"].values())
+    return audit
+
+
+def receipt_copies(plan):
+    return {"summary.json": "summary.json", "results.json": "results/receipt.json",
+            **{f"{name}.json": f"{name}.json" for name in plan["manifests"]}}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--capture-inputs", action="store_true")
+    mode.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--expected-total", required=True, type=int, choices=(823, 824),
+                        help="assert actual committed expectations; never changes or promotes fixtures")
+    parser.add_argument("--run-prefix", type=Path, default=DEFAULT_PREFIX)
+    parser.add_argument("--snapshot", type=Path, default=HERE / "input-snapshot.json")
+    parser.add_argument("--destination", type=Path, default=DEFAULT_DESTINATION)
+    args = parser.parse_args()
+    prefix, snapshot_path, destination = (value.resolve() for value in
+                                          (args.run_prefix, args.snapshot, args.destination))
+    inputs = collect_inputs(args.expected_total)
+    require(not destination.exists(), f"refusing to overwrite archive: {destination}")
+    if args.capture_inputs:
+        require(not snapshot_path.exists(), f"refusing to overwrite snapshot: {snapshot_path}")
+        for budget in BUDGETS:
+            folder = BASE.run_folder(prefix, budget)
+            require(not folder.exists() and not Path(f"{folder}.log").exists(), "capture needs unused full-run paths")
+        snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {"schema_version": 2, "created_utc": datetime.now(timezone.utc).isoformat(),
+                   "run_prefix": str(prefix), "destination": str(destination), "budgets_ms": list(BUDGETS), "inputs": inputs}
+        with snapshot_path.open("x", encoding="utf-8", newline="\n") as output:
+            output.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+        print(f"Captured {args.expected_total}-gate tree inputs: {snapshot_path}")
+        return
+    snapshot = BASE.read_json(snapshot_path)
+    require(snapshot["schema_version"] == 2 and snapshot["inputs"] == inputs, "captured inputs changed")
+    require(snapshot["run_prefix"] == str(prefix) and snapshot["destination"] == str(destination) and
+            snapshot["budgets_ms"] == list(BUDGETS), "captured paths or budgets changed")
+    output_hashes = BASE.run_output_hashes(prefix)
+    audited_at = datetime.now(timezone.utc).isoformat()
+    audit = {budget: validate_run(budget, snapshot, prefix) for budget in BUDGETS}
+    require(collect_inputs(args.expected_total) == inputs, "inputs changed during audit")
+    require(BASE.run_output_hashes(prefix) == output_hashes, "raw outputs changed during audit")
+    if args.validate_only:
+        print(json.dumps({"revision": inputs["revision"], "required_per_budget": args.expected_total,
+                          "budgets_ms": list(BUDGETS), "audit": audit}, indent=2))
+        return
+    with tempfile.TemporaryDirectory(prefix="tree-archive-", dir=ROOT / "scratch") as temporary:
+        staging = Path(temporary) / "archive"
+        staging.mkdir()
+        (staging / ".gitattributes").write_bytes(BASE.ATTRIBUTES)
+        shutil.copyfile(snapshot_path, staging / "input-snapshot.json")
+        shutil.copyfile(Path(__file__), staging / "archive-script.py.txt")
+        for name, dependency in inputs["audit_dependencies"].items():
+            shutil.copyfile(dependency["path"], staging / name)
+            require(sha(staging / name) == dependency["sha256"], f"frozen helper copy changed: {name}")
+        BASE.write_json(staging / "post-run-inputs.json", {"schema_version": 2, "created_utc": audited_at, "inputs": inputs})
+        for budget in BUDGETS:
+            folder = BASE.run_folder(prefix, budget)
+            for name, original in receipt_copies(inputs["validation_plan"]).items():
+                target = staging / f"{budget}-{name}"
+                shutil.copyfile(folder / original, target)
+                require(sha(target) == sha(folder / original), f"receipt bytes changed: {name}")
+            shutil.copyfile(Path(f"{folder}.log"), staging / f"{budget}-run.log")
+            require(sha(staging / f"{budget}-run.log") == output_hashes[f"{budget}-outer-log"], "outer log changed")
+            members = output_hashes[str(budget)]
+            zipped = staging / f"{budget}-raw.zip"
+            with zipfile.ZipFile(zipped, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+                for name in members:
+                    archive.write(folder / name, name)
+            FINISH.verify_zip(zipped, members)
+            audit[budget]["raw_sha256"] = members
+        require(collect_inputs(args.expected_total) == inputs, "inputs changed while archiving")
+        require(BASE.run_output_hashes(prefix) == output_hashes, "raw outputs changed while archiving")
+        manifest = {"kind": "validation_receipts_not_standalone_synthesis_replay",
+                    "created_utc": datetime.now(timezone.utc).isoformat(), "tested_revision": inputs["revision"],
+                    "working_tree_clean_during_runs": True, "input_hashes_unchanged_before_and_after": True,
+                    "input_snapshot": "input-snapshot.json", "post_run_inputs": "post-run-inputs.json",
+                    **{key: inputs[key] for key in ("toolchain", "executable_sha256", "source_sha256", "module_sha256",
+                        "required_module_paths", "external_repositories", "external_input_sha256")},
+                    "module_artifacts": len(inputs["module_sha256"]), "budgets_ms": list(BUDGETS),
+                    "expected_total": args.expected_total, "expected_totals": inputs["validation_plan"]["expected_totals"],
+                    "archive_script": "archive-script.py.txt", "archive_script_sha256": inputs["archive_script_sha256"],
+                    "audit_dependencies": inputs["audit_dependencies"], "run_audit": audit,
+                    "files": {path.name: sha(path) for path in sorted(staging.iterdir())},
+                    "byte_policy": "Local .gitattributes disables text conversion for itself, JSON/log/TXT; ZIPs are binary.",
+                    "hash_scope": "files excludes this manifest and any later narrative README"}
+        BASE.write_json(staging / "manifest.json", manifest)
+        shutil.copytree(staging, destination)
+        verify_hashes(destination, {path.name: sha(path) for path in staging.iterdir()})
+    print(json.dumps({"archived": str(destination), "revision": inputs["revision"],
+                      "required_per_budget": args.expected_total, "files": len(list(destination.iterdir()))}, indent=2))
+
+
+if __name__ == "__main__":
+    main()

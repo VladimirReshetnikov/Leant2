@@ -192,12 +192,14 @@ python tools/run_results.py --budget 10000 --out baseline-out/results
 python tools/run_all.py --budget 10000 --out baseline-out/milestone-10000
 ```
 
-`run_all.py` runs twelve harnesses with distinct artifact paths. Their expected
+`run_all.py` runs 13 harnesses with distinct artifact paths. Their expected
 denominators are baseline 278, recursive 9, Church 28, context 95, corpus 350,
 session 6, results 10, extended 29, recursion gates 5, local proofs 6, guard
-gates 5, and tree composition 3: **824 acceptance
-checks in total**. Some checks exercise the same synthesis goals at different
-boundaries, so this is not a count of 824 distinct benchmark problems. The
+gates 5, tree composition 3, and frontends 8: **832 acceptance checks in
+total**. Some checks exercise the same synthesis goals at different boundaries,
+so this is not a count of 832 distinct benchmark problems. The frontend family
+uses fresh Lean files instead of REPL queries and keeps its process-stage counts
+separate from the legacy synthesis-query totals. The
 Church stretch cases remain outside these scored denominators; every E8 case
 is now required. Every harness must also exit successfully;
 a full printed score does not conceal a process or open-case failure.
@@ -335,6 +337,47 @@ pre/post source, module, executable, and external-input hashes are archived.
 All thirteen unscored Church stretch cases remain bounded misses at both
 budgets. The full checkpoint establishes acceptance at the committed source;
 the development ablation above remains a separate fixture-specific measurement.
+
+## Expected-type frontend gates
+
+`tools/run_frontends.py` and `tests/benchmarks/frontend-fixtures/` add 8 required
+cases independently of the original 29-session E8 manifest. They test `synth%`
+and the `leant2` tactic under local data/proofs, a delayed shared implicit type,
+genuine lets/local instances, and a fresh indexed Vec family. Indexed mapping
+must satisfy universal nil/cons equations and executable Nat-to-Bool and
+Bool-to-Nat observations. Its type and obligations are not replaced by a list
+encoding or a supplied known result.
+
+The 8 cases require 13 fresh Lean processes: 8 originals, 3 independent
+replays of actual emitted tactic suggestions, and 2 separate impossible-goal
+error files. Replay files import only Lean and repeat the required typed,
+kernel-proof, and executable checks without the producer's adapter state.
+Successful declarations, including opaque theorem proof bodies, must have no
+holes or sorry dependencies and pass the standard axiom audit. Negative outer
+theorems themselves pass that audit, while each deliberate failing file must
+produce the expected frontend diagnostic and Lean error exit. These rejection
+checks do not claim an engine completeness result.
+
+```powershell
+python tools/run_frontends.py --budget 10000 --out baseline-out/frontend-gates
+```
+
+Build before running the family directly; it neither builds nor treats artifact
+fingerprints as proof of a rebuild. Its output directory must be new. The
+clean-source [frontend checkpoint](frontends-2026-09-21/README.md) at `69221f1`
+passed **832/832 across 13 families at both 10,000 and 5,000 ms**,
+including all 8 frontend cases and 13 stages per budget. The 837 legacy
+synthesis-query records remain a separate count. Both native executables and
+the full recorded source/module/fixture inventories have identical pre/post
+hashes. The archive independently rechecks stage sources, actual suggestions,
+diagnostics, exits, exact raw inventories, and secondary raw-outcome/provider
+history scoring. Historical checkpoint counts above retain their own scope.
+
+Upfront raw-engine contract refutations currently use `.standard` rather than
+the query's requested profile and discard their accepted certificate.
+Strict-profile negative certification is pending. The expected-type frontends
+use `.standard` and do not expose behavioral contracts; their acceptance checks
+are unaffected by this profile mismatch.
 
 ## Source provenance
 

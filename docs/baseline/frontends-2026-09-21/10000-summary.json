@@ -1,0 +1,109 @@
+{
+  "budget_ms": 10000,
+  "harnesses": [
+    {
+      "harness": "baseline",
+      "passed": 278,
+      "total": 278,
+      "seconds": 98.50318026542664,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "recursive",
+      "passed": 9,
+      "total": 9,
+      "seconds": 3.864711284637451,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "church",
+      "passed": 28,
+      "total": 28,
+      "seconds": 153.80616283416748,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "context",
+      "passed": 95,
+      "total": 95,
+      "seconds": 10.59554672241211,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "corpus",
+      "passed": 350,
+      "total": 350,
+      "seconds": 23.627943754196167,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "session",
+      "passed": 6,
+      "total": 6,
+      "seconds": 19.01934313774109,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "results",
+      "passed": 10,
+      "total": 10,
+      "seconds": 26.33087658882141,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "extended",
+      "passed": 29,
+      "total": 29,
+      "seconds": 79.28657913208008,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "recursion-gates",
+      "passed": 5,
+      "total": 5,
+      "seconds": 12.249949932098389,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "local-proofs",
+      "passed": 6,
+      "total": 6,
+      "seconds": 14.665920495986938,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "guard-gates",
+      "passed": 5,
+      "total": 5,
+      "seconds": 13.519851684570312,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "tree-composition",
+      "passed": 3,
+      "total": 3,
+      "seconds": 10.1697359085083,
+      "returncode": 0,
+      "ok": true
+    },
+    {
+      "harness": "frontends",
+      "passed": 8,
+      "total": 8,
+      "seconds": 30.820154905319214,
+      "returncode": 0,
+      "ok": true
+    }
+  ]
+}

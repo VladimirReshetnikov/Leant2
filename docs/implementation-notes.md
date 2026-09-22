@@ -147,7 +147,13 @@ built. What is built covers the whole corpus:
   exhausted search.
 - **Upfront refutation.** Before any search, `forall f, not (P f)` is tried
   with the tactic portfolio under a small heartbeat budget; success is the
-  outcome "provably no program satisfies the contract".
+  outcome "provably no program satisfies the contract". This raw-engine path
+  currently checks the proof under `.standard` instead of the query's requested
+  profile and discards the accepted certificate. Strict-profile negative
+  certification remains pending; the outcome must not be presented as a retained
+  certificate validated under an arbitrary caller-selected profile. The new
+  expected-type frontends use `.standard` and expose no behavioral-contract
+  syntax, so their acceptance gates are unaffected by that profile mismatch.
 - Conjuncts without a decider (quantified statements) fall to the tactic
   portfolio `first | rfl | decide | simp | omega` on the closed program.
 
@@ -409,20 +415,22 @@ dependency. A source-presentation failure does not invalidate an already
 checked synthesis result. Contextual contract lifting, sketches, and code
 actions are not implemented.
 
-Eight public frontend cases are integrated into `run_all.py`, raising its
-configured denominator to 832 across thirteen harnesses. Their thirteen fresh
-process stages comprise eight original files, three suggestion replays, and
-two separate expected-error files. Positive declarations are audited through
+The 8 public frontend cases are integrated into `run_all.py`, giving
+832 required checks across 13 harnesses. Their 13 fresh process stages
+comprise 8 original files, 3 suggestion replays, and 2 separate
+expected-error files. Both complete budgets now pass at the committed source,
+as recorded in the [frontend checkpoint](baseline/frontends-2026-09-21/README.md). Positive declarations are audited through
 opaque theorem bodies as well as definitions; the negative wrappers themselves
 must also have complete, standard-profile proofs. The frontend runner retains
 generated sources, JSON diagnostics, stderr, stage exit codes, and pre/post
-hashes of source, native Lean, and compiled dependencies. This is separate from
-the historical complete acceptance receipts below.
+hashes of source, native Lean, and compiled dependencies. The complete archive
+additionally binds `leant2.exe` and external fixtures; its fresh frontend process
+counts are separate from the legacy synthesis-query counts below.
 
 Focused public runs passed all eight cases and thirteen stages at both 5 s and
 10 s per search with identical captured inputs. The full 62-job native build,
 39 Python tools tests, and 19 Python benchmark tests also passed. These focused
-development results do not replace the upcoming complete 832-check runs.
+development results remain separate evidence from the complete archived runs.
 
 ## Initial next-phase coverage
 
@@ -501,6 +509,26 @@ score counts 824 acceptance checks, with overlapping goals and 13 unscored
 Church stretch queries; all thirteen remain bounded misses at both budgets.
 The legacy baseline's two intended preflight diagnostics and one unscored
 ordinary Option-call error are independently checked at their query boundaries.
+
+Implementation commit `69221f1` passed **832/832 required checks across
+13 harnesses at both 10 s and 5 s per search**. The
+[frontend checkpoint](baseline/frontends-2026-09-21/README.md) adds 8 required
+term/tactic cases and 13 fresh Lean process stages: 8 originals, 3 actual
+suggestion replays importing only Lean, and 2 intentional error files.
+Each budget separately retains 837 legacy synthesis-query records, including
+22 REPL sessions, without counting frontend processes or source syntax occurrences
+as legacy queries. All 29 E8 cases remain required; Church stretches remain
+outside the score, with their actual per-budget outcomes recorded in the archive.
+
+Both runs preserve identical pre/post hashes for source, `leant2.exe`, native
+Lean, the complete recorded compiled-module inventory, and
+external fixtures. The archive re-extracts emitted tactic text and reconstructs
+fresh replay sources, reclassifies JSON diagnostics and process exits, and checks
+exact stage inventories. It also reconstructs recursive/context/corpus/Church
+and provider-session inputs and rescores their raw outcomes against the captured
+expectations, including exact provider histories. This additional semantic audit
+does not infer success from an old green summary and is separate from protocol
+and denominator checks. Earlier archives retain their original scope.
 
 Historical measurements remain in `docs/baseline/`, labeled by their own
 revisions and budgets. These acceptance runs and profiling parity tests are

@@ -107,9 +107,9 @@ check of their exact original contract before ordinary proof construction.
 Stuck checks retain proof search, and rejecting one computed proof still
 allows an alternate proof to pass the trust profile. Tree inorder and a
 second binary-tree traversal pass public synthesis, universal constructor
-equations, and held-out execution at both existing budgets. The complete
-tree-composition checkpoint below archives these results with all other
-required harnesses.
+equations, and held-out execution at both existing budgets. The historical
+tree-composition checkpoint below archives these results with its then-required
+harnesses; the frontend checkpoint repeats them in the expanded suite.
 
 ### Synthesis inside Lean declarations
 
@@ -117,6 +117,8 @@ Import `Leant2` to use the expected-type frontends:
 
 ```lean
 import Leant2
+
+universe u
 
 def identity (A : Sort u) (x : A) : A := synth%
 
@@ -134,6 +136,12 @@ rigid, and a candidate must replay at the original expected type even if an
 engine lane found an answer to a specialized type. Local hypotheses are accepted
 premises; global axioms must pass the standard Lean axiom profile. This is
 stricter than the command and REPL frontends' project-relative profile.
+
+One raw-engine limitation concerns upfront contract refutations: that path checks
+its proof under `.standard` rather than the query's requested profile, then
+discards the certificate. Strict-profile negative certification remains pending.
+The new expected-type frontends use `.standard` and do not expose behavioral
+contracts, so that profile mismatch does not affect their acceptance checks.
 
 Use explicit universe parameters when Lean would otherwise generalize them
 only after elaborating the body: `def id (A : Sort u) (x : A) : A := synth%`
@@ -195,17 +203,23 @@ complete, and reject diagnostics even after a candidate has been printed.
 Literal `False` controls require a certified contract refutation; silence
 and timeouts do not pass them.
 
-The configured aggregate now contains 832 required checks. The eight new
-frontend cases add fresh Lean files, three independent replays of actual tactic
-suggestions in files importing only Lean, and two separate expected-error
-processes for impossible goals. This configuration is not a claim that a full
-832-check run has passed; the latest complete archived run is recorded below.
-Focused frontend runs pass all eight cases at both 5 s and 10 s per search,
-including all thirteen process stages, with identical captured inputs. The
-complete library, tests, and executable build also passes all 62 jobs.
-The frontend runner requires a fresh output directory and records input hashes
-before and after its processes. Build before running it directly; fingerprints
-identify the artifacts tested and do not establish that they were rebuilt.
+The configured aggregate contains **832 required checks across 13 harnesses**,
+and the [frontend checkpoint](docs/baseline/frontends-2026-09-21/README.md)
+passes all of them at both 5 s and 10 s per search on implementation commit
+`69221f1`. The 8 frontend cases require 13 fresh Lean processes:
+8 original stages, 3 independent replays of actual tactic suggestions in
+files importing only Lean, and 2 separate expected-error stages. These process
+counts are separate from the 837 retained legacy synthesis-query records at
+each budget; required checks also overlap in the goals they exercise.
+
+Both complete runs preserve pre/post hashes for source, both native executables
+(`leant2.exe` and Lean), the complete recorded compiled-module inventory,
+and external fixtures. The new archive independently reconstructs secondary
+runner transcripts and checks raw outcome categories and session provider
+histories, in addition to protocol checks and aggregate scores. The frontend
+runner requires a fresh output directory and does not build. Build before
+running it directly; fingerprints identify the artifacts tested and do not
+establish that they were rebuilt.
 
 The previous checkpoint passed **787/787 scored cases** across seven
 harnesses at both 10 s and 5 s per query on implementation commit `87ed037`.
@@ -226,7 +240,8 @@ benchmark problems.
 The new [extended suite](docs/baseline/extended.md) reconstructs the sixteen
 probes in proposal 11, adds nine Lean-core examples and four negative
 controls. All 29 sessions are now required after focused validation of the
-last open tree-inorder case; the corresponding archived aggregate contains 824 checks.
+last open tree-inorder case; they pass in both the historical 824-check
+tree checkpoint and the current 832-check frontend checkpoint.
 Each query runs in a fresh session; a reported candidate must bind at the
 requested type and pass executable replay. This is the initial local E8
 benchmark work, not a port of the external synthesis benchmark collections.
@@ -251,15 +266,15 @@ The archive preserves complete raw runs and unchanged pre/post input hashes.
 Tree inorder was the only open E8 search at that checkpoint; the thirteen
 Church stretch cases were also unsolved.
 
-The latest complete [tree-composition checkpoint](docs/baseline/tree-composition-2026-09-21/README.md),
+The archived [tree-composition checkpoint](docs/baseline/tree-composition-2026-09-21/README.md),
 implementation commit `313a441`, passes **824/824 required checks across twelve
 harnesses at both 10 s and 5 s per query**. All 29 original E8 sessions are
 required and passing. Three additional tree gates verify universal constructor
 equations, held-out execution on two binary datatypes, and an impossible-contract
 control. Both full runs preserve the same source, executable, compiled modules,
 and external fixtures; the archive contains complete raw outputs and checked
-pre/post hashes. The thirteen unscored Church stretch searches remain bounded
-misses. These counts include repeated goals checked at different boundaries,
+pre/post hashes. The thirteen unscored Church stretch searches were bounded
+misses at that checkpoint. These counts include repeated goals checked at different boundaries,
 and are not a count of distinct synthesis problems.
 
 The Church harness imports the specifications from Leant's vendored Djex

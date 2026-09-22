@@ -97,3 +97,24 @@ pre/post source, executable, compiled-module, and external-fixture hashes.
 The thirteen Church stretch cases remain unscored bounded misses. Prior
 checkpoint archives are unchanged; score, total query count, and unique
 benchmark count remain distinct quantities.
+
+## Expected-type term and tactic checkpoint
+
+The [frontend checkpoint](frontends-2026-09-21/README.md) validates implementation
+commit `69221f1` at both 10 s and 5 s per search: **832/832 required checks
+across 13 harnesses** at each budget. The added 8 frontend cases exercise
+typed local data/proofs, delayed shared type constraints, genuine lets/instances,
+and indexed Vec mapping. They require 13 fresh Lean processes: 8 original
+stages, 3 independently replayed actual tactic suggestions in Lean-only files,
+and 2 deliberate error stages for impossible goals. Those process counts are
+separate from the 837 legacy synthesis-query records retained per budget.
+
+Both full runs preserve the captured source, `leant2.exe`, native Lean, the
+complete recorded compiled-module inventory, and external fixtures. Complete
+raw outputs, exact suggestion text and replay sources, receipt/ZIP hashes, and
+pre/post snapshots are preserved. The archive additionally reconstructs the
+secondary harness inputs and independently checks raw outcome categories and
+session provider histories. All 29 E8 cases remain required; Church stretches
+remain unscored, with actual outcomes recorded separately. The five earlier
+checkpoint archives are unchanged, with their original revisions and evidence
+boundaries. Required checks are not a count of distinct synthesis problems.
