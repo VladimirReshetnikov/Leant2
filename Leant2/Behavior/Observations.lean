@@ -129,10 +129,16 @@ are still open would be unsound when a sibling branch changes the surrounding
 program. The instantiated predicate and decider must also match their original
 keys. Inputs or observations containing free locals are deliberately not cached
 across contexts. The caller must keep the environment fixed for the cache's
-lifetime (the engine allocates a fresh cache for each lane). -/
+lifetime (the engine allocates a fresh cache for each lane).
+
+The default `authorizeFalse` preserves raw kernel-reduction reporting; it does
+not enforce an axiom profile. Profile-sensitive search supplies a callback over
+the current unreduced predicate/decider schemas, including on cached false
+results. Refusal reports `stuck` and continues to later observations. -/
 def evalObservations (observations : Array Observation) (program : Expr)
     (cache : Array (Option ObservationCacheEntry)) (instantiate : Expr → MetaM Expr)
-    (check : MetaM Unit := pure ()) :
+    (check : MetaM Unit := pure ())
+    (authorizeFalse : Expr → Expr → MetaM Bool := fun _ _ => pure true) :
     MetaM (ObservationReport × Array (Option ObservationCacheEntry)) := do
   let mut report : ObservationReport := {
     statuses := Array.replicate observations.size none
@@ -173,8 +179,13 @@ def evalObservations (observations : Array Observation) (program : Expr)
     let some reduced := reduced? |
       report := { report with statuses := report.statuses.set! idx (some .stuck) }
       continue
-    let status := if reduced.isConstOf ``Bool.true then ObservationStatus.satisfied
-      else if reduced.isConstOf ``Bool.false then .refuted else .stuck
+    let status ← if reduced.isConstOf ``Bool.true then pure ObservationStatus.satisfied
+      else if reduced.isConstOf ``Bool.false then
+        -- Reauthorize even an unchanged raw cache hit, using current evidence.
+        -- A refused false result is inconclusive; later observations may still
+        -- supply an authorized refutation.
+        pure (if ← authorizeFalse predicate decider then .refuted else .stuck)
+      else pure .stuck
     report := { report with
       statuses := report.statuses.set! idx (some status)
       blockers := report.blockers.set! idx (reduced.collectMVars {}).result }

@@ -1,6 +1,6 @@
 # Synthesis from a Lean metaprogram
 
-The full library, native test, and executable build passes all 68 jobs.
+At the API checkpoint, the full library, native test, and executable build passed all 68 jobs.
 Focused API, local-proof, and contract-refutation checks pass, and the exact
 example below has compiled and run successfully. The complete
 [API checkpoint](baseline/library-api-2026-09-21/README.md), tested at
@@ -147,6 +147,14 @@ native `inferType`; the API does not relabel a specialized proof.
 `classical = false` does not imply an axiom-free proof: a proof using `propext`
 can have that value. Inspect `axioms` or use the requested profile. A provider's
 presence does not exempt its dependencies from the profile audit.
+
+The same policy governs evidence used to discard a search branch after a false
+decision. A decider that uses a forbidden axiom cannot suppress an independent
+admissible proof merely by reducing to `false`; search treats that decision as
+inconclusive. Cached observation reductions are reauthorized under the current
+policy. This pruning dependency check is separate from the final kernel gate
+on every accepted program and proof. Unsafe declarations cannot authorize
+pruning through an empty axiom inventory or an explicit axiom allowlist.
 
 The API restores the caller's complete Core and Meta states on success, input
 rejection, output-validation failure, and exceptional exits. This includes the

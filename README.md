@@ -162,8 +162,28 @@ The returned term is the checked kernel expression. Supported recursion gets
 the same checked compiler adapters used by command publication. The tactic's
 `Try this` text is an independently checked source suggestion; successful
 synthesis can still report that no replayable suggestion was available.
-These are type-directed frontends; contextual behavioral-contract syntax,
-partial-program sketches, and editor code actions remain future work.
+These are type-directed frontends; contextual behavioral-contract syntax
+and editor code actions remain future work.
+
+### Completing a supplied sketch
+
+`#leant2_sketch` completes zero to four explicitly named holes in a closed
+whole-function body, jointly checking the original whole-function contract:
+
+```lean
+#leant2_sketch f : List Nat → Nat :=
+  (fun (step : Nat → Nat → Nat) (seed : Nat) (xs : List Nat) =>
+    List.foldr step seed xs) ?step ?seed
+where
+  f [] = 1 ∧ f [2] = 3 ∧ f [2, 3] = 6 ∧ f [0, 4, 0] = 5
+```
+
+The fixed fold remains part of the result; search fills its step and seed in
+one backtracking continuation. Accepted completions bind the usual `it1`,
+`it2`, ... aliases. The [sketch guide](docs/sketches.md) explains hole ownership,
+original-universe replay, axiom profiles, cancellation, and the supported
+boundary. This initial closed command does not establish all thirteen proposed
+carrier-given Church completions or complete proposal E2.
 
 ### Calling synthesis from a metaprogram
 
@@ -174,8 +194,9 @@ inventory and axiom profile, restores caller Core/Meta state, and returns native
 checked expressions without publishing or compiling results. Callers must
 inspect each candidate's actual `programType` and contract proof, including
 possible universe specialization. Input errors, bounded misses, certified
-negatives, and output-validation failures have distinct meanings. The full native
-build passes all 68 jobs; focused tests and the guide's exact example pass.
+negatives, and output-validation failures have distinct meanings. At the API
+checkpoint, the full native build passed all 68 jobs, including focused API
+tests; the guide's exact example also passed.
 The [API checkpoint](docs/baseline/library-api-2026-09-21/README.md) also
 passes all 832 external checks at both budgets on `9ec21c8`. Native API tests
 belong to the build gate and do not increase that external denominator.
@@ -211,10 +232,11 @@ python tools/run_extended.py --manifest tests/benchmarks/guards.json --budget 10
 python tools/run_extended.py --manifest tests/benchmarks/tree-composition.json --budget 10000 # 2 tree traversal gates + 1 impossible control
 python tools/run_results.py --budget 10000      # 10 result-binding and evaluation sessions
 python tools/run_frontends.py --budget 10000 --out baseline-out/frontends # 8 fresh-file term/tactic gates
+python tools/run_sketches.py --budget 10000 --out baseline-out/sketches # 7 sketch gates, with source replays and independent controls
 ```
 
 `python tools/run_all.py` builds everything and runs the baseline and all
-twelve additional harnesses, printing one summary table. It fails on a harness
+thirteen additional harnesses, printing one summary table. It fails on a harness
 process error as well as an incomplete score. The baseline also treats
 missing query output as a failure instead of reducing its denominator, and
 checks query diagnostics through explicit REPL completion markers. It still
@@ -226,23 +248,30 @@ complete, and reject diagnostics even after a candidate has been printed.
 Literal `False` controls require a certified contract refutation; silence
 and timeouts do not pass them.
 
-The configured aggregate contains **832 required checks across 13 harnesses**,
-and the [API checkpoint](docs/baseline/library-api-2026-09-21/README.md)
-passes all of them at both 5 s and 10 s per search on implementation commit
-`9ec21c8`. Its aggregate build includes the new API and refutation tests.
+The configured aggregate contains **839 required checks across 14 harnesses**.
+The latest complete archived result remains the
+[API checkpoint](docs/baseline/library-api-2026-09-21/README.md):
+**832/832 across 13 harnesses** at both 5 s and 10 s per search on implementation
+commit `9ec21c8`. The promoted public sketch runner passes all seven cases at
+both budgets, and the current native aggregate build passes 83 jobs. Complete
+839-check validation and its archive remain pending.
 The 8 frontend cases require 13 fresh Lean processes:
 8 original stages, 3 independent replays of actual tactic suggestions in
 files importing only Lean, and 2 separate expected-error stages. These process
 counts are separate from the 837 retained legacy synthesis-query records at
 each budget; required checks also overlap in the goals they exercise.
+The sketch family adds seven original command stages and three fresh Lean-only
+replays of actual emitted completion source. Its separate reference/control
+process is an uncounted prerequisite. Native sketch regressions belong to the
+build gate and do not increase the external denominator.
 
-Both complete runs preserve pre/post hashes for source, both native executables
+Both archived API runs preserve pre/post hashes for source, both native executables
 (`leant2.exe` and Lean), the complete recorded compiled-module inventory,
-and external fixtures. The new archive independently reconstructs secondary
+and external fixtures. That API archive independently reconstructs secondary
 runner transcripts and checks raw outcome categories and session provider
 histories, in addition to protocol checks and aggregate scores. The frontend
-runner requires a fresh output directory and does not build. Build before
-running it directly; fingerprints identify the artifacts tested and do not
+and sketch runners require fresh output directories and do not build. Build
+before running either directly; fingerprints identify the artifacts tested and do not
 establish that they were rebuilt.
 
 The previous checkpoint passed **787/787 scored cases** across seven

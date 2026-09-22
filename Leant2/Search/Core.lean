@@ -1,6 +1,7 @@
 import Lean
 import Leant2.Core.Types
 import Leant2.Native.Transaction
+import Leant2.Native.Pruning
 import Leant2.Proof.Local
 /-!
 # Construction search (unified proposal, Sections 5, 7, 15)
@@ -47,6 +48,10 @@ structure SearchConfig where
   maxSplits : Nat := 2
   /-- Global constants that may be applied. -/
   providers : Array Provider := #[]
+  /-- Trust policy for negative pruning as well as final acceptance. -/
+  profile : Profile := .standard
+  /-- Closed predicate/decider dependency judgments, guarded by policy and env. -/
+  pruningEvidenceCache : Option PruningEvidenceCacheRef := none
   /-- Closed types tried for `Sort`-valued holes. -/
   typeFrontier : Array Expr := #[]
   /-- Allow `Classical.em` and friends as providers. -/
@@ -286,6 +291,8 @@ def evalResidual (cfg : SearchConfig) (p : Expr) : SearchM Residual := do
     let ctx ← read
     let (report, cache) ← evalObservations cfg.observations p
       (← ctx.observationCache.get) instantiatePartial (checkDeadline.run ctx)
+      (fun predicate decider =>
+        falseEvidenceAllowed cfg.profile predicate decider cfg.pruningEvidenceCache)
     ctx.observationCache.set cache
     ctx.observationReport.set report
     if leant2.traceNodes.get (← getOptions) then
@@ -297,7 +304,9 @@ def evalResidual (cfg : SearchConfig) (p : Expr) : SearchM Residual := do
     let t := pred.beta #[p]
     let i := inst.beta #[p]
     let (r, _) ← kernelDecide t i
-    if r == some false then return .refuted
+    if r == some false &&
+        (← falseEvidenceAllowed cfg.profile pred inst cfg.pruningEvidenceCache) then
+      return .refuted
     if r == some true && !p.hasExprMVar then
       proofs := proofs.push (some (mkApp3 (mkConst ``of_decide_eq_true) t i
         (mkApp2 (mkConst ``Eq.refl [Level.succ .zero]) (mkConst ``Bool) (mkConst ``Bool.true))))
@@ -371,7 +380,8 @@ partial def partialRefute (cfg : SearchConfig) (t : Expr) : SearchM Bool := do
     return ← partialRefute cfg (t.getArg! 1)
   let inst? ← probeInstance? (mkApp (mkConst ``Decidable) t)
   let some inst := inst? | return false
-  return (← kernelDecide t inst).1 == some false
+  return (← kernelDecide t inst).1 == some false &&
+    (← falseEvidenceAllowed cfg.profile t inst cfg.pruningEvidenceCache)
 
 /-- The tactic part of the portfolio on a closed goal; messages the tactics
 log are discarded. -/
@@ -418,8 +428,8 @@ def proofPortfolio (cfg : SearchConfig) (g : MVarId) (exactContractTried : Bool 
             | .refuted => return false
             | .proved pf => g.assign pf; return true
             | .stuck => pure ()
-  -- fast path: a decidable closed proposition is decided by reduction; `false`
-  -- refutes the candidate outright, so no further tactic is attempted
+  -- A false decision prunes only when its evidence obeys the query profile.
+  -- Otherwise ordinary tactics may still provide an admissible proof.
   let inst? ← probeInstance? (mkApp (mkConst ``Decidable) t)
   if let some inst := inst? then
     match (← kernelDecide t inst).1 with
@@ -429,8 +439,9 @@ def proofPortfolio (cfg : SearchConfig) (g : MVarId) (exactContractTried : Bool 
       g.assign pf
       return true
     | some false =>
-      if cfg.contract.isSome then charge fun l => { l with rejected := l.rejected + 1 }
-      return false
+      if ← falseEvidenceAllowed cfg.profile t inst cfg.pruningEvidenceCache then
+        if cfg.contract.isSome then charge fun l => { l with rejected := l.rejected + 1 }
+        return false
     | none => pure ()
   tacticProve g
 

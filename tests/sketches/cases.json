@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "status": "Seven required public-command obligations with independent completed-source replay. The same case fields passed focused development runs at both 5000 and 10000 ms; those dirty-source receipts are distinct from clean aggregate checkpoint evidence.",
+  "provider_scope": "Public curated and session providers. Reference definitions are never present before a synthesis command. Explicit-provider isolation and ownership-state inspection are separate native tests.",
+  "cases": [
+    {
+      "id": "two-hole-fold",
+      "expect": "candidate",
+      "holes": 2,
+      "target": "List Nat → Nat",
+      "sketch": "(fun (step : Nat → Nat → Nat) (init : Nat) (xs : List Nat) => List.foldr step init xs) ?step ?init",
+      "contract": "f [] = 1 ∧ f [2] = 3 ∧ f [2, 3] = 6 ∧ f [0, 4, 0] = 5",
+      "checks": "fold-checks.lean.in",
+      "replay": true
+    },
+    {
+      "id": "lambda-identity",
+      "expect": "candidate",
+      "holes": 1,
+      "target": "∀ A : Type, A → A",
+      "sketch": "fun (A : Type) (value : A) => (?body : A)",
+      "contract": "∀ (A : Type) (value : A), f A value = value",
+      "checks": "identity-checks.lean.in",
+      "replay": true
+    },
+    {
+      "id": "zero-hole-correct",
+      "expect": "candidate",
+      "holes": 0,
+      "target": "List Nat → Nat",
+      "sketch": "List.foldr Nat.add 1",
+      "contract": "f [] = 1 ∧ f [2] = 3 ∧ f [2, 3] = 6 ∧ f [0, 4, 0] = 5",
+      "checks": "fold-checks.lean.in",
+      "replay": true
+    },
+    {
+      "id": "zero-hole-wrong",
+      "expect": "rejected",
+      "holes": 0,
+      "target": "List Nat → Nat",
+      "sketch": "List.foldr Nat.add 0",
+      "contract": "f [] = 1 ∧ f [2] = 3 ∧ f [2, 3] = 6 ∧ f [0, 4, 0] = 5",
+      "replay": false
+    },
+    {
+      "id": "duplicate-label",
+      "expect": "preflight",
+      "holes": null,
+      "target": "Nat × Nat",
+      "sketch": "(?same, ?same)",
+      "contract": "True",
+      "replay": false
+    },
+    {
+      "id": "unregistered-hole",
+      "expect": "preflight",
+      "holes": null,
+      "target": "Nat",
+      "sketch": "(_ : Nat)",
+      "contract": "True",
+      "replay": false
+    },
+    {
+      "id": "false-contract",
+      "expect": "contract_impossible",
+      "holes": 2,
+      "target": "List Nat → Nat",
+      "sketch": "(fun (step : Nat → Nat → Nat) (init : Nat) (xs : List Nat) => List.foldr step init xs) ?step ?init",
+      "contract": "False",
+      "replay": false
+    }
+  ]
+}

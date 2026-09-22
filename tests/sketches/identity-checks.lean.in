@@ -1,0 +1,11 @@
+theorem originalContract :
+    ∀ (A : Type) (value : A), completed A value = value := by
+  intro A value
+  rfl
+
+theorem heldOut : completed Nat 7 = 7 ∧ completed Bool true = true ∧
+    completed (List Nat) [8, 2] = [8, 2] := by decide
+
+#eval if completed Nat 7 == 7 && completed Bool true &&
+    completed (List Nat) [8, 2] == [8, 2]
+  then "SKETCH_VALUE_OK" else "SKETCH_VALUE_FAILED"

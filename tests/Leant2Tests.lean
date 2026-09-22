@@ -14,6 +14,12 @@ import Leant2Tests.Results
 import Leant2Tests.LocalProof
 import Leant2Tests.ContractRefutation
 import Leant2Tests.LibraryAPI
+import Leant2Tests.InitializedEnumeration
+import Leant2Tests.SketchPreparation
+import Leant2Tests.Sketch
+import Leant2Tests.SketchCommand
+import Leant2Tests.AcceptanceAlternatives
+import Leant2Tests.PruningProfiles
 import Leant2Tests.Cancellation
 import Leant2Tests.ScopedBudget
 import Leant2Tests.BranchComposition

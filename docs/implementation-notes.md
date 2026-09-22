@@ -115,6 +115,28 @@ Missing or opaque deciders preserve fallback. Focused tests cover those cases,
 native partial roots, mismatched predicates and sibling goals, unresolved
 universes, local contradictions, accounting, rollback, and cancellation.
 
+Negative pruning also respects the applicable axiom profile. A synthesized
+decider can reduce to `false` using a forbidden axiom even when ordinary
+reflexivity proves the original proposition without axioms. Such evidence is
+inconclusive: residual and observation evaluation continue, and generic proof
+evaluation retains its tactic fallback. The unreduced predicate/decider
+dependencies are inspected before their erased Boolean can discard work.
+Unsafe declarations are refused independently of the axiom allowlist: an
+unchecked unsafe decider can also reduce to `false` without using any axioms,
+while its evidence would fail the safe kernel gate.
+Closed schemas abstracted over the program allow trusted partial refutations
+without requiring every program hole to be filled. Unsupported open evidence
+conservatively declines pruning.
+
+Dependency judgments are cached only for identical schemas, allowed axioms,
+and the same immutable environment object. Raw observation reductions remain
+separate and every cached `false` is reauthorized under the current profile.
+This prevents a permissive result or a reused declaration name after rollback
+from authorizing strict pruning. True-decider proof construction is unchanged
+and still passes the final kernel/axiom gate. Native controls cover all three
+entry points, all four false-decision paths, trusted partial pruning, later
+conjuncts, policy changes, and environment replacement.
+
 The proposal's CEGIS loop, observational buckets and domain plugins are not
 built. What is built covers the whole corpus:
 
@@ -374,7 +396,7 @@ Trace IO and work already performed are not undone by state restoration.
 Focused native API, local-proof, and contract-refutation tests pass, including
 actual `Prop` specialization, contract-only specialization, invalid-output
 rejection, auxiliary theorem export, and interruption after search mutations.
-The aggregate `lake build Leant2 Leant2Tests leant2` passes all 68 jobs.
+At the API checkpoint, `lake build Leant2 Leant2Tests leant2` passed all 68 jobs.
 The [library guide](library-api.md) records the full contract and an exact
 example that compiled and ran successfully. The
 [API checkpoint](baseline/library-api-2026-09-21/README.md) verifies `9ec21c8`
@@ -467,11 +489,11 @@ The actual emitted suggestion text is also tested
 by the public harness in a second fresh file importing only Lean, so that
 adapter declarations or the original elaborator state cannot hide a missing
 dependency. A source-presentation failure does not invalidate an already
-checked synthesis result. Contextual contract lifting, sketches, and code
-actions are not implemented.
+checked synthesis result. Contextual contract lifting and code actions are not
+implemented. Closed whole-function sketches have a separate command below.
 
-The 8 public frontend cases are integrated into `run_all.py`, giving
-832 required checks across 13 harnesses. Their 13 fresh process stages
+The 8 public frontend cases were integrated into `run_all.py`, bringing the
+frontend checkpoint to 832 required checks across 13 harnesses. Their 13 fresh process stages
 comprise 8 original files, 3 suggestion replays, and 2 separate
 expected-error files. Both complete budgets now pass at the committed source,
 as recorded in the [frontend checkpoint](baseline/frontends-2026-09-21/README.md). Positive declarations are audited through
@@ -486,6 +508,65 @@ Focused public runs passed all eight cases and thirteen stages at both 5 s and
 10 s per search with identical captured inputs. The full 62-job native build,
 39 Python tools tests, and 19 Python benchmark tests also passed. These focused
 development results remain separate evidence from the complete archived runs.
+
+## Closed whole-function sketches
+
+`#leant2_sketch f : T := body where P f` completes zero to four explicitly
+named holes in a supplied closed body. The optional contract constrains the
+entire completed function. The identifier binds only inside that contract;
+results use the existing `it1`, ... aliases. The [sketch guide](sketches.md)
+contains examples and the supported boundary.
+
+Preparation elaborates the real body in a fresh native metavariable depth,
+owns each explicit pending goal, and checks its frozen type and local context.
+Native delayed closures are inspected without treating their wrappers as
+assignable holes. Anonymous, duplicate, type/motive/dictionary, and unresolved
+context-dependent holes are refused. Registered expression-error obligations
+are also inspected when elaboration erases their subterms. Newly introduced
+declarations and unfinished recursive lifting are unsupported. Preparation and
+its consumer restore complete Core, Meta, and Term state on every exit.
+
+`enumerateInitialized` reuses the existing continuation engine with the
+prepared expression as its actual root. Each depth restores the same complete
+prepared snapshot. Program holes are ordered stably by telescope arity, followed
+by the one whole-contract proof. All providers and every owned goal remain
+available; a failed complete contract backtracks across the entire continuation.
+Partial residual pruning is disabled for these native closure graphs, while
+exact closed-root evaluation remains available. Both initialized and ordinary
+enumeration deduplicate programs only after acceptance, preserving different
+proofs of a program after an axiom-profile rejection.
+
+Completed programs and proofs pass the selected gate, bounded theorem-only
+transport, and an independent gate at the exact original target and unreduced
+contract in the caller's original environment. There is no unconstrained or
+Prop-specialized sketch fallback. Fixed fragments receive the same axiom audit
+as synthesized ones. The command independently restores publication state on
+exceptions, including actual cancellation after a provisional alias is bound.
+Supplementary source for the first result is tested by fresh Lean-only replay;
+its display alone does not establish replayability for arbitrary completions.
+
+The promoted public sketch runner passes all seven cases at both 5 s and 10 s, with
+identical captured inputs. Each run has ten public stages (seven originals and
+three emitted-source replays) and one separate Lean-only reference/control
+process. The reference process must pass but does not add a scored case.
+Wrong complete bodies require a recorded rejection; malformed inputs require
+the intended preparation error; fresh negative processes leave neither bare
+nor numbered aliases. The configured aggregate is now 839 checks across 14
+harnesses. Its complete validation and archive remain pending, separate from
+these focused runs and the previous 832-check API checkpoint.
+
+The final source passes the 83-job aggregate native gate after serial module
+builds, all 76 Python harness tests, and the exact guide/README examples with
+three accepted sketch outcomes. An earlier parallel aggregate attempt exhausted
+host resources; its failure log remains separate from the successful serial
+rebuild. The unsafe-pruning regressions and public runs include the final
+unsafe-declaration guard.
+
+This is the initial closed command for E2. All thirteen original open Church
+stretch searches remain unscored, and the proposed thirteen carrier-given
+completions remain to be established separately. Contextual contract lifting,
+term/definition sketch syntax, arbitrary dependent sketches, carrier invention,
+and editor actions remain open.
 
 ## Initial next-phase coverage
 

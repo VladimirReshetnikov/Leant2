@@ -6,3 +6,4 @@ import Leant2.Engine
 import Leant2.API
 import Leant2.Frontend.Command
 import Leant2.Frontend.Term
+import Leant2.Frontend.Sketch

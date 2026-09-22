@@ -25,6 +25,7 @@ HARNESSES = [
     ("guard-gates", ["tools/run_extended.py", "--manifest", "tests/benchmarks/guards.json"]),
     ("tree-composition", ["tools/run_extended.py", "--manifest", "tests/benchmarks/tree-composition.json"]),
     ("frontends", ["tools/run_frontends.py"]),
+    ("sketches", ["tools/run_sketches.py"]),
 ]
 
 
@@ -54,7 +55,7 @@ def main():
     for name, cmd in HARNESSES:
         t0 = time.time()
         extra = ["--budget", str(args.budget)]
-        if name in {"baseline", "church", "session", "results", "frontends"}:
+        if name in {"baseline", "church", "session", "results", "frontends", "sketches"}:
             extra += ["--out", str(out / name)]
         elif name in {"recursive", "context", "corpus"}:
             extra += ["--out", str(out / f"{name}.out")]

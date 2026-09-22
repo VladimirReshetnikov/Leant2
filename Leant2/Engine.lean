@@ -39,31 +39,59 @@ def defaultTypeFrontier : MetaM (Array Expr) := do
 private def runSearch (ctx : SearchCtx) (act : SearchM α) : MetaM α :=
   act.run ctx
 
-/-- Enumerate candidates for `goalTy` by iterative deepening, passing each
-closed candidate to `accept`, which returns `true` to stop. Deepening stops
-after the first depth that produced a candidate (`productive` reports it). -/
-def enumerate (ctx : SearchCtx) (cfg : SearchConfig) (goalTy : Expr)
+/-- The real root and pending obligations for one enumeration pass. The root
+may already contain a partial program, so its pending goals are explicit.
+This is an internal live-state descriptor, not a portable query or result. -/
+structure EnumerationSeed where
+  root : MVarId
+  goals : List Goal
+
+/-- Enumerate initialized passes in the supplied depth order. Initialization
+runs before the branch transaction: malformed input is not ordinary search
+failure. The caller owns seed lifetime and any full state restoration; the
+leaf receives the whole instantiated root before such restoration occurs.
+
+The initializer and acceptance callback share the existing SearchCtx, so work
+charges and accepted-result IO storage are not rolled back. A returned true
+retains its existing stop semantics; no new quota check or exception boundary
+is introduced here. -/
+def enumerateInitialized (ctx : SearchCtx) (cfg : SearchConfig)
+    (initializeSeed : Nat → SearchM EnumerationSeed)
     (accept : Expr → SearchM Bool) (productive : SearchM Bool) (depths : List Nat)
     (completed : IO.Ref Nat) : MetaM Unit := do
   runSearch ctx do
     for depth in depths do
-      let root ← mkFreshExprMVar goalTy
+      let seed ← initializeSeed depth
+      let root := mkMVar seed.root
       let leaf : Leaf := do
         let e ← instantiateMVars root
         if e.hasExprMVar then return false
         if leant2.traceNodes.get (← getOptions) then
           IO.println s!"[leant2]     leaf {← ppExpr e}"
         accept e
-      let cfg := { cfg with maxDepth := depth, root := some root.mvarId! }
+      let cfg := { cfg with maxDepth := depth, root := some seed.root }
       let t0 ← IO.monoMsNow
-      let _ ← alternative (search cfg leaf cfg.maxSplits
-        [{ mvar := root.mvarId!, depth, allowExtendedRecursion := true }])
+      let _ ← alternative (search cfg leaf cfg.maxSplits seed.goals)
       -- a depth counts as completed only if the pass returned (not interrupted)
       completed.modify (· + 1)
       if leant2.trace.get (← getOptions) then
         IO.println s!"[leant2]   depth {depth} done in {(← IO.monoMsNow) - t0} ms"
 
       if ← productive then break
+
+/-- Enumerate candidates for `goalTy` by iterative deepening, passing each
+closed candidate to `accept`, which returns `true` to stop. Deepening stops
+after the first depth that produced a candidate (`productive` reports it).
+The ordinary initializer retains the original goal order and permissions. -/
+def enumerate (ctx : SearchCtx) (cfg : SearchConfig) (goalTy : Expr)
+    (accept : Expr → SearchM Bool) (productive : SearchM Bool) (depths : List Nat)
+    (completed : IO.Ref Nat) : MetaM Unit :=
+  enumerateInitialized ctx cfg (fun depth => do
+    let root ← mkFreshExprMVar goalTy
+    return {
+      root := root.mvarId!
+      goals := [{ mvar := root.mvarId!, depth, allowExtendedRecursion := true }] })
+    accept productive depths completed
 
 private def printLaneProfile (profile : Option Profiling.Collector)
     (before : Profiling.Snapshot) : MetaM Unit := do
@@ -302,8 +330,12 @@ def runQuery (q : Query) : MetaM Outcome :=
   let observations ← match q.contract with
     | some c => mkObservations c q.target
     | none => pure #[]
-  let skip := ((leant2.skipRules.get (← getOptions)).splitOn ",").map (·.trim) |>.filter (· != "")
-  let baseCfg : SearchConfig := { providers, typeFrontier := frontier, recursionFirst := q.contract.isSome,
+  let skip := ((leant2.skipRules.get (← getOptions)).splitOn ",").map
+    (fun part => part.trimAscii.toString) |>.filter (· != "")
+  let pruningEvidenceCache ← IO.mkRef none
+  let baseCfg : SearchConfig := { providers, profile := q.profile,
+                                  pruningEvidenceCache := some pruningEvidenceCache,
+                                  typeFrontier := frontier, recursionFirst := q.contract.isSome,
                                   contract := q.contract, residual, observations, skip }
   let found ← IO.mkRef (#[] : Array Accepted)
   let seen ← IO.mkRef (#[] : Array Expr)
@@ -325,10 +357,13 @@ def runQuery (q : Query) : MetaM Outcome :=
         pure (v, some (p, pty))
     let progN ← instantiateMVars prog
     if (← seen.get).any (· == progN) then return false
-    seen.modify (·.push progN)
     charge fun l => { l with candidates := l.candidates + 1 }
     match ← gate q.profile progN target proof? with
     | .ok acc =>
+      -- A rejected proof does not reject every proof of this program's
+      -- contract. Deduplicate only accepted programs so ordinary proof
+      -- alternatives remain available after an axiom-profile rejection.
+      seen.modify (·.push progN)
       -- classical only by evidence: the axiom inventory, not the lane
       let _ := classicalLane
       found.modify (·.push acc)
@@ -368,7 +403,9 @@ def runQuery (q : Query) : MetaM Outcome :=
   let refutationLane (ms : Nat) (depths : List Nat) : MetaM Unit := withLane ledger refutedPrograms graceRef timedOut ms (name := "refutation") (profile := spanProfile) fun ctx => do
     let negTy ← mkArrow q.target (mkConst ``False)
     let extra ← mkProviders #[``Empty.elim, ``False.elim] (always := true)
-    let cfgR := { baseCfg with providers := extra ++ baseCfg.providers }
+    let cfgR := { baseCfg with
+      providers := extra ++ baseCfg.providers
+      profile := .strictConstructive }
     let dummy ← IO.mkRef 0
     enumerate ctx cfgR negTy (fun e => do
         match ← gate .strictConstructive e negTy none with

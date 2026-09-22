@@ -1,0 +1,11 @@
+theorem originalContract :
+    completed [] = 1 ∧ completed [2] = 3 ∧ completed [2, 3] = 6 ∧
+    completed [0, 4, 0] = 5 := by decide
+
+-- Extra examples, not substitutes for the original four observations.
+theorem heldOut : completed [5, 8] = 14 ∧ completed [0, 0] = 1 ∧
+    completed [9, 1, 2, 3] = 16 := by decide
+
+#eval if completed [] == 1 && completed [2, 3] == 6 &&
+    completed [5, 8] == 14 && completed [9, 1, 2, 3] == 16
+  then "SKETCH_VALUE_OK" else "SKETCH_VALUE_FAILED"
