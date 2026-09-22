@@ -71,9 +71,9 @@ class ExtendedProtocolTests(unittest.TestCase):
         self.assertEqual([c["id"][:7] for c in probes], [f"probe{n:02}" for n in range(1, 17)])
         self.assertEqual(len([c for c in cases if c["group"] == "lean-core"]), 9)
         self.assertEqual(len([c for c in cases if c["expect"] == "none"]), 4)
-        self.assertEqual(len([c for c in cases if c["expect"] == "candidate"]), 24)
+        self.assertEqual(len([c for c in cases if c["expect"] == "candidate"]), 25)
         self.assertEqual({c["id"] for c in cases if c["expect"] == "open"},
-                         {"probe11_tree_inorder"})
+                         set())
         for c in cases:
             transcript = HARNESS.transcript(c)
             self.assertEqual(transcript.count(":synth "), 1)

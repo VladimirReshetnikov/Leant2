@@ -58,7 +58,7 @@
       "reference": "List.filter (fun n => n != 0)", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 10 (reconstructed examples; conditional fold)"
     },
     {
-      "id": "probe11_tree_inorder", "title": "Flatten a binary tree in order", "group": "article-probes", "expect": "open",
+      "id": "probe11_tree_inorder", "title": "Flatten a binary tree in order", "group": "article-probes", "expect": "candidate",
       "prelude": "inductive ExtendedTree (A : Type) where\n  | leaf : ExtendedTree A\n  | node : ExtendedTree A → A → ExtendedTree A → ExtendedTree A",
       "type": "ExtendedTree Nat → List Nat",
       "contract": "{f} .leaf = [] ∧ {f} (.node (.node .leaf 1 .leaf) 2 (.node .leaf 3 .leaf)) = [1, 2, 3] ∧ {f} (.node .leaf 4 (.node .leaf 5 .leaf)) = [4, 5]",

@@ -61,8 +61,8 @@ tests, and the `leant2` REPL executable.
 - `Leant2/Native/Transaction.lean`: cancellation-safe rollback and owned
   cooperative quotas for speculative search tiers. Failed scopes restore
   native state without refunding work; successful stop requests survive
-  local quota exhaustion. The quota primitive is tested independently;
-  bounded branch composition is still under development.
+  local quota exhaustion. The bounded branch-composition tier uses this
+  primitive to share limits across its alternatives and continuations.
 - `Leant2/Frontend/Command.lean`: `#leant2 T`, `#leant2 f : T where P`,
   `#leant2_check`, `#leant2_none`; results are bound as `it1`, `it2`, ...
   Each successful query refreshes the numbered names and bare `it` through
@@ -94,6 +94,17 @@ including executable publication and printed-source round trips. The rule
 does not infer predicates from examples or implement general decision-tree
 learning.
 
+A bounded branch-composition tier gives outer nonindexed induction branches
+an early search over one- and two-head expressions. It combines exact local
+data, constructors, and a small prefix of ordinary providers; the original
+search remains available afterward. Complete root programs also get an early
+check of their exact original contract before ordinary proof construction.
+Stuck checks retain proof search, and rejecting one computed proof still
+allows an alternate proof to pass the trust profile. Tree inorder and a
+second binary-tree traversal pass public synthesis, universal constructor
+equations, and held-out execution at both existing budgets. These focused
+development results do not extend the complete acceptance checkpoint below.
+
 ### The baseline
 
 The minimal acceptance baseline is Leant's `:synth` golden corpus
@@ -122,11 +133,12 @@ python tools/run_extended.py --budget 10000     # 29 independent sessions with t
 python tools/run_extended.py --manifest tests/benchmarks/recursion.json --budget 10000 # 3 recursion gates + 2 impossible controls
 python tools/run_extended.py --manifest tests/benchmarks/local-proofs.json --budget 10000 # 5 local-proof gates + 1 impossible control
 python tools/run_extended.py --manifest tests/benchmarks/guards.json --budget 10000 # 3 guarded-program gates + 2 impossible controls
+python tools/run_extended.py --manifest tests/benchmarks/tree-composition.json --budget 10000 # 2 tree traversal gates + 1 impossible control
 python tools/run_results.py --budget 10000      # 10 result-binding and evaluation sessions
 ```
 
 `python tools/run_all.py` builds everything and runs the baseline and all
-ten additional harnesses, printing one summary table. It fails on a harness
+eleven additional harnesses, printing one summary table. It fails on a harness
 process error as well as an incomplete score. The baseline also treats
 missing query output as a failure instead of reducing its denominator, and
 checks query diagnostics through explicit REPL completion markers. It still
@@ -156,7 +168,8 @@ benchmark problems.
 
 The new [extended suite](docs/baseline/extended.md) reconstructs the sixteen
 probes in proposal 11, adds nine Lean-core examples and four negative
-controls, and separates required capabilities from one open search.
+controls. All 29 sessions are now required after focused validation of the
+last open tree-inorder case; the complete configured aggregate is 824 checks.
 Each query runs in a fresh session; a reported candidate must bind at the
 requested type and pass executable replay. This is the initial local E8
 benchmark work, not a port of the external synthesis benchmark collections.
@@ -171,15 +184,16 @@ compiled-module, and external-input hashes against a pre-run snapshot.
 Three E8 searches and thirteen Church stretch cases were unsolved at that
 checkpoint.
 
-The current [constructive guard checkpoint](docs/baseline/guards-2026-09-21/README.md),
+The latest complete [constructive guard checkpoint](docs/baseline/guards-2026-09-21/README.md),
 implementation commit `ce31d3a`, passes **820/820 required checks across eleven
 harnesses at both 10 s and 5 s per query**. Maximum and drop-zero are required
 E8 probes; five separate guard gates include universal post-checks for maximum,
 minimum, and drop-zero. Empty-provider Lean fixtures separately verify native
 guarded recursion, exact-term publication, and printed-source equivalence.
 The archive preserves complete raw runs and unchanged pre/post input hashes.
-Tree inorder remains the only open E8 search; the thirteen Church stretch
-cases are also unsolved at this checkpoint.
+Tree inorder was the only open E8 search at that checkpoint; the thirteen
+Church stretch cases were also unsolved. The newer focused tree results above
+are separate from this archived 820-check run.
 
 The Church harness imports the specifications from Leant's vendored Djex
 directory (`C:\Leant\lib\Djex\test-church`), so every `:synth` carries the

@@ -96,6 +96,9 @@ structure Goal where
   construction preserves it; proof/type/instance goals and guard children clear
   it. This permission is independent of outer-induction eligibility. -/
   allowNatGuards : Bool := false
+  /-- One early bounded composition prefix on an actual outer nonindexed
+  program-induction minor. Free setup preserves it; ordinary construction clears it. -/
+  tryBranchComposition : Bool := false
 
 /-- Self-time profile of the search rules, collected and printed only when the
 lane trace is enabled. -/
@@ -331,6 +334,52 @@ def evalResidual (cfg : SearchConfig) (p : Expr) : SearchM Residual := do
   let (pf, _) := buildAndProof proofs (contract.beta #[p]) 0
   return .proved pf
 
+/-- Preserve the existing query-local closed-program refutation accounting.
+The caller owns eligibility and its proof-attempt charge. IO-backed refutations
+remain valid when an alternative restores its metavariable assignments. -/
+private def evalClosedProgram (cfg : SearchConfig) (program : Expr) : SearchM Residual := do
+  if leant2.traceNodes.get (← getOptions) then
+    IO.println s!"[leant2]     program {(← ppExpr program).pretty 100000}"
+  let refuted := (← read).refutedPrograms
+  if (← refuted.get).contains program then return .refuted
+  let result ← evalResidual cfg program
+  checkDeadline
+  if result matches .refuted then
+    charge fun l => { l with rejected := l.rejected + 1 }
+    refuted.modify (·.insert program)
+  return result
+
+/-- Check only the exact closed contract of a natively completed root program.
+`none` is ineligible, and `.stuck` preserves ordinary proof search. This path
+does not expose partial/delayed root assignments or evaluate observations.
+Proof assignment and the unchanged continuation belong to the caller's
+alternative, not to this evaluator. Local contexts use the local proof service.
+-/
+def evalClosedRootContract (cfg : SearchConfig) (g : MVarId)
+    : SearchM (Option Residual) := g.withContext do
+  if !cfg.proofPortfolio || cfg.residual.isEmpty || !(← getLCtx).isEmpty then return none
+  let some contract := cfg.contract | return none
+  let some root := cfg.root | return none
+  let target ← instantiateMVars (← g.getType)
+  let closed := fun e : Expr => !e.hasMVar && !e.hasFVar && !e.hasLooseBVars && !e.hasSorry
+  unless closed target do return none
+  unless ← isProp target do return none
+  -- Deliberately native instantiation only. The proof field may remain a hole;
+  -- the program, its type, and the actual predicate must already be closed.
+  let rootValue ← instantiateMVars (mkMVar root)
+  unless rootValue.isAppOfArity ``Subtype.mk 4 do return none
+  let program := rootValue.getArg! 2
+  let programType := rootValue.getArg! 0
+  let actualContract := rootValue.getArg! 1
+  let contract ← instantiateMVars contract
+  unless closed program && closed programType && closed contract && closed actualContract do return none
+  unless actualContract == contract do return none
+  unless closed (← instantiateMVars (← inferType program)) do return none
+  unless target == contract.beta #[program] do return none
+  checkDeadline
+  charge fun l => { l with proofAttempts := l.proofAttempts + 1 }
+  return some (← evalClosedProgram cfg program)
+
 /-- Residual evaluation of a pending contract goal (Section 10): a conjunct
 that already reduces to `false` on the partial program refutes the branch.
 Uses the precomputed deciders when present, otherwise generic decision. -/
@@ -370,7 +419,8 @@ def tacticProve (g : MVarId) : MetaM Bool := do
 
 /-- Local propositions use the isolated proof service. Goals with no local
 context retain the closed-contract evaluator and its refutation accounting. -/
-def proofPortfolio (cfg : SearchConfig) (g : MVarId) : SearchM Bool := g.withContext do
+def proofPortfolio (cfg : SearchConfig) (g : MVarId) (exactContractTried : Bool := false)
+    : SearchM Bool := g.withContext do
   let t ← instantiateMVars (← g.getType)
   if !(← getLCtx).isEmpty then
     if t.hasExprMVar then return false
@@ -384,20 +434,15 @@ def proofPortfolio (cfg : SearchConfig) (g : MVarId) : SearchM Bool := g.withCon
   unless ← isProp t do return false
   charge fun l => { l with proofAttempts := l.proofAttempts + 1 }
   -- the contract goal of a closed program: precomputed conjunct deciders
-  if let some contract := cfg.contract then
-    if !cfg.residual.isEmpty then
-      if let some p ← rootProgram cfg then
-        if leant2.traceNodes.get (← getOptions) then
-          IO.println s!"[leant2]     program {(← ppExpr p).pretty 100000}"
-        if !p.hasExprMVar && t == (contract.beta #[p]) then
-          if (← (← read).refutedPrograms.get).contains p then return false
-          match ← evalResidual cfg p with
-          | .refuted =>
-            -- a closed program of the right type that fails its contract
-            charge fun l => { l with rejected := l.rejected + 1 }
-            (← read).refutedPrograms.modify (·.insert p); return false
-          | .proved pf => g.assign pf; return true
-          | .stuck => pure ()
+  unless exactContractTried do
+    if let some contract := cfg.contract then
+      if !cfg.residual.isEmpty then
+        if let some p ← rootProgram cfg then
+          if !p.hasExprMVar && t == (contract.beta #[p]) then
+            match ← evalClosedProgram cfg p with
+            | .refuted => return false
+            | .proved pf => g.assign pf; return true
+            | .stuck => pure ()
   -- fast path: a decidable closed proposition is decided by reduction; `false`
   -- refutes the candidate outright, so no further tactic is attempted
   let inst? ← probeInstance? (mkApp (mkConst ``Decidable) t)
@@ -531,13 +576,281 @@ def splitNatGuard (g : MVarId) (predicate : Expr)
       (g.byCasesDec predicate decider (← mkFreshUserName `hGuard))
     next positive.mvarId negative.mvarId
 
+/-!
+Bounded composition of native induction branches. A finite one-head/two-head
+prefix uses native application and the original continuation. Scoped quotas
+reserve work for the second grade and the ordinary search fallback.
+-/
+namespace BranchComposition
+
+/-- Diagnostic seam: production calls use these fixed proposed bounds. -/
+structure Limits where
+  attempts : Nat := 2048
+  callbacks : Nat := 128
+  continuationRules : Nat := 4096
+  maxSliceMs : Nat := 500
+  deriving Inhabited, Repr
+
+structure Counters where
+  attempts : Nat := 0
+  seeds : Nat := 0
+  heads : Nat := 0
+  validations : Nat := 0
+  completeBodies : Nat := 0
+  callbacks : Nat := 0
+  continuation : Ledger := {}
+  deriving Inhabited, Repr
+
+structure Stats where
+  total : Counters := {}
+  grades : Array Counters := #[{}, {}]
+  entered : Array Bool := #[false, false]
+  deriving Inhabited, Repr
+
+private def addLedger (a b : Ledger) : Ledger := {
+  ruleApplications := a.ruleApplications + b.ruleApplications
+  unifications := a.unifications + b.unifications
+  proofAttempts := a.proofAttempts + b.proofAttempts
+  candidates := a.candidates + b.candidates
+  rejected := a.rejected + b.rejected }
+
+private def subLedger (a b : Ledger) : Ledger := {
+  ruleApplications := a.ruleApplications - b.ruleApplications
+  unifications := a.unifications - b.unifications
+  proofAttempts := a.proofAttempts - b.proofAttempts
+  candidates := a.candidates - b.candidates
+  rejected := a.rejected - b.rejected }
+
+private inductive AttemptKind where
+  | seed | head | validation
+
+private structure Run where
+  cfg : SearchConfig
+  root : MVarId
+  originalType : Expr
+  locals : Array LocalDecl
+  limits : Limits
+  stats : IO.Ref Stats
+  grade : Nat
+  gradeAttempts : Nat
+  gradeCallbacks : Nat
+  activeStart : IO.Ref (Option Ledger)
+  stop : SearchM Unit
+  next : SearchM Bool
+
+private def record (r : Run) (f : Counters → Counters) : SearchM Unit := do
+  r.stats.modify fun s => { s with total := f s.total, grades := s.grades.modify r.grade f }
+
+private def admitAttempt (r : Run) (kind : AttemptKind) : SearchM Unit := do
+  checkDeadline
+  let s ← r.stats.get
+  if s.total.attempts >= r.limits.attempts ||
+      (s.grades[r.grade]!).attempts >= r.gradeAttempts then r.stop
+  record r fun c => { c with
+    attempts := c.attempts + 1
+    seeds := c.seeds + (match kind with | .seed => 1 | _ => 0)
+    heads := c.heads + (match kind with | .head => 1 | _ => 0)
+    validations := c.validations + (match kind with | .validation => 1 | _ => 0) }
+  charge fun l => { l with unifications := l.unifications + 1 }
+
+private def admitCallback (r : Run) : SearchM Unit := do
+  checkDeadline
+  let s ← r.stats.get
+  if s.total.callbacks >= r.limits.callbacks ||
+      (s.grades[r.grade]!).callbacks >= r.gradeCallbacks then r.stop
+  record r fun c => { c with callbacks := c.callbacks + 1 }
+
+/-- Native apply may solve dictionaries. Only its remaining rigid data goals
+belong to this grammar; this helper never launches proof/instance/type search. -/
+private def dataType? (type : Expr) : MetaM (Option Expr) := do
+  let type ← instantiateMVars type
+  if type.hasExprMVar then return none
+  let type ← whnfR type
+  if type.isSort || type.isForall then return none
+  if ← isProp type then return none
+  if (← isClass? type).isSome then return none
+  return some type
+
+private def completed (r : Run) (credit : Nat) : SearchM Bool := do
+  if credit != 0 then return false
+  record r fun c => { c with completeBodies := c.completeBodies + 1 }
+  r.root.withContext do
+    checkDeadline
+    unless ← r.root.isAssignedOrDelayedAssigned do return false
+    let value ← instantiateMVars (mkMVar r.root)
+    if value.hasExprMVar || value.hasLooseBVars || value.hasSorry then return false
+    let lctx ← getLCtx
+    unless (collectFVars {} value).fvarIds.all (fun id => (lctx.find? id).isSome) do
+      return false
+    admitAttempt r .validation
+    check value
+    unless ← isDefEq (← inferType value) (← instantiateMVars r.originalType) do
+      return false
+    admitCallback r
+    let ledger := (← read).ledger
+    r.activeStart.set (some (← ledger.get))
+    let (found, _) ← tryFinally' (do
+      checkDeadline
+      let found ← r.next
+      if found then
+        -- Acceptance may have escaped to IO storage and requested an immediate
+        -- stop. No owned/inherited heuristic quota may reverse that stop.
+        withTheReader SearchCtx (fun ctx => { ctx with scopedBudgetCheck := none }) checkDeadline
+      else
+        checkDeadline
+      return found) fun _ => do
+        if let some start ← r.activeStart.get then
+          let delta := subLedger (← ledger.get) start
+          record r fun c => { c with continuation := addLedger c.continuation delta }
+        r.activeStart.set none
+    return found
+
+private def constructors (target : Expr) : MetaM (List Name) := do
+  let .const name _ := target.getAppFn | return []
+  let some (.inductInfo info) := (← getEnv).find? name | return []
+  if isClass (← getEnv) name then return []
+  return info.ctors
+
+private def unassignedData? (children : List MVarId) : SearchM (Option (List MVarId)) := do
+  let mut remaining := []
+  for child in children do
+    checkDeadline
+    if ← child.isAssignedOrDelayedAssigned then continue
+    let usable ← child.withContext do dataType? (← child.getType)
+    if usable.isNone then return none
+    remaining := remaining ++ [child]
+  return some remaining
+
+/-- Credits are shared across the entire worklist, never copied per sibling.
+Only completed calls the original continuation; arguments use this filler. -/
+private partial def fill (r : Run) (todo : List (MVarId × Nat)) (credit : Nat)
+    : SearchM Bool := do
+  match todo with
+  | [] => completed r credit
+  | (g, depth) :: tail =>
+    if ← g.isAssignedOrDelayedAssigned then return ← fill r tail credit
+    g.withContext do
+      checkDeadline
+      charge fun l => { l with ruleApplications := l.ruleApplications + 1 }
+      let some target ← dataType? (← g.getType) | return false
+      let matchCount ← IO.mkRef 0
+      for decl in r.locals do
+        checkDeadline
+        if (← matchCount.get) >= 8 then break
+        if decl.isImplementationDetail || ((← getLCtx).find? decl.fvarId).isNone then continue
+        let type ← instantiateMVars decl.type
+        if type.hasExprMVar then continue
+        if let some value := decl.value? (allowNondep := true) then
+          if (← instantiateMVars value).hasExprMVar then continue
+        if ← alternative (do
+            admitAttempt r .seed
+            unless ← isDefEq type target do return false
+            matchCount.modify (· + 1)
+            g.assign decl.toExpr
+            fill r tail credit) then return true
+      let ctors ← constructors target
+      -- Probe the same free constructor leaves as depth-zero search. Every
+      -- apply is charged, including rejected probes of non-nullary constructors.
+      for name in ctors do
+        if ← alternative (do
+            admitAttempt r .head
+            let children ← g.apply (← mkConstWithFreshMVarLevels name) applyCfg
+            let remaining ← children.filterM fun child => do
+              return !(← child.isAssignedOrDelayedAssigned)
+            unless remaining.isEmpty do return false
+            fill r tail credit) then return true
+      if credit == 0 || depth == 0 then return false
+      let targetHead := target.getAppFn.constName?
+      let mut providers : Array Name := #[]
+      unless r.cfg.skip.contains "9" do
+        for provider in r.cfg.providers do
+          checkDeadline
+          if provider.head.isNone || provider.head != targetHead || provider.arity > 2 then continue
+          providers := providers.push provider.name
+          if providers.size == 16 then break
+      let heads := providers.toList.map (fun name => (name, false)) ++
+        ctors.map (fun name => (name, true))
+      for (name, isConstructor) in heads do
+        if ← alternative (do
+            admitAttempt r .head
+            let children ← g.apply (← mkConstWithFreshMVarLevels name) applyCfg
+            let some remaining ← unassignedData? children | return false
+            if isConstructor && remaining.isEmpty then return false
+            fill r (remaining.map (fun child => (child, depth - 1)) ++ tail) (credit - 1)) then
+          return true
+      return false
+
+/-- Bounded early branch composition. The caller supplies provenance by invoking
+this only for an eligible native outer induction minor; the direct API is an
+internal test seam. The production caller uses default limits and original next.
+
+The stats are inclusive continuation deltas, not self-time. Nested tiers are
+already included in an outer continuation and must not be summed again.
+-/
+def run (cfg : SearchConfig) (g : MVarId) (depth : Nat) (locals : Array LocalDecl)
+    (next : SearchM Bool) (limits : Limits := {})
+    (stats? : Option (IO.Ref Stats) := none) : SearchM Bool := alternative do
+  checkDeadline
+  if cfg.contract.isNone || cfg.skip.contains "composition" || depth == 0 then return false
+  let start ← IO.monoMsNow
+  let ctx ← read
+  let slice := match ctx.deadline with
+    | some deadline => min limits.maxSliceMs ((deadline - start) / 4)
+    | none => limits.maxSliceMs
+  if slice == 0 then return false
+  let totalDeadline := start + slice
+  let originalType ← instantiateMVars (← g.getType)
+  unless (← g.withContext (dataType? originalType)).isSome do return false
+  let stats ← match stats? with
+    | some stats => pure stats
+    | none => IO.mkRef ({} : Stats)
+  -- A supplied diagnostics reference is an output for this invocation, not a
+  -- cache of old assignments/counters. Nested invocations allocate their own.
+  stats.set {}
+  for grade in [0, 1] do
+    let activeStart ← IO.mkRef (none : Option Ledger)
+    let gradeAttempts := if grade == 0 then limits.attempts / 4 else limits.attempts
+    let gradeCallbacks := if grade == 0 then limits.callbacks / 4 else limits.callbacks
+    let gradeRules := if grade == 0 then limits.continuationRules / 4 else limits.continuationRules
+    let gradeDeadline := if grade == 0 then start + slice / 4 else totalDeadline
+    stats.modify fun s => { s with entered := s.entered.set! grade true }
+    let exhausted : MetaM Bool := do
+      let now ← IO.monoMsNow
+      if now >= totalDeadline || now >= gradeDeadline then return true
+      let s ← stats.get
+      let active ← match ← activeStart.get with
+        | none => pure 0
+        | some old => pure ((← ctx.ledger.get).ruleApplications - old.ruleApplications)
+      return s.total.continuation.ruleApplications + active >= limits.continuationRules ||
+        (s.grades[grade]!).continuation.ruleApplications + active >= gradeRules
+    -- Each invocation captures the caller's scope, never the previous grade's.
+    -- The owner catch in withScopedBudget occurs after its result-aware restore.
+    if ← withScopedBudget exhausted (fun stop => alternative do
+        let r : Run := {
+          cfg := cfg
+          root := g
+          originalType := originalType
+          locals := locals
+          limits := limits
+          stats := stats
+          grade := grade
+          gradeAttempts := gradeAttempts
+          gradeCallbacks := gradeCallbacks
+          activeStart := activeStart
+          stop := stop
+          next := next }
+        fill r [(g, depth)] (grade + 1)) then return true
+  return false
+
+end BranchComposition
+
 mutual
 /-- Structural recursion on a recursive inductive local (Section 17): the
 recursor with a constant motive; each constructor branch receives its
 induction hypotheses as recursive-call capabilities. Bounded like a split. -/
 partial def structuralRecursion (cfg : SearchConfig) (leaf : Leaf) (splits d : Nat)
     (g : MVarId) (locals : Array LocalDecl) (rest : List Goal) (consumed : List FVarId := [])
-    (allowNatGuards : Bool := false) : SearchM Bool := do
+    (allowNatGuards : Bool := false) (allowBranchComposition : Bool := false) : SearchM Bool := do
   if splits = 0 then return false
   for decl in locals do
     if let some ii ← timed "inductive" (inductiveOfLocal decl) then
@@ -545,7 +858,9 @@ partial def structuralRecursion (cfg : SearchConfig) (leaf : Leaf) (splits d : N
       if ← alternative (do
           let subgoals ← g.induction decl.fvarId (mkRecName ii.name)
           search cfg leaf (splits - 1)
-            (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d, consumed, allowNatGuards }) ++ rest)) then
+            (subgoals.toList.map (fun s => {
+              mvar := s.mvarId, depth := d, consumed, allowNatGuards
+              tryBranchComposition := allowBranchComposition && !s.fields.isEmpty }) ++ rest)) then
         return true
   return false
 
@@ -694,6 +1009,22 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
       charge fun l => { l with unifications := l.unifications + 1 }
       let children ← timed "apply" (g.apply e applyCfg)
       cont children (e.isConstOf ``Subtype.mk)
+    -- Decide the exact closed root contract before exploring its ordinary
+    -- proof constructors. Stuck or ineligible checks preserve the old grammar.
+    let closedContract ← timed "contract.closed" (evalClosedRootContract cfg g)
+    match closedContract with
+    | some .refuted => return false
+    | some (.proved proof) =>
+      if ← alternative (do
+          g.assign proof
+          checkDeadline
+          let found ← cont []
+          if found then
+            withTheReader SearchCtx (fun ctx => { ctx with scopedBudgetCheck := none }) checkDeadline
+          else
+            checkDeadline
+          return found) then return true
+    | _ => pure ()
     let locals ← timed "locals" localsToTry
     -- 0. exact locals first: the exact-term lane runs before eta-expansion, so a
     -- function-typed hole is filled by a matching local rather than introduced
@@ -721,7 +1052,8 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
       return ← alternative do
         let (_, g') ← timed "intro" g.intro1P
         search cfg leaf splits
-          ({ mvar := g', depth, consumed, allowExtendedRecursion := goal.allowExtendedRecursion, allowNatGuards } :: rest)
+          ({ mvar := g', depth, consumed, allowExtendedRecursion := goal.allowExtendedRecursion, allowNatGuards,
+             tryBranchComposition := goal.tryBranchComposition } :: rest)
     -- 2. invertible destructuring (does not consume depth or splits)
     for decl in locals do
       if let some ii ← timed "inductive" (inductiveOfLocal decl) then
@@ -733,7 +1065,8 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
               search cfg leaf splits
                 (subgoals.toList.map (fun s => {
                   mvar := s.mvarId, depth, consumed
-                  allowExtendedRecursion := goal.allowExtendedRecursion, allowNatGuards }) ++ rest)) then
+                  allowExtendedRecursion := goal.allowExtendedRecursion, allowNatGuards
+                  tryBranchComposition := goal.tryBranchComposition }) ++ rest)) then
             return true
           -- destructuring failed (e.g. Prop into data): fall through
   -- 2b. classical case split on a Prop variable, early: `cases (Classical.em p)`.
@@ -755,7 +1088,8 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     -- only (nested recursion remains a late alternative, rule 9d)
     let recurseNow := cfg.recursionFirst && !targetW.isSort && splits == cfg.maxSplits
     if recurseNow then
-      if ← structuralRecursion cfg leaf splits d g locals rest consumed allowNatGuards then return true
+      if ← structuralRecursion cfg leaf splits d g locals rest consumed allowNatGuards
+          (goal.allowExtendedRecursion && cfg.contract.isSome) then return true
     -- 3. reflexivity
     if targetW.isAppOfArity ``Eq 3 then
       if ← alternative (do g.refl; cont []) then return true
@@ -767,6 +1101,10 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             match ← probeInstance? target with
             | some inst => g.assign inst; cont []
             | none => return false) then return true
+    -- A small composition prefix on actual outer native induction minors.
+    -- It resumes this exact continuation and returns to the old rules on miss.
+    if goal.tryBranchComposition && !cfg.skip.contains "composition" then
+      if ← BranchComposition.run cfg g depth locals (search cfg leaf splits rest) then return true
     -- Bounded constructive conditional introduction, confined to program
     -- obligations. A skipped guard is a grammar restriction, never refutation.
     if allowNatGuards then
@@ -928,10 +1266,13 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
       -- 9d. structural recursion as a late alternative, top level only (nested
       -- recursion is not attempted: it multiplies the search without payoff here)
       if !recurseNow && splits == cfg.maxSplits then
-        if ← structuralRecursion cfg leaf splits d g locals rest consumed allowNatGuards then return true
+        if ← structuralRecursion cfg leaf splits d g locals rest consumed allowNatGuards
+            (goal.allowExtendedRecursion && cfg.contract.isSome) then return true
       -- 10. closed contracts and bounded local proof obligations
       if cfg.proofPortfolio then
-        if ← alternative (do if ← timed "portfolio" (proofPortfolio cfg g) then cont [] else return false) then
+        if ← alternative (do
+            if ← timed "portfolio" (proofPortfolio cfg g closedContract.isSome) then cont []
+            else return false) then
           return true
       -- A new grammar tier, after the existing rules. It cannot recursively
       -- reappear in arithmetic or constructor subterms, nor inside a recursor.

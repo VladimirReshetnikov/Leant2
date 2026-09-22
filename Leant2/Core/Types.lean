@@ -70,7 +70,7 @@ register_option leant2.trace : Bool := {
 
 register_option leant2.skipRules : String := {
   defValue := ""
-  descr := "leant2: comma-separated search rules to disable, for experiments (7a,7b,9,9b,9c,rec,residual)"
+  descr := "leant2: comma-separated search rules to disable, for experiments (7a,7b,9,9b,9c,rec,guards,composition,residual)"
 }
 
 register_option leant2.traceNodes : Bool := {

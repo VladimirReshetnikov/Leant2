@@ -98,6 +98,23 @@ map without providers; universal equations check their recursive behavior.
 
 ## Contracts and residual evaluation (Part II, "behavior")
 
+Before ordinary proof construction, the engine checks an exact closed root
+contract when native `instantiateMVars` exposes a completed `Subtype.mk`
+program. The actual subtype predicate must match the configured contract, and
+the pending goal must be exactly that contract applied to the program. Program,
+type, and predicates must be closed; nonempty local contexts and disabled
+proof portfolios retain their existing paths. This check does not expose
+partial delayed assignments or use the observation cache.
+
+The original precomputed deciders return refuted, proved, or stuck. Refutation
+rejects the closed program with query-local cache accounting. A proof runs the
+unchanged continuation inside an alternative; rejection restores it and allows
+ordinary proofs to be tried. This matters when a decider-derived proof uses a
+classical axiom but reflexivity can satisfy a strict constructive profile.
+Missing or opaque deciders preserve fallback. Focused tests cover those cases,
+native partial roots, mismatched predicates and sibling goals, unresolved
+universes, local contradictions, accounting, rollback, and cancellation.
+
 The proposal's CEGIS loop, observational buckets and domain plugins are not
 built. What is built covers the whole corpus:
 
@@ -118,8 +135,9 @@ built. What is built covers the whole corpus:
   Blockers conservatively include holes in residual proof/type arguments and
   need not be minimal. Each cached residual is guarded by its input and
   observation identity in the current metavariable state; backtracking or
-  changing the surrounding program invalidates it. There is still no
-  evaluation at depth 0, and closed candidates still use the original
+  changing the surrounding program invalidates it. Partial residual evaluation
+  remains disabled at depth 0; the exact closed-root check above can run there.
+  Closed candidates still use the original
   contract's deciders and proof construction. Refuted closed programs are
   memoized per query.
 - **Outcome when the type is inhabited but the contract rejects.** Closed
@@ -169,6 +187,38 @@ Those distinct checks must not be conflated with public generic-filter reuse.
 
 ## Scheduling (Part II, "scheduling")
 
+Outer nonindexed program induction also has a bounded branch-composition
+prefix. Only the actual root program path can enable it; free introduction and
+invertible setup preserve permission, while ordinary applications, guards,
+other splits, and extended Nat/indexed induction do not acquire it. The prefix
+tries exactly one and then two application heads, sharing those credits across
+all sibling arguments and also respecting ordinary depth. Its leaves are at
+most eight matching local data values and nullary constructors. Heads are
+constructors and the first sixteen matching constant-result providers with at
+most two explicit arguments, in their existing stable order. Native application
+may solve dictionaries; unresolved proof, class, type, and function arguments
+fall outside this grammar. Local function application, new guards, and new
+recursion are left to the original search.
+
+Each invocation shares 2,048 native/validation attempts, 128 continuation
+admissions, 4,096 continuation rule applications, and a cooperative time slice
+of at most 500 ms or one quarter of the remaining lane deadline. The one-head
+grade gets one quarter of each allowance, reserving the rest for the two-head
+grade without restarting the clock. Counters include active continuation work
+and are never refunded. Every completed body is scoped and natively checked
+before resuming the original obligations and acceptance gate. This is a finite
+ordering heuristic, not a complete branch grammar or a hard wall-time bound;
+crowded sessions can displace a useful provider from its capped prefix.
+
+Direct native tests establish shared head/depth bounds, native dictionary
+handling, admission boundaries, rollback, inherited quota ownership, successful
+stop preservation, and fallback. Separate actual-search tests establish flag
+provenance and a second binary recursive algebra. Public gates independently
+check two tree traversals through universal constructor equations and held-out
+execution. A known-term publication fixture additionally checks exact native
+term retention and universal equivalence after independently parsing the
+printed source; that fixture does not claim unassisted synthesis.
+
 Lanes under one wall-clock budget, no settings: a cheap constructive pass,
 a cheap refutation pass (type-only queries), a shallow classical pass (only
 when the target mentions a proposition), a deeper constructive pass that
@@ -181,7 +231,7 @@ pass stops rather than running to the lane deadline. Lane and depth timings,
 ledger counters and self times of the search steps print under
 `set_option leant2.trace true`; `leant2.traceNodes` prints every node,
 every failed alternative and every program checked; `leant2.skipRules`
-disables named rules (`7a,7b,9,9b,9c,residual`) for experiments, which is
+disables named rules (`7a,7b,9,9b,9c,rec,guards,composition,residual`) for experiments, which is
 how the cost of each rule on a slow query is measured. Timer collection is
 now conditional on `leant2.trace`; ordinary searches avoid the profiling
 clock reads and timer-reference updates, including at transaction boundaries.
@@ -195,11 +245,9 @@ Admission counters are checked before starting another operation so the last
 admitted operation may finish. A successful callback bypasses heuristic quota
 checks on exit, preserving an accepted candidate's stop request, while still
 checking real interruption and deadlines. Such success may overshoot a local
-quota; this is not a hard time bound. The primitive currently has no production
-search caller. Deterministic tests cover nested ownership, rollback, active
-continuation accounting, admission boundaries, and accepted-stop preservation;
-the complete library/test/executable build passes all 44 jobs. These checks do
-not extend the revision-bound acceptance claim recorded below.
+quota; this is not a hard time bound. The branch-composition prefix uses this
+primitive. Deterministic tests cover nested ownership, rollback, active
+continuation accounting, admission boundaries, and accepted-stop preservation.
 
 When a classical lane runs, its `Prop` specialization first instantiates
 existing universe assignments, then substitutes zero for remaining universe
@@ -354,8 +402,8 @@ gates with universal post-checks and held-out execution. Separate empty-provider
 Lean fixtures verify native guarded recursion, all three universal equations,
 exact-term publication, and printed-source equivalence. Both complete runs
 preserve the same 123 recorded source files, 27 compiled module artifacts,
-executable, and 350 external inputs. Tree inorder is the only remaining open
-E8 search; it and the thirteen Church stretch cases were bounded misses at
+executable, and 350 external inputs. Tree inorder was the only open E8 search
+at that checkpoint; it and the thirteen Church stretch cases were bounded misses at
 both budgets. The public drop-zero candidate reuses `List.filter` with a
 synthesized guard predicate; the provider-free fixture establishes the
 separate recursive construction capability.

@@ -9,6 +9,10 @@ import Leant2Tests.Results
 import Leant2Tests.LocalProof
 import Leant2Tests.Cancellation
 import Leant2Tests.ScopedBudget
+import Leant2Tests.BranchComposition
+import Leant2Tests.BranchCompositionIntegration
+import Leant2Tests.TreePublication
+import Leant2Tests.ClosedContracts
 import Leant2Tests.Classical
 import Leant2Tests.Guards
 import Leant2Tests.IndexedRecursion

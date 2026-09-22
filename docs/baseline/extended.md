@@ -17,13 +17,13 @@ and time to first candidate remain open E8 work.
 
 | Group | Required candidates | Impossible controls | Open searches |
 | --- | ---: | ---: | ---: |
-| Sixteen article probes | 15 | 0 | 1 |
+| Sixteen article probes | 16 | 0 | 0 |
 | Lean core List/Option/Nat | 9 | 0 | 0 |
 | Negative controls | 0 | 4 | 0 |
-| Total | 24 | 4 | 1 |
+| Total | 25 | 4 | 0 |
 
-`TOTAL passed/28` covers the required capabilities and controls; `OPEN solved/1`
-reports the remaining searches separately. Case selection changes the
+`TOTAL passed/29` covers the required capabilities and controls; `OPEN solved/0`
+records that no current E8 case is unscored. Case selection changes the
 denominators to the selected cases. An open search can exhaust its budget or
 search bounds, or refute all proposed candidates. An exception, malformed or
 incomplete output, process timeout, bad replay, or candidate satisfying the
@@ -33,7 +33,9 @@ or impossible contract for one of them also fails the run. A negative control
 requires `provably no program satisfies the contract`; silence or timeout does
 not establish the control.
 
-Tree flattening is the remaining open article probe. Maximum and dropping
+Tree inorder was promoted after its unchanged original queries passed at both
+budgets and the separate tree gates passed universal equations and held-out
+execution. Maximum and dropping
 zeros were promoted after their original finite-contract queries synthesized
 and replayed successfully and the separate public guard gates passed universal
 post-checks and held-out execution.
@@ -190,14 +192,14 @@ python tools/run_results.py --budget 10000 --out baseline-out/results
 python tools/run_all.py --budget 10000 --out baseline-out/milestone-10000
 ```
 
-`run_all.py` runs eleven harnesses with distinct artifact paths. Their expected
+`run_all.py` runs twelve harnesses with distinct artifact paths. Their expected
 denominators are baseline 278, recursive 9, Church 28, context 95, corpus 350,
-session 6, results 10, extended 28, recursion gates 5, local proofs 6, and guard
-gates 5: **820 acceptance
+session 6, results 10, extended 29, recursion gates 5, local proofs 6, guard
+gates 5, and tree composition 3: **824 acceptance
 checks in total**. Some checks exercise the same synthesis goals at different
-boundaries, so this is not a count of 820 distinct benchmark problems. The
-extended suite's one open search and the Church stretch cases remain
-outside these scored denominators. Every harness must also exit successfully;
+boundaries, so this is not a count of 824 distinct benchmark problems. The
+Church stretch cases remain outside these scored denominators; every E8 case
+is now required. Every harness must also exit successfully;
 a full printed score does not conceal a process or open-case failure.
 
 The earlier nine-harness configuration passed **805/805** at both budgets in the clean-source
@@ -283,6 +285,45 @@ drop-zero function uses generic `List.filter` with a synthesized zero-test
 predicate; the separate empty-provider Lean test builds actual guarded
 `List.rec`. Both raw runs and unchanged pre/post source, module, executable,
 and external-input hashes are archived.
+
+## Binary-tree composition gates
+
+`tests/benchmarks/tree-composition.json` adds three required fresh-process
+sessions, independently of the original E8 denominator. The first preserves
+the original tree-inorder datatype, type, and three finite search observations
+verbatim. Its post-checks require the empty-leaf equation and the node equation
+for arbitrary left/right subtrees and labels, then execute four held-out trees.
+The second uses a different datatype with values at tips and unlabelled binary
+forks. Universal tip/fork equations require singleton tips and ordered
+concatenation; five held-out trees exercise duplicates, zeros, and balanced
+and skewed shapes. The third session certifies a literal-False contract at the
+inhabited original tree-function type.
+
+The ordinary provider set, including `List.append`, remains available. Only
+fresh datatype declarations precede each query, and named traversal providers
+are checked absent. References, equation lemmas, and diagnostic witnesses are
+withheld from synthesis. A separate fixture-validation process checks the two
+references. Public gates establish typed results, universal constructor
+equations, and executable observations; they do not identify the internal
+search route or establish an empty-provider result. Native unit tests separately
+check actual composition-route permissions and publication of a known certified
+tree recursor through independently parsed source with universal equivalence.
+
+```powershell
+python tools/run_extended.py --manifest tests/benchmarks/tree-composition.json --validate-fixtures --out baseline-out/tree-references.json
+python tools/run_extended.py --manifest tests/benchmarks/tree-composition.json --budget 10000 --out baseline-out/tree-composition.json
+```
+
+Focused development runs passed all three gates at both 5,000 and 10,000 ms,
+and the unchanged original E8 tree request passed independently at both
+budgets. This justifies promoting that final E8 case to required, giving a
+configured aggregate of 824 across twelve families. The development receipts
+came from a dirty tree and do not establish complete acceptance at their
+recorded parent revision. An enabled/disabled comparison on one unchanged
+binary found this tree query in both modes: the new early closed-contract
+evaluation benefits ordinary fallback too. Four runs with composition took
+1,080–1,679 ms; four without it took 5,049–5,787 ms. These are fixture-specific
+total query times, not first-candidate timing or a general performance claim.
 
 ## Source provenance
 

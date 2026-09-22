@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "description": "Three public tree-composition acceptance gates: the original E8 inorder query with independent universal equations and held-out observations, a second leaf-labelled binary datatype, and a literal-False control. Required expectations define obligations; successful receipts establish whether a particular source/executable passed them.",
+  "acceptance_notes": [
+    "Each case runs in a fresh public REPL. Only its inductive datatype is declared before synthesis. No traversal reference, equation lemma, diagnostic witness, branch oracle, or previously synthesized result is introduced as a provider.",
+    "The default curated provider set remains available, including List.append. Forbidden-provider checks assert the absence of named traversal implementations in both session and curated inventories. These public cases do not claim an empty or append-only provider inventory, or prove that a particular internal composition tier was used.",
+    "The first case retains the original E8 prelude, type, and three finite search observations verbatim. Its universal leaf/node equations and held-out executable observations are checked only after synthesis. The separate original E8 expectation was promoted after its own focused public query passed both existing budgets.",
+    "The second case changes the recursive constructor shape: values occur only at tips, and forks carry two recursive fields with no label. Universal tip/fork equations require singleton tips and ordered concatenation of both recursive results.",
+    "Reference terms are supplied only to the separate --validate-fixtures process. Every universal reference proof is explicit. The fixture validator uses decide only for finite concrete search/replay observations.",
+    "A candidate is accepted only after exact typed replay, both kernel equations, and every held-out executable observation pass. The negative control requires certified contract impossibility. Missing candidates, diagnostic/replay errors, nonzero exits, stderr, and bounded misses fail this required tier.",
+    "Denominator: three required gates, comprising two positive tree searches and one impossible control. Together with the separate original E8 tree promotion, the configured aggregate is 824 required checks across twelve families. This configured denominator is not a complete-run score."
+  ],
+  "cases": [
+    {
+      "id": "composition_tree_inorder",
+      "title": "Original E8 tree inorder with universal leaf/node equations",
+      "group": "tree-composition",
+      "expect": "candidate",
+      "prelude": "inductive ExtendedTree (A : Type) where\n  | leaf : ExtendedTree A\n  | node : ExtendedTree A → A → ExtendedTree A → ExtendedTree A",
+      "type": "ExtendedTree Nat → List Nat",
+      "contract": "{f} .leaf = [] ∧ {f} (.node (.node .leaf 1 .leaf) 2 (.node .leaf 3 .leaf)) = [1, 2, 3] ∧ {f} (.node .leaf 4 (.node .leaf 5 .leaf)) = [4, 5]",
+      "reference": "fun xs => let rec go (ys : ExtendedTree Nat) : List Nat := match ys with | .leaf => [] | .node l x r => go l ++ (x :: go r); go xs",
+      "forbidden_providers": [
+        "ExtendedTree.inorder",
+        "ExtendedTree.flatten"
+      ],
+      "provider_scope": "Default public providers, including List.append. Only fresh datatype constructors enter from the prelude; no traversal implementation or diagnostic helper is declared.",
+      "kernel_checks": [
+        {
+          "type": "{f} .leaf = []",
+          "proof": "by rfl",
+          "reference_proof": "by rfl"
+        },
+        {
+          "type": "∀ (l r : ExtendedTree Nat) (x : Nat), {f} (.node l x r) = {f} l ++ (x :: {f} r)",
+          "proof": "by intros; rfl",
+          "reference_proof": "by intros; rfl"
+        }
+      ],
+      "replay": "{f} (.node .leaf 0 .leaf) = [0] ∧ {f} (.node (.node (.node .leaf 9 .leaf) 0 .leaf) 2 (.node .leaf 9 .leaf)) = [9, 0, 2, 9] ∧ {f} (.node .leaf 0 (.node .leaf 3 (.node .leaf 0 .leaf))) = [0, 3, 0] ∧ {f} (.node (.node .leaf 2 .leaf) 1 (.node .leaf 0 .leaf)) = [2, 1, 0]",
+      "source": "tests/benchmarks/extended.json probe11_tree_inorder (verbatim datatype, type, finite contract); scratch/next-tree/public-gate.json independent constructor equations and held-out observations; docs/proposals/new/5/leant2_expert_answers/sections/07_recursion.tex tree-fold composition"
+    },
+    {
+      "id": "composition_leaf_tree_flatten",
+      "title": "Flatten leaf-labelled binary trees using both recursive results",
+      "group": "tree-composition",
+      "expect": "candidate",
+      "prelude": "inductive CompositionLeafTree where\n  | tip : Nat → CompositionLeafTree\n  | fork : CompositionLeafTree → CompositionLeafTree → CompositionLeafTree",
+      "type": "CompositionLeafTree → List Nat",
+      "contract": "{f} (.tip 4) = [4] ∧ {f} (.fork (.tip 1) (.tip 2)) = [1, 2] ∧ {f} (.fork (.fork (.tip 5) (.tip 0)) (.tip 5)) = [5, 0, 5]",
+      "reference": "fun xs => let rec go (ys : CompositionLeafTree) : List Nat := match ys with | .tip x => [x] | .fork l r => go l ++ go r; go xs",
+      "forbidden_providers": [
+        "CompositionLeafTree.flatten",
+        "CompositionLeafTree.toList"
+      ],
+      "provider_scope": "Default public providers, including List.append. Fresh tip/fork constructors only; the reference traversal remains outside the synthesis process.",
+      "kernel_checks": [
+        {
+          "type": "∀ x : Nat, {f} (.tip x) = [x]",
+          "proof": "by intros; rfl",
+          "reference_proof": "by intros; rfl"
+        },
+        {
+          "type": "∀ l r : CompositionLeafTree, {f} (.fork l r) = {f} l ++ {f} r",
+          "proof": "by intros; rfl",
+          "reference_proof": "by intros; rfl"
+        }
+      ],
+      "replay": "{f} (.tip 0) = [0] ∧ {f} (.fork (.tip 9) (.tip 0)) = [9, 0] ∧ {f} (.fork (.tip 0) (.fork (.tip 8) (.fork (.tip 0) (.tip 8)))) = [0, 8, 0, 8] ∧ {f} (.fork (.fork (.tip 3) (.tip 1)) (.fork (.tip 3) (.tip 2))) = [3, 1, 3, 2] ∧ {f} (.fork (.fork (.fork (.tip 7) (.tip 0)) (.tip 2)) (.fork (.tip 0) (.tip 7))) = [7, 0, 2, 0, 7]",
+      "source": "New independent binary recursive datatype; one List.cons head at tips and one List.append head at forks, with renamed constructors and changed payload placement relative to E8"
+    },
+    {
+      "id": "composition_tree_false",
+      "title": "Reject an impossible contract at the inhabited tree traversal type",
+      "group": "controls",
+      "expect": "none",
+      "prelude": "inductive ExtendedTree (A : Type) where\n  | leaf : ExtendedTree A\n  | node : ExtendedTree A → A → ExtendedTree A → ExtendedTree A",
+      "type": "ExtendedTree Nat → List Nat",
+      "contract": "False",
+      "source": "Composition negative control: the function type is inhabited, but no function satisfies the separate literal-False contract"
+    }
+  ],
+  "development_validation": {
+    "scope": "Focused development validation against an uncommitted implementation, before implementation publication. These local receipts do not establish a clean-commit full-suite result or validate the parent revision alone.",
+    "budgets_ms": [
+      5000,
+      10000
+    ],
+    "public_receipts": [
+      "baseline-out/composition-public-5000.json",
+      "baseline-out/composition-public-10000.json"
+    ],
+    "original_e8_receipts": [
+      "baseline-out/composition-original-5000-fast-contract.json",
+      "baseline-out/composition-original-10000-fast-contract.json"
+    ],
+    "reference_validation_log": "baseline-out/composition-public-validation.log"
+  }
+}
