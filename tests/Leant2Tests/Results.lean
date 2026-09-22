@@ -1,4 +1,5 @@
 import Leant2.Frontend.Command
+import Leant2Tests.Support.ResultEffects
 
 /-! Real public queries must expose their own values, without changing any
 definition elaborated against an older batch. Native aliases also preserve
@@ -93,28 +94,28 @@ run_cmd do
 -- Use an imported process-local reference, restoring it even if this test fails.
 run_cmd do
   let saved ← get
-  let timers ← profTimers.get
+  let effect ← Leant2Tests.ResultEffects.reference.get
   try
     elabCommand (← `(command| def $(mkIdent `it) : Nat := 17))
     let previous := resultBinding? (← getEnv) `it
     let before := (← getEnv).constants.map₂.toList.length
-    profTimers.set #[("results-preflight", 0)]
+    Leant2Tests.ResultEffects.reference.set 0
     let mut rejected := false
     try
       elabLeant2Eval (← `(command| #leant2_eval
-        (Leant2.profTimers.set #[("results-effect", 1)] : IO Unit)))
+        (Leant2Tests.ResultEffects.reference.set 1 : IO Unit)))
     catch ex =>
       if ex.isInterrupt || ex.isRuntime then throw ex
       rejected := true
     unless rejected do throwError "evaluation accepted a user-name collision"
-    unless (← profTimers.get) == #[("results-preflight", 0)] do
+    unless (← Leant2Tests.ResultEffects.reference.get) == 0 do
       throwError "evaluation performed IO before rejecting a result-name collision"
     unless resultBinding? (← getEnv) `it == previous do
       throwError "evaluation collision changed the previous result binding"
     unless (← getEnv).constants.map₂.toList.length == before do
       throwError "evaluation collision leaked a generated declaration"
   finally
-    profTimers.set timers
+    Leant2Tests.ResultEffects.reference.set effect
     set saved
 
 -- A runtime evaluation failure restores aliases provisionally installed for

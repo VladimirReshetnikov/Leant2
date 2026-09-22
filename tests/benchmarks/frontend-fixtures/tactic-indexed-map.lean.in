@@ -1,0 +1,15 @@
+namespace FrontendCase
+inductive Vec (A : Type) : Nat → Type where
+  | nil : Vec A 0
+  | cons {n : Nat} : A → Vec A n → Vec A (n + 1)
+def selected : ∀ (A B : Type), (A → B) → ∀ n, Vec A n → Vec B n := by
+  __FRONTEND__
+example (A B : Type) (f : A → B) : selected A B f 0 .nil = .nil := rfl
+example (A B : Type) (f : A → B) (n : Nat) (x : A) (xs : Vec A n) :
+    selected A B f (n + 1) (.cons x xs) = .cons (f x) (selected A B f n xs) := rfl
+#eval if (match selected Nat Bool (fun n => n == 0) 3 (.cons 0 (.cons 7 (.cons 0 .nil))) with
+    | .cons a (.cons b (.cons c .nil)) => a && !b && c) &&
+    (match selected Bool Nat (fun b => if b then 2 else 9) 3 (.cons false (.cons true (.cons false .nil))) with
+    | .cons a (.cons b (.cons c .nil)) => a == 9 && b == 2 && c == 9)
+  then "FRONTEND_VALUE_OK" else "FRONTEND_VALUE_FAILED"
+end FrontendCase

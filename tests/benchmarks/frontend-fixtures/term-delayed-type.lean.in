@@ -1,0 +1,10 @@
+namespace FrontendCase
+-- The explicit implicit A is shared by both binders; separate `_` annotations
+-- would leave independent holes. No result or first-argument annotation fixes A:
+-- the later Nat argument must supply the delayed constraint for synthesis.
+def selected := (fun {A : Type} (x y : A) => (x, y)) __FRONTEND__ (7 : Nat)
+example : Nat × Nat := selected
+example : selected.2 = 7 := rfl
+-- Any well-typed first component is valid; do not assume the synthesizer selects zero.
+#eval if selected.2 == 7 then "FRONTEND_VALUE_OK" else "FRONTEND_VALUE_FAILED"
+end FrontendCase

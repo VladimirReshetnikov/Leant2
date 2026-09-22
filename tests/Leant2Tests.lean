@@ -4,7 +4,12 @@ import Leant2Tests.Recursion
 import Leant2Tests.Contracts
 import Leant2Tests.Observations
 import Leant2Tests.Substrate
+import Leant2Tests.Profile
 import Leant2Tests.Presentation
+import Leant2Tests.TermPresentation
+import Leant2Tests.LocalQuery
+import Leant2Tests.Suggestion
+import Leant2Tests.Frontends
 import Leant2Tests.Results
 import Leant2Tests.LocalProof
 import Leant2Tests.Cancellation

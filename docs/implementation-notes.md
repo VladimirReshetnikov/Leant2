@@ -228,13 +228,28 @@ classical lanes the constructive pass takes the whole budget at once, since
 nothing else would run in between. The grace period after the first
 accepted candidate (400 ms) is a deadline the search itself checks, so a
 pass stops rather than running to the lane deadline. Lane and depth timings,
-ledger counters and self times of the search steps print under
+ledger counters and inclusive/exclusive elapsed spans of the search steps print under
 `set_option leant2.trace true`; `leant2.traceNodes` prints every node,
 every failed alternative and every program checked; `leant2.skipRules`
 disables named rules (`7a,7b,9,9b,9c,rec,guards,composition,residual`) for experiments, which is
-how the cost of each rule on a slow query is measured. Timer collection is
-now conditional on `leant2.trace`; ordinary searches avoid the profiling
+how rule-ablation experiments are configured. Timer collection is
+conditional on `leant2.trace`; ordinary searches avoid the profiling
 clock reads and timer-reference updates, including at transaction boundaries.
+
+Profiling data belongs to one query and lives outside backtrackable state.
+Native finalizers record partial elapsed time on cancellation, deadlines, and
+other exceptions. Each label reports inclusive nanoseconds, exclusive
+nanoseconds after subtracting immediate child spans, normal returns, and
+exceptional exits; recursive uses of the same label remain separate active
+spans. Lane reports show differences between closed snapshots. The
+`lane.search` root covers search and its acceptance callbacks, so its exclusive
+time includes unlabelled search work and instrumentation overhead. It excludes
+query setup, preflight, ranking, result publication, and replay. Inclusive rows
+overlap and must not be summed. The earlier diagnostic label `self times`
+described inclusive successful-call timers and did not establish a whole-query
+unattributed percentage. Injected-clock tests check exact nesting, exceptions,
+rollback, query isolation, and disabled collection. These semantics do not
+establish a speedup or close the proposal's native-sampling and node-cost gates.
 
 Speculative tiers can use `withScopedBudget` for a cooperative local quota.
 Each scope owns a private exception token; only that owner can turn its quota
@@ -343,6 +358,71 @@ state snapshots restore bindings on undo or failure. Namespace and root
 qualified aliases are supported, user-name collisions are rejected, and the
 generated declarations are excluded from session provider discovery. Aliases
 are session state and are not exported when another module imports the file.
+
+## Expected-type term and tactic frontends
+
+`synth%` and `by leant2` use a shared local-query service. Preparation closes
+accessible local declarations in dependency order, preserves genuine lets,
+and generalizes nondependent `have` declarations as assumptions. Auxiliary
+recursive placeholders and implementation details are excluded. Unresolved
+expression or universe holes in the expected type or accessible context defer
+term elaboration; the tactic requires them to be resolved already. Search runs
+under a fresh metavariable depth and an empty local context, with the complete
+native Core/Meta state restored afterward.
+
+The postponement boundary is conservative: an inferred universe in a data
+definition such as `(A : Sort _)` may be generalized only after Lean's final
+no-postponement synthesis pass, so that form is rejected. An explicit named
+universe works, and expression holes determined by later arguments can be
+postponed successfully. The frontend does not guess or assign either kind of
+incoming hole.
+
+Candidates are visited in the engine's existing ranked order and independently
+checked at the original closed type, then applied to the original local
+arguments and checked again. The frontend rejects escaped locals, holes,
+sorry, and new universe parameters. This original-type replay prevents a
+classical lane's specialized answer from escaping at a polymorphic expected
+type. The standard axiom profile accepts local hypotheses as parameters and
+rejects arbitrary project axioms. The command and REPL profiles remain
+project-relative. An unsuccessful bounded search reports a synthesis failure;
+it does not certify mathematical impossibility of the enclosing goal.
+
+The successful frontend returns the exact certified expression. Presentation
+preparation also works from `TermElabM`: it uses synchronous native declaration
+elaboration, supports private names and asynchronous declaration prefixes,
+and restores the caller's elaborator state. Compiler rewrites created inside
+an asynchronous declaration use local registration in that branch. Unsupported
+adapters remain subject to Lean's ordinary computability checks. Frontend
+failure and native cancellation restore Core, Meta, Term, and tactic state;
+there are no result aliases or changes to user `it` declarations.
+
+Source suggestions are speculative. They must elaborate without new errors,
+solve the original goal, preserve sibling goals, and pass the original-type
+and standard-profile check. When native `let rec` elaboration leaves pending
+auxiliary holes, a fresh temporary declaration runs Lean's complete lifting
+pipeline before the final check; no unfinished expression is accepted. All
+temporary declarations and elaborator state are then discarded.
+The actual emitted suggestion text is also tested
+by the public harness in a second fresh file importing only Lean, so that
+adapter declarations or the original elaborator state cannot hide a missing
+dependency. A source-presentation failure does not invalidate an already
+checked synthesis result. Contextual contract lifting, sketches, and code
+actions are not implemented.
+
+Eight public frontend cases are integrated into `run_all.py`, raising its
+configured denominator to 832 across thirteen harnesses. Their thirteen fresh
+process stages comprise eight original files, three suggestion replays, and
+two separate expected-error files. Positive declarations are audited through
+opaque theorem bodies as well as definitions; the negative wrappers themselves
+must also have complete, standard-profile proofs. The frontend runner retains
+generated sources, JSON diagnostics, stderr, stage exit codes, and pre/post
+hashes of source, native Lean, and compiled dependencies. This is separate from
+the historical complete acceptance receipts below.
+
+Focused public runs passed all eight cases and thirteen stages at both 5 s and
+10 s per search with identical captured inputs. The full 62-job native build,
+39 Python tools tests, and 19 Python benchmark tests also passed. These focused
+development results do not replace the upcoming complete 832-check runs.
 
 ## Initial next-phase coverage
 

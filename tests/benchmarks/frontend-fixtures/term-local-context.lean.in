@@ -1,0 +1,7 @@
+universe u v
+namespace FrontendCase
+def selected {A : Sort u} (F : A → Sort v) (x : A) (hx : F x) : F x := __FRONTEND__
+theorem proof (P Q : Prop) (hp : P) (h : P → Q) : Q := __FRONTEND__
+example {A : Sort u} (F : A → Sort v) (x : A) (hx : F x) : selected F x hx = hx := rfl
+#eval if selected (fun _ : Nat => Nat) 4 17 == 17 then "FRONTEND_VALUE_OK" else "FRONTEND_VALUE_FAILED"
+end FrontendCase

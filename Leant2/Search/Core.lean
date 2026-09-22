@@ -100,32 +100,16 @@ structure Goal where
   program-induction minor. Free setup preserves it; ordinary construction clears it. -/
   tryBranchComposition : Bool := false
 
-/-- Self-time profile of the search rules, collected and printed only when the
-lane trace is enabled. -/
-initialize profTimers : IO.Ref (Array (String × Nat)) ← IO.mkRef #[]
-
-/-- When `leant2.trace` is enabled, accumulate the wall time of a non-recursive
-step under `k` (nanoseconds). Normal search avoids profiling clocks and updates. -/
+/-- Record a named elapsed span when this query has a collector. Nested spans
+retain inclusive and exclusive time; interrupted spans finalize as well. -/
 def timed (k : String) (act : SearchM α) : SearchM α := do
-  unless leant2.trace.get (← getOptions) do return ← act
-  let t0 ← IO.monoNanosNow
-  let r ← act
-  let dt := (← IO.monoNanosNow) - t0
-  profTimers.modify fun a =>
-    match a.findIdx? (·.1 == k) with
-    | some i => a.modify i fun (k, v) => (k, v + dt)
-    | none => a.push (k, dt)
-  return r
+  let ctx ← read
+  Profiling.span ctx.profile k (act.run ctx)
 
 /-- Run one alternative. If it does not stop the search, restore the state so
 the next alternative starts from the same point. -/
 def alternative (act : SearchM Bool) : SearchM Bool := do
-  let profile := leant2.trace.get (← getOptions)
-  let t0 ← if profile then IO.monoNanosNow else pure 0
-  let saved : Meta.SavedState ← Meta.saveState
-  if profile then
-    let t1 ← IO.monoNanosNow
-    profTimers.modify fun a => bump a "alt.save" (t1 - t0)
+  let saved : Meta.SavedState ← timed "alt.save" Meta.saveState
   let (result, _) ← tryFinally' (do
     try
       act
@@ -135,17 +119,8 @@ def alternative (act : SearchM Bool) : SearchM Bool := do
         IO.println s!"[leant2]     alternative failed with: {← e.toMessageData.toString}"
       return false) fun result? => do
     unless result? == some true do
-      let t2 ← if profile then IO.monoNanosNow else pure 0
-      saved.restore
-      if profile then
-        let t3 ← IO.monoNanosNow
-        profTimers.modify fun a => bump a "alt.restore" (t3 - t2)
+      timed "alt.restore" saved.restore
   return result
-where
-  bump (a : Array (String × Nat)) (k : String) (dt : Nat) : Array (String × Nat) :=
-    match a.findIdx? (·.1 == k) with
-    | some i => a.modify i fun (k, v) => (k, v + dt)
-    | none => a.push (k, dt)
 
 /-- Names never used as providers even when discovered. -/
 def forbiddenProviders : Array Name :=
@@ -938,6 +913,14 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     checkDeadline
     g.withContext do
     let target ← timed "entry" (do instantiateMVars (← g.getType))
+    -- Preserve genuine local lets in closed frontend telescopes. Reducing the
+    -- target first would erase a terminal let before it can become a provider.
+    -- Native introduction keeps its definitional value and local-instance role.
+    if target.cleanupAnnotations.isLet then
+      charge fun l => { l with ruleApplications := l.ruleApplications + 1 }
+      return ← alternative do
+        let (_, next) ← timed "intro" g.intro1P
+        search cfg leaf splits ({ goal with mvar := next } :: rest)
     if leant2.traceNodes.get (← getOptions) then
       IO.println s!"[leant2]     node {← ppExpr target} depth {depth} splits {splits} rest {rest.length}"
     -- a proposition about open holes (the contract on a partial program) is

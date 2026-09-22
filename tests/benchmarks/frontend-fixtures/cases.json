@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "description": "Eight proposed public term/tactic acceptance gates. Required expectations are obligations, not evidence of a successful run. Every case starts in a fresh Lean process. Tactic suggestions are read from real JSON diagnostics and replayed in a second fresh file importing Lean only. The indexed-recursion case remains subject to actual public validation; it must fail visibly if unsupported.",
+  "cases": [
+    {"id": "term-local-context", "frontend": "synth%", "file": "term-local-context.lean.in", "declarations": ["FrontendCase.selected", "FrontendCase.proof"], "observations": true},
+    {"id": "tactic-local-data", "frontend": "leant2", "file": "tactic-local-data.lean.in", "declarations": ["FrontendCase.selected"], "observations": true, "suggestion_replay": true},
+    {"id": "tactic-local-proof", "frontend": "leant2", "file": "tactic-local-proof.lean.in", "declarations": ["FrontendCase.selected"], "suggestion_replay": true},
+    {"id": "term-delayed-type", "frontend": "synth%", "file": "term-delayed-type.lean.in", "declarations": ["FrontendCase.selected"], "observations": true},
+    {"id": "term-lets-instances", "frontend": "synth%", "file": "term-lets-instances.lean.in", "declarations": ["FrontendCase.selected", "FrontendCase.fromInstance"], "observations": true},
+    {"id": "tactic-indexed-map", "frontend": "leant2", "file": "tactic-indexed-map.lean.in", "declarations": ["FrontendCase.selected"], "observations": true, "suggestion_replay": true, "recursive_display": true},
+    {"id": "term-false", "frontend": "synth%", "file": "term-false.lean.in", "declarations": ["FrontendCase.checkedRejection"], "negative": true},
+    {"id": "tactic-false", "frontend": "leant2", "file": "tactic-false.lean.in", "declarations": ["FrontendCase.checkedRejection"], "negative": true}
+  ]
+}

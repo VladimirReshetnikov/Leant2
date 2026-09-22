@@ -148,15 +148,18 @@ def programMessage (e : Expr) : MetaM MessageData := do
     if ex.isInterrupt || ex.isRuntime then throw ex
     return m!"{e}"
 
-private def recursorCommands (info : RecursorVal) (implName proofName : Name) :
+private def recursorDeclarations (info : RecursorVal) (implName proofName : Name) :
     MetaM (Syntax × Syntax) := do
   unless info.all.length == 1 && info.numMotives == 1 do
     throwError "leant2 presentation: mutual and nested recursors are not supported"
   let levels := info.levelParams.toArray.map mkIdent
-  let declId ← `(declId| $(mkIdent implName).{$levels,*})
-  let proofId ← `(declId| $(mkIdent proofName).{$levels,*})
+  let declId ← `(declId| $(mkIdent (rootNamespace ++ implName)).{$levels,*})
+  let proofId ← `(declId| $(mkIdent (rootNamespace ++ proofName)).{$levels,*})
   let type ← delab info.type
-  let (body, ids) ← withLocalDeclD implName info.type fun self =>
+  -- A root-qualified declaration's recursive local uses its final component.
+  -- In particular, a full internal private name cannot be resolved as that local.
+  let selfName := Name.mkSimple implName.getString!
+  let (body, ids) ← withLocalDeclD selfName info.type fun self =>
     openBinders info.type (info.getMajorIdx + 1) "arg" fun xs _ => do
       let ids ← xs.mapM identOf
       let major := ids.back!
@@ -178,55 +181,99 @@ private def recursorCommands (info : RecursorVal) (implName proofName : Name) :
         alts := alts.push alt
       let body ← `(term| @fun $ids* => match $major:term with $alts:matchAlt*)
       return (body, ids)
-  let defCmd ← `(command| def $declId:declId : $type := $body)
-  let us := info.levelParams.map Level.param
-  let eqType ← withoutModifyingEnv do
-    addDecl <| .axiomDecl {
-      name := implName, levelParams := info.levelParams, type := info.type, isUnsafe := false }
-    delab (← mkEq (mkConst info.name us) (mkConst implName us))
+  let defCmd ← `(Parser.Command.definition| def $declId:declId : $type := $body)
+  -- Both sides are known constants by the time this theorem is elaborated.
+  -- Pre-resolved identifiers also work for a private enclosing declaration;
+  -- delaborating a temporary axiom can instead produce an inaccessible name.
+  let eqType ← `(term| @$(mkCIdent info.name).{$levels,*} = @$(mkCIdent implName).{$levels,*})
   let major := ids.back!
-  let proofCmd ← `(command| theorem $proofId:declId : $eqType := by
+  let proofCmd ← `(Parser.Command.theorem| theorem $proofId:declId : $eqType := by
     funext $ids*
-    induction $major:term <;> simp_all only [$(mkIdent implName):term])
+    induction $major:term <;> simp_all only [$(mkCIdent implName):term])
   return (defCmd, proofCmd)
 
-/-- Add a compiler adapter only after its equality theorem is checked. All
-declarations and diagnostics from an unsuccessful attempt are rolled back. -/
-def ensureRecursor (recName : Name) : CommandElabM Bool := do
+/-- Add a compiler adapter only after its equality theorem is checked. A fresh
+term elaborator isolates synthetic goals and local declarations from the caller.
+Only the checked environment and fresh-name counters survive success; every
+exception restores the complete speculative state before it is handled.
+
+An asynchronous declaration may add only names below its own prefix. Its csimp
+entry must also be local: Lean's global scoped extensions are main-thread-only.
+Such a rule is cached in that branch, not exported to unrelated declarations. -/
+def ensureRecursorTerm (recName : Name) : TermElabM Bool := do
+  Core.checkInterrupted
   if (Compiler.CSimp.ext.getState (← getEnv)).map.contains recName then return true
   let some (.recInfo info) := (← getEnv).find? recName | return false
-  let saved ← get
-  try
-    withScope (fun s => { s with
-        currNamespace := .anonymous, levelNames := [], opts := s.opts.setBool `Elab.async false
-          |>.setBool `debug.skipKernelTC false }) do
-      let implName ← liftCoreM <| mkFreshUserName (recName ++ `_leant2_compiled)
-      let proofName ← liftCoreM <| mkFreshUserName (recName ++ `_leant2_compiled_eq)
-      let (defCmd, proofCmd) ← liftTermElabM <| recursorCommands info implName proofName
-      elabCommand defCmd
-      elabCommand proofCmd
-      if (← get).messages.hasErrors then throwError "leant2 presentation: elaboration failed"
-      let ci ← liftCoreM <| getConstInfo proofName
-      if ci.type.hasSorry || (ci.value? (allowOpaque := true) |>.map (·.hasSorry)).getD true then
+  let savedCore ← getThe Core.State
+  let savedMeta ← getThe Meta.State
+  tryCatchRuntimeEx
+    (do return (← tryFinally' (do
+      modifyThe Core.State fun s => { s with messages := {} }
+      let declPrefix := (← getEnv).asyncPrefix?.getD (← getDeclNGen).namePrefix
+      withLCtx {} #[] <| withNewMCtxDepth <| withDeclNameForAuxNaming declPrefix do
+      withTheReader Core.Context (fun c => { c with currNamespace := .anonymous, openDecls := [] }) do
+      withOptions (fun opts => opts.setBool `Elab.async false
+          |>.setBool `debug.skipKernelTC false |>.setBool `compiler.postponeCompile false) do
+      -- Running a separate TermElabM prevents nested declaration elaboration
+      -- from consuming or completing the caller's pending synthetic goals.
+      TermElabM.run' <| withoutErrToSorry do
+      let implName ← mkAuxName `_leant2_compiled
+      let proofName ← mkAuxName `_leant2_compiled_eq
+      let (defStx, proofStx) ← recursorDeclarations info implName proofName
+      let scope : Command.Scope := { header := "", opts := ← getOptions }
+      Term.elabMutualDef #[] scope #[Command.mkDefViewOfDef {} defStx]
+      Term.elabMutualDef #[] scope #[Command.mkDefViewOfTheorem {} proofStx]
+      let messages := (← getThe Core.State).messages
+      if messages.hasErrors then
+        let errors := messages.toList.filterMap fun msg =>
+          if msg.severity == .error then some msg.data else none
+        throwError "leant2 presentation: elaboration failed\n{MessageData.joinSep errors m!"\n"}"
+      let ci : ConstantInfo ← getConstInfo proofName
+      if ci.type.hasSorry ||
+          (ci.value? (allowOpaque := true) |>.map fun value : Expr => value.hasSorry).getD true then
         throwError "leant2 presentation: incomplete equality proof"
-      let checked ← liftTermElabM <| kernelCheckAndAudit proofName
+      let checked ← kernelCheckAndAudit proofName
         (ci.value! (allowOpaque := true)) ci.type ci.levelParams true
       match checked with
       | .error _ => throwError "leant2 presentation: equality failed the kernel check"
       | .ok axioms =>
         unless axioms.all Profile.standard.allowedAxioms.contains do
           throwError "leant2 presentation: equality depends on an unsupported axiom"
-      liftCoreM <| Compiler.CSimp.add proofName .global
-      return true
-  catch ex =>
-    let messages := (← get).messages
-    set saved
-    if ex.isInterrupt || ex.isRuntime then throw ex
-    if leant2.trace.get (← getOptions) then
-      logInfo m!"leant2 presentation: {ex.toMessageData}"
-      for msg in messages.toList do
-        if msg.severity == .error then logInfo msg.data
-    return false
+      Compiler.CSimp.add proofName (if (← getEnv).asyncPrefix?.isSome then .local else .global)
+      Core.checkInterrupted
+      return true) fun result? => do
+        let completed ← getThe Core.State
+        modifyThe Meta.State fun _ => savedMeta
+        modifyThe Core.State fun _ =>
+          if result? == some true then
+            { savedCore with
+              env := completed.env
+              cache := {}
+              ngen := completed.ngen
+              auxDeclNGen := completed.auxDeclNGen
+              nextMacroScope := completed.nextMacroScope }
+          else savedCore).1)
+    (fun ex => do
+      if ex.isInterrupt || ex.isRuntime then throw ex
+      match ex with
+      | .internal .. => throw ex
+      | .error .. =>
+        if leant2.trace.get (← getOptions) then
+          logInfo m!"leant2 presentation: {ex.toMessageData}"
+        return false)
+
+/-- Prepare compiler support without changing the program or publishing result
+aliases. Unsupported recursors retain their original noncomputable behavior. -/
+def prepareProgram (program : Expr) : TermElabM Unit := do
+  Core.checkInterrupted
+  let env ← getEnv
+  let recursors := program.foldConsts (init := #[]) fun n acc =>
+    if env.find? n matches some (.recInfo _) then acc.push n else acc
+  for recName in recursors do discard <| ensureRecursorTerm recName
+
+/-- Command-compatible entry point for the same checked adapter preparation. -/
+def ensureRecursor (recName : Name) : CommandElabM Bool :=
+  liftTermElabM <| ensureRecursorTerm recName
 
 /-- Compile a result, retaining its exact certified kernel value. Returns
 whether executable code was produced. -/
@@ -236,10 +283,7 @@ def publish (name : Name) (c : Accepted) : CommandElabM Bool := do
     hints := .abbrev, safety := .safe }
   withScope (fun s => { s with opts := s.opts.setBool `Elab.async false }) do
     liftCoreM <| addDecl decl
-    let env ← getEnv
-    let recursors := c.program.foldConsts (init := #[]) fun n acc =>
-      if env.find? n matches some (.recInfo _) then acc.push n else acc
-    for n in recursors do discard <| ensureRecursor n
+    liftTermElabM <| prepareProgram c.program
     try
       liftCoreM <| compileDecl decl
     catch ex =>

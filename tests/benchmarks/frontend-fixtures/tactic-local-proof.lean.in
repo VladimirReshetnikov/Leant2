@@ -1,0 +1,7 @@
+namespace FrontendCase
+theorem selected (P Q : Prop) (hp : P) (h : P → Q) : Q ∧ True := by
+  constructor
+  · __FRONTEND__
+  · trivial
+example (P Q : Prop) (hp : P) (h : P → Q) : Q := (selected P Q hp h).1
+end FrontendCase

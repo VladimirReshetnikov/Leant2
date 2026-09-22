@@ -62,32 +62,55 @@ def enumerate (ctx : SearchCtx) (cfg : SearchConfig) (goalTy : Expr)
 
       if ← productive then break
 
+private def printLaneProfile (profile : Option Profiling.Collector)
+    (before : Profiling.Snapshot) : MetaM Unit := do
+  let some collector := profile | return
+  let spans := (← collector.snapshot).delta before
+  unless spans.valid do
+    IO.println "[leant2]   span times unavailable: invalid clock or span nesting"
+    return
+  let rows := spans.entries.map fun e =>
+    (e.label, e.inclusiveNs / 1000000, e.exclusiveNs / 1000000, e.returned, e.exceptional)
+  IO.println s!"[leant2]   span times (inclusive/exclusive ms; returned/exception exits): {rows}"
+  IO.println "[leant2]   lane.search is the search root; its exclusive time includes unlabelled search and profiling overhead, not query setup or ranking"
+
 /-- Run `act` with a fresh lane deadline. Restore state on every exceptional
 exit. Only explicit lane/resource limits are consumed; native user interrupts
-and unrelated errors propagate after restoration. -/
+and unrelated errors propagate after restoration. Span reports cover the action
+and its children; the existing lane wall time also includes setup/restoration.
+Ledger values in the header remain query-cumulative. -/
 def withLane (ledger : IO.Ref Ledger) (refutedPrograms : IO.Ref (Std.HashSet Expr))
     (graceDeadline : IO.Ref (Option Nat))
     (timedOut : IO.Ref Bool) (ms : Nat)
-    (act : SearchCtx → MetaM Unit) (name : String := "lane") : MetaM Unit := do
+    (act : SearchCtx → MetaM Unit) (name : String := "lane")
+    (profile : Option Profiling.Collector := none) : MetaM Unit := do
   let t0 ← IO.monoMsNow
   let trace := leant2.trace.get (← getOptions)
+  -- runQuery supplies its collector. Direct traced lanes get their own fresh
+  -- collector; ordinary lanes allocate and inspect no profiling state.
+  let profile ← if trace then
+      match profile with
+      | some collector => pure (some collector)
+      | none => some <$> Profiling.Collector.create
+    else pure none
+  let before ← match profile with
+    | some collector => collector.snapshot
+    | none => pure {}
   let observationCache ← IO.mkRef #[]
   let observationReport ← IO.mkRef {}
   let ctx : SearchCtx := {
-    ledger, deadline := some (t0 + ms), refutedPrograms
+    ledger, profile, deadline := some (t0 + ms), refutedPrograms
     observationCache, observationReport, graceDeadline }
   let saved : Meta.SavedState ← Meta.saveState
   -- This narrow boundary must see native interrupts to restore before
   -- rethrowing them; ordinary Core.tryCatch deliberately skips them.
   let _ : MonadExceptOf Exception MetaM := MonadAlwaysExcept.except
   try
-    act ctx
+    Profiling.span profile "lane.search" (act ctx)
     if trace then
       let l ← ledger.get
       IO.println s!"[leant2] {name}: finished in {(← IO.monoMsNow) - t0} ms (share {ms} ms) rules {l.ruleApplications} unif {l.unifications} proofs {l.proofAttempts} cands {l.candidates}"
-      let prof ← profTimers.get
-      IO.println s!"[leant2]   self times (ms): {prof.map fun (k, v) => (k, v / 1000000)}"
-      profTimers.set #[]
+      printLaneProfile profile before
   catch e =>
     saved.restore
     if let some reason := searchStop? e then
@@ -95,9 +118,7 @@ def withLane (ledger : IO.Ref Ledger) (refutedPrograms : IO.Ref (Std.HashSet Exp
       if trace then
         let l ← ledger.get
         IO.println s!"[leant2] {name}: stopped ({repr reason}) after {(← IO.monoMsNow) - t0} ms (share {ms} ms) rules {l.ruleApplications} unif {l.unifications} proofs {l.proofAttempts} cands {l.candidates}"
-        let prof ← profTimers.get
-        IO.println s!"[leant2]   self times (ms): {prof.map fun (k, v) => (k, v / 1000000)}"
-        profTimers.set #[]
+        printLaneProfile profile before
     else throw e
 
 /-- Propose the classical lane's `Prop` universe specialization. Existing
@@ -174,6 +195,9 @@ def runQuery (q : Query) : MetaM Outcome :=
   withTheReader Core.Context (fun c => { c with maxHeartbeats := 0 }) do
   let ledger ← IO.mkRef ({} : Ledger)
   let refutedPrograms ← IO.mkRef ({} : Std.HashSet Expr)
+  let spanProfile ← if leant2.trace.get (← getOptions) then
+      some <$> Profiling.Collector.create
+    else pure none
   let start ← IO.monoMsNow
   let frontier ← defaultTypeFrontier
   let providers ← mkProviders q.providers
@@ -246,7 +270,7 @@ def runQuery (q : Query) : MetaM Outcome :=
   let timedOut ← IO.mkRef false
   -- refutation lane
   let refuted ← IO.mkRef (none : Option Accepted)
-  let refutationLane (ms : Nat) (depths : List Nat) : MetaM Unit := withLane ledger refutedPrograms graceRef timedOut ms (name := "refutation") fun ctx => do
+  let refutationLane (ms : Nat) (depths : List Nat) : MetaM Unit := withLane ledger refutedPrograms graceRef timedOut ms (name := "refutation") (profile := spanProfile) fun ctx => do
     let negTy ← mkArrow q.target (mkConst ``False)
     let extra ← mkProviders #[``Empty.elim, ``False.elim] (always := true)
     let cfgR := { baseCfg with providers := extra ++ baseCfg.providers }
@@ -258,7 +282,7 @@ def runQuery (q : Query) : MetaM Outcome :=
   -- classical reasoning needs `Prop` targets: a universe-polymorphic query with
   -- explicit universe parameters or unresolved level placeholders is searched
   -- at its `Prop` instantiation, preserving already fixed universe structure.
-  let classicalLane (ms : Nat) (depths : List Nat) : MetaM Unit := withLane ledger refutedPrograms graceRef timedOut ms (name := "classical") fun ctx => do
+  let classicalLane (ms : Nat) (depths : List Nat) : MetaM Unit := withLane ledger refutedPrograms graceRef timedOut ms (name := "classical") (profile := spanProfile) fun ctx => do
     let some tp ← atProp? q.target | return ()
     let cP ← match q.contract with
       | none => pure none
@@ -321,7 +345,7 @@ def runQuery (q : Query) : MetaM Outcome :=
   let singlePass := !needsClassical && q.contract.isSome
   withLane ledger refutedPrograms graceRef timedOut
       (if singlePass then q.budgetMs else if needsClassical then q.budgetMs * 3 / 20 else q.budgetMs * 3 / 10)
-      (name := "constructive") fun ctx =>
+      (name := "constructive") (profile := spanProfile) fun ctx =>
     enumerateGrace ctx baseCfg goalTy (accept q.target q.contract false)
       (if singlePass then constructiveDepths else constructiveDepths.take 4) completed
   -- 2. cheap refutation pass, only for type-only queries
@@ -333,7 +357,7 @@ def runQuery (q : Query) : MetaM Outcome :=
     let rem ← remaining
     let share := if needsClassical then rem * 3 / 10 else rem * 4 / 5
     let done ← completed.get
-    withLane ledger refutedPrograms graceRef timedOut share (name := "constructive-deeper") fun ctx =>
+    withLane ledger refutedPrograms graceRef timedOut share (name := "constructive-deeper") (profile := spanProfile) fun ctx =>
       enumerateGrace ctx baseCfg goalTy (accept q.target q.contract false)
         (constructiveDepths.drop done) completed
   -- 5. deeper classical search

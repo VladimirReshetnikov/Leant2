@@ -1,0 +1,13 @@
+namespace FrontendCase
+def selected {A : Type} (F : A → Type) (x : A) (hx : F x) : F x :=
+  let y := x
+  (fun h : F y => let witness := h; __FRONTEND__) hx
+class Pick (A : Type) where
+  value : A
+def fromInstance (A : Type) [outer : Pick A] : A :=
+  letI : Pick A := outer
+  __FRONTEND__
+example {A : Type} (F : A → Type) (x : A) (hx : F x) : selected F x hx = hx := rfl
+example (A : Type) (inst : Pick A) : @fromInstance A inst = inst.value := rfl
+#eval if selected (fun _ : Nat => Nat) 8 31 == 31 && @fromInstance Nat ⟨17⟩ == 17 then "FRONTEND_VALUE_OK" else "FRONTEND_VALUE_FAILED"
+end FrontendCase

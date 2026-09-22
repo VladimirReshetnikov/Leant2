@@ -1,0 +1,6 @@
+namespace FrontendCase
+def selected (A B : Type) (x : A) (f : A → B) : B := by
+  __FRONTEND__
+example (A B : Type) (x : A) (f : A → B) : selected A B x f = f x := rfl
+#eval if selected Nat Bool 4 (fun n => n == 4) then "FRONTEND_VALUE_OK" else "FRONTEND_VALUE_FAILED"
+end FrontendCase

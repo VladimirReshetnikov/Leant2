@@ -69,6 +69,11 @@ tests, and the `leant2` REPL executable.
   aliases to immutable kernel declarations. Earlier definitions keep their
   original meaning, stale numbered results disappear, and undo restores the
   previous aliases. User declarations are never overwritten.
+- `Leant2/Frontend/Term.lean`: `synth%` terms and the `leant2` tactic synthesize
+  at the enclosing expected type, using accessible local hypotheses, data,
+  genuine lets, and instances. Every answer is checked again at that original
+  type under the standard axiom profile. These frontends do not publish result
+  aliases. The tactic offers source suggestions only after replay validation.
 - `Main.lean`: the compatibility REPL that consumes Leant transcripts
   (`:synth`, `:set` ignored, `:reset`, `:undo`, `:{ ... :}` blocks,
   `:providers`, `:prove`, declarations, `#eval`). Bare expressions evaluate
@@ -106,6 +111,44 @@ equations, and held-out execution at both existing budgets. The complete
 tree-composition checkpoint below archives these results with all other
 required harnesses.
 
+### Synthesis inside Lean declarations
+
+Import `Leant2` to use the expected-type frontends:
+
+```lean
+import Leant2
+
+def identity (A : Sort u) (x : A) : A := synth%
+
+def applyLocal (A B : Type) (f : A → B) (a : A) : B := by
+  leant2
+
+theorem implication (p q : Prop) (hp : p) (hpq : p → q) : q := by
+  leant2
+```
+
+`set_option leant2.budgetMs 5000` changes the search budget. `synth%` requires
+an expected type and can postpone until surrounding elaboration determines it.
+Search never assigns unresolved caller holes. Named universe parameters stay
+rigid, and a candidate must replay at the original expected type even if an
+engine lane found an answer to a specialized type. Local hypotheses are accepted
+premises; global axioms must pass the standard Lean axiom profile. This is
+stricter than the command and REPL frontends' project-relative profile.
+
+Use explicit universe parameters when Lean would otherwise generalize them
+only after elaborating the body: `def id (A : Sort u) (x : A) : A := synth%`
+works, while replacing `Sort u` with `Sort _` can leave a universe hole that
+this frontend deliberately refuses. Later-resolved expression types, such as
+the shared type in `(fun {A : Type} (x y : A) => (x, y)) synth% (7 : Nat)`, can
+be postponed and synthesized once the type becomes known.
+
+The returned term is the checked kernel expression. Supported recursion gets
+the same checked compiler adapters used by command publication. The tactic's
+`Try this` text is an independently checked source suggestion; successful
+synthesis can still report that no replayable suggestion was available.
+These are type-directed frontends; contextual behavioral-contract syntax,
+partial-program sketches, and editor code actions remain future work.
+
 ### The baseline
 
 The minimal acceptance baseline is Leant's `:synth` golden corpus
@@ -136,10 +179,11 @@ python tools/run_extended.py --manifest tests/benchmarks/local-proofs.json --bud
 python tools/run_extended.py --manifest tests/benchmarks/guards.json --budget 10000 # 3 guarded-program gates + 2 impossible controls
 python tools/run_extended.py --manifest tests/benchmarks/tree-composition.json --budget 10000 # 2 tree traversal gates + 1 impossible control
 python tools/run_results.py --budget 10000      # 10 result-binding and evaluation sessions
+python tools/run_frontends.py --budget 10000 --out baseline-out/frontends # 8 fresh-file term/tactic gates
 ```
 
 `python tools/run_all.py` builds everything and runs the baseline and all
-eleven additional harnesses, printing one summary table. It fails on a harness
+twelve additional harnesses, printing one summary table. It fails on a harness
 process error as well as an incomplete score. The baseline also treats
 missing query output as a failure instead of reducing its denominator, and
 checks query diagnostics through explicit REPL completion markers. It still
@@ -150,6 +194,18 @@ retain their raw input, stdout and stderr, require every expected query to
 complete, and reject diagnostics even after a candidate has been printed.
 Literal `False` controls require a certified contract refutation; silence
 and timeouts do not pass them.
+
+The configured aggregate now contains 832 required checks. The eight new
+frontend cases add fresh Lean files, three independent replays of actual tactic
+suggestions in files importing only Lean, and two separate expected-error
+processes for impossible goals. This configuration is not a claim that a full
+832-check run has passed; the latest complete archived run is recorded below.
+Focused frontend runs pass all eight cases at both 5 s and 10 s per search,
+including all thirteen process stages, with identical captured inputs. The
+complete library, tests, and executable build also passes all 62 jobs.
+The frontend runner requires a fresh output directory and records input hashes
+before and after its processes. Build before running it directly; fingerprints
+identify the artifacts tested and do not establish that they were rebuilt.
 
 The previous checkpoint passed **787/787 scored cases** across seven
 harnesses at both 10 s and 5 s per query on implementation commit `87ed037`.
@@ -170,7 +226,7 @@ benchmark problems.
 The new [extended suite](docs/baseline/extended.md) reconstructs the sixteen
 probes in proposal 11, adds nine Lean-core examples and four negative
 controls. All 29 sessions are now required after focused validation of the
-last open tree-inorder case; the complete configured aggregate is 824 checks.
+last open tree-inorder case; the corresponding archived aggregate contains 824 checks.
 Each query runs in a fresh session; a reported candidate must bind at the
 requested type and pass executable replay. This is the initial local E8
 benchmark work, not a port of the external synthesis benchmark collections.
@@ -211,7 +267,10 @@ directory (`C:\Leant\lib\Djex\test-church`), so every `:synth` carries the
 spec's exhaustive `check_<op> f = true` contract.
 
 Diagnostics: `set_option leant2.trace true` enables profiling and prints lane
-and depth timings with ledger counters. Ordinary searches do not collect
-profiling timers. `set_option leant2.traceNodes true` prints every program
+and depth timings with ledger counters. Query-owned spans report inclusive
+and exclusive elapsed time and record partial work on interrupted exits.
+The `lane.search` root covers search and acceptance callbacks, not whole-query
+setup or result publication; inclusive rows overlap. Ordinary searches do not
+collect profiling timers. `set_option leant2.traceNodes true` prints every program
 checked against the contract, plus observation statuses and cache reuse.
 

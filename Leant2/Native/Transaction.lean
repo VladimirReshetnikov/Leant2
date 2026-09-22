@@ -1,6 +1,7 @@
 import Lean
 import Leant2.Core.Types
 import Leant2.Behavior.Observations
+import Leant2.Native.Profile
 /-!
 # Transactional search state
 
@@ -15,6 +16,8 @@ open Lean Meta
 /-- Search context: a ledger reference and a wall-clock deadline. -/
 structure SearchCtx where
   ledger : IO.Ref Ledger
+  /-- Optional query-owned elapsed-span collector; absent in ordinary search. -/
+  profile : Option Profiling.Collector := none
   deadline : Option Nat := none  -- monotonic milliseconds
   /-- Closed programs whose contract already reduced to `false` (per query):
   the same program is reached along several paths and across deepening passes. -/

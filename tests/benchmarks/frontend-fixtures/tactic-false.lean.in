@@ -1,0 +1,7 @@
+namespace FrontendCase
+theorem checkedRejection : True := by
+  fail_if_success
+    have impossible : False := by
+      __FRONTEND__
+  trivial
+end FrontendCase

@@ -9,14 +9,17 @@ namespace Leant2Tests.Substrate
 open Lean Meta Elab Term Leant2
 
 private def proposals (target : Expr) (depth : Nat) (profiled : Bool)
-    : MetaM (Array Expr × Ledger × Array (String × Nat)) := do
+    : MetaM (Array Expr × Ledger × Array Profiling.Entry) := do
   let saved ← saveState
   let root ← mkFreshExprMVar target
   let out ← IO.mkRef #[]
   let errors ← IO.mkRef #[]
   let ledger ← IO.mkRef {}
+  let profile ← if profiled then
+      some <$> Profiling.Collector.create
+    else pure none
   let ctx : SearchCtx := {
-    ledger
+    ledger, profile
     refutedPrograms := ← IO.mkRef {}
     observationCache := ← IO.mkRef #[]
     observationReport := ← IO.mkRef {}
@@ -33,12 +36,14 @@ private def proposals (target : Expr) (depth : Nat) (profiled : Bool)
       errors.modify (·.push ex.toMessageData)
     out.modify (·.push e)
     return false
-  let previousTimers ← profTimers.get
-  profTimers.set #[]
   let _ ← withOptions (fun opts => leant2.trace.set opts profiled) do
     (search cfg leaf 0 [{ mvar := root.mvarId!, depth }]).run ctx
-  let result := (← out.get, ← ledger.get, ← profTimers.get)
-  profTimers.set previousTimers
+  let snapshot ← match profile with
+    | some collector => collector.snapshot
+    | none => pure {}
+  unless snapshot.valid && snapshot.activeDepth == 0 do
+    throwError "profiling left invalid or unfinished spans"
+  let result := (← out.get, ← ledger.get, snapshot.entries)
   saved.restore
   unless (← errors.get).isEmpty do
     throwError "ill-typed proposals: {← errors.get}"
@@ -53,7 +58,7 @@ private def checkParity (target : Expr) (depth : Nat := 2) : MetaM Unit := do
     throwError "profiling changed the work ledger"
   unless plainTimers.isEmpty do throwError "disabled profiling recorded rule timers"
   for key in ["entry", "alt.save", "alt.restore"] do
-    unless activeTimers.any (·.1 == key) do throwError "enabled profiling omitted {key}"
+    unless activeTimers.any (·.label == key) do throwError "enabled profiling omitted {key}"
 
 run_elab do
   for stx in #[
