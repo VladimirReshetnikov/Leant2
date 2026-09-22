@@ -186,6 +186,21 @@ how the cost of each rule on a slow query is measured. Timer collection is
 now conditional on `leant2.trace`; ordinary searches avoid the profiling
 clock reads and timer-reference updates, including at transaction boundaries.
 
+Speculative tiers can use `withScopedBudget` for a cooperative local quota.
+Each scope owns a private exception token; only that owner can turn its quota
+exit into ordinary failure. Real cancellation and lane/grace deadlines take
+priority, and false or exceptional exits restore native Meta/Core state before
+propagating or returning. Work counters stay in IO and are never refunded.
+Admission counters are checked before starting another operation so the last
+admitted operation may finish. A successful callback bypasses heuristic quota
+checks on exit, preserving an accepted candidate's stop request, while still
+checking real interruption and deadlines. Such success may overshoot a local
+quota; this is not a hard time bound. The primitive currently has no production
+search caller. Deterministic tests cover nested ownership, rollback, active
+continuation accounting, admission boundaries, and accepted-stop preservation;
+the complete library/test/executable build passes all 44 jobs. These checks do
+not extend the revision-bound acceptance claim recorded below.
+
 When a classical lane runs, its `Prop` specialization first instantiates
 existing universe assignments, then substitutes zero for remaining universe
 placeholders and named parameters. It preserves successors, so a fixed `Type`

@@ -58,6 +58,11 @@ tests, and the `leant2` REPL executable.
   (constructive, refutation, deeper constructive, classical, deeper
   refutation). There is no engine-selection switch; legacy `:set` commands
   are ignored.
+- `Leant2/Native/Transaction.lean`: cancellation-safe rollback and owned
+  cooperative quotas for speculative search tiers. Failed scopes restore
+  native state without refunding work; successful stop requests survive
+  local quota exhaustion. The quota primitive is tested independently;
+  bounded branch composition is still under development.
 - `Leant2/Frontend/Command.lean`: `#leant2 T`, `#leant2 f : T where P`,
   `#leant2_check`, `#leant2_none`; results are bound as `it1`, `it2`, ...
   Each successful query refreshes the numbered names and bare `it` through
