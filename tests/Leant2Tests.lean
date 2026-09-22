@@ -18,6 +18,10 @@ import Leant2Tests.InitializedEnumeration
 import Leant2Tests.SketchPreparation
 import Leant2Tests.SketchProjection
 import Leant2Tests.SketchProjectionIntegration
+import Leant2Tests.SketchChildProjection
+import Leant2Tests.SketchChildFoldl1
+import Leant2Tests.SketchChildSelection
+import Leant2Tests.SketchChildDeferred
 import Leant2Tests.Sketch
 import Leant2Tests.SketchCommand
 import Leant2Tests.AcceptanceAlternatives
