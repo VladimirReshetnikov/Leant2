@@ -1,0 +1,252 @@
+{
+  "report_date": "2026-09-21",
+  "repository": "VladimirReshetnikov/Leant2",
+  "repository_commit": "784664ff34e819422510a4d470ab07fe48bb736b",
+  "inspected_lean_toolchain": "leanprover/lean4:v4.34.0",
+  "question_ids": [
+    "R1.1",
+    "R1.2",
+    "R1.3",
+    "R1.4",
+    "R2.1",
+    "R2.2",
+    "R2.3",
+    "R2.4",
+    "R2.5",
+    "R3.1",
+    "R3.2",
+    "R3.3",
+    "R3.4",
+    "R4.1",
+    "R4.2",
+    "R4.3",
+    "R4.4",
+    "R5.1",
+    "R5.2",
+    "R5.3",
+    "R6.1",
+    "R6.2",
+    "R6.3",
+    "R6.4",
+    "R7.1",
+    "R7.2",
+    "R7.3",
+    "R8.1",
+    "R8.2",
+    "R9.1",
+    "R9.2"
+  ],
+  "inspected_implementation_files": [
+    "Leant2/Engine.lean",
+    "Leant2/Native/Transaction.lean",
+    "Leant2/Accept/Gate.lean",
+    "lean-toolchain"
+  ],
+  "native_api_files": [
+    {
+      "repository": "leanprover/lean4",
+      "ref": "v4.34.0",
+      "path": "src/Lean/Meta/Tactic/Induction.lean",
+      "blob_sha": "285ee1f4878be40473f8219f0f2eecd0d0b213b1"
+    },
+    {
+      "repository": "leanprover/lean4",
+      "ref": "v4.34.0",
+      "path": "src/Lean/LibrarySuggestions/Basic.lean",
+      "blob_sha": "3e18afc9357aa3c4b8984eff5bfb18e439717a54"
+    }
+  ],
+  "bibliography": [
+    {
+      "key": "repo",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/tree/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements"
+      ]
+    },
+    {
+      "key": "implementation",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/Leant2/Engine.lean",
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/Leant2/Native/Transaction.lean",
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/Leant2/Accept/Gate.lean"
+      ]
+    },
+    {
+      "key": "proposal-evidence",
+      "urls": [
+        "https://github.com/VladimirReshetnikov/Leant2/blob/784664ff34e819422510a4d470ab07fe48bb736b/docs/proposals/11-further-improvements/sections/01-evidence.tex"
+      ]
+    },
+    {
+      "key": "aesop",
+      "urls": [
+        "https://doi.org/10.1145/3573105.3575671",
+        "https://people.compute.dtu.dk/ahfrom/aesop-camera-ready.pdf"
+      ]
+    },
+    {
+      "key": "canonical",
+      "urls": [
+        "https://arxiv.org/abs/2504.06239"
+      ]
+    },
+    {
+      "key": "canonical-min",
+      "urls": [
+        "https://arxiv.org/abs/2603.01463"
+      ]
+    },
+    {
+      "key": "probe",
+      "urls": [
+        "https://doi.org/10.1145/3428295",
+        "https://arxiv.org/abs/2010.08663"
+      ]
+    },
+    {
+      "key": "fold-characterization",
+      "urls": [
+        "https://www.cs.ox.ac.uk/publications/publication2368-abstract.html"
+      ]
+    },
+    {
+      "key": "constructive-fold",
+      "urls": [
+        "https://doi.org/10.1007/978-3-540-25938-1_11",
+        "https://www.cs.uwyo.edu/~jlc/papers/fold_unfold.pdf"
+      ]
+    },
+    {
+      "key": "angluin",
+      "urls": [
+        "https://doi.org/10.1016/0890-5401(87)90052-6"
+      ]
+    },
+    {
+      "key": "parametric-testing",
+      "urls": [
+        "https://doi.org/10.1007/978-3-642-11957-6_8",
+        "https://publications.lib.chalmers.se/records/fulltext/local_99387.pdf"
+      ]
+    },
+    {
+      "key": "hipspec",
+      "urls": [
+        "https://doi.org/10.1007/978-3-642-38574-2_27",
+        "https://www.cse.chalmers.se/~jomoa/papers/hipspec-cade.pdf"
+      ]
+    },
+    {
+      "key": "smyth",
+      "urls": [
+        "https://doi.org/10.1145/3408991",
+        "https://arxiv.org/abs/1911.00583"
+      ]
+    },
+    {
+      "key": "adapton",
+      "urls": [
+        "https://doi.org/10.1145/2594291.2594324",
+        "https://www.cs.umd.edu/~mwh/papers/hammer13adapton.html"
+      ]
+    },
+    {
+      "key": "lean-cbv",
+      "urls": [
+        "https://lean-lang.org/doc/reference/4.34.0/Tactic-Proofs/Tactic-Reference/"
+      ]
+    },
+    {
+      "key": "lean-recursion",
+      "urls": [
+        "https://lean-lang.org/doc/reference/latest/Definitions/Recursive-Definitions/"
+      ]
+    },
+    {
+      "key": "lean4lean",
+      "urls": [
+        "https://doi.org/10.4230/LIPIcs.TYPES.2025.2",
+        "https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.TYPES.2025.2"
+      ]
+    },
+    {
+      "key": "burst",
+      "urls": [
+        "https://doi.org/10.1145/3498682",
+        "https://arxiv.org/abs/2107.06253"
+      ]
+    },
+    {
+      "key": "sauto",
+      "urls": [
+        "https://doi.org/10.1007/978-3-030-51054-1_3"
+      ]
+    },
+    {
+      "key": "lean-induction-source",
+      "urls": [
+        "https://github.com/leanprover/lean4/blob/v4.34.0/src/Lean/Meta/Tactic/Induction.lean"
+      ]
+    },
+    {
+      "key": "synquid",
+      "urls": [
+        "https://doi.org/10.1145/2908080.2908093",
+        "https://cseweb.ucsd.edu/~npolikarpova/publications/pldi16.pdf"
+      ]
+    },
+    {
+      "key": "leanhammer",
+      "urls": [
+        "https://arxiv.org/abs/2506.07477"
+      ]
+    },
+    {
+      "key": "hoogle",
+      "urls": [
+        "https://doi.org/10.1145/3371080",
+        "https://ranjitjhala.github.io/static/hoogle_plus.pdf"
+      ]
+    },
+    {
+      "key": "lean-selector-source",
+      "urls": [
+        "https://github.com/leanprover/lean4/blob/v4.34.0/src/Lean/LibrarySuggestions/Basic.lean"
+      ]
+    },
+    {
+      "key": "selector-readme",
+      "urls": [
+        "https://github.com/hanwenzhu/premise-selection/blob/main/README.md"
+      ]
+    },
+    {
+      "key": "ranking-study",
+      "urls": [
+        "https://proceedings.mlr.press/v89/natarajan19a.html"
+      ]
+    },
+    {
+      "key": "pbe-interaction",
+      "urls": [
+        "https://doi.org/10.1145/2807442.2807459",
+        "https://www.microsoft.com/en-us/research/publication/user-interaction-models-disambiguation-programming-example/"
+      ]
+    }
+  ],
+  "evidence_status": {
+    "lean_compiled": false,
+    "leant2_benchmarks_rerun": false,
+    "model_experiment_run": false,
+    "python_semantic_checks_executed": true,
+    "pdf_compiled": true,
+    "pdf_pages": 37,
+    "pdf_visually_inspected": true
+  },
+  "limitations": [
+    "Written mathematical proofs are not formalized in Lean.",
+    "Architectural interfaces are proposals, not a tested Leant2 patch.",
+    "Current sauto implementation-level unfolding policy was not established.",
+    "No numerical model carrier-proposal accuracy was measured."
+  ]
+}

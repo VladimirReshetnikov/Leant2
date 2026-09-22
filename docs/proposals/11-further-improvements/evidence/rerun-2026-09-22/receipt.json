@@ -1,0 +1,531 @@
+{
+  "scope": "Nine preserved Python finite-model suites only; no Lean or synthesis claim.",
+  "python": {
+    "path": "C:\\Users\\vresh\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+    "bytes": 106328,
+    "sha256": "7ca24f26d6e3f463419ee4f537ddd3acd312c38fe45e678cce08572f26a8bd1a"
+  },
+  "evidence_before": {
+    ".gitattributes": {
+      "bytes": 9,
+      "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+    },
+    "N1/checks/check_models.py": {
+      "bytes": 5866,
+      "sha256": "c66998d2dae23253a6adbc2ecc9d550f9a6aa25ee06b21b768a059d88804bc53"
+    },
+    "N1/checks/results.json": {
+      "bytes": 2339,
+      "sha256": "5fdb9fb3164261781f455e59eb1fbed350e3f8987ed2ff51de812ca2960fa8a7"
+    },
+    "N1/provenance.json": {
+      "bytes": 2005,
+      "sha256": "49e4eb0c72c3845466eb65e4050e68792b4b882c751b13bd576fac7a1d41750e"
+    },
+    "N2/experiments/check_claims.py": {
+      "bytes": 6022,
+      "sha256": "a2482c6aa4c4052b575bada2a59469706195a0d0e96f7077d2327c8e44966afd"
+    },
+    "N2/experiments/results.json": {
+      "bytes": 1600,
+      "sha256": "d204271099f8a239808aaf3cbe6dd2fbdacc50326d469f0225c3773d37ef8f6c"
+    },
+    "N2/source_manifest.json": {
+      "bytes": 7379,
+      "sha256": "eddd41b5505bc2edf9a9fcaa4fd55dfb1143523899d6a2fc9db3d11178ae4a16"
+    },
+    "N3/model_results.json": {
+      "bytes": 2014,
+      "sha256": "e993146408e32b342312f18f3d25614898f2e21cd0f653a57c6d8aa910cc89d5"
+    },
+    "N3/validate_models.py": {
+      "bytes": 6746,
+      "sha256": "04d7f96c560baf1760b75acae6b7a21d530711fadef4a808320a7522bb1506fa"
+    },
+    "N4/experiments/model_checks.py": {
+      "bytes": 7196,
+      "sha256": "f4f5a91bef80e4ab1eed31e34bd53d20808f7c8fa242d7974dd8a2c3f5c02973"
+    },
+    "N4/experiments/results.json": {
+      "bytes": 2573,
+      "sha256": "a3861139ff061e98eaa003024e6a4b59b6c586cd285c567a90e2ab9d0b0f7f68"
+    },
+    "N4/source_manifest.json": {
+      "bytes": 8050,
+      "sha256": "9b075e1e12862f17d4b16bfce4fb5e17d6f4626d40165140485f16465a7c1618"
+    },
+    "N5/checks/check_design_examples.py": {
+      "bytes": 4500,
+      "sha256": "8ead073eb32acefa7f5ade8300efa9ea276bbebfd53cad278bc0daf3c59b2d8f"
+    },
+    "N5/checks/results.json": {
+      "bytes": 1181,
+      "sha256": "f9164370747227076cb148f1d3dfc44ac72d66c6d6ae3c8e78148717f062548e"
+    },
+    "N5/provenance.json": {
+      "bytes": 1429,
+      "sha256": "9d6bfcde778346f2ada12d325cd1675c69d7a8bfd19312bf3addd8d8acdecd4a"
+    },
+    "N5/SHA256SUMS": {
+      "bytes": 1869,
+      "sha256": "1040fd41bf0ddae637ca52fab9f420c4bd82cd3bd542465d332d58ff792c8495"
+    },
+    "N6/semantic_checks.py": {
+      "bytes": 5976,
+      "sha256": "90bc14caee54ff740296366cd18f997dedef067d2cf06bba25402ea8e10d8c2e"
+    },
+    "N6/semantic_results.json": {
+      "bytes": 1425,
+      "sha256": "fc98691d65092fb03340f20a934704e64bcb4323110fed96eaf9176887760675"
+    },
+    "N6/SHA256SUMS.txt": {
+      "bytes": 520,
+      "sha256": "4b3895f720eff90e3f622ec4e12a7710ec587b8ae485b6e9fe2924c5c5c5dbbc"
+    },
+    "N6/source_manifest.json": {
+      "bytes": 6437,
+      "sha256": "3808ec2f12a36b1b8fd6dea7f442af93fb285b6e5ffe3a52b7cd05389d2b8e70"
+    },
+    "N7/question_index.json": {
+      "bytes": 11805,
+      "sha256": "de25f40b52cd1307b7c5de5f38a1d54bc76bb4410c3e58529251ff6039bfb302"
+    },
+    "N7/sanity_checks.py": {
+      "bytes": 7241,
+      "sha256": "7ab21228e01f0c0b6b5ffd397f2cde7a350bf6a2187cc7fc99a4d730db5971f8"
+    },
+    "N7/sanity_results.json": {
+      "bytes": 2452,
+      "sha256": "3fc5272a8973d4ba1e3e36b55f4ee9136d5a19b2dc3dc7978037c7680b7e218b"
+    },
+    "N7/source_manifest.json": {
+      "bytes": 17735,
+      "sha256": "acb98767c0a6cabfd93bd45dfb7919aba8cb14bd4751de531ee9014706aad5e2"
+    },
+    "N8/model_checks.json": {
+      "bytes": 2803,
+      "sha256": "bc0c6ad08b6ee008ed7d0246a3e285cabab0f03c87abb5560e66c09bd3ffd0ca"
+    },
+    "N8/model_checks.py": {
+      "bytes": 8858,
+      "sha256": "e34a7ef93a6c1d98cfe75fb3b6fd4c27bf27dd4d0fbc4efa7fb687595a9c5ce9"
+    },
+    "N9/experiments/check_constructions.py": {
+      "bytes": 5801,
+      "sha256": "eae3ed01dff779553f1b4618150b7b6cd6fe870b2ba170f4c993290cb72caa7f"
+    },
+    "N9/experiments/results.json": {
+      "bytes": 1610,
+      "sha256": "d3372ec78133500cea8dd5c3e9d431beef7f4d085cc39310430357f6b1b62761"
+    },
+    "N9/validation.json": {
+      "bytes": 638,
+      "sha256": "368f162212f81db122007c86f181b52fbe126f612a6a883431e53dffe2de9666"
+    },
+    "README.md": {
+      "bytes": 1840,
+      "sha256": "08bfe81d65de8d3b61c93e4da28f3602019174917afa13bc9f6dc3ad2d8ac5d3"
+    }
+  },
+  "evidence_after": {
+    ".gitattributes": {
+      "bytes": 9,
+      "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+    },
+    "N1/checks/check_models.py": {
+      "bytes": 5866,
+      "sha256": "c66998d2dae23253a6adbc2ecc9d550f9a6aa25ee06b21b768a059d88804bc53"
+    },
+    "N1/checks/results.json": {
+      "bytes": 2339,
+      "sha256": "5fdb9fb3164261781f455e59eb1fbed350e3f8987ed2ff51de812ca2960fa8a7"
+    },
+    "N1/provenance.json": {
+      "bytes": 2005,
+      "sha256": "49e4eb0c72c3845466eb65e4050e68792b4b882c751b13bd576fac7a1d41750e"
+    },
+    "N2/experiments/check_claims.py": {
+      "bytes": 6022,
+      "sha256": "a2482c6aa4c4052b575bada2a59469706195a0d0e96f7077d2327c8e44966afd"
+    },
+    "N2/experiments/results.json": {
+      "bytes": 1600,
+      "sha256": "d204271099f8a239808aaf3cbe6dd2fbdacc50326d469f0225c3773d37ef8f6c"
+    },
+    "N2/source_manifest.json": {
+      "bytes": 7379,
+      "sha256": "eddd41b5505bc2edf9a9fcaa4fd55dfb1143523899d6a2fc9db3d11178ae4a16"
+    },
+    "N3/model_results.json": {
+      "bytes": 2014,
+      "sha256": "e993146408e32b342312f18f3d25614898f2e21cd0f653a57c6d8aa910cc89d5"
+    },
+    "N3/validate_models.py": {
+      "bytes": 6746,
+      "sha256": "04d7f96c560baf1760b75acae6b7a21d530711fadef4a808320a7522bb1506fa"
+    },
+    "N4/experiments/model_checks.py": {
+      "bytes": 7196,
+      "sha256": "f4f5a91bef80e4ab1eed31e34bd53d20808f7c8fa242d7974dd8a2c3f5c02973"
+    },
+    "N4/experiments/results.json": {
+      "bytes": 2573,
+      "sha256": "a3861139ff061e98eaa003024e6a4b59b6c586cd285c567a90e2ab9d0b0f7f68"
+    },
+    "N4/source_manifest.json": {
+      "bytes": 8050,
+      "sha256": "9b075e1e12862f17d4b16bfce4fb5e17d6f4626d40165140485f16465a7c1618"
+    },
+    "N5/checks/check_design_examples.py": {
+      "bytes": 4500,
+      "sha256": "8ead073eb32acefa7f5ade8300efa9ea276bbebfd53cad278bc0daf3c59b2d8f"
+    },
+    "N5/checks/results.json": {
+      "bytes": 1181,
+      "sha256": "f9164370747227076cb148f1d3dfc44ac72d66c6d6ae3c8e78148717f062548e"
+    },
+    "N5/provenance.json": {
+      "bytes": 1429,
+      "sha256": "9d6bfcde778346f2ada12d325cd1675c69d7a8bfd19312bf3addd8d8acdecd4a"
+    },
+    "N5/SHA256SUMS": {
+      "bytes": 1869,
+      "sha256": "1040fd41bf0ddae637ca52fab9f420c4bd82cd3bd542465d332d58ff792c8495"
+    },
+    "N6/semantic_checks.py": {
+      "bytes": 5976,
+      "sha256": "90bc14caee54ff740296366cd18f997dedef067d2cf06bba25402ea8e10d8c2e"
+    },
+    "N6/semantic_results.json": {
+      "bytes": 1425,
+      "sha256": "fc98691d65092fb03340f20a934704e64bcb4323110fed96eaf9176887760675"
+    },
+    "N6/SHA256SUMS.txt": {
+      "bytes": 520,
+      "sha256": "4b3895f720eff90e3f622ec4e12a7710ec587b8ae485b6e9fe2924c5c5c5dbbc"
+    },
+    "N6/source_manifest.json": {
+      "bytes": 6437,
+      "sha256": "3808ec2f12a36b1b8fd6dea7f442af93fb285b6e5ffe3a52b7cd05389d2b8e70"
+    },
+    "N7/question_index.json": {
+      "bytes": 11805,
+      "sha256": "de25f40b52cd1307b7c5de5f38a1d54bc76bb4410c3e58529251ff6039bfb302"
+    },
+    "N7/sanity_checks.py": {
+      "bytes": 7241,
+      "sha256": "7ab21228e01f0c0b6b5ffd397f2cde7a350bf6a2187cc7fc99a4d730db5971f8"
+    },
+    "N7/sanity_results.json": {
+      "bytes": 2452,
+      "sha256": "3fc5272a8973d4ba1e3e36b55f4ee9136d5a19b2dc3dc7978037c7680b7e218b"
+    },
+    "N7/source_manifest.json": {
+      "bytes": 17735,
+      "sha256": "acb98767c0a6cabfd93bd45dfb7919aba8cb14bd4751de531ee9014706aad5e2"
+    },
+    "N8/model_checks.json": {
+      "bytes": 2803,
+      "sha256": "bc0c6ad08b6ee008ed7d0246a3e285cabab0f03c87abb5560e66c09bd3ffd0ca"
+    },
+    "N8/model_checks.py": {
+      "bytes": 8858,
+      "sha256": "e34a7ef93a6c1d98cfe75fb3b6fd4c27bf27dd4d0fbc4efa7fb687595a9c5ce9"
+    },
+    "N9/experiments/check_constructions.py": {
+      "bytes": 5801,
+      "sha256": "eae3ed01dff779553f1b4618150b7b6cd6fe870b2ba170f4c993290cb72caa7f"
+    },
+    "N9/experiments/results.json": {
+      "bytes": 1610,
+      "sha256": "d3372ec78133500cea8dd5c3e9d431beef7f4d085cc39310430357f6b1b62761"
+    },
+    "N9/validation.json": {
+      "bytes": 638,
+      "sha256": "368f162212f81db122007c86f181b52fbe126f612a6a883431e53dffe2de9666"
+    },
+    "README.md": {
+      "bytes": 1840,
+      "sha256": "08bfe81d65de8d3b61c93e4da28f3602019174917afa13bc9f6dc3ad2d8ac5d3"
+    }
+  },
+  "evidence_unchanged": true,
+  "runs": [
+    {
+      "id": "N1",
+      "command": [
+        "C:\\Users\\vresh\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N1\\checks\\check_models.py",
+        "--output",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N1\\checks\\results.json"
+      ],
+      "returncode": 0,
+      "empty_stderr": true,
+      "matches_archived_result": true,
+      "elapsed_seconds": 0.46,
+      "script": {
+        "bytes": 5866,
+        "sha256": "c66998d2dae23253a6adbc2ecc9d550f9a6aa25ee06b21b768a059d88804bc53"
+      },
+      "result": {
+        "bytes": 2463,
+        "sha256": "d103d06c1c9d4cd9c52fbaab34a80595bd3a184ac2d4b2549ce56e9f0912b6bb"
+      },
+      "stdout": {
+        "bytes": 2465,
+        "sha256": "af3c4a0a7e4f5127e6adbc1ebe0f721c1ac3ed0ecd04daaae40761ae029caa92"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "passed": true
+    },
+    {
+      "id": "N2",
+      "command": [
+        "C:\\Users\\vresh\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N2\\experiments\\check_claims.py",
+        "--output",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N2\\experiments\\results.json"
+      ],
+      "returncode": 0,
+      "empty_stderr": true,
+      "matches_archived_result": true,
+      "elapsed_seconds": 0.421,
+      "script": {
+        "bytes": 6022,
+        "sha256": "a2482c6aa4c4052b575bada2a59469706195a0d0e96f7077d2327c8e44966afd"
+      },
+      "result": {
+        "bytes": 1693,
+        "sha256": "6371dcc03ee5531246f3379cf68f1141be4baf3af6fa003a39a4cdabeda2dcf9"
+      },
+      "stdout": {
+        "bytes": 1695,
+        "sha256": "acbe888e84bf2839e384c412c6d952f17ff940f34eadba0eaa7edd0b6ae4de67"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "passed": true
+    },
+    {
+      "id": "N3",
+      "command": [
+        "C:\\Users\\vresh\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N3\\validate_models.py",
+        "--output",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N3\\model_results.json"
+      ],
+      "returncode": 0,
+      "empty_stderr": true,
+      "matches_archived_result": true,
+      "elapsed_seconds": 0.353,
+      "script": {
+        "bytes": 6746,
+        "sha256": "04d7f96c560baf1760b75acae6b7a21d530711fadef4a808320a7522bb1506fa"
+      },
+      "result": {
+        "bytes": 2131,
+        "sha256": "a92ce33f2b0c25ffc5319b432561bfcaa8b5c4d0ce15eb909785f30be60c4cce"
+      },
+      "stdout": {
+        "bytes": 2131,
+        "sha256": "a92ce33f2b0c25ffc5319b432561bfcaa8b5c4d0ce15eb909785f30be60c4cce"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "passed": true
+    },
+    {
+      "id": "N4",
+      "command": [
+        "C:\\Users\\vresh\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N4\\experiments\\model_checks.py",
+        "--output",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N4\\experiments\\results.json"
+      ],
+      "returncode": 0,
+      "empty_stderr": true,
+      "matches_archived_result": true,
+      "elapsed_seconds": 0.536,
+      "script": {
+        "bytes": 7196,
+        "sha256": "f4f5a91bef80e4ab1eed31e34bd53d20808f7c8fa242d7974dd8a2c3f5c02973"
+      },
+      "result": {
+        "bytes": 2730,
+        "sha256": "58fa510a9fcf4e4183660a3cec83d1bd1f5cce43b9199e163bc256d879e9c7f9"
+      },
+      "stdout": {
+        "bytes": 2730,
+        "sha256": "58fa510a9fcf4e4183660a3cec83d1bd1f5cce43b9199e163bc256d879e9c7f9"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "passed": true
+    },
+    {
+      "id": "N5",
+      "command": [
+        "C:\\Users\\vresh\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N5\\checks\\check_design_examples.py"
+      ],
+      "returncode": 0,
+      "empty_stderr": true,
+      "matches_archived_result": true,
+      "elapsed_seconds": 0.383,
+      "script": {
+        "bytes": 4500,
+        "sha256": "8ead073eb32acefa7f5ade8300efa9ea276bbebfd53cad278bc0daf3c59b2d8f"
+      },
+      "result": {
+        "bytes": 1253,
+        "sha256": "5090c1cdf85ee181159edc3c21109c04b4f60d2c193da4e2db41afee92511fd0"
+      },
+      "stdout": {
+        "bytes": 1253,
+        "sha256": "5090c1cdf85ee181159edc3c21109c04b4f60d2c193da4e2db41afee92511fd0"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "passed": true
+    },
+    {
+      "id": "N6",
+      "command": [
+        "C:\\Users\\vresh\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N6\\semantic_checks.py"
+      ],
+      "returncode": 0,
+      "empty_stderr": true,
+      "matches_archived_result": true,
+      "elapsed_seconds": 0.316,
+      "script": {
+        "bytes": 5976,
+        "sha256": "90bc14caee54ff740296366cd18f997dedef067d2cf06bba25402ea8e10d8c2e"
+      },
+      "result": {
+        "bytes": 1498,
+        "sha256": "fb8104a1b3c5ea2d7b6173db7b457410d8c34b9677cb7539176fb8f424f264ab"
+      },
+      "stdout": {
+        "bytes": 1498,
+        "sha256": "fb8104a1b3c5ea2d7b6173db7b457410d8c34b9677cb7539176fb8f424f264ab"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "passed": true
+    },
+    {
+      "id": "N7",
+      "command": [
+        "C:\\Users\\vresh\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N7\\sanity_checks.py",
+        "--output",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N7\\sanity_results.json"
+      ],
+      "returncode": 0,
+      "empty_stderr": true,
+      "matches_archived_result": true,
+      "elapsed_seconds": 0.457,
+      "script": {
+        "bytes": 7241,
+        "sha256": "7ab21228e01f0c0b6b5ffd397f2cde7a350bf6a2187cc7fc99a4d730db5971f8"
+      },
+      "result": {
+        "bytes": 2582,
+        "sha256": "aaa9a55af8d5b870fb11587ebaf5cdb5dc12dd964b805aac39cb38f64418de5a"
+      },
+      "stdout": {
+        "bytes": 135,
+        "sha256": "3a53a1b143adaff13323537ea51c6953ffc5e84e689c19bc0506f7ad1911c786"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "passed": true
+    },
+    {
+      "id": "N8",
+      "command": [
+        "C:\\Users\\vresh\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N8\\model_checks.py",
+        "--output",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N8\\model_checks.json"
+      ],
+      "returncode": 0,
+      "empty_stderr": true,
+      "matches_archived_result": true,
+      "elapsed_seconds": 0.424,
+      "script": {
+        "bytes": 8858,
+        "sha256": "e34a7ef93a6c1d98cfe75fb3b6fd4c27bf27dd4d0fbc4efa7fb687595a9c5ce9"
+      },
+      "result": {
+        "bytes": 2947,
+        "sha256": "115f577b13bf112746c328633a1b9d74af064e9aa6f269e3f9748c51f19a2711"
+      },
+      "stdout": {
+        "bytes": 2947,
+        "sha256": "115f577b13bf112746c328633a1b9d74af064e9aa6f269e3f9748c51f19a2711"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "passed": true
+    },
+    {
+      "id": "N9",
+      "command": [
+        "C:\\Users\\vresh\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N9\\experiments\\check_constructions.py",
+        "--output",
+        "C:\\Users\\vresh\\.codex\\worktrees\\1e92\\Leant2\\baseline-out\\proposal-models-01\\N9\\experiments\\results.json"
+      ],
+      "returncode": 0,
+      "empty_stderr": true,
+      "matches_archived_result": true,
+      "elapsed_seconds": 0.436,
+      "script": {
+        "bytes": 5801,
+        "sha256": "eae3ed01dff779553f1b4618150b7b6cd6fe870b2ba170f4c993290cb72caa7f"
+      },
+      "result": {
+        "bytes": 1708,
+        "sha256": "3b9e4f27d60246f4bea7eac67a5ed3694efd3d7779bfac1b112f3bcb2e82b0f5"
+      },
+      "stdout": {
+        "bytes": 1708,
+        "sha256": "3b9e4f27d60246f4bea7eac67a5ed3694efd3d7779bfac1b112f3bcb2e82b0f5"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "passed": true
+    }
+  ],
+  "passed": true
+}

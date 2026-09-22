@@ -1,0 +1,73 @@
+{
+  "scope": "Python finite semantic sanity checks only; no Lean or Leant2 execution",
+  "reverse": {
+    "alphabet": [
+      0,
+      1,
+      2
+    ],
+    "max_length": 7,
+    "cases": 3280,
+    "plain_fold_and_endomorphism_fold_match_reference": true
+  },
+  "optional_minmax": {
+    "cases": 3280,
+    "all_match_reference": true
+  },
+  "fibonacci_pair": {
+    "n_min": 0,
+    "n_max": 60,
+    "cases": 61,
+    "matches_fast_doubling": true
+  },
+  "unary_moore_machines": {
+    "initial_state": 0,
+    "sample_lengths": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "enumeration": {
+      "1": {
+        "tested": 2,
+        "sample_consistent": 0
+      },
+      "2": {
+        "tested": 16,
+        "sample_consistent": 0
+      },
+      "3": {
+        "tested": 216,
+        "sample_consistent": 2
+      }
+    },
+    "certifying_incompatibility_clique_size": 3
+  },
+  "partial_observation_rows": {
+    "unequal_rows_can_merge": true
+  },
+  "sample_equivalence": {
+    "agrees_on": [
+      0,
+      1
+    ],
+    "distinguishing_argument": 2,
+    "not_a_composition_congruence": true
+  },
+  "rollback_cache": {
+    "generation_reuse_is_unsafe": true,
+    "branch_qualified_key_avoids_this_example": true
+  },
+  "heuristic": {
+    "open_goals": 2,
+    "possible_remaining_cost": 1,
+    "goal_count_is_not_an_admissible_lower_bound": true
+  },
+  "all_assertions_passed": true
+}

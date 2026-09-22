@@ -1,0 +1,963 @@
+{
+  "schema": 1,
+  "source_revision": "5c3a53c22c18e6acd8ff17eb0902ce4da354518a",
+  "scope": "All files in the nine incoming packages, before integration or deletion.",
+  "evidence_policy": "Preserved receipts describe the source packages, not a current Lean build or current PDF. New model reruns are recorded separately.",
+  "packages": [
+    {
+      "id": "N1",
+      "original_root": "docs/proposals/new/1",
+      "files": [
+        {
+          "original_path": "docs/proposals/new/1/article.pdf",
+          "bytes": 371456,
+          "sha256": "8230d73dedb2e1b917348cbc50a79a3abae6809a3d7094a441e02a636a22960c",
+          "git_blob": "00753d7e873fb7077779d1645dac8675fce69d76",
+          "checkout_bytes": 371456,
+          "checkout_sha256": "8230d73dedb2e1b917348cbc50a79a3abae6809a3d7094a441e02a636a22960c",
+          "disposition": "superseded generated article; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/1/article.tex",
+          "bytes": 5053,
+          "sha256": "4f71c02c4cb0e84dd6822729971ab2f7443c9ff8bfe2984fb78d06763b6581e0",
+          "git_blob": "e5af9d55ac6e3b9921369f837b1cf282cf59c64a",
+          "checkout_bytes": 5159,
+          "checkout_sha256": "6a7589fc355b306d47a58da1ac72ddc56edfbc1a3e62a609e4e127463ba4b104",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/1/checks/check_models.py",
+          "bytes": 5866,
+          "sha256": "c66998d2dae23253a6adbc2ecc9d550f9a6aa25ee06b21b768a059d88804bc53",
+          "git_blob": "da3651f002ab680bb586841d588469faf0650753",
+          "checkout_bytes": 6000,
+          "checkout_sha256": "f6ec5bd4dbe5fa321f0b87b9b37b590b78ac2faa01286a0c145689505d3232ff",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N1/checks/check_models.py"
+        },
+        {
+          "original_path": "docs/proposals/new/1/checks/results.json",
+          "bytes": 2339,
+          "sha256": "5fdb9fb3164261781f455e59eb1fbed350e3f8987ed2ff51de812ca2960fa8a7",
+          "git_blob": "bede741dcd6481eb89cc6a8eb498dfba5350034b",
+          "checkout_bytes": 2463,
+          "checkout_sha256": "d103d06c1c9d4cd9c52fbaab34a80595bd3a184ac2d4b2549ce56e9f0912b6bb",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N1/checks/results.json"
+        },
+        {
+          "original_path": "docs/proposals/new/1/provenance.json",
+          "bytes": 2005,
+          "sha256": "49e4eb0c72c3845466eb65e4050e68792b4b882c751b13bd576fac7a1d41750e",
+          "git_blob": "a39204b4387d85f8c3b72eeff98b7682a5df976f",
+          "checkout_bytes": 2085,
+          "checkout_sha256": "99b9664774957306311e96c8433eacc44c35411413b3583724976fc71f213b03",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N1/provenance.json"
+        },
+        {
+          "original_path": "docs/proposals/new/1/README.md",
+          "bytes": 2687,
+          "sha256": "a247ab10e4c81fe118ca1950ce442b620db111a07363b0e64069a707ec56cedb",
+          "git_blob": "5811ad104921a5966aa4b332da686bcda6a85a43",
+          "checkout_bytes": 2746,
+          "checkout_sha256": "abd0432ea01a7b9e2f3cfe2fb1d12852b5f25db08254f7864364bde01359e4ee",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/1/references.tex",
+          "bytes": 8871,
+          "sha256": "4794a9e1a775269984ec68588807799a0d89a188868f925ed0202c72f2e6c0fe",
+          "git_blob": "a504eac0997124b0c6afad0d47ff0148aefeb806",
+          "checkout_bytes": 9054,
+          "checkout_sha256": "be6e91888c439bbc989d5cbba573307886dbffd3f70386848165c206c3aa3890",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/1/sections/01-foundations.tex",
+          "bytes": 8505,
+          "sha256": "9a802e923805802501a827c53993642e1dde3a5e0d82b88b2e21245c3bfff867",
+          "git_blob": "a0c0a9c0a1957907f8d8f1b65a25d5189a9bafe4",
+          "checkout_bytes": 8651,
+          "checkout_sha256": "91229fc2d219cccc5e3b54e7ea1af7253fbeec41bc211d07e8f6f0c80d8bfb78",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/1/sections/02-search.tex",
+          "bytes": 9894,
+          "sha256": "76a30405d8d0d6fe5b29f7376ec27be3f001b392cb39efd41c03ebc47cd23439",
+          "git_blob": "86ffa2cc99c75450a465f6b92dfbcba24fd7c611",
+          "checkout_bytes": 10058,
+          "checkout_sha256": "1fe4e4cf86d547176b82bfab69c46059b4a65cd3c49acb24b4b1d40e5d6cb8b2",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/1/sections/03-carriers.tex",
+          "bytes": 14395,
+          "sha256": "cf8497a75bcefe4c43971c6bbc1041f74938af3e9bc6c7693c8ddeea3053600a",
+          "git_blob": "cadaabdf2b91d2e8f1239aa4b5f63f5744193560",
+          "checkout_bytes": 14649,
+          "checkout_sha256": "e4954accba2092f865cdfda40038133195ee452e8b004ed02ebaa322f35eb2dc",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/1/sections/04-evaluation.tex",
+          "bytes": 9999,
+          "sha256": "1b8fd374cf6893ae50b19a8f1a5e8ea174eea71123d86192aceeb76d5b487826",
+          "git_blob": "91214df3d5ade8ecf11036baae4b7ddf4d675b8a",
+          "checkout_bytes": 10171,
+          "checkout_sha256": "46d75e756b165a9c629e0c4f9ab51b142ad93bff61255cde179a34aa711eae39",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/1/sections/05-dependent.tex",
+          "bytes": 8442,
+          "sha256": "3e34a538a244f16a40b7bf775d31ff0c781e4756fa11d61d8891162ef4728ff7",
+          "git_blob": "dd437c51dd3d7dbaef3e41d10f36c16b5c2a34df",
+          "checkout_bytes": 8580,
+          "checkout_sha256": "83df8f3f7bc9b02d3f3cdad245efbced007c50348a2429dd6ce836cdbbe984e3",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/1/sections/06-recursion.tex",
+          "bytes": 7554,
+          "sha256": "77764f577eadb2902162c691a439a56607653d0659fde7265298e4f1831d5d63",
+          "git_blob": "4c654df5c48b62c9b285252c24bff102b03c826f",
+          "checkout_bytes": 7683,
+          "checkout_sha256": "39f7bdb3fd4c8a7849071a2f5171745aadba9273e1471256014b963c1aa22d24",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/1/sections/07-contracts.tex",
+          "bytes": 9937,
+          "sha256": "a0cefe1cceb923fef592ff8e6befea4fb103e51622edb5cecd8059c8b049aed8",
+          "git_blob": "cd499743bd35ccd73300821432a15bf75b95f881",
+          "checkout_bytes": 10105,
+          "checkout_sha256": "bc8ae7fafb7170f7e25febded437b4483d70d5703ed2794074ed3a72597a4bea",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/1/sections/08-retrieval.tex",
+          "bytes": 7698,
+          "sha256": "293f3ae446acbe729c5aeb3bd20b214ba22891504f27da6af0f694721a5bf6ab",
+          "git_blob": "27e1504a6e7aef7c6c8956ed70bfcf95a51e56cd",
+          "checkout_bytes": 7820,
+          "checkout_sha256": "7771a55d7904e7dac3f580615b6ba223411f8a0323e0187a0233175b44a7cf39",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/1/sections/09-ranking-learning.tex",
+          "bytes": 9898,
+          "sha256": "01e175d598bf996838eeacf255d25a475e27f8452249bb2d83e5baec1b6a5dce",
+          "git_blob": "6e57892666cb430208a4f3ba553159e8c09217d9",
+          "checkout_bytes": 10065,
+          "checkout_sha256": "d23c59ed8cfc53045eecd53a3052160561fdb1c0131608a4b882721467a90baa",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/1/sections/10-plan.tex",
+          "bytes": 17580,
+          "sha256": "31be5e63bc3123b37947a760e57a4a2e8b7191e9f6ec914652f55b0c9ba4a61c",
+          "git_blob": "a351c022e71b1e50188f3de87dc0f6004f167da8",
+          "checkout_bytes": 17872,
+          "checkout_sha256": "3a3c14dbcbbde3856486db808d49e4d5d3672b1ce87ac52e5143eed84a808f28",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/1/sections/11-appendices.tex",
+          "bytes": 8309,
+          "sha256": "11bb17328d43eefbf52c97fba978cf80319011b0c27e4c0bbab9523aaa234ffd",
+          "git_blob": "a255956d13b628a0a15532ac7954083b9bb531c2",
+          "checkout_bytes": 8420,
+          "checkout_sha256": "889a7e54e567be8f7873e73a895b3794d3b63581b80844d0dd19ecfa55f12e79",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        }
+      ]
+    },
+    {
+      "id": "N2",
+      "original_root": "docs/proposals/new/2/Leant2_Expert_Answers",
+      "files": [
+        {
+          "original_path": "docs/proposals/new/2/Leant2_Expert_Answers/build.sh",
+          "bytes": 281,
+          "sha256": "7de510d6c2ec92a7c4af58430828c96c2dce4e2072637936808edb7b4e0d1e79",
+          "git_blob": "febe8a843b5ac41a62e402fb564823c3f035a69c",
+          "checkout_bytes": 281,
+          "checkout_sha256": "7de510d6c2ec92a7c4af58430828c96c2dce4e2072637936808edb7b4e0d1e79",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/2/Leant2_Expert_Answers/experiments/check_claims.py",
+          "bytes": 6022,
+          "sha256": "a2482c6aa4c4052b575bada2a59469706195a0d0e96f7077d2327c8e44966afd",
+          "git_blob": "4668e12cc9bdfc33639bec55b5fa9bc289b873fc",
+          "checkout_bytes": 6174,
+          "checkout_sha256": "7eb857dd6d6d41894773a63abd2f8766a22f6eb915210ba4dcb53d4581ebbbd6",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N2/experiments/check_claims.py"
+        },
+        {
+          "original_path": "docs/proposals/new/2/Leant2_Expert_Answers/experiments/results.json",
+          "bytes": 1600,
+          "sha256": "d204271099f8a239808aaf3cbe6dd2fbdacc50326d469f0225c3773d37ef8f6c",
+          "git_blob": "3b62c7ad47b56e82a3ec809b36a11600cd56aff5",
+          "checkout_bytes": 1693,
+          "checkout_sha256": "6371dcc03ee5531246f3379cf68f1141be4baf3af6fa003a39a4cdabeda2dcf9",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N2/experiments/results.json"
+        },
+        {
+          "original_path": "docs/proposals/new/2/Leant2_Expert_Answers/Leant2_Expert_Answers.pdf",
+          "bytes": 472527,
+          "sha256": "772d2e8ba6ed67da133d4627a8407bd13cd3b9da7fa1323b545543ec63c73d5a",
+          "git_blob": "e75ec0e5f61ff2056fff1da22c19c0b90b60acd9",
+          "checkout_bytes": 472527,
+          "checkout_sha256": "772d2e8ba6ed67da133d4627a8407bd13cd3b9da7fa1323b545543ec63c73d5a",
+          "disposition": "superseded generated article; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/2/Leant2_Expert_Answers/Leant2_Expert_Answers.tex",
+          "bytes": 114061,
+          "sha256": "7498618ee42b37580968e149c139d88d76c54d0eec7ca2d671c2d1c7ec4e4bb0",
+          "git_blob": "62920b756dd12d18d473dc610fe4dfb6dc766026",
+          "checkout_bytes": 116166,
+          "checkout_sha256": "f80903e7714f20ea6b4e8c4fbeb34501493434528aeba298fb046121c4407695",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/2/Leant2_Expert_Answers/README.md",
+          "bytes": 3031,
+          "sha256": "2d01d9a72b681999d5e3352eb39e64c9487fb19158f7f91025c9b8712c201d65",
+          "git_blob": "ce66470f8c56473cba02bcd9d047554523ec0d8b",
+          "checkout_bytes": 3097,
+          "checkout_sha256": "7263c45cfbf27dd424daf0a2eacbb29d54bff2ef7b907d5a001ccd96963cf8c1",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/2/Leant2_Expert_Answers/source_manifest.json",
+          "bytes": 7379,
+          "sha256": "eddd41b5505bc2edf9a9fcaa4fd55dfb1143523899d6a2fc9db3d11178ae4a16",
+          "git_blob": "922688e1f4201f4596b5e2f1dfa34a438a5254e7",
+          "checkout_bytes": 7562,
+          "checkout_sha256": "42c57316029f5b33f9660cb87466c86807e30864ed4f3a4b7435e21f06a1edc8",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N2/source_manifest.json"
+        }
+      ]
+    },
+    {
+      "id": "N3",
+      "original_root": "docs/proposals/new/3/leant2-expert-answers",
+      "files": [
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/article.pdf",
+          "bytes": 497510,
+          "sha256": "f8023c07ae6bacc58963b67afbf46431c683647628278c6a453aed2a8fd82263",
+          "git_blob": "7f0f076bf5fc52873dffb0e5f7a2a23f295b8906",
+          "checkout_bytes": 497510,
+          "checkout_sha256": "f8023c07ae6bacc58963b67afbf46431c683647628278c6a453aed2a8fd82263",
+          "disposition": "superseded generated article; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/article.tex",
+          "bytes": 5086,
+          "sha256": "a6a076ec30eaede0fba95cd7efba63fe27969d6582ddc8fbfc31139e243e0b3b",
+          "git_blob": "3843fd6ced110a06ab31d3b17314393ec9423fd1",
+          "checkout_bytes": 5176,
+          "checkout_sha256": "efecb79bd3bf7f4dda163f3ce813a6ea1932419de9d99a97f904ef50263746f7",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/model_results.json",
+          "bytes": 2014,
+          "sha256": "e993146408e32b342312f18f3d25614898f2e21cd0f653a57c6d8aa910cc89d5",
+          "git_blob": "01896e44519ea483d4a7d72bce4b9e5d5f81e41c",
+          "checkout_bytes": 2131,
+          "checkout_sha256": "a92ce33f2b0c25ffc5319b432561bfcaa8b5c4d0ce15eb909785f30be60c4cce",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N3/model_results.json"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/README.md",
+          "bytes": 2369,
+          "sha256": "1db4448e382391608a8046efeaced5f4d10e691eee6882a666eca03f5680d468",
+          "git_blob": "5113da3800ded924772a4931bb2ad12ddac59dd7",
+          "checkout_bytes": 2430,
+          "checkout_sha256": "a4ad323682a630eeba0afd9afb8017121f792755553e0fa88cc5d6bbab38fdae",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/references.tex",
+          "bytes": 8874,
+          "sha256": "b35f2cc1291746e9fc538a35c6131bf1b666fe9af923c8514312da8866f21317",
+          "git_blob": "e5cfbb5b5986a43db7b72822ffc104f3ce10fa3f",
+          "checkout_bytes": 9088,
+          "checkout_sha256": "e6ce761ef1594380414d7de57771d0b6d09f551eb5977847f20c195a5d1a1a4c",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/sections/01-foundations.tex",
+          "bytes": 7418,
+          "sha256": "1cdeb951d98dfaf4c5c44b776996f0d8c98d882e4ac9460c267880681b787626",
+          "git_blob": "4b4f7b42da5f87eaea7c38e7c0f12b0822a7aea9",
+          "checkout_bytes": 7474,
+          "checkout_sha256": "e01ae03d6d794f904c71cc596bc144248f5287e09a658d342bf71ff71971b672",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/sections/02-search.tex",
+          "bytes": 10921,
+          "sha256": "833eabd1d5ab9f1311a8071ee93e9f332a0bcc73c1c37d005f06e89a79963c73",
+          "git_blob": "c83fece75b06d41708e978331e39eeaed589d754",
+          "checkout_bytes": 10997,
+          "checkout_sha256": "de52685f97a89e891677adcd6981433e2e3bd6e073fcdc2f3a02708eb75a5975",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/sections/03-carriers.tex",
+          "bytes": 14717,
+          "sha256": "cf7f94e38283d400e47080c75794284e6e3da358055a3d0370ac6d4d8f1391e0",
+          "git_blob": "a83dc33f853a1cb8980bcded8e65ade0d99523ca",
+          "checkout_bytes": 14826,
+          "checkout_sha256": "12b1212a42bf831780a13fdff1062233e82cc08829a84a0c7ae1e5a9f18f58c5",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/sections/04-evaluation.tex",
+          "bytes": 10902,
+          "sha256": "24a61cf8f86d9392044d9e135602e13fb163e9dc93f6cc6942b520c973d85978",
+          "git_blob": "45863de38d00f45e32c4b670149652b63760c1dd",
+          "checkout_bytes": 10976,
+          "checkout_sha256": "420c389a4d66d985111d0d508aca24c59cf57f7bfc153cd153ba778896cf93d9",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/sections/05-dependent.tex",
+          "bytes": 9659,
+          "sha256": "fe14fab0518b1053235e6eac1218b28fdda4a66cdfbfec80db6dcadebde39fe9",
+          "git_blob": "e5da9afb6d8d0b13a55510beef71edcc6e1466b9",
+          "checkout_bytes": 9711,
+          "checkout_sha256": "8427e287b3b88f562bc636b4d625ab01e1d6285899410ae5718bcba9fb17c380",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/sections/06-recursion.tex",
+          "bytes": 8904,
+          "sha256": "15a4d28caa1adebe9c8d3329b9c06120cdab9a715e4066239426dec3e898f06f",
+          "git_blob": "5428e5eecf5163134c031d4e7e966286021857ad",
+          "checkout_bytes": 8971,
+          "checkout_sha256": "e1260529749e8abefae9506715bc0d70f6b22f483743089dee2afd3e690ebf8a",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/sections/07-contracts.tex",
+          "bytes": 10261,
+          "sha256": "b1ed9b6c169c9fd9af8889ed53b992cce939d24c56b3e8cca5bff38a5eb271da",
+          "git_blob": "efb0322775309f694d7d11bad6ba0032f82d060b",
+          "checkout_bytes": 10327,
+          "checkout_sha256": "9a9c2152cf0951937c52bbd1d128dc4336425ccaa3ef33b0fe4a4cef105e290c",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/sections/08-retrieval.tex",
+          "bytes": 8549,
+          "sha256": "d2c508039ac75ecc2617594c09b3db56354aa0f2a82e959542ca8c55121d3329",
+          "git_blob": "0ee4ba01f0e85066c484fd6e14375a07df82e1ff",
+          "checkout_bytes": 8605,
+          "checkout_sha256": "cddd6515276385e9ec34bd23f17478f9f587cdebe48603e8accf8fe657a41dd4",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/sections/09-ranking-learning.tex",
+          "bytes": 10858,
+          "sha256": "a1e48967c5bb0a4f8a9d0f2b3e74a679ecdae0a57d73150be3e8025363852437",
+          "git_blob": "92352fd0fb38106f77e1002a70cc43e19c988208",
+          "checkout_bytes": 10927,
+          "checkout_sha256": "ea537d9a4349eed18666ec670dd14a36a1b2a387b5c25a1d58a916c958c99250",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/sections/10-plan.tex",
+          "bytes": 13459,
+          "sha256": "085f4dc86dbfbbb5800896d4a29c5ce5d9951cd5a6c7f8be45a2c191f0f8ecee",
+          "git_blob": "5d5f86956e4dd74b5e0495dc5b53b0bf5eb5dfcb",
+          "checkout_bytes": 13567,
+          "checkout_sha256": "bfa7a9e5b1077871e7f5f63159d81f27d6fb85369d92f57f71ecd79585c7200c",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/sections/11-appendices.tex",
+          "bytes": 7456,
+          "sha256": "329a3fc3266cff9193e846bdb9adccbd433204eb519e3f1c2978f8d66f9ccdea",
+          "git_blob": "aa1ad209aaba12d9306637b3bf4a4120989684bd",
+          "checkout_bytes": 7543,
+          "checkout_sha256": "0fe500a0f9db789652b9dccacdb688c8ef7a0fbb06e1bed533ec51a6249ab30f",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/3/leant2-expert-answers/validate_models.py",
+          "bytes": 6746,
+          "sha256": "04d7f96c560baf1760b75acae6b7a21d530711fadef4a808320a7522bb1506fa",
+          "git_blob": "442a233597523ca449418147407442dee53cf16d",
+          "checkout_bytes": 6919,
+          "checkout_sha256": "46b754043b69e2409c5bdbfdeb45604915f8491586b3103e074bf18e3ae9f370",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N3/validate_models.py"
+        }
+      ]
+    },
+    {
+      "id": "N4",
+      "original_root": "docs/proposals/new/4/leant2_expert_answers",
+      "files": [
+        {
+          "original_path": "docs/proposals/new/4/leant2_expert_answers/experiments/model_checks.py",
+          "bytes": 7196,
+          "sha256": "f4f5a91bef80e4ab1eed31e34bd53d20808f7c8fa242d7974dd8a2c3f5c02973",
+          "git_blob": "9756fb763c073b35107a2af9465c30c50cebda54",
+          "checkout_bytes": 7353,
+          "checkout_sha256": "ffe9f63b2fa798cc0329ef607b78771b5dfea0c1be208726ad0a79d916cbc4af",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N4/experiments/model_checks.py"
+        },
+        {
+          "original_path": "docs/proposals/new/4/leant2_expert_answers/experiments/results.json",
+          "bytes": 2573,
+          "sha256": "a3861139ff061e98eaa003024e6a4b59b6c586cd285c567a90e2ab9d0b0f7f68",
+          "git_blob": "c7c9188c836bbbef18a124b981644b6a02869335",
+          "checkout_bytes": 2730,
+          "checkout_sha256": "58fa510a9fcf4e4183660a3cec83d1bd1f5cce43b9199e163bc256d879e9c7f9",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N4/experiments/results.json"
+        },
+        {
+          "original_path": "docs/proposals/new/4/leant2_expert_answers/leant2_expert_answers.pdf",
+          "bytes": 514531,
+          "sha256": "f4ccc9abc5d23c735af67143603bae0377ab599a884c1c849cfdd5197d87434b",
+          "git_blob": "6e08acef1597867261f1ada09e67e0ef2235a33f",
+          "checkout_bytes": 514531,
+          "checkout_sha256": "f4ccc9abc5d23c735af67143603bae0377ab599a884c1c849cfdd5197d87434b",
+          "disposition": "superseded generated article; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/4/leant2_expert_answers/leant2_expert_answers.tex",
+          "bytes": 126829,
+          "sha256": "0896e0eb97568fdaef0a3169ef30af49e2049d4ff5c99e7781e7326a5a67029a",
+          "git_blob": "52ffd70eec370f906764368388261cfc37a9dd1e",
+          "checkout_bytes": 129084,
+          "checkout_sha256": "e59c9697b33ceb3f00176897dab93176a4a9a3d1b4724b6e8a5fa9edd448d235",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/4/leant2_expert_answers/README.md",
+          "bytes": 3585,
+          "sha256": "eb46cf1f7946bb704cdaee5d67a679022261d6c41613106c5706f06e624ba9ab",
+          "git_blob": "993b40f41e43deb6a79958bfdb4d006d8d5a14fe",
+          "checkout_bytes": 3666,
+          "checkout_sha256": "41f039533d59f9588cefbe4e8732dd4cfa99672f7610e2fc9500ef00d02bec96",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/4/leant2_expert_answers/source_manifest.json",
+          "bytes": 8050,
+          "sha256": "9b075e1e12862f17d4b16bfce4fb5e17d6f4626d40165140485f16465a7c1618",
+          "git_blob": "b344de2611e14866330bece6228571595c146c7e",
+          "checkout_bytes": 8357,
+          "checkout_sha256": "b2625d3c2ee95fdd48bc2081df1c8d0593eb8374122e7571ebcb7f1620e51e65",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N4/source_manifest.json"
+        }
+      ]
+    },
+    {
+      "id": "N5",
+      "original_root": "docs/proposals/new/5/leant2_expert_answers",
+      "files": [
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/build.sh",
+          "bytes": 697,
+          "sha256": "f89a7070d4b6ca6a32faa04a106439c6c1b61794560b2a4c85ed9d5184c31404",
+          "git_blob": "4be2517fc2768563b2872080ff40c53d9193cab4",
+          "checkout_bytes": 697,
+          "checkout_sha256": "f89a7070d4b6ca6a32faa04a106439c6c1b61794560b2a4c85ed9d5184c31404",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/checks/check_design_examples.py",
+          "bytes": 4500,
+          "sha256": "8ead073eb32acefa7f5ade8300efa9ea276bbebfd53cad278bc0daf3c59b2d8f",
+          "git_blob": "a9844565ba20c523085d32d054d4a5b777da63bd",
+          "checkout_bytes": 4609,
+          "checkout_sha256": "b8dbb1d9b349741df4aceca3810739a9b454f0eb2db0507010e980903b18289e",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N5/checks/check_design_examples.py"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/checks/results.json",
+          "bytes": 1181,
+          "sha256": "f9164370747227076cb148f1d3dfc44ac72d66c6d6ae3c8e78148717f062548e",
+          "git_blob": "b18cef8502ee55259fa594650b0785ef40178fd3",
+          "checkout_bytes": 1253,
+          "checkout_sha256": "5090c1cdf85ee181159edc3c21109c04b4f60d2c193da4e2db41afee92511fd0",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N5/checks/results.json"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/leant2_expert_answers.pdf",
+          "bytes": 377426,
+          "sha256": "ca53cb3501a993c59b9a8cca7c37dedb1303720186e330bfc1b7760aa50a4dc7",
+          "git_blob": "8b6bc49dc9219398069665fb46f9295c255eaace",
+          "checkout_bytes": 377426,
+          "checkout_sha256": "ca53cb3501a993c59b9a8cca7c37dedb1303720186e330bfc1b7760aa50a4dc7",
+          "disposition": "superseded generated article; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/leant2_expert_answers.tex",
+          "bytes": 5161,
+          "sha256": "026da014ce647922834b7cd96fc44734ecda7a1390e8c9234c54f2cc73b70637",
+          "git_blob": "798ea928ce07c1f6cfd6be6cb4ef81021a6337d7",
+          "checkout_bytes": 5258,
+          "checkout_sha256": "50c2b62803a2b0aacd2e1ad3281a0fefc053a48bcc8b4b8fa5c41b917c33b5e5",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/provenance.json",
+          "bytes": 1429,
+          "sha256": "9d6bfcde778346f2ada12d325cd1675c69d7a8bfd19312bf3addd8d8acdecd4a",
+          "git_blob": "1f23da25f5da14828d70535997bf867e2520eddd",
+          "checkout_bytes": 1484,
+          "checkout_sha256": "29bdd5b3296e21d7b45dce233c033782efe58f41fcc7c57c8af62516da3fe6f2",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N5/provenance.json"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/README.md",
+          "bytes": 3137,
+          "sha256": "9d6e897b0d42627de22d7ec1785f38de4eff584be6e3f58c6ee5a4ccd725876c",
+          "git_blob": "46407e7d162557ae2477c9c161a7ebe0022f9527",
+          "checkout_bytes": 3218,
+          "checkout_sha256": "1b6cddc361aab9ed19a5cb96995e1b0caa9d6fd7ddea4d3e29ec12f96968a8e9",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/references.tex",
+          "bytes": 7797,
+          "sha256": "f9d212583c0ddbcb093a1ffa39ae917e3db5f8525ed4aaf8fa0fe86caca4da04",
+          "git_blob": "10953740780b7e29f071b33abe9ce638808f5958",
+          "checkout_bytes": 7967,
+          "checkout_sha256": "81b5fafd38f942e1f2ed80935fcfa8d484b0de30d71d8f0a60b93619a363712f",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/01_scope.tex",
+          "bytes": 6345,
+          "sha256": "7ffe174365d95d32a94a7f2b352131fa45305df4a00364108c5a7d35e5af4c6f",
+          "git_blob": "5c2561e79ceaf8ca5b193de3da86b67d5ee07e6b",
+          "checkout_bytes": 6382,
+          "checkout_sha256": "4b581a5d29b5f40c3cc6dd3e90713dfa92cca0f24605ca932e7642ebb74c4551",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/02_foundations.tex",
+          "bytes": 8476,
+          "sha256": "ff55c7e4fe9407e1302ece1b6e8408c02a1fe3d339ce90decf4a3b0dcc00590b",
+          "git_blob": "b6b938380ad75f38a18919f18e53962963d1d09f",
+          "checkout_bytes": 8539,
+          "checkout_sha256": "b516dfac27c089b240d7a9a4801e78971f243a28b37c969c8adddd1610fa5184",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/03_search.tex",
+          "bytes": 11041,
+          "sha256": "3be34c0fba7c14d9d8889e1de63c9e789bc5a6165c0bd87145967114f22f8c45",
+          "git_blob": "8f2156276f2f404ddd5e0489bc09da59c7d3eb76",
+          "checkout_bytes": 11098,
+          "checkout_sha256": "ef7498ac779aad6fe3ff1d6af0d44e92f6f287644e3b0b233c37b66f2f47b65f",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/04_carriers.tex",
+          "bytes": 15965,
+          "sha256": "24a42e08d7ccdc6847bc09c6512fad4b8d2283075cf46553af278f1b86e48aab",
+          "git_blob": "42e5d593b6e700af6e2383680fc30020270679d6",
+          "checkout_bytes": 16097,
+          "checkout_sha256": "6a67b1086b4458d7f247fda10ad5a5681ecf19bd5d0d34772d328a8b0fcf33af",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/05_evaluation.tex",
+          "bytes": 12828,
+          "sha256": "ceae7c0ec2b5be837954445bb35842dc537b69d12d0d82e1291b14057b7ec9ca",
+          "git_blob": "47a58f72cc45c2eefef19526987eb8cc3517367c",
+          "checkout_bytes": 12909,
+          "checkout_sha256": "320e19d62e363d3d153704f6625c1ba305405880326ee018e3681fb7c46f0b78",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/06_dependent.tex",
+          "bytes": 8614,
+          "sha256": "70355981ee3bdc2122076cc4cd4e1edcd0c90e366bc1bb6cabf506d0cc293127",
+          "git_blob": "7186344d26896ca63652a1bffe34aefb3fff6f8a",
+          "checkout_bytes": 8664,
+          "checkout_sha256": "50decd7babad1dd65b743ba036ea30190523b8e2ac5a6e24244c4be9671f9b9a",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/07_recursion.tex",
+          "bytes": 8816,
+          "sha256": "51d39877f1f58d32ab243b87ef91e020641288a107504dbf7b609999cf284efb",
+          "git_blob": "6a931d5424ba8eb1760e22aac319fb22d14da031",
+          "checkout_bytes": 8864,
+          "checkout_sha256": "c953fa17abacc00a8afd8f21cca2be0a66412b9888815b7956069f657d60c9e1",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/08_contracts.tex",
+          "bytes": 11365,
+          "sha256": "394ab396bf7c13f8d4f0277a64b7f61f917056dcdddd9c8ccbe81ec6485988b5",
+          "git_blob": "f69e8b5335a26399cbe8782a4952c41983f0c607",
+          "checkout_bytes": 11440,
+          "checkout_sha256": "b4ad2c491d309f5e74a8daa1c9df0deaea9a14ad0622071d3e4bd6213cc253ed",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/09_retrieval.tex",
+          "bytes": 9153,
+          "sha256": "eaa1001f2079e521de78d4c825eb0f1051967d54b4a733f685baf7dea743b075",
+          "git_blob": "6c8dd7e320e95256b4ddcc02099d9974d9495821",
+          "checkout_bytes": 9198,
+          "checkout_sha256": "28609620a24dd7d784dbffcf2f19a965e67d7808856d416eaf4c47fb945e3262",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/10_ranking.tex",
+          "bytes": 7059,
+          "sha256": "18d0f8a064dfc92acf470bc74e7f02ba0040042d8f2a9df8a1a488a99d7cc9d6",
+          "git_blob": "a328a519e8ffb9afeba74a2321bab975728d080a",
+          "checkout_bytes": 7096,
+          "checkout_sha256": "e45325cf5c7c4a0819c28598991ab3e7deeb748ff318cdf0aaa2476c55ef0b2b",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/11_learning.tex",
+          "bytes": 6922,
+          "sha256": "9e2f8be5f7669730eeb6c8cb131f857f5037e4868de5a9ddec2cc9a3b5994ff2",
+          "git_blob": "9735bfc1a087d31bbaa1f9f203a2af6f67e38d07",
+          "checkout_bytes": 6954,
+          "checkout_sha256": "980b660d8c8291f199d0b2e277d3b28e5d181bb87f1db7b93051e7eb4fdd270f",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/12_roadmap.tex",
+          "bytes": 13473,
+          "sha256": "86c75f2dfd450cd6baf76459f593aafcf6c5d3c64bd6e537ba384217137abafe",
+          "git_blob": "3af05d337b6fb618367827686fa05534cb29dc9c",
+          "checkout_bytes": 13573,
+          "checkout_sha256": "ff57a2e77a8628a1d4f9956c73ad8f516caba84b49bd5e604bff381dafbe3799",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/sections/13_appendices.tex",
+          "bytes": 10300,
+          "sha256": "b6b00524ed3c7c858ec4baadcd4c325c6ee00cab00e2d470cb0656b07444bc05",
+          "git_blob": "05714b5c3128eaf360a407efb92735de73290e10",
+          "checkout_bytes": 10407,
+          "checkout_sha256": "a1ee59e5b4153a88a7a241fa828f97135ecf779368b5c8c3b176de0f034c77ba",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/5/leant2_expert_answers/SHA256SUMS",
+          "bytes": 1869,
+          "sha256": "1040fd41bf0ddae637ca52fab9f420c4bd82cd3bd542465d332d58ff792c8495",
+          "git_blob": "cd5b174ef30d13d5cdfb509de55a0fcaab431be0",
+          "checkout_bytes": 1890,
+          "checkout_sha256": "5293554edae427d2dc19b579a5c004fe1940c56846f67c629e1899497b80a0bb",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N5/SHA256SUMS"
+        }
+      ]
+    },
+    {
+      "id": "N6",
+      "original_root": "docs/proposals/new/6",
+      "files": [
+        {
+          "original_path": "docs/proposals/new/6/leant2_expert_answers.pdf",
+          "bytes": 337075,
+          "sha256": "d93c2cc8b1fc8f3603371e225b397ab0da025c88253929966e90702141db0add",
+          "git_blob": "9e0ca95230cb8824f01380dc3a5b83ea0305779f",
+          "checkout_bytes": 337075,
+          "checkout_sha256": "d93c2cc8b1fc8f3603371e225b397ab0da025c88253929966e90702141db0add",
+          "disposition": "superseded generated article; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/6/leant2_expert_answers.tex",
+          "bytes": 122469,
+          "sha256": "67165d25450b572f289869f503fc5ae8eaf80e9e54610a22c967a07763a8b326",
+          "git_blob": "efdabf0ed7251881521e8bdade98cb278b0a2dff",
+          "checkout_bytes": 124635,
+          "checkout_sha256": "caa96a42751e9d71fc2b7340e25ec2bc58520ab9542520056446f6bd26b47090",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/6/README.md",
+          "bytes": 2534,
+          "sha256": "998dc6a3b2b591502b972e2a617cb37d46cf6bfd874b83ba8beb9a5bca1af21f",
+          "git_blob": "ed0f132ed3cd106a9a30f50fc0b38b547a9172c3",
+          "checkout_bytes": 2595,
+          "checkout_sha256": "816a3d00d250a6fd73c786753c0dbd8e7db36f809139e466eb2bba38c32fe872",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/6/semantic_checks.py",
+          "bytes": 5976,
+          "sha256": "90bc14caee54ff740296366cd18f997dedef067d2cf06bba25402ea8e10d8c2e",
+          "git_blob": "da627ebf3510ee7f7acbf7101cace66b3ca45d37",
+          "checkout_bytes": 6116,
+          "checkout_sha256": "db0ee744ab2a29baa456b28b881404c1d3c610cd75e8ca6f07d97019a4edb988",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N6/semantic_checks.py"
+        },
+        {
+          "original_path": "docs/proposals/new/6/semantic_results.json",
+          "bytes": 1425,
+          "sha256": "fc98691d65092fb03340f20a934704e64bcb4323110fed96eaf9176887760675",
+          "git_blob": "673cbb2877b361b8d65dc2b29948acc6161bf8fd",
+          "checkout_bytes": 1498,
+          "checkout_sha256": "fb8104a1b3c5ea2d7b6173db7b457410d8c34b9677cb7539176fb8f424f264ab",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N6/semantic_results.json"
+        },
+        {
+          "original_path": "docs/proposals/new/6/SHA256SUMS.txt",
+          "bytes": 520,
+          "sha256": "4b3895f720eff90e3f622ec4e12a7710ec587b8ae485b6e9fe2924c5c5c5dbbc",
+          "git_blob": "154a98ff0214befbd45cbb4ce9ba9f6916884922",
+          "checkout_bytes": 526,
+          "checkout_sha256": "d4f91b5afce9b704ce81ddcd12149ec41d53597a79f1a744cf55f2cb57e3ace7",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N6/SHA256SUMS.txt"
+        },
+        {
+          "original_path": "docs/proposals/new/6/source_manifest.json",
+          "bytes": 6437,
+          "sha256": "3808ec2f12a36b1b8fd6dea7f442af93fb285b6e5ffe3a52b7cd05389d2b8e70",
+          "git_blob": "ecc98f64e9ed96e917dbe925e10fc0bb60d93620",
+          "checkout_bytes": 6689,
+          "checkout_sha256": "8db9cdac14383db199d3d9752813306d0642efddcfc70cc1661fb14ce8c686d6",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N6/source_manifest.json"
+        }
+      ]
+    },
+    {
+      "id": "N7",
+      "original_root": "docs/proposals/new/7/Leant2_Expert_Questions",
+      "files": [
+        {
+          "original_path": "docs/proposals/new/7/Leant2_Expert_Questions/article.pdf",
+          "bytes": 509014,
+          "sha256": "08ad80ca184776346252a8993eb07920358dd9c7f8b09517b5a63c7056ca1e8c",
+          "git_blob": "2a6d9051ef90dd9e3a9162165fc1a89b801b5139",
+          "checkout_bytes": 509014,
+          "checkout_sha256": "08ad80ca184776346252a8993eb07920358dd9c7f8b09517b5a63c7056ca1e8c",
+          "disposition": "superseded generated article; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/7/Leant2_Expert_Questions/article.tex",
+          "bytes": 137880,
+          "sha256": "3c672495408515ca51fd7d84860b1e0d002c1469d276ba545e2ec9523a4244f0",
+          "git_blob": "1cd5f4f979ebc9edbd3a9eddd12879669aad6893",
+          "checkout_bytes": 139126,
+          "checkout_sha256": "2ef9c4b6d4292301f8a5bea4fe863940c1a66503415c902a78614a77480ffad2",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/7/Leant2_Expert_Questions/build.sh",
+          "bytes": 555,
+          "sha256": "790a1ef03bdce3a714dbd1e94cbce1f0a65463e7b8d1d95eede80e210d734d3f",
+          "git_blob": "cfca1d708c7511a9097af20c205cd2964960f2bd",
+          "checkout_bytes": 555,
+          "checkout_sha256": "790a1ef03bdce3a714dbd1e94cbce1f0a65463e7b8d1d95eede80e210d734d3f",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/7/Leant2_Expert_Questions/question_index.json",
+          "bytes": 11805,
+          "sha256": "de25f40b52cd1307b7c5de5f38a1d54bc76bb4410c3e58529251ff6039bfb302",
+          "git_blob": "13de0497ce9310b7431ee953f97e0413cdb64318",
+          "checkout_bytes": 12055,
+          "checkout_sha256": "057a7409c2d03763479f41edc11ba062420d57f59b123ea5672bc5e637340369",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N7/question_index.json"
+        },
+        {
+          "original_path": "docs/proposals/new/7/Leant2_Expert_Questions/README.md",
+          "bytes": 3578,
+          "sha256": "b9d3a3fe5dfdf5f574383d60ac8fec2c573d8f2398f32715b140d431a980942c",
+          "git_blob": "c02fe7b0626dd2f97b8ee0692786751022d2bd1b",
+          "checkout_bytes": 3653,
+          "checkout_sha256": "7ac98d9b867ff2f473f967c3cfac1c57a7e65226301e69f3a9f1a062a5d18cab",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/7/Leant2_Expert_Questions/sanity_checks.py",
+          "bytes": 7241,
+          "sha256": "7ab21228e01f0c0b6b5ffd397f2cde7a350bf6a2187cc7fc99a4d730db5971f8",
+          "git_blob": "a1492ee801705e76aebd576eeae78de877852539",
+          "checkout_bytes": 7418,
+          "checkout_sha256": "9f567c389ec508f926be9d2eca6efa9e09145844f9cad86fcce5e9dad48c44b9",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N7/sanity_checks.py"
+        },
+        {
+          "original_path": "docs/proposals/new/7/Leant2_Expert_Questions/sanity_results.json",
+          "bytes": 2452,
+          "sha256": "3fc5272a8973d4ba1e3e36b55f4ee9136d5a19b2dc3dc7978037c7680b7e218b",
+          "git_blob": "5261c836871467a9e2049fcbabf9b210e0f690fe",
+          "checkout_bytes": 2582,
+          "checkout_sha256": "aaa9a55af8d5b870fb11587ebaf5cdb5dc12dd964b805aac39cb38f64418de5a",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N7/sanity_results.json"
+        },
+        {
+          "original_path": "docs/proposals/new/7/Leant2_Expert_Questions/source_manifest.json",
+          "bytes": 17735,
+          "sha256": "acb98767c0a6cabfd93bd45dfb7919aba8cb14bd4751de531ee9014706aad5e2",
+          "git_blob": "907a5917b3f2e06448bae83d3cd9aeae76015573",
+          "checkout_bytes": 18030,
+          "checkout_sha256": "53659c89c02fbc8f24cbb949eaa213ad1cf9be6c626e4bc87ac8e002bca5ed06",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N7/source_manifest.json"
+        }
+      ]
+    },
+    {
+      "id": "N8",
+      "original_root": "docs/proposals/new/8/leant2_expert_answers",
+      "files": [
+        {
+          "original_path": "docs/proposals/new/8/leant2_expert_answers/article.pdf",
+          "bytes": 370960,
+          "sha256": "65f986777ca57729ecfda1ee31c5d4c8f63cb35b530d9f8cfe50dac40b84c6f1",
+          "git_blob": "0df984d064ae88d55003a0eba3154bd75ace68d3",
+          "checkout_bytes": 370960,
+          "checkout_sha256": "65f986777ca57729ecfda1ee31c5d4c8f63cb35b530d9f8cfe50dac40b84c6f1",
+          "disposition": "superseded generated article; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/8/leant2_expert_answers/article.tex",
+          "bytes": 129278,
+          "sha256": "56f0e919860301b53ee8f8a6f2dd0d68671d82a3c7a2b6e937f1e804e09df463",
+          "git_blob": "3d95e93ed783e3643b86f59ec035c7d12e1aa2a1",
+          "checkout_bytes": 130439,
+          "checkout_sha256": "1c4b427bf206a4fc1a23cfd53af9d3a3b59fdc9c5ffcc5ea6ac323c360bfad4a",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/8/leant2_expert_answers/Makefile",
+          "bytes": 406,
+          "sha256": "95d56b0052a404f2338bf274574ef126c3240df6743ce23cf5f052dd6cd29f55",
+          "git_blob": "6b0a57dcfdff20651aa7a025e22e887a431b8215",
+          "checkout_bytes": 425,
+          "checkout_sha256": "7bdfa037d3e6f2a75316c4bef24d51fafba48279cdfa564868c85050b4351afe",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/8/leant2_expert_answers/model_checks.json",
+          "bytes": 2803,
+          "sha256": "bc0c6ad08b6ee008ed7d0246a3e285cabab0f03c87abb5560e66c09bd3ffd0ca",
+          "git_blob": "187da2a1c57d6417a24b8c67310d05f33e9d8bbe",
+          "checkout_bytes": 2947,
+          "checkout_sha256": "115f577b13bf112746c328633a1b9d74af064e9aa6f269e3f9748c51f19a2711",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N8/model_checks.json"
+        },
+        {
+          "original_path": "docs/proposals/new/8/leant2_expert_answers/model_checks.py",
+          "bytes": 8858,
+          "sha256": "e34a7ef93a6c1d98cfe75fb3b6fd4c27bf27dd4d0fbc4efa7fb687595a9c5ce9",
+          "git_blob": "79ed8c14cc886c6a26e419678b3095f67eeb3388",
+          "checkout_bytes": 9062,
+          "checkout_sha256": "72c9a374cb2b87bf034fa38aa7666a1680f8d487444aad509c96bf2122f3df08",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N8/model_checks.py"
+        },
+        {
+          "original_path": "docs/proposals/new/8/leant2_expert_answers/README.md",
+          "bytes": 3116,
+          "sha256": "332b125f1e28c4e03f72102481c8952091a8f1eadd0d0b84f8004d48c86321b6",
+          "git_blob": "03036cb952eaf50394a3fdfd358fc2f5e3dd5823",
+          "checkout_bytes": 3197,
+          "checkout_sha256": "857df698bb25ee3fe317db6996566ff5d2131602d172f6356e09aa04c347f843",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        }
+      ]
+    },
+    {
+      "id": "N9",
+      "original_root": "docs/proposals/new/9",
+      "files": [
+        {
+          "original_path": "docs/proposals/new/9/experiments/check_constructions.py",
+          "bytes": 5801,
+          "sha256": "eae3ed01dff779553f1b4618150b7b6cd6fe870b2ba170f4c993290cb72caa7f",
+          "git_blob": "21df4a39f291f86df3f8832b53884de690306205",
+          "checkout_bytes": 5951,
+          "checkout_sha256": "8462675977714d5eb9db91d31282dbba8888121bdd6a11bd07c955e49716b484",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N9/experiments/check_constructions.py"
+        },
+        {
+          "original_path": "docs/proposals/new/9/experiments/results.json",
+          "bytes": 1610,
+          "sha256": "d3372ec78133500cea8dd5c3e9d431beef7f4d085cc39310430357f6b1b62761",
+          "git_blob": "79072babbd60f1ac87012ec39e7f503734c01f6a",
+          "checkout_bytes": 1708,
+          "checkout_sha256": "3b9e4f27d60246f4bea7eac67a5ed3694efd3d7779bfac1b112f3bcb2e82b0f5",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N9/experiments/results.json"
+        },
+        {
+          "original_path": "docs/proposals/new/9/leant2-expert-answers.pdf",
+          "bytes": 387727,
+          "sha256": "79add77fe8506486208743ea3455cbf1129d2aa551d43931e5c0f30d133aeeae",
+          "git_blob": "21ee9cd5a88916339ad9bda76f40f35268e228fb",
+          "checkout_bytes": 387727,
+          "checkout_sha256": "79add77fe8506486208743ea3455cbf1129d2aa551d43931e5c0f30d133aeeae",
+          "disposition": "superseded generated article; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/9/leant2-expert-answers.tex",
+          "bytes": 127735,
+          "sha256": "da6ec19313aa5d23aaf3affa9ea415ce7416c6240ca5ad1f9e3ce72066da5db0",
+          "git_blob": "60224f811133f9bc737bcad30b3bcec359382349",
+          "checkout_bytes": 130042,
+          "checkout_sha256": "8e18e19ffdd3932773b9bedc020c61d08481872bfee9e4a92c0cb4a65fdbc08b",
+          "disposition": "integrate into maintained article; detailed coverage in integration ledgers"
+        },
+        {
+          "original_path": "docs/proposals/new/9/README.md",
+          "bytes": 1896,
+          "sha256": "22c763fef31eaefdeac24dcceddddd01c149c5d5eca00ba1d44334550b7c8758",
+          "git_blob": "f45d064c19b30db1869f9814a1a2e8c3a0c96733",
+          "checkout_bytes": 1946,
+          "checkout_sha256": "87d251c02e4da7180843b6c838beedeb7fe8ad413ab4b68410fb447b4c785ca5",
+          "disposition": "superseded package/build instructions; original retained at pinned Git blob"
+        },
+        {
+          "original_path": "docs/proposals/new/9/validation.json",
+          "bytes": 638,
+          "sha256": "368f162212f81db122007c86f181b52fbe126f612a6a883431e53dffe2de9666",
+          "git_blob": "31d3bb56e9bf4a4fd8feb5b3ad80b6064800ccf7",
+          "checkout_bytes": 652,
+          "checkout_sha256": "e604d4640c59b08c67cbebbe5817515b0fdb3e15290e6bc8022a89179f6c6034",
+          "disposition": "preserved evidence",
+          "destination": "docs/proposals/11-further-improvements/evidence/N9/validation.json"
+        }
+      ]
+    }
+  ]
+}
