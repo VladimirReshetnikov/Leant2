@@ -9,5 +9,6 @@ import Leant2Tests.Results
 import Leant2Tests.LocalProof
 import Leant2Tests.Cancellation
 import Leant2Tests.Classical
+import Leant2Tests.Guards
 import Leant2Tests.IndexedRecursion
 import Leant2Tests.IndexedPresentation

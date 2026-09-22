@@ -48,12 +48,12 @@
       "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 8 (reconstructed indexed datatype; dependent motive)"
     },
     {
-      "id": "probe09_max", "title": "Maximum of two naturals", "group": "article-probes", "expect": "open",
+      "id": "probe09_max", "title": "Maximum of two naturals", "group": "article-probes", "expect": "candidate",
       "type": "Nat → Nat → Nat", "contract": "{f} 2 5 = 5 ∧ {f} 7 3 = 7 ∧ {f} 4 4 = 4 ∧ {f} 0 1 = 1",
       "reference": "Nat.max", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 9 (reconstructed examples; guards)"
     },
     {
-      "id": "probe10_drop_zeros", "title": "Drop zero entries from a list", "group": "article-probes", "expect": "open",
+      "id": "probe10_drop_zeros", "title": "Drop zero entries from a list", "group": "article-probes", "expect": "candidate",
       "type": "List Nat → List Nat", "contract": "{f} [0, 2, 0, 3] = [2, 3] ∧ {f} [0, 0] = [] ∧ {f} [4, 5] = [4, 5]",
       "reference": "List.filter (fun n => n != 0)", "source": "docs/proposals/11-further-improvements/sections/01-evidence.tex: probe 10 (reconstructed examples; conditional fold)"
     },

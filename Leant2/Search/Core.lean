@@ -91,6 +91,11 @@ structure Goal where
   applications and constructors clear it; the root contract's `Subtype`
   constructor passes it only to its program field. -/
   allowExtendedRecursion : Bool := false
+  /-- Permit one bounded Nat guard on this program path. Only the actual root
+  contract constructor enables the flag for its program field. Ordinary data
+  construction preserves it; proof/type/instance goals and guard children clear
+  it. This permission is independent of outer-induction eligibility. -/
+  allowNatGuards : Bool := false
 
 /-- Self-time profile of the search rules, collected and printed only when the
 lane trace is enabled. -/
@@ -469,13 +474,70 @@ private def inductionConsumed (subgoal : InductionSubgoal) (consumed : List FVar
     | .fvar id => if (lctx.find? id).isSome then some id else none
     | _ => none
 
+/-- The first guard grammar is deliberately finite: at most four most-recent
+Nat locals, one orientation of each pairwise comparison, then zero tests.
+Ordering the selected locals oldest first makes the usual two-argument guard
+`a ≤ b`. No arbitrary literals, applications, or assumed example environments
+are introduced here. This is a bounded A1 grammar extension, not abduction. -/
+def natGuardPredicates (locals : Array LocalDecl) (check : MetaM Unit := pure ())
+    : MetaM (Array Expr) := do
+  let mut values : Array Expr := #[]
+  for decl in locals do
+    check
+    if decl.isImplementationDetail then continue
+    let ty ← instantiateMVars decl.type
+    if ty.hasExprMVar then continue
+    unless (← whnfR ty).isConstOf ``Nat do continue
+    values := values.push decl.toExpr
+    if values.size == 4 then break
+  let ordered := values.reverse
+  let mut predicates := #[]
+  for i in [:ordered.size] do
+    for j in [i + 1:ordered.size] do
+      -- Preserve the overloaded relation head used to index the native
+      -- Decidable instance. A bare Nat.le application is definitionally equal,
+      -- but native typeclass retrieval does not find its instance at that key.
+      predicates := predicates.push (← mkAppM ``LE.le #[ordered[i]!, ordered[j]!])
+  for value in ordered do
+    predicates := predicates.push (← mkEq value (mkNatLit 0))
+  -- Native case analysis leaves precisely these positive/negative hypotheses.
+  -- Avoid repeating an already-known guard without unifying any input holes.
+  predicates.filterM fun predicate => do
+    check
+    let positive ← whnfR predicate
+    let negative ← whnfR (mkNot predicate)
+    for decl in locals do
+      check
+      let ty ← instantiateMVars decl.type
+      if ty.hasExprMVar then continue
+      let ty ← whnfR ty
+      if ty == positive || ty == negative then return false
+    return true
+
+/-- A native constructive split with the same whole-continuation transaction
+contract as every search alternative. Only successful continuation commits.
+Ordinary failures restore; native/resource/internal exceptions restore before
+escaping. The two arguments of `next` are the positive and negative branches. -/
+def splitNatGuard (g : MVarId) (predicate : Expr)
+    (next : MVarId → MVarId → SearchM Bool) : SearchM Bool :=
+  alternative do
+    checkDeadline
+    let some decider ← probeInstance? (mkApp (mkConst ``Decidable) predicate)
+      | return false
+    let decider ← instantiateMVars decider
+    if decider.hasExprMVar then return false
+    charge fun l => { l with ruleApplications := l.ruleApplications + 1 }
+    let (positive, negative) ← timed "guards.split"
+      (g.byCasesDec predicate decider (← mkFreshUserName `hGuard))
+    next positive.mvarId negative.mvarId
+
 mutual
 /-- Structural recursion on a recursive inductive local (Section 17): the
 recursor with a constant motive; each constructor branch receives its
 induction hypotheses as recursive-call capabilities. Bounded like a split. -/
 partial def structuralRecursion (cfg : SearchConfig) (leaf : Leaf) (splits d : Nat)
     (g : MVarId) (locals : Array LocalDecl) (rest : List Goal) (consumed : List FVarId := [])
-    : SearchM Bool := do
+    (allowNatGuards : Bool := false) : SearchM Bool := do
   if splits = 0 then return false
   for decl in locals do
     if let some ii ← timed "inductive" (inductiveOfLocal decl) then
@@ -483,7 +545,7 @@ partial def structuralRecursion (cfg : SearchConfig) (leaf : Leaf) (splits d : N
       if ← alternative (do
           let subgoals ← g.induction decl.fvarId (mkRecName ii.name)
           search cfg leaf (splits - 1)
-            (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d, consumed }) ++ rest)) then
+            (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d, consumed, allowNatGuards }) ++ rest)) then
         return true
   return false
 
@@ -494,7 +556,7 @@ the transaction; they are not evidence that the requested type is impossible.
 Existing nonindexed recursion retains its separate rule and original order. -/
 partial def extendedStructuralRecursion (cfg : SearchConfig) (leaf : Leaf) (splits d : Nat)
     (g : MVarId) (locals : Array LocalDecl) (rest : List Goal) (consumed : List FVarId)
-    : SearchM Bool := do
+    (allowNatGuards : Bool := false) : SearchM Bool := do
   if splits = 0 || cfg.skip.contains "rec" then return false
   -- Prefer the indexed major to its Nat index. This order is fixed and does
   -- not introduce a choice of stronger or invented motives.
@@ -515,7 +577,7 @@ partial def extendedStructuralRecursion (cfg : SearchConfig) (leaf : Leaf) (spli
           let subgoals ← timed "induction.extended" (g.induction decl.fvarId recursorName)
           let children ← subgoals.toList.mapM fun s => do
             let consumed ← inductionConsumed s consumed
-            return ({ mvar := s.mvarId, depth := d, consumed } : Goal)
+            return ({ mvar := s.mvarId, depth := d, consumed, allowNatGuards } : Goal)
           -- The current delayed-assignment residual representation is not a
           -- typed dependent closure language. Keep indexed branches until the
           -- original contract can be checked on a closed program instead of
@@ -523,6 +585,31 @@ partial def extendedStructuralRecursion (cfg : SearchConfig) (leaf : Leaf) (spli
           let cfg := if indexed then { cfg with skip := "residual" :: cfg.skip } else cfg
           search cfg leaf (splits - 1) (children ++ rest)) then
         return true
+  return false
+
+/-- One constructive Nat guard below each enabled program goal. Branches lose
+guard and extended-induction permission; unrelated sibling obligations retain
+their own metadata. The shared split allowance is consumed once, exactly like
+existing native case analysis. -/
+partial def constructiveNatGuards (cfg : SearchConfig) (leaf : Leaf) (splits d : Nat)
+    (g : MVarId) (locals : Array LocalDecl) (rest : List Goal)
+    (consumed : List FVarId := []) : SearchM Bool := do
+  if splits == 0 || cfg.contract.isNone || cfg.skip.contains "guards" then return false
+  let target ← instantiateMVars (← g.getType)
+  if target.hasExprMVar || (← isTypeSort target) || (← isProp target) ||
+      (← isClass? target).isSome then return false
+  let ctx ← read
+  for predicate in ← timed "guards.grammar" (natGuardPredicates locals (checkDeadline.run ctx)) do
+    checkDeadline
+    if ← splitNatGuard g predicate (fun positive negative =>
+        -- Native guard proof binders create another delayed-assignment closure
+        -- shape. Initially keep every guarded partial candidate until its full
+        -- contract can be checked; focused examples do not prove this closure
+        -- representation sound for pruning all dependent guard branches.
+        search { cfg with skip := "residual" :: cfg.skip } leaf (splits - 1)
+          ([{ mvar := positive, depth := d, consumed },
+            { mvar := negative, depth := d, consumed }] ++ rest)) then
+      return true
   return false
 
 /-- The search over a goal list. -/
@@ -583,17 +670,26 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
     let targetW ← timed "whnf" (whnfR target)
     let d := depth - 1
     let consumed := goal.consumed
+    -- A program flag must not spill into witness search inside a proof, type
+    -- invention, or dictionary construction. Clear it before building children.
+    let allowNatGuards ← if !goal.allowNatGuards || splits == 0 || cfg.contract.isNone ||
+        cfg.skip.contains "guards" || target.hasExprMVar || targetW.isSort then
+      pure false
+    else if ← isProp target then pure false
+    else pure (← isClass? target).isNone
     let cont (children : List MVarId) (isRootSubtypeConstructor : Bool := false) : SearchM Bool :=
       -- `Subtype.mk` creates the root program before its proof obligation.
       -- It is the only constructor through which outer-body eligibility flows.
-      let rootSubtype := isRootSubtypeConstructor && goal.allowExtendedRecursion && cfg.contract.isSome &&
+      let rootProgramField := isRootSubtypeConstructor && cfg.contract.isSome &&
         cfg.root == some g && targetW.isAppOfArity ``Subtype 2
+      let rootSubtype := rootProgramField && goal.allowExtendedRecursion
       search cfg leaf splits (children.mapIdx (fun i m => {
-        mvar := m, depth := d, consumed, allowExtendedRecursion := rootSubtype && i == 0 }) ++ rest)
+        mvar := m, depth := d, consumed, allowExtendedRecursion := rootSubtype && i == 0
+        allowNatGuards := allowNatGuards || (rootProgramField && i == 0) }) ++ rest)
     -- like `cont`, but the children may not apply `fv` again
     let contConsuming (fv : FVarId) (children : List MVarId) : SearchM Bool :=
       search cfg leaf splits
-        (children.map (fun m => { mvar := m, depth := d, consumed := fv :: consumed }) ++ rest)
+        (children.map (fun m => { mvar := m, depth := d, consumed := fv :: consumed, allowNatGuards }) ++ rest)
     let applyHead (e : Expr) : SearchM Bool := alternative do
       charge fun l => { l with unifications := l.unifications + 1 }
       let children ← timed "apply" (g.apply e applyCfg)
@@ -625,7 +721,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
       return ← alternative do
         let (_, g') ← timed "intro" g.intro1P
         search cfg leaf splits
-          ({ mvar := g', depth, consumed, allowExtendedRecursion := goal.allowExtendedRecursion } :: rest)
+          ({ mvar := g', depth, consumed, allowExtendedRecursion := goal.allowExtendedRecursion, allowNatGuards } :: rest)
     -- 2. invertible destructuring (does not consume depth or splits)
     for decl in locals do
       if let some ii ← timed "inductive" (inductiveOfLocal decl) then
@@ -637,7 +733,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
               search cfg leaf splits
                 (subgoals.toList.map (fun s => {
                   mvar := s.mvarId, depth, consumed
-                  allowExtendedRecursion := goal.allowExtendedRecursion }) ++ rest)) then
+                  allowExtendedRecursion := goal.allowExtendedRecursion, allowNatGuards }) ++ rest)) then
             return true
           -- destructuring failed (e.g. Prop into data): fall through
   -- 2b. classical case split on a Prop variable, early: `cases (Classical.em p)`.
@@ -653,13 +749,13 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             let (h, g'') ← g'.intro1P
             let subgoals ← g''.cases h
             search cfg leaf (splits - 1)
-              (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d, consumed }) ++ rest)) then
+              (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d, consumed, allowNatGuards }) ++ rest)) then
           return true
     -- 2c. structural recursion first, under a contract, at the outermost level
     -- only (nested recursion remains a late alternative, rule 9d)
     let recurseNow := cfg.recursionFirst && !targetW.isSort && splits == cfg.maxSplits
     if recurseNow then
-      if ← structuralRecursion cfg leaf splits d g locals rest consumed then return true
+      if ← structuralRecursion cfg leaf splits d g locals rest consumed allowNatGuards then return true
     -- 3. reflexivity
     if targetW.isAppOfArity ``Eq 3 then
       if ← alternative (do g.refl; cont []) then return true
@@ -671,6 +767,10 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             match ← probeInstance? target with
             | some inst => g.assign inst; cont []
             | none => return false) then return true
+    -- Bounded constructive conditional introduction, confined to program
+    -- obligations. A skipped guard is a grammar restriction, never refutation.
+    if allowNatGuards then
+      if ← constructiveNatGuards cfg leaf splits d g locals rest consumed then return true
     if targetIsSort then
       -- type invention: types of locals first, then the closed frontier
       let frontier ← timed "frontier" (localFrontier locals)
@@ -770,7 +870,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             let val ← instantiateMVars (mkAppN decl.toExpr args)
             let g' ← g.assert (← mkFreshUserName `h) resTy val
             let (_, g'') ← g'.intro1P
-            search cfg leaf splits ({ mvar := g'', depth := d, consumed } :: rest)) then return true
+            search cfg leaf splits ({ mvar := g'', depth := d, consumed, allowNatGuards } :: rest)) then return true
       -- 9. providers, head-filtered: a constant-headed conclusion must match the
       -- target head; a variable-headed provider needs a local demanding one of its
       -- argument heads
@@ -812,7 +912,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
               let goal : Goal := { mvar := a.mvarId!, depth := d, deferred := 3, consumed }
               if (← isClass? aty).isSome then instGoals := instGoals ++ [goal]
               else otherGoals := otherGoals ++ [goal]
-            search cfg leaf splits (instGoals ++ otherGoals ++ [{ mvar := g'', depth := d, consumed }] ++ rest))
+            search cfg leaf splits (instGoals ++ otherGoals ++ [{ mvar := g'', depth := d, consumed, allowNatGuards }] ++ rest))
           then return true
       -- 9c. bounded case analysis on multi-constructor locals, after providers so
       -- that library applications (`List.map f xs`) are found before case splits
@@ -823,12 +923,12 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
             if ← alternative (do
                 let subgoals ← g.cases decl.fvarId
                 search cfg leaf (splits - 1)
-                  (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d, consumed }) ++ rest)) then
+                  (subgoals.toList.map (fun s => { mvar := s.mvarId, depth := d, consumed, allowNatGuards }) ++ rest)) then
               return true
       -- 9d. structural recursion as a late alternative, top level only (nested
       -- recursion is not attempted: it multiplies the search without payoff here)
       if !recurseNow && splits == cfg.maxSplits then
-        if ← structuralRecursion cfg leaf splits d g locals rest consumed then return true
+        if ← structuralRecursion cfg leaf splits d g locals rest consumed allowNatGuards then return true
       -- 10. closed contracts and bounded local proof obligations
       if cfg.proofPortfolio then
         if ← alternative (do if ← timed "portfolio" (proofPortfolio cfg g) then cont [] else return false) then
@@ -836,7 +936,7 @@ partial def search (cfg : SearchConfig) (leaf : Leaf) (splits : Nat) :
       -- A new grammar tier, after the existing rules. It cannot recursively
       -- reappear in arithmetic or constructor subterms, nor inside a recursor.
       if goal.allowExtendedRecursion && splits == cfg.maxSplits then
-        if ← extendedStructuralRecursion cfg leaf splits d g locals rest consumed then return true
+        if ← extendedStructuralRecursion cfg leaf splits d g locals rest consumed allowNatGuards then return true
     return false
 end
 

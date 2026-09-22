@@ -79,6 +79,16 @@ indexed recursors with multiple indices and dependent motives. These are
 separate search and publication capabilities; arbitrary indexed, mutual, and
 nested induction remain outside the search grammar.
 
+Contract-directed program search also has a bounded constructive guard rule.
+It can branch on comparisons between natural-number locals and on equality
+to zero, using Lean's native decidable case analysis. The finite grammar
+permits one guard on each enabled program path and keeps the original
+closed-contract and kernel checks. Maximum, minimum, and recursive drop-zero
+functions pass provider-free construction and universal correctness checks,
+including executable publication and printed-source round trips. The rule
+does not infer predicates from examples or implement general decision-tree
+learning.
+
 ### The baseline
 
 The minimal acceptance baseline is Leant's `:synth` golden corpus
@@ -106,11 +116,12 @@ python tools/run_session.py                    # Leant session provider-identity
 python tools/run_extended.py --budget 10000     # 29 independent sessions with typed and executable result replay
 python tools/run_extended.py --manifest tests/benchmarks/recursion.json --budget 10000 # 3 recursion gates + 2 impossible controls
 python tools/run_extended.py --manifest tests/benchmarks/local-proofs.json --budget 10000 # 5 local-proof gates + 1 impossible control
+python tools/run_extended.py --manifest tests/benchmarks/guards.json --budget 10000 # 3 guarded-program gates + 2 impossible controls
 python tools/run_results.py --budget 10000      # 10 result-binding and evaluation sessions
 ```
 
 `python tools/run_all.py` builds everything and runs the baseline and all
-nine additional harnesses, printing one summary table. It fails on a harness
+ten additional harnesses, printing one summary table. It fails on a harness
 process error as well as an incomplete score. The baseline also treats
 missing query output as a failure instead of reducing its denominator, and
 checks query diagnostics through explicit REPL completion markers. It still
@@ -140,19 +151,27 @@ benchmark problems.
 
 The new [extended suite](docs/baseline/extended.md) reconstructs the sixteen
 probes in proposal 11, adds nine Lean-core examples and four negative
-controls, and separates required capabilities from three open searches.
+controls, and separates required capabilities from one open search.
 Each query runs in a fresh session; a reported candidate must bind at the
 requested type and pass executable replay. This is the initial local E8
 benchmark work, not a port of the external synthesis benchmark collections.
 
-The current [local-proof and cancellation checkpoint](docs/baseline/local-proofs-2026-09-21/README.md),
+The archived [local-proof and cancellation checkpoint](docs/baseline/local-proofs-2026-09-21/README.md),
 implementation commit `914680d`, passed **813/813 checks across ten harnesses
 at both 10 s and 5 s per query**. Fin and transitivity are now required in the
 original E8 suite; six separate gates cover those goals, local contradictions,
 a supplied list-length induction hypothesis, and a False-contract control.
 The archive preserves complete outputs and verifies source, executable,
 compiled-module, and external-input hashes against a pre-run snapshot.
-Three E8 searches and thirteen Church stretch cases remain unsolved.
+Three E8 searches and thirteen Church stretch cases were unsolved at that
+checkpoint.
+
+The subsequent guard implementation passes all five public guard gates and
+the original maximum/drop-zero probes at 5 s/query, with universal post-checks
+for maximum, minimum, and drop-zero. Those two E8 probes are now required;
+tree inorder is the remaining open E8 search. The configured aggregate is
+820 checks across eleven harnesses. These focused development receipts do
+not replace a complete two-budget checkpoint for the new source.
 
 The Church harness imports the specifications from Leant's vendored Djex
 directory (`C:\Leant\lib\Djex\test-church`), so every `:synth` carries the

@@ -17,12 +17,12 @@ and time to first candidate remain open E8 work.
 
 | Group | Required candidates | Impossible controls | Open searches |
 | --- | ---: | ---: | ---: |
-| Sixteen article probes | 13 | 0 | 3 |
+| Sixteen article probes | 15 | 0 | 1 |
 | Lean core List/Option/Nat | 9 | 0 | 0 |
 | Negative controls | 0 | 4 | 0 |
-| Total | 22 | 4 | 3 |
+| Total | 24 | 4 | 1 |
 
-`TOTAL passed/26` covers the required capabilities and controls; `OPEN solved/3`
+`TOTAL passed/28` covers the required capabilities and controls; `OPEN solved/1`
 reports the remaining searches separately. Case selection changes the
 denominators to the selected cases. An open search can exhaust its budget or
 search bounds, or refute all proposed candidates. An exception, malformed or
@@ -33,7 +33,10 @@ or impossible contract for one of them also fails the run. A negative control
 requires `provably no program satisfies the contract`; silence or timeout does
 not establish the control.
 
-The three open article probes are maximum, dropping zeros, and tree flattening.
+Tree flattening is the remaining open article probe. Maximum and dropping
+zeros were promoted after their original finite-contract queries synthesized
+and replayed successfully and the separate public guard gates passed universal
+post-checks and held-out execution.
 `Fin (n+1)` and order transitivity were promoted after the bounded local proof
 service passed their original probes and the separate local-proof gates below.
 Power of two, indexed vector map, and
@@ -187,12 +190,13 @@ python tools/run_results.py --budget 10000 --out baseline-out/results
 python tools/run_all.py --budget 10000 --out baseline-out/milestone-10000
 ```
 
-`run_all.py` runs ten harnesses with distinct artifact paths. Their expected
+`run_all.py` runs eleven harnesses with distinct artifact paths. Their expected
 denominators are baseline 278, recursive 9, Church 28, context 95, corpus 350,
-session 6, results 10, extended 26, recursion gates 5, and local proofs 6: **813 acceptance
+session 6, results 10, extended 28, recursion gates 5, local proofs 6, and guard
+gates 5: **820 acceptance
 checks in total**. Some checks exercise the same synthesis goals at different
-boundaries, so this is not a count of 813 distinct benchmark problems. The
-extended suite's three open searches and the Church stretch cases remain
+boundaries, so this is not a count of 820 distinct benchmark problems. The
+extended suite's one open search and the Church stretch cases remain
 outside these scored denominators. Every harness must also exit successfully;
 a full printed score does not conceal a process or open-case failure.
 
@@ -233,6 +237,43 @@ retains complete raw runs and verifies pre/post input hashes. Focused Lean
 tests separately exercise dependency
 rigidity, extraction and replay, auxiliary-theorem handling, cancellation,
 rollback, and resource-exhaustion behavior.
+
+## Constructive guard gates
+
+`tests/benchmarks/guards.json` defines five additional public sessions: maximum,
+minimum, dropping zeros from a natural-number list, and two literal-False
+controls at the corresponding function types. Maximum and drop-zero retain
+the original E8 finite synthesis contracts. Minimum uses the same natural
+inputs with the opposite selection. Every positive result must pass a kernel
+proof of its universal equality with the withheld reference and held-out
+executable observations. The controls require certified contract impossibility.
+
+Maximum and minimum providers are explicitly forbidden in both the session
+and curated inventories. The public drop-zero case retains generic
+`List.filter` and `List.filterMap`, consistent with the ordinary provider
+policy. It measures the public result, not discovery of recursion with those
+combinators withheld. Separate Lean fixtures use an empty provider inventory,
+require native `Decidable` case analysis and actual `List.rec` for drop-zero,
+and reject generic filter/fold reuse. They also check exact certified-term
+publication, executable behavior, and universal equality after reparsing the
+printed source.
+
+```powershell
+python tools/run_extended.py --manifest tests/benchmarks/guards.json --validate-fixtures --out baseline-out/guard-gates.json
+python tools/run_extended.py --manifest tests/benchmarks/guards.json --budget 10000 --out baseline-out/guard-gates.json
+```
+
+Reference validation runs in a separate Lean process and does not run
+synthesis. Required expectations describe the acceptance obligations; they
+are not themselves evidence that a build passes. The guarded-program gates
+have their own denominator and do not replace the original E8 probes.
+
+The focused development run passed all five public gates at 5,000 ms/query,
+including the universal post-checks, and both original E8 probes synthesized
+and replayed successfully. All three positive references passed separate
+native validation. These receipts came from the dirty implementation tree;
+they justify the expectation promotions and do not establish a complete
+acceptance checkpoint for the recorded parent revision.
 
 ## Source provenance
 

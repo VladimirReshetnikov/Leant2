@@ -22,6 +22,7 @@ HARNESSES = [
     ("extended", ["tools/run_extended.py"]),
     ("recursion-gates", ["tools/run_extended.py", "--manifest", "tests/benchmarks/recursion.json"]),
     ("local-proofs", ["tools/run_extended.py", "--manifest", "tests/benchmarks/local-proofs.json"]),
+    ("guard-gates", ["tools/run_extended.py", "--manifest", "tests/benchmarks/guards.json"]),
 ]
 
 
@@ -55,7 +56,7 @@ def main():
             extra += ["--out", str(out / name)]
         elif name in {"recursive", "context", "corpus"}:
             extra += ["--out", str(out / f"{name}.out")]
-        elif name in {"extended", "recursion-gates", "local-proofs"}:
+        elif name in {"extended", "recursion-gates", "local-proofs", "guard-gates"}:
             extra += ["--out", str(out / f"{name}.json")]
         r = subprocess.run([sys.executable, "-X", "utf8", *cmd, *extra], capture_output=True, text=True,
                            encoding="utf-8", errors="replace")

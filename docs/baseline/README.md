@@ -57,6 +57,6 @@ The full Lean build also verifies isolated proof extraction/replay, native
 cancellation rollback, deferred typeclass inputs, and classical specialization
 of flexible query universes. Both complete raw runs, pre/post input snapshots,
 all receipt and ZIP hashes, and the exact archive helper are preserved.
-The three E8 open searches and thirteen Church stretch searches remain
-unsolved. The denominator includes goals checked at different boundaries;
+The three E8 open searches and thirteen Church stretch searches were
+unsolved at that checkpoint. The denominator includes goals checked at different boundaries;
 this is not a count of 813 distinct synthesis problems.

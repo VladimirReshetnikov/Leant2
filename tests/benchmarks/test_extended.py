@@ -71,9 +71,9 @@ class ExtendedProtocolTests(unittest.TestCase):
         self.assertEqual([c["id"][:7] for c in probes], [f"probe{n:02}" for n in range(1, 17)])
         self.assertEqual(len([c for c in cases if c["group"] == "lean-core"]), 9)
         self.assertEqual(len([c for c in cases if c["expect"] == "none"]), 4)
-        self.assertEqual(len([c for c in cases if c["expect"] == "candidate"]), 22)
+        self.assertEqual(len([c for c in cases if c["expect"] == "candidate"]), 24)
         self.assertEqual({c["id"] for c in cases if c["expect"] == "open"},
-                         {"probe09_max", "probe10_drop_zeros", "probe11_tree_inorder"})
+                         {"probe11_tree_inorder"})
         for c in cases:
             transcript = HARNESS.transcript(c)
             self.assertEqual(transcript.count(":synth "), 1)
@@ -126,6 +126,52 @@ class ExtendedProtocolTests(unittest.TestCase):
         vector = next(case for case in cases if case["id"] == "recursion_vec_map")
         self.assertEqual(vector["type"],
                          "∀ (A B : Type), (A → B) → ∀ n, RecursionVec A n → RecursionVec B n")
+
+    def test_guard_manifest_preserves_finite_contracts_and_separate_universal_replay(self):
+        cases = HARNESS.load_cases(ROOT / "tests/benchmarks/guards.json")
+        by_id = {case["id"]: case for case in cases}
+        original = {case["id"]: case for case in HARNESS.load_cases()}
+        self.assertEqual(len(cases), 5)
+        self.assertEqual(sum(case["expect"] == "candidate" for case in cases), 3)
+        self.assertEqual(sum(case["expect"] == "none" for case in cases), 2)
+        self.assertEqual(by_id["guard_nat_max"]["contract"], original["probe09_max"]["contract"])
+        self.assertEqual(by_id["guard_drop_zeros"]["contract"], original["probe10_drop_zeros"]["contract"])
+        for case in cases:
+            transcript = HARNESS.transcript(case)
+            self.assertEqual(transcript.count(":synth "), 1)
+            if case["expect"] == "none":
+                self.assertEqual(case["contract"], "False")
+                continue
+            query = next(line for line in transcript.splitlines() if line.startswith(":synth "))
+            self.assertNotIn("∀", query)
+            self.assertNotIn(" := " + case["reference"], transcript)
+            self.assertNotEqual(case["replay"], case["contract"])
+            self.assertIn(f"example : {case['type']} := it1", transcript)
+            for check in case["kernel_checks"]:
+                self.assertIn("∀", check["type"])
+                self.assertNotIn("by decide", check["proof"])
+                self.assertIn("reference_proof", check)
+                command = f"example : {check['type'].replace('{f}', 'it1')} := {check['proof'].replace('{f}', 'it1')}"
+                self.assertIn(command, transcript)
+                self.assertGreater(transcript.index(command), transcript.index(query))
+                reference_command = f"example : {check['type'].replace('{f}', 'reference')} := {check['reference_proof'].replace('{f}', 'reference')}"
+                self.assertIn(reference_command, HARNESS.fixture_source([case]))
+
+    def test_guard_provider_checks_keep_public_filter_scope_honest(self):
+        cases = {case["id"]: case for case in
+                 HARNESS.load_cases(ROOT / "tests/benchmarks/guards.json")}
+        for name in ("guard_nat_max", "guard_nat_min"):
+            case = cases[name]
+            self.assertTrue({"Nat.max", "Max.max", "Nat.min", "Min.min"}.issubset(case["forbidden_providers"]))
+            transcript = HARNESS.transcript(case)
+            for provider in case["forbidden_providers"]:
+                self.assertIn(f"providers.contains `{provider}", transcript)
+            self.assertLess(transcript.index("providers.contains"), transcript.index(":synth "))
+        drop = cases["guard_drop_zeros"]
+        self.assertTrue({"List.filter", "List.filterMap"}.isdisjoint(drop.get("forbidden_providers", [])))
+        self.assertIn("induction xs", drop["kernel_checks"][0]["proof"])
+        self.assertEqual(drop["kernel_checks"][0]["type"],
+                         "∀ xs : List Nat, {f} xs = List.filter (fun n => n != 0) xs")
 
 
 if __name__ == "__main__":

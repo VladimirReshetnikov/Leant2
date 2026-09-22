@@ -133,6 +133,40 @@ built. What is built covers the whole corpus:
 - Conjuncts without a decider (quantified statements) fall to the tactic
   portfolio `first | rfl | decide | simp | omega` on the closed program.
 
+## Bounded constructive guards (proposal 11, A1)
+
+The first conditional rule enumerates a finite grammar over at most four
+most-recent natural-number locals: one orientation of each pairwise order
+comparison, followed by equality-to-zero tests. It tries no arbitrary literals
+or compound predicates. Local types containing unresolved expression holes
+are excluded without assigning those holes. Known positive or negative guard
+hypotheses suppress repeated tests. Order predicates use the native `LE.le`
+instance key so Lean can retrieve their constructive `Decidable` instance.
+
+Only the actual root contract subtype constructor enables guards for its
+program field. Computational construction and structural recursion carry
+that permission; proof goals, type goals, class goals, and open targets clear
+it before constructing children. A same-result provider cannot enable the
+root permission for its arguments. Native `byCasesDec` introduces the branch
+hypotheses and consumes one depth step and one shared split. Its children
+lose both guard and extended-induction permission, while unrelated sibling
+obligations retain their own metadata.
+
+Each split and its complete continuation are one transaction. Rejection,
+ordinary exceptions, cancellation, and resource exits restore speculative
+assignments, declarations, and diagnostics; work charges remain monotone.
+The initial guarded continuation disables partial residual pruning, because
+the existing delayed-assignment representation has no general soundness
+argument for dependent guard closures. The closed candidate must still prove
+the original contract and pass the ordinary kernel and trust-profile gate.
+
+This implements a bounded part of A1. Predicate abduction, example-driven
+decision trees, arbitrary nested guards, and general conditional completeness
+remain open. The separate guard manifest requires maximum, minimum, and
+drop-zero results to satisfy universal post-checks and held-out execution;
+the provider-free Lean fixtures additionally require native guarded recursion.
+Those distinct checks must not be conflated with public generic-filter reuse.
+
 ## Scheduling (Part II, "scheduling")
 
 Lanes under one wall-clock budget, no settings: a cheap constructive pass,
@@ -294,9 +328,18 @@ local-proof gates. The full Lean build includes adversarial proof extraction,
 original-environment replay, cancellation and state rollback, and classical
 universe-specialization checks. Both runs preserve the same source, executable,
 compiled modules, and external inputs. The three remaining E8 searches and
-thirteen Church stretch searches remain unsolved; neither group contributes
+thirteen Church stretch searches were unsolved at that checkpoint; neither group contributes
 to the fixed score. The legacy baseline's documented ordinary Option-call
 error is unchanged and outside its synthesis-category score.
+
+The subsequent guard implementation passes its provider-free Lean fixtures,
+including all three universal equations and printed-source equivalence.
+At 5,000 ms/query all five public guard gates and the two original maximum
+and drop-zero probes also pass. Targeted list-sum, predecessor, and power-of-two
+regressions pass at both budgets. The original maximum/drop-zero probes are
+now required, making the configured denominator 820 across eleven harnesses
+and leaving only tree inorder open in E8. These are focused development
+results; complete two-budget validation of the new source is still required.
 
 Historical measurements remain in `docs/baseline/`, labeled by their own
 revisions and budgets. These acceptance runs and profiling parity tests are
