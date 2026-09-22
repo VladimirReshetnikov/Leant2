@@ -1,0 +1,367 @@
+"""Verify the immutable guard archive, then create its narrative exactly once.
+
+Run only after archive_guard_validation.py has published both completed runs:
+  python scratch/finish_guard_archive.py --check-only
+  python scratch/finish_guard_archive.py
+
+This helper never builds, runs synthesis, captures inputs, or alters receipts.
+Counts and revision come from the captured plan and archived receipts. The
+expected milestone total and open-case identity are assertions, not overrides.
+Supplemental focused/Python validation is not inferred from these receipts.
+"""
+from __future__ import annotations
+
+import argparse
+from collections import Counter
+from datetime import datetime
+import hashlib
+import importlib.util
+import json
+from pathlib import Path, PurePosixPath
+import re
+import sys
+import zipfile
+
+ROOT = Path(__file__).resolve().parents[1]
+FOLDER = ROOT / "docs/baseline/guards-2026-09-21"
+TEMPLATE = ROOT / "scratch/guard-checkpoint-readme.md"
+BUDGETS = (10000, 5000)
+FAMILIES = ("baseline", "recursive", "church", "context", "corpus", "session",
+            "results", "extended", "recursion-gates", "local-proofs", "guard-gates")
+MANIFEST_FAMILIES = ("extended", "recursion-gates", "local-proofs", "guard-gates")
+DESCRIPTIONS = {
+    "baseline": "Leant synthesis outcome categories",
+    "recursive": "Recursive behavior queries",
+    "church": "Contracted probes and impossible controls",
+    "context": "Context, universes, scheduling, and contracts",
+    "corpus": "Type-only Church signatures",
+    "session": "Provider identity, filtering, comments, and undo",
+    "results": "Result refresh, evaluation, failure rollback, namespaces, and undo",
+}
+BOUNDED = {"refuted", "search_exhausted", "budget_exhausted"}
+STRETCH_IDS = {
+    "partial_at", "partial_foldl1", "partial_foldr1", "partial_maximumBy",
+    "partial_maximumOn", "partial_minimumBy", "partial_minimumOn", "partial_minMaxBy",
+    "partial_minmaxElement", "partial_reduce", "partial_maximum", "partial_minimum", "partial_minMax",
+}
+ERROR = re.compile(r"(?im)^\s*(?:error(?:\([^)]*\))?:|PANIC|uncaught exception)")
+QUERY = re.compile(r"(?m)^[λ⊢]> (:synth(?: .*)?)$")
+END = re.compile(r"(?m)^-- leant2-query-end$")
+
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
+def digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def read_json(path):
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def safe_name(name):
+    path = PurePosixPath(name)
+    require(name and not path.is_absolute() and ".." not in path.parts and
+            "\\" not in name and ":" not in name, f"unsafe artifact name: {name!r}")
+
+
+def verify_zip(path, expected):
+    """Return verified member bytes; reject duplicate names even with equal data."""
+    with zipfile.ZipFile(path) as archive:
+        names = archive.namelist()
+        require(len(names) == len(set(names)), f"{path.name}: duplicate ZIP members")
+        require(set(names) == set(expected), f"{path.name}: ZIP inventory differs")
+        require(archive.testzip() is None, f"{path.name}: ZIP CRC failure")
+        result = {}
+        for name in names:
+            safe_name(name)
+            data = archive.read(name)
+            require(digest(data) == expected[name], f"{path.name}/{name}: member hash differs")
+            result[name] = data
+        return result
+
+
+def load_verified_tool(name, inputs):
+    """Only import pure scoring helpers whose bytes match the captured source."""
+    relative = f"tools/{name}.py"
+    path = ROOT / relative
+    require(digest(path.read_bytes()) == inputs["source_sha256"][relative],
+            f"current scoring helper differs from tested source: {relative}")
+    spec = importlib.util.spec_from_file_location(f"guard_archive_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def baseline_audit(raw, expected_count, baseline):
+    rows = json.loads(raw["baseline/summary.json"])
+    require(len(rows) == expected_count and all(row["ok"] is True for row in rows),
+            "baseline summary is incomplete or failed")
+    fixtures = sorted({row["fixture"] for row in rows})
+    outputs = sorted(name[len("baseline/"):-len(".out")] for name in raw
+                     if name.startswith("baseline/") and name.endswith(".out"))
+    require(fixtures == outputs, "baseline fixture inventory differs")
+    inside, outside, query_count = [], [], 0
+    for fixture in fixtures:
+        text = raw[f"baseline/{fixture}.out"].decode("utf-8").replace("\r\n", "\n")
+        require("declaration uses 'sorry'" not in text and "declaration uses `sorry`" not in text,
+                f"baseline/{fixture}: sorry diagnostic")
+        starts, ends = list(QUERY.finditer(text)), list(END.finditer(text))
+        expected = [row for row in rows if row["fixture"] == fixture]
+        require(len(starts) == len(ends) == len(expected), f"{fixture}: wrong query/marker count")
+        spans = []
+        for index, (start, row) in enumerate(zip(starts, expected)):
+            next_start = starts[index + 1].start() if index + 1 < len(starts) else len(text)
+            markers = [end for end in ends if start.end() < end.start() < next_start]
+            require(len(markers) == 1, f"{fixture}: incomplete/duplicate query boundary")
+            require(start.group(1) == row["query"], f"{fixture}: changed query echo")
+            stop = markers[0].start()
+            block = text[start.end():stop]
+            category, classical = baseline.classify_ours(block.splitlines())
+            require(category == row["ours"] and baseline.passes(row["golden"], category, classical),
+                    f"{fixture}: incorrect baseline classification")
+            spans.append((start.end(), stop))
+            if ERROR.search(block):
+                require(row["golden"] == "preflight", f"{fixture}: unexpected scored diagnostic")
+                require(len(ERROR.findall(block)) == 1, f"{fixture}: multiple preflight diagnostics")
+                inside.append((fixture, row["query"], block))
+        for error in ERROR.finditer(text):
+            if not any(start <= error.start() < stop for start, stop in spans):
+                next_prompt = re.search(r"(?m)^[λ⊢]>", text[error.end():])
+                stop = error.end() + next_prompt.start() if next_prompt else len(text)
+                outside.append((fixture, text[error.start():stop]))
+        query_count += len(starts)
+    require(len(inside) == 2 and all(name == "synth-behavior" for name, _, _ in inside),
+            "baseline intended preflight diagnostic scope changed")
+    require({query for _, query, _ in inside} == {
+        ":synth f : Nat → Nat where f true = false",
+        ":synth f : Nat → Nat where Unknown.predicate f"}, "baseline preflight query identities changed")
+    require(sum("Unknown.predicate" in block for _, _, block in inside) == 1 and
+            sum("Application type mismatch" in block for _, _, block in inside) == 1,
+            "baseline preflight diagnostic kinds changed")
+    require(len(outside) == 1 and outside[0][0] == "synth-prove" and
+            "Application type mismatch" in outside[0][1] and "some 3" in outside[0][1],
+            "baseline unscored Option-call diagnostic scope changed; inspect before narrating")
+    return {"queries": query_count, "preflight_diagnostics": len(inside),
+            "post_query_diagnostics": len(outside)}
+
+
+def church_audit(raw, audit):
+    text = raw["church.log"].decode("utf-8")
+    rows = re.findall(r"(?m)^STRETCH-(\S+) (\S+) \[(\d+) ms\] (\S+)", text)
+    require(len(rows) == len(STRETCH_IDS) and {row[1] for row in rows} == STRETCH_IDS,
+            "Church stretch identity/count changed; inspect before narrating")
+    require(all(row[0] == "MISS" and row[3] in BOUNDED for row in rows),
+            "Church stretch status changed; inspect before narrating")
+    require(len(re.findall(r"(?m)^STRETCH-", text)) == len(rows), "unrecognized Church stretch output")
+    outcomes = Counter(row[3] for row in rows)
+    partial = audit["raw_sessions"]["church/partial"]["outcomes"]
+    require(all(partial.get(kind, 0) >= count for kind, count in outcomes.items()),
+            "Church stretch log disagrees with raw-session outcome audit")
+    return {"total": len(rows), "outcomes": dict(outcomes)}
+
+
+def shared_receipt(receipt, budget, inputs, snapshot):
+    require(receipt["success"] is True and receipt["failures"] == [], "failed detailed receipt")
+    require(receipt["revision"] == inputs["revision"] and receipt["working_tree_dirty"] is False,
+            "detailed receipt is not from the captured clean revision")
+    require(receipt["budget_ms"] == budget and receipt["executable_changed_during_run"] is False and
+            receipt["executable_sha256"] == inputs["executable_sha256"] and
+            Path(receipt["executable"]).resolve() == Path(inputs["executable"]).resolve(),
+            "detailed receipt has wrong budget/executable")
+    require(datetime.fromisoformat(receipt["created_utc"]) >= datetime.fromisoformat(snapshot["created_utc"]),
+            "detailed receipt predates capture")
+
+
+def inspect_archive(folder, expected_total):
+    manifest = read_json(folder / "manifest.json")
+    require(manifest["working_tree_clean_during_runs"] is True and
+            manifest["input_hashes_unchanged_before_and_after"] is True, "unclean or changed archived inputs")
+    require(manifest["budgets_ms"] == list(BUDGETS), "wrong archive budget pair")
+    require(set(path.name for path in folder.iterdir()) <= set(manifest["files"]) | {"manifest.json", "README.md"},
+            "unexpected unmanifested archive artifact")
+    for name, sha256 in manifest["files"].items():
+        safe_name(name)
+        require(digest((folder / name).read_bytes()) == sha256, f"archive artifact hash differs: {name}")
+    attributes = (folder / ".gitattributes").read_text(encoding="utf-8")
+    for rule in (".gitattributes -text", "*.json -text", "*.log -text", "*.txt -text", "*.zip binary"):
+        require(rule in attributes, f"missing exact-byte policy: {rule}")
+    snapshot = read_json(folder / manifest["input_snapshot"])
+    inputs = snapshot["inputs"]
+    require(inputs == read_json(folder / manifest["post_run_inputs"])["inputs"], "pre/post input hashes differ")
+    revision = manifest["tested_revision"]
+    require(re.fullmatch(r"[0-9a-f]{40}", revision) and revision == inputs["revision"], "wrong source revision")
+    for key in ("toolchain", "executable_sha256", "source_sha256", "module_sha256",
+                "required_module_paths", "external_repositories", "external_input_sha256", "archive_script_sha256"):
+        require(manifest[key] == inputs[key], f"manifest differs from captured {key}")
+    require(manifest["module_artifacts"] == len(inputs["module_sha256"]), "wrong module artifact count")
+    require(digest((folder / manifest["archive_script"]).read_bytes()) == inputs["archive_script_sha256"],
+            "archived audit script differs from captured helper")
+    plan = inputs["validation_plan"]
+    totals = plan["expected_totals"]
+    require(tuple(totals) == FAMILIES and manifest["expected_totals"] == totals, "wrong family plan")
+    require(sum(totals.values()) == manifest["expected_total"] == plan["expected_total"] == expected_total,
+            "unexpected aggregate denominator; expectations cannot be overridden")
+    require(set(plan["manifests"]) == set(MANIFEST_FAMILIES), "wrong detailed manifest families")
+    baseline = load_verified_tool("run_baseline", inputs)
+    extended = load_verified_tool("run_extended", inputs)
+    protocol = load_verified_tool("repl_protocol", inputs)
+    all_data = {}
+    for budget in BUDGETS:
+        audit = manifest["run_audit"][str(budget)]
+        raw = verify_zip(folder / f"{budget}-raw.zip", audit["raw_sha256"])
+        require(len(raw) == audit["raw_files"], "wrong retained raw file count")
+        streams = [name for name in raw if name.endswith(".stderr")]
+        require(len(streams) == audit["stderr_files"] and all(raw[name] == b"" for name in streams),
+                "wrong subprocess stderr count or nonempty stderr")
+        require({name[:-len('.stderr')] for name in streams} == set(audit["raw_sessions"]) ==
+                {name[:-len('.in')] for name in raw if name.endswith('.in')}, "secondary session inventory differs")
+        for name, recorded in audit["raw_sessions"].items():
+            source = raw[f"{name}.in"].decode("utf-8")
+            commands = [line.rstrip() for line in source.splitlines() if line.startswith(":synth")]
+            parsed = protocol.parse(raw[f"{name}.out"].decode("utf-8"), "", 0, commands,
+                                    allowed_outside_errors=recorded["allowed_outside_diagnostics"])
+            require(parsed.healthy and len(commands) == recorded["queries"] and
+                    dict(Counter(query.outcome for query in parsed.queries)) == recorded["outcomes"],
+                    f"{name}: raw query/protocol classification differs")
+        for name in ("summary", *MANIFEST_FAMILIES, "results"):
+            original = "results/receipt.json" if name == "results" else f"{name}.json"
+            require(raw[original] == (folder / f"{budget}-{name}.json").read_bytes(),
+                    f"{budget}: copied {name} receipt differs from raw bytes")
+        summary = read_json(folder / f"{budget}-summary.json")
+        rows = summary["harnesses"]
+        require(summary["budget_ms"] == budget and [row["harness"] for row in rows] == list(totals),
+                "wrong summary family ordering/budget")
+        require(all(row["ok"] is True and row["returncode"] == 0 and
+                    row["passed"] == row["total"] == totals[row["harness"]] for row in rows),
+                "failed or incorrect required score")
+        outer = (folder / f"{budget}-run.log").read_text(encoding="utf-8")
+        require("Build completed successfully" in raw["build.log"].decode("utf-8") and
+                re.search(r"(?m)^build: ok in ", outer), "missing successful full-build record")
+        for name, count in totals.items():
+            require(re.findall(r"(?m)^TOTAL (\d+)/(\d+)\s*$", raw[f"{name}.log"].decode("utf-8")) ==
+                    [(str(count), str(count))], f"{name}: log denominator differs")
+            require(f"| {name} | {count}/{count} |" in outer, f"{name}: outer score missing")
+        details = {}
+        for name in MANIFEST_FAMILIES:
+            receipt = read_json(folder / f"{budget}-{name}.json")
+            shared_receipt(receipt, budget, inputs, snapshot)
+            entry = plan["manifests"][name]
+            require(receipt["manifest_sha256"] == inputs["source_sha256"][entry["path"]], "wrong fixture hash")
+            require(Path(receipt["manifest"]).resolve() == (ROOT / entry["path"]).resolve(), "wrong fixture path")
+            rows = receipt["results"]
+            require([row["id"] for row in rows] == entry["case_ids"], f"{name}: wrong case inventory")
+            require(receipt["capabilities_and_controls"] == {"passed": totals[name], "total": totals[name]},
+                    f"{name}: wrong required score")
+            for row in rows:
+                require(row["returncode"] == 0 and row["stderr"] == "", f"{name}/{row['id']}: process failure")
+                again = extended.classify({"expect": row["expectation"]}, row["stdout"], "", 0)
+                require(row["passed"] is True and all(row[key] == again[key] for key in
+                        ("passed", "outcome", "candidate", "replayed", "query_elapsed_ms")),
+                        f"{name}/{row['id']}: raw reclassification differs")
+            opened = [row for row in rows if row["expectation"] == "open"]
+            require(receipt["open"] == {"solved": sum(row["outcome"] == "solved" for row in opened),
+                                        "total": len(opened)} and len(opened) == entry["open"],
+                    f"{name}: wrong open summary")
+            require({row["id"] for row in opened} == ({"probe11_tree_inorder"} if name == "extended" else set()),
+                    f"{name}: changed open cases; inspect before narrating")
+            require(all(row["outcome"] in BOUNDED for row in opened),
+                    f"{name}: open status changed; inspect before narrating")
+            details[name] = {"expectations": dict(Counter(row["expectation"] for row in rows)),
+                             "open_outcomes": dict(Counter(row["outcome"] for row in opened)),
+                             "queries": len(rows)}
+        results = read_json(folder / f"{budget}-results.json")
+        shared_receipt(results, budget, inputs, snapshot)
+        require(results["passed"] == results["total"] == totals["results"] and
+                len(results["results"]) == totals["results"] and
+                all(row["passed"] is True and row["problems"] == [] and row["stderr"] == ""
+                    for row in results["results"]), "failed result sessions")
+        baseline_info = baseline_audit(raw, totals["baseline"], baseline)
+        church_info = church_audit(raw, audit)
+        all_data[budget] = {"raw_files": len(raw), "stderr_files": len(streams), "details": details,
+                            "baseline": baseline_info, "church": church_info,
+                            "sessions": len(audit["raw_sessions"]),
+                            "queries": baseline_info["queries"] +
+                                sum(session["queries"] for session in audit["raw_sessions"].values()) +
+                                sum(detail["queries"] for detail in details.values())}
+    return manifest, inputs, all_data
+
+
+def render_narrative(template, manifest, inputs, data):
+    totals = manifest["expected_totals"]
+    table = ["| Harness | 10,000 ms/query | 5,000 ms/query | What is scored |",
+             "| --- | ---: | ---: | --- |"]
+    for name, count in totals.items():
+        if name in MANIFEST_FAMILIES:
+            counts = data[10000]["details"][name]["expectations"]
+            require(counts == data[5000]["details"][name]["expectations"], "expectations differ across budgets")
+            description = f"{counts.get('candidate', 0)} typed/replayed results and {counts.get('none', 0)} certified impossible controls"
+            if name == "local-proofs":
+                description = f"{counts.get('candidate', 0)} exact universal inhabitants, Fin execution, and {counts.get('none', 0)} certified impossible control"
+            elif name != "extended":
+                description += "; positive cases include universal kernel checks"
+        else:
+            description = DESCRIPTIONS[name]
+        table.append(f"| {name} | {count}/{count} | {count}/{count} | {description} |")
+    total = manifest["expected_total"]
+    table.append(f"| **Total** | **{total}/{total}** | **{total}/{total}** | Fixed required acceptance denominator |")
+    open_lines = []
+    raw_lines = []
+    for budget in BUDGETS:
+        run = data[budget]
+        outcomes = run["details"]["extended"]["open_outcomes"]
+        labels = ", ".join(f"{count} `{kind}`" for kind, count in sorted(outcomes.items()))
+        stretch = ", ".join(f"{count} `{kind}`" for kind, count in sorted(run["church"]["outcomes"].items()))
+        open_lines.append(f"At {budget:,} ms/query, E8 tree inorder remains open: **0/{sum(outcomes.values())}** solved ({labels}). "
+                          f"The {run['church']['total']} Church stretch searches are also unsolved ({stretch}).")
+        raw_lines.append(f"At {budget:,} ms/query, every harness returned exit code zero. The archive retains "
+                         f"{run['raw_files']} raw files, {run['stderr_files']} empty subprocess stderr streams, "
+                         f"{run['sessions']} secondary REPL sessions, and {run['queries']} synthesis query records "
+                         f"across all scored and unscored families. The baseline has {run['baseline']['queries']} "
+                         "queries with complete markers; its diagnostic boundary was checked independently.")
+    open_lines.append("Neither open E8 nor Church stretch searches contributes to the required score. "
+                      "Bounded misses do not establish impossibility of their requested contracts.")
+    raw_lines.append(f"All five detailed receipt families record the same clean source revision and unchanged executable hash. "
+                     f"The audit compares all {len(inputs['source_sha256'])} recorded source files, "
+                     f"{len(inputs['module_sha256'])} compiled module artifacts, and "
+                     f"{len(inputs['external_input_sha256'])} external input hashes between snapshots. "
+                     "Every manifest-covered artifact and every ZIP member is hash-checked; both ZIP CRC checks pass. "
+                     "These counts come from the captured inventories rather than a fixed previous-checkpoint module count.")
+    replacements = {"REVISION": manifest["tested_revision"], "TOTAL": str(total),
+                    "TOOLCHAIN": inputs["toolchain"], "ACCEPTANCE_TABLE": "\n".join(table),
+                    "OPEN_RESULTS": "\n\n".join(open_lines), "RAW_AUDIT": "\n\n".join(raw_lines)}
+    for key, value in replacements.items():
+        template = template.replace("{{" + key + "}}", value)
+    require("{{" not in template and "}}" not in template, "unresolved narrative placeholder")
+    return template
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--folder", type=Path, default=FOLDER)
+    parser.add_argument("--template", type=Path, default=TEMPLATE)
+    parser.add_argument("--expected-total", type=int, choices=(820,), default=820)
+    parser.add_argument("--check-only", action="store_true", help="verify and render in memory; write nothing")
+    args = parser.parse_args()
+    folder = args.folder.resolve()
+    destination = folder / "README.md"
+    require(args.check_only or not destination.exists(), f"refusing to overwrite {destination}")
+    manifest, inputs, data = inspect_archive(folder, args.expected_total)
+    narrative = render_narrative(args.template.read_text(encoding="utf-8"), manifest, inputs, data)
+    if args.check_only:
+        if destination.exists():
+            require(destination.read_text(encoding="utf-8") == narrative, "existing narrative differs from verified rendering")
+        print(f"Validated guard archive and narrative without writing: {folder}")
+        return
+    # Exclusive creation also prevents a race after the earlier existence check.
+    with destination.open("x", encoding="utf-8", newline="\n") as output:
+        output.write(narrative)
+    print(f"Wrote validated checkpoint narrative for {manifest['tested_revision']}: {destination}")
+
+
+if __name__ == "__main__":
+    main()

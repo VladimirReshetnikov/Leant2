@@ -134,8 +134,10 @@ results. Its query supplies the provider inventory and axiom profile explicitly.
 
 The [public sketch runner](../tools/run_sketches.py) has seven logical cases,
 three emitted-source replays, and a separate Lean-only witness/control process.
-The promoted runner passes all seven cases at both 5000 and 10000 ms with
-identical captured source, module, native Lean, and fixture fingerprints. Each
+The complete [sketch checkpoint](baseline/sketches-2026-09-21/README.md) passes
+839/839 checks across fourteen families at both 5000 and 10000 ms on `c69f484`,
+including all seven public sketch cases. Source, modules, both native
+executables, and fixture fingerprints match before and after. Each sketch
 run contains ten public process stages and one separate reference process;
 the reference process is a prerequisite rather than an eighth scored case.
 
@@ -145,7 +147,9 @@ caller-state restoration, and alias rollback, including real cancellation
 after publication. They belong to the native build gate rather than the
 external case denominator. The final aggregate build passes 83 jobs, and the
 exact examples in this guide and the root README compile with accepted sketch
-outcomes. These focused checks precede the clean-source aggregate archive. See the
+outcomes. The archive independently reconstructs each actual emitted term and
+replay source, rechecks diagnostics and process exits, and preserves exact raw
+outputs. Earlier focused checks remain separate evidence. See the
 [implementation notes](implementation-notes.md) for the maintained validation
 boundary and the remaining work.
 

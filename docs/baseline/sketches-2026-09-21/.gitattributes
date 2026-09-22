@@ -1,0 +1,6 @@
+# Preserve the exact bytes identified by manifest.json, including CRLF.
+.gitattributes -text
+*.json -text whitespace=cr-at-eol
+*.log -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+*.txt -text whitespace=cr-at-eol
+*.zip binary

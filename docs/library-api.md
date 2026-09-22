@@ -9,6 +9,13 @@ example below has compiled and run successfully. The complete
 to the aggregate build gate, separately from those external checks. The earlier
 frontend archive remains evidence for `69221f1` and its original scope.
 
+The later [sketch checkpoint](baseline/sketches-2026-09-21/README.md) repeats
+the complete suite on `c69f484`: **839/839 across 14 harnesses at both budgets**,
+with 83 successful aggregate build jobs. It includes the API's native
+regressions and the profile-aware negative-pruning correction described below;
+the additional seven external cases exercise the separate sketch command.
+The API checkpoint's 68-job and 832-check counts remain historical evidence.
+
 `Leant2.synthesize : Query → MetaM Outcome` accepts a closed, elaborated query
 and returns native Lean expressions. Import `Leant2.API` for this entry point;
 `import Leant2` also exports it. The smaller import does not require the command,

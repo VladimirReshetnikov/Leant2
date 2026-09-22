@@ -552,8 +552,10 @@ process. The reference process must pass but does not add a scored case.
 Wrong complete bodies require a recorded rejection; malformed inputs require
 the intended preparation error; fresh negative processes leave neither bare
 nor numbered aliases. The configured aggregate is now 839 checks across 14
-harnesses. Its complete validation and archive remain pending, separate from
-these focused runs and the previous 832-check API checkpoint.
+harnesses. The complete [sketch checkpoint](baseline/sketches-2026-09-21/README.md)
+passes all 839 at both budgets on `c69f484`, with unchanged pre/post inputs and
+independent reconstruction of actual emitted-source replays. The previous
+832-check API checkpoint retains its own revision and scope.
 
 The final source passes the 83-job aggregate native gate after serial module
 builds, all 76 Python harness tests, and the exact guide/README examples with
@@ -680,6 +682,23 @@ all recorded compiled modules, and external fixture fingerprints are unchanged
 before and after. The archive independently rechecks raw outcomes, provider
 histories, generated replay files, diagnostics, exits, and exact ZIP contents.
 The six earlier archives retain their own revisions and evidence boundaries.
+
+Implementation commit `c69f484` passed **839/839 required external checks
+across 14 harnesses at both 10 s and 5 s per search**. The
+[sketch checkpoint](baseline/sketches-2026-09-21/README.md) retains the 837 legacy
+synthesis-query records and 8 frontend cases/13 processes at each budget,
+adding 7 sketch cases/10 public stages and one separate uncounted reference
+process. Both full build logs record 83 successful jobs, including native
+sketch, alternative-acceptance, and pruning-profile regressions.
+
+Each raw ZIP has 202 files and 46 empty stderr streams. All three actual sketch
+source replays, two expected preparation errors, rejection of the wrong fixed
+body, and the certified False-contract category are independently rechecked.
+The 173 source/configuration hashes, 57 recorded compiled-module hashes,
+350 external-fixture hashes, and both native executable hashes are unchanged.
+All thirteen original Church stretches remain bounded misses; the seven
+earlier archives retain their Git trees and working bytes. The fixed-carrier
+Church completion experiments remain a separate implementation track.
 
 Historical measurements remain in `docs/baseline/`, labeled by their own
 revisions and budgets. These acceptance runs and profiling parity tests are

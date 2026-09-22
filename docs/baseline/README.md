@@ -143,3 +143,22 @@ budget has 837 legacy synthesis-query records, plus 8 frontend cases requiring
 describe 832 distinct synthesis problems. All 29 E8 cases remain required;
 Church stretch outcomes remain unscored and are recorded separately. The six
 earlier archives are unchanged.
+
+## Closed program-sketch checkpoint
+
+The [sketch checkpoint](sketches-2026-09-21/README.md) validates implementation
+commit `c69f484`: **839/839 required checks across 14 families at both 10 s
+and 5 s per search**. Each aggregate build records 83 successful jobs. Seven
+new external cases exercise joint step/seed completion, polymorphic identity,
+complete-body verification and rejection, malformed holes, and a False contract.
+Native ownership, replay, profile, cancellation, and alias tests remain part of
+the build gate rather than the external denominator.
+
+Each budget retains 837 legacy query records, 13 frontend process stages, and
+10 public sketch stages with three actual-source Lean-only replays. A separate
+reference/control process must pass without adding a scored case. The archive
+independently rechecks all raw outcomes, generated sources, diagnostics, exits,
+and ZIP members; its 202 raw files per budget preserve the original bytes.
+Source, both native executables, compiled modules, and external inputs match
+the pre-run capture. All thirteen original Church stretch searches remain
+bounded misses, and all seven preceding archives are unchanged.

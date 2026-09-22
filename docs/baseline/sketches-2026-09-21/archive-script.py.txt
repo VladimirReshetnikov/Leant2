@@ -1,0 +1,352 @@
+"""Draft 839-check sketch checkpoint auditor; never builds or runs Lean.
+
+Capture only after implementation publication and the exact-source build.
+The pinned published API/frontend/tree chain retains its old scoring; this
+wrapper adds the fourteenth route and independently reconstructs sketch raw
+sources/outcomes. Native build tests are not extra external cases.
+"""
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import json
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import types
+import zipfile
+
+sys.dont_write_bytecode = True
+ROOT = next(p for p in Path(__file__).resolve().parents if (p / "tools/run_all.py").is_file())
+HERE = Path(__file__).resolve().parent
+DEFAULT_PREFIX = ROOT / "baseline-out/sketches-checkpoint"
+DEFAULT_DESTINATION = ROOT / "docs/baseline/sketches-2026-09-21"
+API_AUDITOR = ("docs/baseline/library-api-2026-09-21/archive-script.py.txt",
+               "92699fb32d1c07162af53ec77a84f95e1de21df4e48294eee6453603debb15f3")
+HISTORICAL = ("p1-2026-09-21", "induction-2026-09-21", "local-proofs-2026-09-21",
+              "guards-2026-09-21", "tree-composition-2026-09-21", "frontends-2026-09-21",
+              "library-api-2026-09-21")
+SKETCH_SPEC = (
+    ("two-hole-fold", "candidate", 2, True), ("lambda-identity", "candidate", 1, True),
+    ("zero-hole-correct", "candidate", 0, True), ("zero-hole-wrong", "rejected", 0, False),
+    ("duplicate-label", "preflight", None, False), ("unregistered-hole", "preflight", None, False),
+    ("false-contract", "contract_impossible", 2, False),
+)
+
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def load_pinned_wrapper(path, digest):
+    source = path.read_bytes()
+    require(hashlib.sha256(source).hexdigest() == digest, f"pinned API auditor changed: {path}")
+    module = types.ModuleType("sketch_frozen_api_auditor")
+    # The inherited capture records this configuration as its helper. The
+    # separately archived API source retains its exact hash and traceback path.
+    module.__file__ = str(Path(__file__).resolve())
+    sys.modules[module.__name__] = module
+    exec(compile(source, str(path), "exec"), module.__dict__)
+    return module
+
+
+API = load_pinned_wrapper(ROOT / API_AUDITOR[0], API_AUDITOR[1])
+BASE = API.BASE
+require(tuple(BASE.HISTORICAL) == HISTORICAL[:-1], "predecessor history inventory changed")
+BASE.HISTORICAL = HISTORICAL
+BASE.DEPENDENCIES = {**BASE.DEPENDENCIES, "api-archive-script.py.txt": API_AUDITOR}
+DEPENDENCIES, BUDGETS = BASE.DEPENDENCIES, BASE.BUDGETS
+OLD_VALIDATION_PLAN = BASE.validation_plan
+read_json, write_json = BASE.read_json, BASE.write_json
+
+
+def dependencies():
+    tree, frontend = API.dependencies()
+    sketch = BASE.load_source("sketch_archive_scorer", ROOT / "tools/run_sketches.py")
+    predecessor_sessions = tree.BASE.validate_raw_sessions
+
+    def legacy_sessions(folder):
+        # Only the two fully re-audited native-process subtrees are excluded.
+        # Arbitrary extra .in/.stderr files outside them still fail.
+        names = set(tree.BASE.raw_session_plan())
+        for suffix in (".in", ".stderr"):
+            actual = {p.relative_to(folder).with_suffix("").as_posix() for p in folder.rglob(f"*{suffix}")
+                      if p.relative_to(folder).parts[0] not in {"frontends", "sketches"}}
+            require(actual == names, f"legacy {suffix} inventory changed")
+        with tempfile.TemporaryDirectory(prefix="sketch-legacy-audit-", dir=ROOT / "scratch") as temporary:
+            projected = Path(temporary)
+            for name in names:
+                for suffix in (".in", ".out", ".stderr"):
+                    target = projected / f"{name}{suffix}"
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes((folder / f"{name}{suffix}").read_bytes())
+            return predecessor_sessions(projected)
+
+    tree.BASE.validate_raw_sessions = legacy_sessions
+    return tree, frontend, sketch
+
+
+def sketch_plan(sketch):
+    cases = sketch.load_cases()
+    require(tuple((c["id"], c["expect"], c["holes"], c["replay"]) for c in cases) == SKETCH_SPEC,
+            "sketch case identities/obligations changed")
+    require(sketch.FIXTURES.resolve() == (ROOT / "tests/sketches").resolve(), "wrong sketch fixture directory")
+    return {"case_ids": [case["id"] for case in cases], "required": len(cases),
+            "public_processes": sum(1 + case["replay"] for case in cases), "reference_processes": 1,
+            "replays": sum(case["replay"] for case in cases),
+            "preparation_errors": sum(case["expect"] == "preflight" for case in cases),
+            "fixture_directory": "tests/sketches"}
+
+
+def validation_plan(tree, frontend, sketch):
+    routes = tree.BASE.run_all.HARNESSES
+    require(len(routes) == 14 and routes[-1] == ("sketches", ["tools/run_sketches.py"]),
+            "sketches must be the fourteenth directory-output family")
+    try:
+        tree.BASE.run_all.HARNESSES = routes[:-1]
+        plan = OLD_VALIDATION_PLAN(tree, frontend)
+    finally:
+        tree.BASE.run_all.HARNESSES = routes
+    plan["sketches"] = sketch_plan(sketch)
+    plan["expected_totals"]["sketches"] = plan["sketches"]["required"]
+    plan["expected_total"] = sum(plan["expected_totals"].values())
+    require(plan["expected_total"] == 839, "required total is not 839")
+    plan["harnesses"] = [[name, command] for name, command in routes]
+    return plan
+
+
+def collect_inputs(tree, frontend, sketch):
+    BASE.validation_plan = lambda t, f: validation_plan(t, f, sketch)
+    inputs = BASE.collect_inputs(tree, frontend)  # clean checkout, native hashes, all inherited inputs
+    require(tuple(inputs["historical_archives"]) == HISTORICAL, "historical archive inventory differs")
+    for name, previous in inputs["historical_archives"].items():
+        folder = ROOT / "docs/baseline" / name
+        # Also freeze README and every other historical working-tree byte,
+        # beyond the predecessor's protected manifest files and Git tree IDs.
+        previous["working_tree_sha256"] = {path.relative_to(folder).as_posix(): sha(path)
+                                           for path in sorted(folder.rglob("*")) if path.is_file()}
+    tracked = set(subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode("utf-8").split("\0"))
+    fixtures = {}
+    for path in sorted(sketch.FIXTURES.iterdir()):
+        require(path.is_file(), f"unexpected nested sketch fixture: {path}")
+        relative = path.relative_to(ROOT).as_posix()
+        require(relative in tracked, f"sketch fixture is not committed: {relative}")
+        fixtures[path.name] = inputs["source_sha256"][relative] = sha(path)
+    inputs["source_sha256"] = dict(sorted(inputs["source_sha256"].items()))
+    for name in ("tools/run_sketches.py", "tools/test_run_sketches.py", "tests/sketches/cases.json",
+                 "tests/sketches/fold-checks.lean.in", "tests/sketches/identity-checks.lean.in",
+                 "tests/sketches/reference-controls.lean", "tests/sketches/README.md"):
+        require(name in inputs["source_sha256"], f"sketch input not captured: {name}")
+    inputs["sketch_fixture_sha256"] = fixtures
+    inputs["archive_script"], inputs["archive_script_sha256"] = str(Path(__file__).resolve()), sha(Path(__file__))
+    return inputs
+
+
+def sketch_fingerprints(inputs):
+    return {"lean_executable_sha256": inputs["lean_executable_sha256"],
+            "module_sha256": inputs["module_sha256"], "source_sha256": inputs["frontend_source_sha256"],
+            "harness_sha256": inputs["source_sha256"]["tools/run_sketches.py"],
+            "shared_runner_sha256": inputs["source_sha256"]["tools/run_frontends.py"],
+            "fixture_sha256": inputs["sketch_fixture_sha256"], "toolchain": inputs["toolchain"]}
+
+
+def validate_sketches(folder, budget, snapshot, sketch):
+    inputs, plan = snapshot["inputs"], snapshot["inputs"]["validation_plan"]["sketches"]
+    require(sketch_plan(sketch) == plan, "sketch plan differs from captured fixtures")
+    base = folder / "sketches"
+    receipt = read_json(base / "receipt.json")
+    require(receipt["schema_version"] == 1 and receipt["success"] is True and receipt["failures"] == [],
+            "sketch receipt failed or has wrong schema")
+    require(receipt["passed"] == receipt["total"] == receipt["required_cases"] == plan["required"], "wrong sketch score")
+    require(receipt["expected_public_processes"] == receipt["actual_public_processes"] == plan["public_processes"] and
+            receipt["reference_processes"] == plan["reference_processes"], "wrong sketch process counts")
+    require(receipt["revision"] == inputs["revision"] and receipt["working_tree_dirty"] is False and
+            receipt["budget_ms"] == budget, "sketch receipt has dirty, wrong-revision, or wrong-budget inputs")
+    require(datetime.fromisoformat(receipt["created_utc"]) >= datetime.fromisoformat(snapshot["created_utc"]),
+            "sketch receipt predates capture")
+    require(receipt["build_performed"] is False, "sketch runner unexpectedly claims a build")
+    require(Path(receipt["lean_executable"]).resolve() == Path(inputs["lean_executable"]).resolve(), "wrong native Lean path")
+    wanted_fingerprints = sketch_fingerprints(inputs)
+    require(receipt["inputs_before"] == receipt["inputs_after"] == wanted_fingerprints, "sketch fingerprint mismatch")
+    require({p.name: sha(p) for p in sketch.FIXTURES.iterdir() if p.is_file()} == inputs["sketch_fixture_sha256"],
+            "sketch fixtures changed since capture")
+    require(sha(Path(sketch.__file__)) == inputs["source_sha256"]["tools/run_sketches.py"] and
+            sha(Path(sketch.FRONT.__file__)) == inputs["source_sha256"]["tools/run_frontends.py"],
+            "sketch scoring helpers changed since capture")
+    cases = sketch.load_cases()
+    require([row["id"] for row in receipt["results"]] == plan["case_ids"], "sketch case order/inventory differs")
+    expected_files = {"receipt.json"}
+
+    def raw_stage(stage, relative, text):
+        command = stage["command"]
+        native_source = Path(f"{snapshot['run_prefix']}-{budget}") / "sketches" / f"{relative}.lean"
+        require(len(command) == 3 and Path(command[0]).resolve() == Path(inputs["lean_executable"]).resolve() and
+                command[1] == "--json" and Path(command[2]).resolve() == native_source.resolve(),
+                f"{relative}: command is not the expected fresh native process")
+        require(stage["timed_out"] is False and stage["invalid_utf8"] is False and
+                type(stage["elapsed_ms"]) is int and stage["elapsed_ms"] >= 0 and
+                type(stage["returncode"]) is int, f"{relative}: timeout, UTF-8, elapsed time, or exit metadata invalid")
+        for suffix, value in ((".lean", text), (".stdout.jsonl", stage["stdout"]), (".stderr", stage["stderr"])):
+            name = f"{relative}{suffix}"
+            require((base / name).read_bytes() == value.encode("utf-8"), f"{relative}: raw {suffix} differs")
+            expected_files.add(name)
+        require(stage["source_sha256"] == sha(base / f"{relative}.lean"), f"{relative}: source hash differs")
+        require(stage["stderr"] == "", f"{relative}: nonempty stderr")
+
+    reference = receipt["reference"]
+    require(reference["stage"] == "references", "wrong sketch reference stage")
+    raw_stage(reference, "references", (sketch.FIXTURES / "reference-controls.lean").read_text(encoding="utf-8"))
+    again = sketch.classify_reference(reference)
+    require(again["passed"] is True and all(reference[key] == value for key, value in again.items()),
+            "sketch reference failed raw reclassification")
+    details, errors, warnings, commands, replays = [], 0, 0, 0, 0
+    for case, row in zip(cases, receipt["results"]):
+        cid = case["id"]
+        require(row["expectation"] == case["expect"] and row["passed"] is True and
+                sketch.case_passed(case, row["stages"]), f"{cid}: failed or missing/reordered stages")
+        completed = None
+        for stage in row["stages"]:
+            name = stage["stage"]
+            text, locations = sketch.source(case, budget, completed if name == "replay" else None)
+            raw_stage(stage, f"{cid}/{name}", text)
+            again = sketch.classify(case, name, stage["stdout"], stage["stderr"], stage["returncode"], locations)
+            require(again["passed"] is True and all(stage[key] == value for key, value in again.items()),
+                    f"{cid}/{name}: raw diagnostics fail reclassification")
+            if name == "original":
+                commands += 1
+                if case["replay"]:
+                    completed = again["completed_source"]
+                    relative = f"{cid}/completed-source.txt"
+                    require((base / relative).read_bytes() == completed.encode("utf-8"), f"{cid}: actual completed text differs")
+                    expected_files.add(relative)
+            else:
+                require(re.findall(r"(?m)^import (.+)$", text) == ["Lean"] and "#leant2_sketch" not in text,
+                        f"{cid}: replay imports the producer's environment")
+                replays += 1
+            errors += again["diagnostics"]["errors"]
+            warnings += again["diagnostics"]["warnings"]
+            details.append({"case": cid, "stage": name, "returncode": stage["returncode"],
+                            "elapsed_ms": stage["elapsed_ms"], "diagnostics": again["diagnostics"]})
+    actual_files = {path.relative_to(base).as_posix() for path in base.rglob("*") if path.is_file()}
+    require(actual_files == expected_files, "sketch raw artifact inventory differs")
+    require(len(details) == plan["public_processes"] and commands == plan["required"] and replays == plan["replays"],
+            "sketch observed stage counts differ")
+    require(errors == plan["preparation_errors"] and warnings == 0, "unexpected sketch diagnostic count")
+    processes = len(details) + plan["reference_processes"]
+    return {"required_cases": len(cases), "public_processes": len(details), "reference_processes": 1,
+            "processes": processes, "stderr_files": processes, "raw_files": len(actual_files),
+            "original_commands": commands, "source_replays": replays, "expected_preparation_errors": errors,
+            "warning_diagnostics": warnings, "stages": details,
+            "reference": {"returncode": reference["returncode"], "elapsed_ms": reference["elapsed_ms"], "passed": True}}
+
+
+def validate_run(budget, snapshot, prefix, tree, frontend, sketch):
+    # The inherited summary scorer uses the captured plan and therefore checks
+    # all fourteen totals/exits. Its legacy/raw provider-history and frontend
+    # semantic audits remain intact. Sketch stages are counted separately.
+    audit = API.validate_run(budget, snapshot, prefix, tree, frontend)
+    folder = tree.BASE.run_folder(prefix, budget)
+    audit["sketches"] = validate_sketches(folder, budget, snapshot, sketch)
+    audit["stderr_files"] += audit["sketches"]["stderr_files"]
+    return audit
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--capture-inputs", action="store_true")
+    mode.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--expected-total", type=int, required=True, choices=(839,))
+    parser.add_argument("--run-prefix", type=Path, default=DEFAULT_PREFIX)
+    parser.add_argument("--destination", type=Path, default=DEFAULT_DESTINATION)
+    parser.add_argument("--snapshot", type=Path, default=HERE / "input-snapshot.json")
+    args = parser.parse_args()
+    prefix, destination, snapshot_path = (path.resolve() for path in (args.run_prefix, args.destination, args.snapshot))
+    tree, frontend, sketch = dependencies()
+    inputs = collect_inputs(tree, frontend, sketch)
+    require(not destination.exists(), f"refusing to overwrite archive: {destination}")
+    if args.capture_inputs:
+        require(not snapshot_path.exists(), "refusing to overwrite snapshot")
+        for budget in BUDGETS:
+            folder = tree.BASE.run_folder(prefix, budget)
+            require(not folder.exists() and not Path(f"{folder}.log").exists(), "capture requires unused run paths")
+        snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {"schema_version": 4, "created_utc": datetime.now(timezone.utc).isoformat(),
+                   "run_prefix": str(prefix), "destination": str(destination), "budgets_ms": list(BUDGETS), "inputs": inputs}
+        with snapshot_path.open("x", encoding="utf-8", newline="\n") as output:
+            output.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+        print(f"Captured {args.expected_total}-check sketch inputs: {snapshot_path}")
+        return
+    snapshot = read_json(snapshot_path)
+    require(snapshot["schema_version"] == 4 and snapshot["inputs"] == inputs, "captured inputs changed")
+    require(snapshot["run_prefix"] == str(prefix) and snapshot["destination"] == str(destination) and
+            snapshot["budgets_ms"] == list(BUDGETS), "captured paths/budgets changed")
+    originals = tree.BASE.run_output_hashes(prefix)
+    audit = {budget: validate_run(budget, snapshot, prefix, tree, frontend, sketch) for budget in BUDGETS}
+    require(collect_inputs(tree, frontend, sketch) == inputs, "inputs changed during audit")
+    require(tree.BASE.run_output_hashes(prefix) == originals, "raw output bytes changed during audit")
+    families = len(inputs["validation_plan"]["expected_totals"])
+    if args.validate_only:
+        print(json.dumps({"revision": inputs["revision"], "total": args.expected_total, "families": families, "audit": audit}, indent=2))
+        return
+    with tempfile.TemporaryDirectory(prefix="sketch-archive-", dir=ROOT / "scratch") as temporary:
+        staging = Path(temporary) / "archive"
+        staging.mkdir()
+        (staging / ".gitattributes").write_bytes(tree.BASE.ATTRIBUTES)
+        shutil.copyfile(snapshot_path, staging / "input-snapshot.json")
+        shutil.copyfile(Path(__file__), staging / "archive-script.py.txt")
+        require(sha(staging / "archive-script.py.txt") == inputs["archive_script_sha256"], "wrapper copy changed")
+        for name, dependency in inputs["audit_dependencies"].items():
+            shutil.copyfile(dependency["path"], staging / name)
+            require(sha(staging / name) == dependency["sha256"], f"helper copy changed: {name}")
+        write_json(staging / "post-run-inputs.json", {"schema_version": 4,
+                   "created_utc": datetime.now(timezone.utc).isoformat(), "inputs": inputs})
+        copies = {**tree.receipt_copies(inputs["validation_plan"]), "frontends.json": "frontends/receipt.json",
+                  "sketches.json": "sketches/receipt.json"}
+        for budget in BUDGETS:
+            folder = tree.BASE.run_folder(prefix, budget)
+            for name, original in copies.items():
+                shutil.copyfile(folder / original, staging / f"{budget}-{name}")
+                require(sha(staging / f"{budget}-{name}") == sha(folder / original), f"receipt copy changed: {name}")
+            shutil.copyfile(Path(f"{folder}.log"), staging / f"{budget}-run.log")
+            require(sha(staging / f"{budget}-run.log") == originals[f"{budget}-outer-log"], "outer log changed")
+            with zipfile.ZipFile(staging / f"{budget}-raw.zip", "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+                for name in originals[str(budget)]:
+                    archive.write(folder / name, name)
+            tree.FINISH.verify_zip(staging / f"{budget}-raw.zip", originals[str(budget)])
+            audit[budget]["raw_sha256"] = originals[str(budget)]
+        require(collect_inputs(tree, frontend, sketch) == inputs, "inputs changed while archiving")
+        require(tree.BASE.run_output_hashes(prefix) == originals, "outputs changed while archiving")
+        manifest = {"kind": "validation_receipts_not_standalone_synthesis_replay",
+                    "created_utc": datetime.now(timezone.utc).isoformat(), "tested_revision": inputs["revision"],
+                    "working_tree_clean_during_runs": True, "input_hashes_unchanged_before_and_after": True,
+                    "input_snapshot": "input-snapshot.json", "post_run_inputs": "post-run-inputs.json",
+                    **{key: inputs[key] for key in ("toolchain", "executable", "executable_sha256", "lean_executable",
+                       "lean_executable_sha256", "source_sha256", "module_sha256", "required_module_paths",
+                       "external_repositories", "external_input_sha256", "frontend_source_sha256",
+                       "frontend_fixture_sha256", "sketch_fixture_sha256", "historical_archives")},
+                    "module_artifacts": len(inputs["module_sha256"]), "budgets_ms": list(BUDGETS),
+                    "expected_total": args.expected_total, "expected_totals": inputs["validation_plan"]["expected_totals"],
+                    "archive_script": "archive-script.py.txt", "archive_script_sha256": inputs["archive_script_sha256"],
+                    "audit_dependencies": inputs["audit_dependencies"], "run_audit": audit,
+                    "files": {path.name: sha(path) for path in sorted(staging.iterdir())},
+                    "byte_policy": "Archive-local .gitattributes preserves evidence bytes; ZIP member bytes and CRCs are verified.",
+                    "hash_scope": "files excludes this manifest and any later narrative README"}
+        write_json(staging / "manifest.json", manifest)
+        shutil.copytree(staging, destination)
+        tree.verify_hashes(destination, {path.name: sha(path) for path in staging.iterdir()})
+    print(json.dumps({"archived": str(destination), "revision": inputs["revision"],
+                      "total": args.expected_total, "families": families}, indent=2))
+
+
+if __name__ == "__main__":
+    main()

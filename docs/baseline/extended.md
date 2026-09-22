@@ -397,6 +397,26 @@ histories, actual suggestions, fresh Lean-only replays, diagnostics and exits
 are independently re-audited. The earlier frontend archive above remains
 evidence for `69221f1`, with its original scope.
 
+## Closed program-sketch checkpoint
+
+The [sketch checkpoint](sketches-2026-09-21/README.md) passes **839/839 required
+checks across 14 families at both 10,000 and 5,000 ms** on `c69f484`. All 29 E8
+cases remain required. The new [sketch family](../../tests/sketches/README.md)
+adds seven checks: a supplied two-hole fold, a local-context identity, correct
+and wrong complete bodies, two malformed-hole controls, and literal False.
+Its ten public process stages include three replays of the actual emitted
+completion source in fresh Lean-only processes. The separate reference process
+is a prerequisite, not an eighth case.
+
+Both aggregate builds record 83 successful jobs, separate from the external
+denominator. Each budget retains 202 raw artifacts, 837 legacy synthesis-query
+records, and the existing 13 frontend stages. Pre/post source, executable,
+module, and fixture hashes match; independent audits reconstruct actual source
+and suggestions, outcomes, diagnostics, exits, and exact ZIP inventories.
+The thirteen original unscored Church searches are bounded misses at both
+budgets. Carrier-given Church completions and E2 closure remain separate work;
+the earlier seven archives keep their original scope.
+
 ## Source provenance
 
 Article cases cite

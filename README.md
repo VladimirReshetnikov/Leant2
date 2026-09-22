@@ -249,12 +249,13 @@ Literal `False` controls require a certified contract refutation; silence
 and timeouts do not pass them.
 
 The configured aggregate contains **839 required checks across 14 harnesses**.
-The latest complete archived result remains the
-[API checkpoint](docs/baseline/library-api-2026-09-21/README.md):
-**832/832 across 13 harnesses** at both 5 s and 10 s per search on implementation
-commit `9ec21c8`. The promoted public sketch runner passes all seven cases at
-both budgets, and the current native aggregate build passes 83 jobs. Complete
-839-check validation and its archive remain pending.
+The latest complete archived result is the
+[sketch checkpoint](docs/baseline/sketches-2026-09-21/README.md):
+**839/839 across 14 harnesses** at both 5 s and 10 s per search on implementation
+commit `c69f484`. Each run includes the successful 83-job aggregate build;
+build jobs may be cached and are separate from the external case count.
+The preceding [API checkpoint](docs/baseline/library-api-2026-09-21/README.md)
+retains its original 832-check scope and revision `9ec21c8`.
 The 8 frontend cases require 13 fresh Lean processes:
 8 original stages, 3 independent replays of actual tactic suggestions in
 files importing only Lean, and 2 separate expected-error stages. These process
@@ -265,11 +266,13 @@ replays of actual emitted completion source. Its separate reference/control
 process is an uncounted prerequisite. Native sketch regressions belong to the
 build gate and do not increase the external denominator.
 
-Both archived API runs preserve pre/post hashes for source, both native executables
+Both archived sketch runs preserve pre/post hashes for source, both native executables
 (`leant2.exe` and Lean), the complete recorded compiled-module inventory,
-and external fixtures. That API archive independently reconstructs secondary
+and external fixtures. The archive independently reconstructs secondary
 runner transcripts and checks raw outcome categories and session provider
-histories, in addition to protocol checks and aggregate scores. The frontend
+histories, actual tactic suggestions and completed sketch source, diagnostics,
+process exits, and exact raw ZIP contents. Each budget retains 202 raw files;
+all thirteen unscored Church stretch searches remain bounded misses. The frontend
 and sketch runners require fresh output directories and do not build. Build
 before running either directly; fingerprints identify the artifacts tested and do not
 establish that they were rebuilt.
@@ -294,7 +297,7 @@ The new [extended suite](docs/baseline/extended.md) reconstructs the sixteen
 probes in proposal 11, adds nine Lean-core examples and four negative
 controls. All 29 sessions are now required after focused validation of the
 last open tree-inorder case; they pass in both the historical 824-check
-tree checkpoint and the current 832-check API checkpoint.
+tree checkpoint, the 832-check API checkpoint, and the current 839-check sketch checkpoint.
 Each query runs in a fresh session; a reported candidate must bind at the
 requested type and pass executable replay. This is the initial local E8
 benchmark work, not a port of the external synthesis benchmark collections.
