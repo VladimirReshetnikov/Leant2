@@ -162,3 +162,20 @@ and ZIP members; its 202 raw files per budget preserve the original bytes.
 Source, both native executables, compiled modules, and external inputs match
 the pre-run capture. All thirteen original Church stretch searches remain
 bounded misses, and all seven preceding archives are unchanged.
+
+## Typed sketch projection checkpoint
+
+The [projection checkpoint](sketch-projection-2026-09-22/README.md) validates
+source revision `3d29761`: **839/839 required checks across all fourteen
+families at both 10 s and 5 s per search**. Each aggregate build records 87
+successful jobs, including the new projection and integration modules. Native
+tests remain separate from the unchanged external denominator.
+
+Each budget preserves the original query inventory and all frontend/sketch
+process stages, including actual printed-source replay, in 202 raw files.
+Independent audits bind the raw outcomes and diagnostics to identical pre/post
+fingerprints for 196 source/configuration files, 60 compiled artifacts, 350
+external fixtures, and both native executables. All eight preceding archives
+retain their Git trees and working bytes. The thirteen original unassisted
+Church stretch queries remain bounded misses; the focused supplied-carrier
+`at` and `foldr1` experiments retain their separate contracts and evidence.

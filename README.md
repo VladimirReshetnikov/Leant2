@@ -259,16 +259,17 @@ and timeouts do not pass them.
 
 The configured aggregate contains **839 required checks across 14 harnesses**.
 The latest complete archived result is the
-[sketch checkpoint](docs/baseline/sketches-2026-09-21/README.md):
-**839/839 across 14 harnesses** at both 5 s and 10 s per search on implementation
-commit `c69f484`. Each run includes the successful 83-job aggregate build;
+[projection checkpoint](docs/baseline/sketch-projection-2026-09-22/README.md):
+**839/839 across 14 harnesses** at both 5 s and 10 s per search on source
+revision `3d29761`. Each run includes the successful 87-job aggregate build;
 build jobs may be cached and are separate from the external case count.
+The earlier [sketch checkpoint](docs/baseline/sketches-2026-09-21/README.md)
+retains its 839-check result and 83-job build on `c69f484`.
 The preceding [API checkpoint](docs/baseline/library-api-2026-09-21/README.md)
 retains its original 832-check scope and revision `9ec21c8`.
-The later projection increment separately passes an 87-job aggregate native
-build, including early-pruning/backtracking, dependent-context, profile,
-fallback, and cancellation tests. Its focused carrier results do not change
-the external denominator or replace the complete archived run.
+The current native build includes early-pruning/backtracking, dependent-context,
+profile, fallback, and cancellation tests. The focused carrier results remain
+separate from these full runs and do not change the external denominator.
 The 8 frontend cases require 13 fresh Lean processes:
 8 original stages, 3 independent replays of actual tactic suggestions in
 files importing only Lean, and 2 separate expected-error stages. These process
@@ -279,9 +280,12 @@ replays of actual emitted completion source. Its separate reference/control
 process is an uncounted prerequisite. Native sketch regressions belong to the
 build gate and do not increase the external denominator.
 
-Both archived sketch runs preserve pre/post hashes for source, both native executables
+Both archived projection runs preserve pre/post hashes for 196 source/configuration
+files, both native executables
 (`leant2.exe` and Lean), the complete recorded compiled-module inventory,
-and external fixtures. The archive independently reconstructs secondary
+and 350 external fixtures. All 60 recorded compiled artifacts match, and all
+eight earlier archives retain their Git trees and working bytes.
+The archive independently reconstructs secondary
 runner transcripts and checks raw outcome categories and session provider
 histories, actual tactic suggestions and completed sketch source, diagnostics,
 process exits, and exact raw ZIP contents. Each budget retains 202 raw files;
@@ -310,7 +314,7 @@ The new [extended suite](docs/baseline/extended.md) reconstructs the sixteen
 probes in proposal 11, adds nine Lean-core examples and four negative
 controls. All 29 sessions are now required after focused validation of the
 last open tree-inorder case; they pass in both the historical 824-check
-tree checkpoint, the 832-check API checkpoint, and the current 839-check sketch checkpoint.
+tree checkpoint, the 832-check API checkpoint, and the current 839-check projection checkpoint.
 Each query runs in a fresh session; a reported candidate must bind at the
 requested type and pass executable replay. This is the initial local E8
 benchmark work, not a port of the external synthesis benchmark collections.

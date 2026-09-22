@@ -1,0 +1,80 @@
+"""DRAFT: archive a clean library-API checkpoint with the unchanged 832 checks.
+
+This wrapper executes the exact published frontend auditor, then changes only
+its output defaults, immutable history inventory, and provenance dependencies.
+All twelve legacy families, frontend stage checks, and secondary raw semantic
+scoring are inherited byte-for-byte. Native API tests belong to the aggregate
+build, not to a new external family. No capture/archive has been run for this
+draft. Never builds or executes Lean; capture is allowed only after publication.
+"""
+from __future__ import annotations
+
+import hashlib
+from pathlib import Path
+import sys
+import types
+
+ROOT = next(p for p in Path(__file__).resolve().parents if (p / "tools/run_all.py").is_file())
+HERE = Path(__file__).resolve().parent
+DEFAULT_PREFIX = ROOT / "baseline-out/library-api-checkpoint"
+DEFAULT_DESTINATION = ROOT / "docs/baseline/library-api-2026-09-21"
+FRONTEND_AUDITOR = (
+    "docs/baseline/frontends-2026-09-21/archive-script.py.txt",
+    "53529317f53906d0476126cda5aa4f025748166762125ce652a92468c19a092d",
+)
+HISTORICAL = (
+    "p1-2026-09-21", "induction-2026-09-21", "local-proofs-2026-09-21",
+    "guards-2026-09-21", "tree-composition-2026-09-21", "frontends-2026-09-21",
+)
+
+
+def load_verified_source(path, expected):
+    """Verify before executing; module identity tracks this wrapper for capture.
+
+The compiled filename identifies the pinned source for tracebacks. __file__ is
+the wrapper path deliberately: inherited collect_inputs/main must fingerprint
+and archive this configuration together with its separately pinned source.
+"""
+    source = path.read_bytes()
+    if hashlib.sha256(source).hexdigest() != expected:
+        raise RuntimeError(f"published frontend auditor hash differs: {path}")
+    module = types.ModuleType("library_api_frozen_frontend_auditor")
+    module.__file__ = str(Path(__file__).resolve())
+    sys.modules[module.__name__] = module
+    exec(compile(source, str(path), "exec"), module.__dict__)
+    return module
+
+
+BASE = load_verified_source(ROOT / FRONTEND_AUDITOR[0], FRONTEND_AUDITOR[1])
+if tuple(BASE.HISTORICAL) != HISTORICAL[:-1]:
+    raise RuntimeError("published frontend auditor history differs from the reviewed predecessor")
+BASE.__doc__ = __doc__
+BASE.HERE = HERE
+BASE.DEFAULT_PREFIX = DEFAULT_PREFIX
+BASE.DEFAULT_DESTINATION = DEFAULT_DESTINATION
+BASE.HISTORICAL = HISTORICAL
+BASE.DEPENDENCIES = {
+    **BASE.DEPENDENCIES,
+    "frontend-archive-script.py.txt": FRONTEND_AUDITOR,
+}
+
+# Read-only audit consumers can use the same public helper interface as before.
+# No source rewriting, monkey-patching of scoring, or native execution occurs.
+BUDGETS = BASE.BUDGETS
+DEPENDENCIES = BASE.DEPENDENCIES
+dependencies = BASE.dependencies
+validation_plan = BASE.validation_plan
+historical_fingerprints = BASE.historical_fingerprints
+collect_inputs = BASE.collect_inputs
+validate_run = BASE.validate_run
+validate_frontends = BASE.validate_frontends
+secondary_plan = BASE.secondary_plan
+validate_secondary_sessions = BASE.validate_secondary_sessions
+
+
+def main():
+    BASE.main()
+
+
+if __name__ == "__main__":
+    main()

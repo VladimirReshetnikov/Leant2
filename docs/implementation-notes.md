@@ -573,7 +573,7 @@ process. The reference process must pass but does not add a scored case.
 Wrong complete bodies require a recorded rejection; malformed inputs require
 the intended preparation error; fresh negative processes leave neither bare
 nor numbered aliases. The configured aggregate is now 839 checks across 14
-harnesses. The complete [sketch checkpoint](baseline/sketches-2026-09-21/README.md)
+harnesses. The initial complete [sketch checkpoint](baseline/sketches-2026-09-21/README.md)
 passes all 839 at both budgets on `c69f484`, with unchanged pre/post inputs and
 independent reconstruction of actual emitted-source replays. The previous
 832-check API checkpoint retains its own revision and scope.
@@ -585,8 +585,10 @@ host resources; its failure log remains separate from the successful serial
 rebuild. The unsafe-pruning regressions and public runs include the final
 unsafe-declaration guard.
 
-The later projection increment passes a fresh 87-job aggregate native build
-after all local modules were visited serially. Its 27 named component checks
+The later [projection checkpoint](baseline/sketch-projection-2026-09-22/README.md)
+passes all 839 external checks at both budgets on `3d29761`, with an 87-job
+aggregate native build in each run. All local modules were also visited serially
+before those complete runs. Its 27 named component checks
 cover dependent asymmetric contexts, original-scope refusal, native/projected
 agreement, unfinished-child opacity, policy checks before syntax erasure, and
 state restoration. The separate integration module witnesses actual partial
@@ -761,6 +763,17 @@ The 173 source/configuration hashes, 57 recorded compiled-module hashes,
 All thirteen original Church stretches remain bounded misses; the seven
 earlier archives retain their Git trees and working bytes. The fixed-carrier
 Church completion experiments remain a separate implementation track.
+
+Source revision `3d29761` subsequently passed **839/839 required external checks
+across all fourteen families at both budgets**. The
+[projection checkpoint](baseline/sketch-projection-2026-09-22/README.md)
+retains 202 raw files per budget, the complete original query/process inventory,
+and successful 87-job aggregate builds. Independent audits verify equal pre/post
+fingerprints for 196 source/configuration files, 60 compiled artifacts, 350
+external fixtures and both executables. All eight preceding archives retain
+their original Git trees and working bytes. The thirteen original unassisted
+Church stretches remain bounded misses at both budgets; the two focused
+supplied-carrier results are separately documented above.
 
 Historical measurements remain in `docs/baseline/`, labeled by their own
 revisions and budgets. These acceptance runs and profiling parity tests are

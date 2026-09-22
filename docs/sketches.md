@@ -150,8 +150,8 @@ results. Its query supplies the provider inventory and axiom profile explicitly.
 
 The [public sketch runner](../tools/run_sketches.py) has seven logical cases,
 three emitted-source replays, and a separate Lean-only witness/control process.
-The complete [sketch checkpoint](baseline/sketches-2026-09-21/README.md) passes
-839/839 checks across fourteen families at both 5000 and 10000 ms on `c69f484`,
+The complete [projection checkpoint](baseline/sketch-projection-2026-09-22/README.md) passes
+839/839 checks across fourteen families at both 5000 and 10000 ms on `3d29761`,
 including all seven public sketch cases. Source, modules, both native
 executables, and fixture fingerprints match before and after. Each sketch
 run contains ten public process stages and one separate reference process;
@@ -161,7 +161,7 @@ Native regressions separately cover preparation and closure ownership,
 initialized continuation, exact original-query replay, axiom profiles,
 caller-state restoration, and alias rollback, including real cancellation
 after publication. They belong to the native build gate rather than the
-external case denominator. The archived source's aggregate build passes 83 jobs, and the
+external case denominator. The current archived source's aggregate build passes 87 jobs, and the
 exact examples in this guide and the root README compile with accepted sketch
 outcomes. The archive independently reconstructs each actual emitted term and
 replay source, rechecks diagnostics and process exits, and preserves exact raw
@@ -169,8 +169,9 @@ outputs. Earlier focused checks remain separate evidence. See the
 [implementation notes](implementation-notes.md) for the maintained validation
 boundary and the remaining work.
 
-The later projection increment passes the full 87-job aggregate native build.
-Its component matrix has 27 named checks, including asymmetric dependent
+The earlier [sketch checkpoint](baseline/sketches-2026-09-21/README.md) preserves
+its original `c69f484` source and 83-job build. The current projection component
+matrix has 27 named checks, including asymmetric dependent
 `Fin` contexts and native/projected agreement. Integration tests separately
 observe a wrong first hole being refuted while the second remains open,
 then backtracking to exact whole-contract acceptance. They also check
