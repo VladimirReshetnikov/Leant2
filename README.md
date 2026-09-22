@@ -166,12 +166,15 @@ compiled-module, and external-input hashes against a pre-run snapshot.
 Three E8 searches and thirteen Church stretch cases were unsolved at that
 checkpoint.
 
-The subsequent guard implementation passes all five public guard gates and
-the original maximum/drop-zero probes at 5 s/query, with universal post-checks
-for maximum, minimum, and drop-zero. Those two E8 probes are now required;
-tree inorder is the remaining open E8 search. The configured aggregate is
-820 checks across eleven harnesses. These focused development receipts do
-not replace a complete two-budget checkpoint for the new source.
+The current [constructive guard checkpoint](docs/baseline/guards-2026-09-21/README.md),
+implementation commit `ce31d3a`, passes **820/820 required checks across eleven
+harnesses at both 10 s and 5 s per query**. Maximum and drop-zero are required
+E8 probes; five separate guard gates include universal post-checks for maximum,
+minimum, and drop-zero. Empty-provider Lean fixtures separately verify native
+guarded recursion, exact-term publication, and printed-source equivalence.
+The archive preserves complete raw runs and unchanged pre/post input hashes.
+Tree inorder remains the only open E8 search; the thirteen Church stretch
+cases are also unsolved at this checkpoint.
 
 The Church harness imports the specifications from Leant's vendored Djex
 directory (`C:\Leant\lib\Djex\test-church`), so every `:synth` carries the

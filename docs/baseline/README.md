@@ -60,3 +60,22 @@ all receipt and ZIP hashes, and the exact archive helper are preserved.
 The three E8 open searches and thirteen Church stretch searches were
 unsolved at that checkpoint. The denominator includes goals checked at different boundaries;
 this is not a count of 813 distinct synthesis problems.
+
+## Constructive guard checkpoint
+
+The [constructive guard checkpoint](guards-2026-09-21/README.md) validates
+implementation commit `ce31d3a` at both 10 s and 5 s per query:
+**820/820 required checks across eleven harnesses** at each budget. Maximum
+and drop-zero are now required E8 probes. Five independent public gates check
+maximum, minimum, and drop-zero through universal post-checks and held-out
+execution, plus two certified impossible-contract controls. Separate
+empty-provider Lean fixtures verify native guarded recursion, executable
+publication, and universal equivalence of reparsed printed source.
+
+Both complete runs preserve the captured source, executable, compiled modules,
+and external fixtures. Each retains 115 raw artifacts and 834 synthesis query
+records across scored and unscored families; the aggregate score counts
+acceptance gates, not distinct problems or total queries. Tree inorder and
+the thirteen Church stretch searches remain bounded misses at this checkpoint.
+The archive also preserves and independently checks the legacy baseline's
+two intentional preflight diagnostics and one unscored Option-call error.

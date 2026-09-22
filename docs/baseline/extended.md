@@ -275,6 +275,15 @@ native validation. These receipts came from the dirty implementation tree;
 they justify the expectation promotions and do not establish a complete
 acceptance checkpoint for the recorded parent revision.
 
+The subsequent clean-source [constructive guard checkpoint](guards-2026-09-21/README.md)
+at `ce31d3a` passed **820/820** across all eleven harnesses at both 10,000 and
+5,000 ms/query. E8 passed 28/28 and the public guard family passed 5/5 at each
+budget. Tree inorder was a bounded miss in both runs. The accepted public
+drop-zero function uses generic `List.filter` with a synthesized zero-test
+predicate; the separate empty-provider Lean test builds actual guarded
+`List.rec`. Both raw runs and unchanged pre/post source, module, executable,
+and external-input hashes are archived.
+
 ## Source provenance
 
 Article cases cite

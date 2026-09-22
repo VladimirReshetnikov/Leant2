@@ -1,0 +1,31 @@
+build: ok in 0s
+baseline: 278/278 in 85s
+recursive: 9/9 in 4s
+church: 28/28 in 90s
+context: 95/95 in 7s
+corpus: 350/350 in 15s
+session: 6/6 in 14s
+results: 10/10 in 32s
+extended: 28/28 in 91s
+extended: OPEN probe11_tree_inorder refuted [5015 ms]
+extended: OPEN 0/1 solved
+recursion-gates: 5/5 in 14s
+recursion-gates: OPEN 0/0 solved
+local-proofs: 6/6 in 15s
+local-proofs: OPEN 0/0 solved
+guard-gates: 5/5 in 16s
+guard-gates: OPEN 0/0 solved
+
+| Harness | Score | Time |
+| --- | --- | --- |
+| baseline | 278/278 | 85 s |
+| recursive | 9/9 | 4 s |
+| church | 28/28 | 90 s |
+| context | 95/95 | 7 s |
+| corpus | 350/350 | 15 s |
+| session | 6/6 | 14 s |
+| results | 10/10 | 32 s |
+| extended | 28/28 | 91 s |
+| recursion-gates | 5/5 | 14 s |
+| local-proofs | 6/6 | 15 s |
+| guard-gates | 5/5 | 16 s |

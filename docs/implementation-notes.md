@@ -332,14 +332,18 @@ thirteen Church stretch searches were unsolved at that checkpoint; neither group
 to the fixed score. The legacy baseline's documented ordinary Option-call
 error is unchanged and outside its synthesis-category score.
 
-The subsequent guard implementation passes its provider-free Lean fixtures,
-including all three universal equations and printed-source equivalence.
-At 5,000 ms/query all five public guard gates and the two original maximum
-and drop-zero probes also pass. Targeted list-sum, predecessor, and power-of-two
-regressions pass at both budgets. The original maximum/drop-zero probes are
-now required, making the configured denominator 820 across eleven harnesses
-and leaving only tree inorder open in E8. These are focused development
-results; complete two-budget validation of the new source is still required.
+Implementation commit `ce31d3a` passed **820/820 required checks across eleven
+harnesses at both budgets**. The [constructive guard checkpoint](baseline/guards-2026-09-21/README.md)
+includes required original maximum/drop-zero probes and five public guard
+gates with universal post-checks and held-out execution. Separate empty-provider
+Lean fixtures verify native guarded recursion, all three universal equations,
+exact-term publication, and printed-source equivalence. Both complete runs
+preserve the same 123 recorded source files, 27 compiled module artifacts,
+executable, and 350 external inputs. Tree inorder is the only remaining open
+E8 search; it and the thirteen Church stretch cases were bounded misses at
+both budgets. The public drop-zero candidate reuses `List.filter` with a
+synthesized guard predicate; the provider-free fixture establishes the
+separate recursive construction capability.
 
 Historical measurements remain in `docs/baseline/`, labeled by their own
 revisions and budgets. These acceptance runs and profiling parity tests are
